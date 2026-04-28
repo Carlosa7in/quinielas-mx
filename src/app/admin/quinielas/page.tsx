@@ -20,6 +20,7 @@ type Jornada = {
   id: string;
   numero: number;
   temporada: string;
+  liga: string;
   estado: string;
   quinielas: Quiniela[];
 };
