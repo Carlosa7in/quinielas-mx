@@ -1,27 +1,31 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/jornadas - jornada activa con sus partidos
-export async function GET() {
-  const jornada = await prisma.jornada.findFirst({
-    where: { estado: "abierta" },
-    select: {
-      id: true,
-      numero: true,
-      temporada: true,
-      liga: true,
-      estado: true,
-      partidos: {
-        select: { id: true, equipoLocal: true, equipoVisita: true, orden: true, resultado: true, golesLocal: true, golesVisita: true },
-        orderBy: { orden: "asc" },
-      },
-      quinielas: { select: { id: true, estado: true } },
-    },
-    orderBy: { numero: "desc" },
-  });
+const JORNADA_SELECT = {
+  id: true,
+  numero: true,
+  temporada: true,
+  liga: true,
+  estado: true,
+  partidos: {
+    select: { id: true, equipoLocal: true, equipoVisita: true, orden: true, resultado: true, golesLocal: true, golesVisita: true },
+    orderBy: { orden: "asc" } as const,
+  },
+  quinielas: { select: { id: true, estado: true } },
+};
+
+// GET /api/jornadas?id=xxx  — jornada específica
+// GET /api/jornadas          — jornada activa más reciente
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  const jornada = id
+    ? await prisma.jornada.findUnique({ where: { id }, select: JORNADA_SELECT })
+    : await prisma.jornada.findFirst({ where: { estado: "abierta" }, select: JORNADA_SELECT, orderBy: { numero: "desc" } });
 
   if (!jornada) {
-    return NextResponse.json({ error: "No hay jornada abierta" }, { status: 404 });
+    return NextResponse.json({ error: "Jornada no encontrada" }, { status: 404 });
   }
 
   return NextResponse.json(jornada);

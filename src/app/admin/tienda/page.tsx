@@ -1,8 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogoEquipo } from "@/components/LogoEquipo";
+import { JornadaSelector, type JornadaResumen } from "@/components/JornadaSelector";
 
 type Partido = {
   id: string;
@@ -16,11 +17,12 @@ type Jornada = {
   id: string;
   numero: number;
   temporada: string;
+  liga: string;
   partidos: Partido[];
 };
 
 export default function TiendaPage() {
-  const [modo, setModo] = useState<"seleccion" | "manual">("seleccion");
+  const [modo, setModo] = useState<"selector" | "seleccion" | "manual">("selector");
   const router = useRouter();
   const [jornada, setJornada] = useState<Jornada | null>(null);
   const [picks, setPicks] = useState<Record<string, string>>({});
@@ -29,14 +31,18 @@ export default function TiendaPage() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetch("/api/jornadas")
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.error) setJornada(data);
-        else setError(data.error);
-      });
-  }, []);
+  const seleccionarJornada = async (j: JornadaResumen) => {
+    const res = await fetch(`/api/jornadas?id=${j.id}`);
+    const data = await res.json();
+    if (!data.error) {
+      setJornada(data);
+      setModo("seleccion");
+    }
+  };
+
+  if (modo === "selector") {
+    return <JornadaSelector onSelect={seleccionarJornada} titulo="Registro en Tienda" />;
+  }
 
   const seleccionar = (partidoId: string, valor: string) => {
     setPicks((prev) => ({ ...prev, [partidoId]: valor }));

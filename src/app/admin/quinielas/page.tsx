@@ -149,6 +149,7 @@ export default function QuinielasAdminPage() {
   const [cargando, setCargando] = useState(true);
   const [tab, setTab] = useState<"activa" | "pasadas">("activa");
   const [busqueda, setBusqueda] = useState("");
+  const [ligaFiltro, setLigaFiltro] = useState<string>("todas");
 
   useEffect(() => {
     fetch("/api/admin/quinielas")
@@ -157,8 +158,11 @@ export default function QuinielasAdminPage() {
       .finally(() => setCargando(false));
   }, []);
 
-  const activas = jornadas.filter((j) => j.estado === "abierta");
-  const pasadas = jornadas.filter((j) => j.estado === "finalizada");
+  const ligas = [...new Set(jornadas.map((j) => j.liga))];
+
+  const jornadasFiltradas = ligaFiltro === "todas" ? jornadas : jornadas.filter((j) => j.liga === ligaFiltro);
+  const activas = jornadasFiltradas.filter((j) => j.estado === "abierta");
+  const pasadas = jornadasFiltradas.filter((j) => j.estado === "finalizada");
   const mostrar = tab === "activa" ? activas : pasadas;
 
   // Stats globales
@@ -192,6 +196,23 @@ export default function QuinielasAdminPage() {
             <p className="text-xs text-gray-500">Ganadoras</p>
           </div>
         </div>
+
+        {/* Filtro liga */}
+        {ligas.length > 1 && (
+          <div className="flex gap-2">
+            {["todas", ...ligas].map((l) => (
+              <button
+                key={l}
+                onClick={() => setLigaFiltro(l)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                  ligaFiltro === l ? "bg-green-700 text-white" : "bg-white text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                {l === "todas" ? "Todas" : l === "Liga MX" ? "🇲🇽 Liga MX" : "⭐ Champions"}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex bg-white rounded-xl shadow-sm overflow-hidden">

@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { JornadaSelector, type JornadaResumen } from "@/components/JornadaSelector";
 
 type Partido = {
   id: string;
@@ -33,28 +34,25 @@ export default function ResultadosPage() {
   const [finalizada, setFinalizada] = useState(false);
   const [ganadoras, setGanadoras] = useState<{ folio: string; nombreCliente: string | null; aciertos: number | null }[]>([]);
 
-  useEffect(() => {
-    fetch("/api/jornadas")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) return;
-        setJornada(data);
-        if (data.estado === "finalizada") setFinalizada(true);
-
-        const init: Record<string, EstadoPartido> = {};
-        for (const p of data.partidos) {
-          init[p.id] = {
-            resultado: p.resultado ?? "",
-            golesLocal: p.golesLocal?.toString() ?? "",
-            golesVisita: p.golesVisita?.toString() ?? "",
-            guardando: false,
-            guardado: !!p.resultado,
+  const cargarJornada = async (j: JornadaResumen) => {
+    const res = await fetch(`/api/jornadas?id=${j.id}`);
+    const data = await res.json();
+    if (data.error) return;
+    setJornada(data);
+    if (data.estado === "finalizada") setFinalizada(true);
+    const init: Record<string, EstadoPartido> = {};
+    for (const p of data.partidos) {
+      init[p.id] = {
+        resultado: p.resultado ?? "",
+        golesLocal: p.golesLocal?.toString() ?? "",
+        golesVisita: p.golesVisita?.toString() ?? "",
+        guardando: false,
+        guardado: !!p.resultado,
             error: "",
           };
         }
         setEstados(init);
-      });
-  }, []);
+  };
 
   const set = (partidoId: string, campo: keyof EstadoPartido, valor: string | boolean) => {
     setEstados((prev) => ({
@@ -98,6 +96,10 @@ export default function ResultadosPage() {
 
   const resueltos = Object.values(estados).filter((e) => e.guardado).length;
   const total = jornada?.partidos.length ?? 0;
+
+  if (!jornada) {
+    return <JornadaSelector onSelect={cargarJornada} titulo="Registrar Resultados" />;
+  }
 
   if (finalizada && ganadoras.length >= 0 && resueltos === total && total > 0) {
     return (

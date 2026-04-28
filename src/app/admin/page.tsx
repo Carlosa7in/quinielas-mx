@@ -147,18 +147,16 @@ export default function AdminPage() {
             </div>
           </Link>
 
-          {jornada && (
-            <Link
-              href={`/admin/forma/${jornada.id}`}
-              className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
-            >
-              <span className="text-2xl">🖨️</span>
-              <div>
-                <p className="font-bold">Imprimir Formas</p>
-                <p className="text-gray-500 text-sm">Formas en blanco o con picks aleatorios</p>
-              </div>
-            </Link>
-          )}
+          <Link
+            href="/admin/forma"
+            className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
+          >
+            <span className="text-2xl">🖨️</span>
+            <div>
+              <p className="font-bold">Imprimir Formas</p>
+              <p className="text-gray-500 text-sm">Formas en blanco o con picks aleatorios</p>
+            </div>
+          </Link>
 
           <Link
             href="/admin/nueva-jornada"

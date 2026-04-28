@@ -1,0 +1,127 @@
+"use client";
+import { useState, useEffect } from "react";
+
+export type JornadaResumen = {
+  id: string;
+  numero: number;
+  temporada: string;
+  liga: string;
+  estado: string;
+  _count: { quinielas: number; partidos: number };
+};
+
+const LIGA_ICON: Record<string, string> = {
+  "Liga MX": "🇲🇽",
+  "Champions League": "⭐",
+};
+
+interface Props {
+  onSelect: (jornada: JornadaResumen) => void;
+  titulo?: string;
+  backHref?: string;
+}
+
+export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", backHref = "/admin" }: Props) {
+  const [jornadas, setJornadas] = useState<JornadaResumen[]>([]);
+  const [ligaActiva, setLigaActiva] = useState<string>("");
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/jornadas/todas")
+      .then((r) => r.json())
+      .then((data: JornadaResumen[]) => {
+        setJornadas(data);
+        // Seleccionar la primera liga disponible
+        if (data.length > 0) {
+          const ligas = [...new Set(data.map((j) => j.liga))];
+          setLigaActiva(ligas[0]);
+        }
+        setCargando(false);
+      });
+  }, []);
+
+  const ligas = [...new Set(jornadas.map((j) => j.liga))];
+  const jornadasFiltradas = jornadas.filter((j) => j.liga === ligaActiva);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-green-900 text-white py-4 px-4">
+        <div className="max-w-xl mx-auto">
+          <a href={backHref} className="text-green-300 text-sm">← Admin</a>
+          <h1 className="text-xl font-bold mt-1">{titulo}</h1>
+        </div>
+      </div>
+
+      <div className="max-w-xl mx-auto px-4 py-4 space-y-4">
+        {cargando ? (
+          <p className="text-center text-gray-400 py-12">Cargando jornadas...</p>
+        ) : jornadas.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">
+            <p className="text-3xl mb-2">📅</p>
+            <p>No hay jornadas creadas</p>
+            <a href="/admin/nueva-jornada" className="text-green-700 underline text-sm mt-2 inline-block">
+              Crear primera jornada →
+            </a>
+          </div>
+        ) : (
+          <>
+            {/* Selector de liga */}
+            {ligas.length > 1 && (
+              <div className="flex bg-white rounded-xl shadow-sm overflow-hidden">
+                {ligas.map((liga) => (
+                  <button
+                    key={liga}
+                    onClick={() => setLigaActiva(liga)}
+                    className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+                      ligaActiva === liga
+                        ? "bg-green-700 text-white"
+                        : "text-gray-500 hover:bg-gray-50"
+                    }`}
+                  >
+                    {LIGA_ICON[liga] ?? "⚽"} {liga}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Lista de jornadas */}
+            <div className="space-y-2">
+              {jornadasFiltradas.length === 0 ? (
+                <p className="text-center text-gray-400 py-8">No hay jornadas en esta liga</p>
+              ) : (
+                jornadasFiltradas.map((j) => (
+                  <button
+                    key={j.id}
+                    onClick={() => onSelect(j)}
+                    className="w-full bg-white rounded-xl p-4 flex items-center justify-between hover:bg-green-50 hover:border-green-300 border-2 border-transparent transition-all text-left shadow-sm"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-800">
+                          Jornada {j.numero}
+                        </span>
+                        <span className="text-gray-500 text-sm">· {j.temporada}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          j.estado === "abierta"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-500"
+                        }`}>
+                          {j.estado}
+                        </span>
+                      </div>
+                      <div className="flex gap-3 mt-1 text-xs text-gray-400">
+                        <span>⚽ {j._count.partidos} partidos</span>
+                        <span>🎯 {j._count.quinielas} quinielas</span>
+                      </div>
+                    </div>
+                    <span className="text-green-600 text-xl">→</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -8,6 +8,7 @@ export async function GET() {
       id: true,
       numero: true,
       temporada: true,
+      liga: true,
       estado: true,
       quinielas: {
         select: {
