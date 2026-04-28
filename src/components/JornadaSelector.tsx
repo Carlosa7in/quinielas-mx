@@ -19,9 +19,10 @@ interface Props {
   onSelect: (jornada: JornadaResumen) => void;
   titulo?: string;
   backHref?: string;
+  soloActivas?: boolean;
 }
 
-export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", backHref = "/admin" }: Props) {
+export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", backHref = "/admin", soloActivas = false }: Props) {
   const [jornadas, setJornadas] = useState<JornadaResumen[]>([]);
   const [ligaActiva, setLigaActiva] = useState<string>("");
   const [cargando, setCargando] = useState(true);
@@ -31,17 +32,19 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
       .then((r) => r.json())
       .then((data: JornadaResumen[]) => {
         setJornadas(data);
-        // Seleccionar la primera liga disponible
-        if (data.length > 0) {
-          const ligas = [...new Set(data.map((j) => j.liga))];
+        // Seleccionar la primera liga de las jornadas visibles
+        const visibles = soloActivas ? data.filter((j) => j.estado === "abierta") : data;
+        if (visibles.length > 0) {
+          const ligas = [...new Set(visibles.map((j) => j.liga))];
           setLigaActiva(ligas[0]);
         }
         setCargando(false);
       });
   }, []);
 
-  const ligas = [...new Set(jornadas.map((j) => j.liga))];
-  const jornadasFiltradas = jornadas.filter((j) => j.liga === ligaActiva);
+  const jornadasVisibles = soloActivas ? jornadas.filter((j) => j.estado === "abierta") : jornadas;
+  const ligas = [...new Set(jornadasVisibles.map((j) => j.liga))];
+  const jornadasFiltradas = jornadasVisibles.filter((j) => j.liga === ligaActiva);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -55,13 +58,15 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
       <div className="max-w-xl mx-auto px-4 py-4 space-y-4">
         {cargando ? (
           <p className="text-center text-gray-400 py-12">Cargando jornadas...</p>
-        ) : jornadas.length === 0 ? (
+        ) : jornadasVisibles.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
             <p className="text-3xl mb-2">📅</p>
-            <p>No hay jornadas creadas</p>
-            <a href="/admin/nueva-jornada" className="text-green-700 underline text-sm mt-2 inline-block">
-              Crear primera jornada →
-            </a>
+            <p>{soloActivas ? "No hay jornadas abiertas" : "No hay jornadas creadas"}</p>
+            {!soloActivas && (
+              <a href="/admin/nueva-jornada" className="text-green-700 underline text-sm mt-2 inline-block">
+                Crear primera jornada →
+              </a>
+            )}
           </div>
         ) : (
           <>

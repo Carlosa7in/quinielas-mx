@@ -41,7 +41,7 @@ export default function TiendaPage() {
   };
 
   if (modo === "selector") {
-    return <JornadaSelector onSelect={seleccionarJornada} titulo="Registro en Tienda" />;
+    return <JornadaSelector onSelect={seleccionarJornada} titulo="Registro en Tienda" soloActivas />;
   }
 
   const seleccionar = (partidoId: string, valor: string) => {
