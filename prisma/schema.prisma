@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Usuario {
+  id        String     @id @default(cuid())
+  nombre    String
+  username  String?    @unique
+  email     String     @unique
+  telefono  String?
+  password  String
+  rol       String     @default("user")
+  createdAt DateTime   @default(now())
+  quinielas Quiniela[]
+}
+
+model Jornada {
+  id          String     @id @default(cuid())
+  numero      Int
+  temporada   String
+  estado      String     @default("abierta")
+  fechaInicio DateTime
+  fechaFin    DateTime
+  createdAt   DateTime   @default(now())
+  partidos    Partido[]
+  quinielas   Quiniela[]
+}
+
+model Partido {
+  id           String   @id @default(cuid())
+  jornadaId    String
+  jornada      Jornada  @relation(fields: [jornadaId], references: [id])
+  equipoLocal  String
+  equipoVisita String
+  fechaHora    DateTime
+  resultado    String?
+  golesLocal   Int?
+  golesVisita  Int?
+  orden        Int      @default(0)
+  picks        Pick[]
+}
+
+model Quiniela {
+  id              String   @id @default(cuid())
+  folio           String   @unique
+  usuarioId       String?
+  usuario         Usuario? @relation(fields: [usuarioId], references: [id])
+  jornadaId       String
+  jornada         Jornada  @relation(fields: [jornadaId], references: [id])
+  nombreCliente   String?
+  telefonoCliente String?
+  canal           String   @default("online")
+  monto           Float    @default(20.0)
+  estado          String   @default("pendiente")
+  puntos          Int?
+  aciertos        Int?
+  createdAt       DateTime @default(now())
+  picks           Pick[]
+}
+
+model Pick {
+  id         String   @id @default(cuid())
+  quinielaId String
+  quiniela   Quiniela @relation(fields: [quinielaId], references: [id])
+  partidoId  String
+  partido    Partido  @relation(fields: [partidoId], references: [id])
+  prediccion String
+  acertado   Boolean?
+}
