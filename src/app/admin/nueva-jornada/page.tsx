@@ -206,7 +206,7 @@ export default function NuevaJornadaPage() {
                   className="border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="">Visita</option>
-                  {EQUIPOS_LMX.map((eq) => (
+                  {(EQUIPOS_POR_LIGA[liga] ?? []).map((eq) => (
                     <option key={eq} value={eq}>{eq}</option>
                   ))}
                 </select>
