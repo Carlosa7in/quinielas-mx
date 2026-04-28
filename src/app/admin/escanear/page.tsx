@@ -408,10 +408,10 @@ function EscanearInner() {
                           }`}
                         >
                           {op === "1"
-                            ? `1 · ${partido.equipoLocal}`
+                            ? `L · ${partido.equipoLocal}`
                             : op === "2"
-                            ? `2 · ${partido.equipoVisita}`
-                            : "X · Empate"}
+                            ? `V · ${partido.equipoVisita}`
+                            : "E · Empate"}
                         </button>
                       ))}
                     </div>

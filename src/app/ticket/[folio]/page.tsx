@@ -137,10 +137,10 @@ export default function TicketPage() {
       doc.setTextColor(22, 101, 52);
       const prediccionLabel =
         pick.prediccion === "1"
-          ? `1 (${pick.partido.equipoLocal})`
+          ? `L (${pick.partido.equipoLocal})`
           : pick.prediccion === "2"
-          ? `2 (${pick.partido.equipoVisita})`
-          : "X (Empate)";
+          ? `V (${pick.partido.equipoVisita})`
+          : "E (Empate)";
       doc.text(prediccionLabel, 75, y, { align: "right" });
       y += 7;
     }
@@ -268,10 +268,10 @@ export default function TicketPage() {
                     </span>
                     <span className="bg-green-100 text-green-800 font-bold text-xs px-2 py-1 rounded ml-2">
                       {pick.prediccion === "1"
-                        ? `1`
+                        ? "L"
                         : pick.prediccion === "2"
-                        ? `2`
-                        : "X"}
+                        ? "V"
+                        : "E"}
                     </span>
                   </div>
                 ))}

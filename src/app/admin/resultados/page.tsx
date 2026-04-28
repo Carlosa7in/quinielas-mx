@@ -206,9 +206,9 @@ export default function ResultadosPage() {
               {/* Botones resultado */}
               <div className="flex gap-2 mb-3">
                 {[
-                  { val: "1", label: "Local (1)" },
-                  { val: "X", label: "Empate (X)" },
-                  { val: "2", label: "Visita (2)" },
+                  { val: "1", label: "L · Local" },
+                  { val: "X", label: "E · Empate" },
+                  { val: "2", label: "V · Visita" },
                 ].map(({ val, label }) => (
                   <button
                     key={val}

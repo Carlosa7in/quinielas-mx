@@ -134,13 +134,13 @@ export default function ConsultarPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">
-                      {pick.prediccion}
+                      {pick.prediccion === "1" ? "L" : pick.prediccion === "2" ? "V" : "E"}
                     </span>
                     {pick.partido.resultado && (
                       <>
                         <span className="text-gray-400 text-xs">→</span>
                         <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded">
-                          {pick.partido.resultado}
+                          {pick.partido.resultado === "1" ? "L" : pick.partido.resultado === "2" ? "V" : "E"}
                         </span>
                         {pick.acertado !== null && (
                           <span>{pick.acertado ? "✅" : "❌"}</span>
