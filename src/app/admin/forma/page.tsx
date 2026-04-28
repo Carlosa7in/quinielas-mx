@@ -9,5 +9,5 @@ export default function FormaIndexPage() {
     router.push(`/admin/forma/${j.id}`);
   };
 
-  return <JornadaSelector onSelect={seleccionar} titulo="Imprimir Formas" />;
+  return <JornadaSelector onSelect={seleccionar} titulo="Imprimir Formas" soloActivas />;
 }
