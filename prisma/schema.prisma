@@ -25,6 +25,7 @@ model Jornada {
   id          String     @id @default(cuid())
   numero      Int
   temporada   String
+  liga        String     @default("Liga MX")
   estado      String     @default("abierta")
   fechaInicio DateTime
   fechaFin    DateTime

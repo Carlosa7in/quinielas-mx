@@ -24,7 +24,7 @@ export function LogoEquipo({ equipo, size = 28, className = "" }: LogoEquipoProp
 
   useEffect(() => {
     setError(false);
-    getLogoUrl(equipo).then(setUrl);
+    setUrl(getLogoUrl(equipo));
   }, [equipo]);
 
   // Fallback: círculo con iniciales

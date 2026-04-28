@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { EQUIPOS_POR_LIGA, LIGAS } from "@/lib/equipos";
 
 type PartidoForm = {
   equipoLocal: string;
@@ -8,17 +9,11 @@ type PartidoForm = {
   fechaHora: string;
 };
 
-const EQUIPOS_LMX = [
-  "América", "Guadalajara", "Cruz Azul", "Pumas UNAM", "Tigres UANL",
-  "Monterrey", "León", "Santos Laguna", "Toluca", "Atlas",
-  "Pachuca", "Necaxa", "Querétaro", "FC Juárez", "Mazatlán",
-  "Tijuana", "Atlético San Luis", "Puebla", "Atlético Morelia",
-];
-
 const EQUIPOS_VACIO = { equipoLocal: "", equipoVisita: "", fechaHora: "" };
 
 export default function NuevaJornadaPage() {
   const router = useRouter();
+  const [liga, setLiga] = useState("Liga MX");
   const [numero, setNumero] = useState("");
   const [temporada, setTemporada] = useState("2025-C");
   const [fechaInicio, setFechaInicio] = useState("");
@@ -68,6 +63,7 @@ export default function NuevaJornadaPage() {
       body: JSON.stringify({
         numero: parseInt(numero),
         temporada,
+        liga,
         fechaInicio,
         fechaFin,
         partidos: partidosValidos.map((p, i) => ({ ...p, orden: i + 1 })),
@@ -98,6 +94,31 @@ export default function NuevaJornadaPage() {
         {/* Info jornada */}
         <div className="bg-white rounded-xl p-4 space-y-3">
           <h2 className="font-semibold text-gray-700">Datos de la jornada</h2>
+
+          {/* Liga */}
+          <div>
+            <label className="text-xs text-gray-500">Liga *</label>
+            <div className="flex gap-2 mt-1">
+              {LIGAS.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => {
+                    setLiga(l);
+                    setPartidos(Array.from({ length: 9 }, () => ({ ...EQUIPOS_VACIO })));
+                  }}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    liga === l
+                      ? "bg-green-700 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {l === "Liga MX" ? "🇲🇽 Liga MX" : "⭐ Champions"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-500">Número *</label>
@@ -175,10 +196,8 @@ export default function NuevaJornadaPage() {
                   className="border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="">Local</option>
-                  {EQUIPOS_LMX.map((eq) => (
-                    <option key={eq} value={eq}>
-                      {eq}
-                    </option>
+                  {(EQUIPOS_POR_LIGA[liga] ?? []).map((eq) => (
+                    <option key={eq} value={eq}>{eq}</option>
                   ))}
                 </select>
                 <select
@@ -188,9 +207,7 @@ export default function NuevaJornadaPage() {
                 >
                   <option value="">Visita</option>
                   {EQUIPOS_LMX.map((eq) => (
-                    <option key={eq} value={eq}>
-                      {eq}
-                    </option>
+                    <option key={eq} value={eq}>{eq}</option>
                   ))}
                 </select>
               </div>
