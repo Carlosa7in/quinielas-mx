@@ -162,7 +162,7 @@ export default function FormaPage() {
         return (
           <div key={idx}>
             {/* Controles individuales por forma — solo en pantalla */}
-            <div className="print:hidden max-w-[148mm] mx-auto mt-4 mb-1 flex items-center justify-between px-1">
+            <div className="print:hidden w-full max-w-[148mm] mx-auto mt-4 mb-1 flex items-center justify-between px-1">
               <span className="text-xs text-gray-400 font-medium">Forma #{idx + 1}</span>
               <div className="flex gap-2">
                 <button
@@ -183,14 +183,16 @@ export default function FormaPage() {
             </div>
 
             <div
-              className="relative bg-white mx-auto my-0 print:break-after-page"
+              className="relative bg-white mx-auto my-0 print:break-after-page forma-hoja"
               style={{
-                width: "148mm",
+                width: "100%",
+                maxWidth: "148mm",
                 minHeight: "200mm",
                 padding: "8mm",
                 fontFamily: "Arial, sans-serif",
                 border: "1px solid #ccc",
                 pageBreakInside: "avoid",
+                boxSizing: "border-box",
               }}
             >
               {/* Marcadores de esquina para OpenCV */}
@@ -333,9 +335,11 @@ export default function FormaPage() {
       })}
 
       <style>{`
+        html, body { overflow-x: hidden; }
         @media print {
           body { margin: 0; }
           .print\\:hidden { display: none !important; }
+          .forma-hoja { width: 148mm !important; max-width: 148mm !important; }
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
