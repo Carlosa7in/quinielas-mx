@@ -171,6 +171,17 @@ export default function AdminPage() {
             </div>
           </Link>
 
+          <Link
+            href="/admin/participantes"
+            className="bg-teal-700 hover:bg-teal-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+          >
+            <span className="text-2xl">📱</span>
+            <div>
+              <p className="font-bold">Participantes</p>
+              <p className="text-teal-200 text-sm">Historial de clientes y notificaciones WhatsApp</p>
+            </div>
+          </Link>
+
           {rol === "superadmin" && (
             <Link
               href="/admin/usuarios"

@@ -23,12 +23,36 @@ export async function POST(req: Request) {
 
     const folio = generarFolio(jornada.numero);
 
+    // Buscar o crear cliente por teléfono
+    let clienteId: string | null = null;
+    if (telefono) {
+      const telefonoLimpio = telefono.replace(/\D/g, "");
+      const clienteExistente = await prisma.cliente.findUnique({
+        where: { telefono: telefonoLimpio },
+        select: { id: true },
+      });
+      if (clienteExistente) {
+        clienteId = clienteExistente.id;
+      } else if (nombre) {
+        const nuevoCliente = await prisma.cliente.create({
+          data: {
+            id: `cli_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            telefono: telefonoLimpio,
+            nombre,
+          },
+          select: { id: true },
+        });
+        clienteId = nuevoCliente.id;
+      }
+    }
+
     // Crear quiniela sin picks anidados (NeonHTTP no soporta transacciones)
     const quiniela = await prisma.quiniela.create({
       data: {
         folio,
         jornadaId,
         usuarioId: usuarioId || null,
+        clienteId,
         nombreCliente: nombre || null,
         telefonoCliente: telefono || null,
         canal,
