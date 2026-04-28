@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { LogoEquipo } from "@/components/LogoEquipo";
 
 function generarMensajeWhatsApp(quiniela: {
   folio: string;
@@ -48,7 +49,7 @@ type Quiniela = {
   canal: string;
   monto: number;
   estado: string;
-  jornada: { numero: number; temporada: string };
+  jornada: { numero: number; temporada: string; liga: string };
   picks: Pick[];
 };
 
@@ -227,7 +228,7 @@ export default function TicketPage() {
         <div className="max-w-lg mx-auto">
           <h1 className="text-2xl font-bold">Quiniela Registrada</h1>
           <p className="text-green-200 text-sm mt-1">
-            Jornada {quiniela.jornada.numero} · {quiniela.jornada.temporada}
+            {quiniela.jornada.liga} · Jornada {quiniela.jornada.numero} · {quiniela.jornada.temporada}
           </p>
         </div>
       </div>
@@ -259,22 +260,34 @@ export default function TicketPage() {
             <div className="space-y-2">
               {[...quiniela.picks]
                 .sort((a, b) => a.partido.orden - b.partido.orden)
-                .map((pick) => (
-                  <div key={pick.id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700">
-                      {pick.partido.equipoLocal}{" "}
-                      <span className="text-gray-400 text-xs">vs</span>{" "}
-                      {pick.partido.equipoVisita}
-                    </span>
-                    <span className="bg-green-100 text-green-800 font-bold text-xs px-2 py-1 rounded ml-2">
-                      {pick.prediccion === "1"
-                        ? "L"
-                        : pick.prediccion === "2"
-                        ? "V"
-                        : "E"}
-                    </span>
-                  </div>
-                ))}
+                .map((pick, i) => {
+                  const label = pick.prediccion === "1" ? "L" : pick.prediccion === "2" ? "V" : "E";
+                  const acertado = (pick as { acertado?: boolean | null }).acertado;
+                  return (
+                    <div key={pick.id} className="flex items-center gap-2 text-sm">
+                      {/* número */}
+                      <span className="text-gray-300 text-xs w-4 text-right shrink-0">{i + 1}</span>
+                      {/* logos + nombres */}
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <LogoEquipo equipo={pick.partido.equipoLocal} size={18} />
+                        <span className="text-gray-600 text-xs truncate">{pick.partido.equipoLocal}</span>
+                        <span className="text-gray-300 text-xs shrink-0">vs</span>
+                        <LogoEquipo equipo={pick.partido.equipoVisita} size={18} />
+                        <span className="text-gray-600 text-xs truncate">{pick.partido.equipoVisita}</span>
+                      </div>
+                      {/* badge predicción */}
+                      <span className={`font-bold text-xs px-2 py-1 rounded shrink-0 ${
+                        acertado === true
+                          ? "bg-green-500 text-white"
+                          : acertado === false
+                          ? "bg-red-400 text-white"
+                          : "bg-green-100 text-green-800"
+                      }`}>
+                        {label}
+                      </span>
+                    </div>
+                  );
+                })}
             </div>
           </div>
 

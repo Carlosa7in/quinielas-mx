@@ -15,6 +15,7 @@ type Jornada = {
   id: string;
   numero: number;
   temporada: string;
+  liga: string;
   partidos: Partido[];
 };
 
@@ -53,7 +54,7 @@ export default function FormaPage() {
   const [formasPicks, setFormasPicks] = useState<Record<string, string>[]>([]);
 
   useEffect(() => {
-    fetch("/api/jornadas")
+    fetch(`/api/jornadas?id=${jornadaId}`)
       .then((r) => r.json())
       .then((data) => { if (!data.error) setJornada(data); });
   }, [jornadaId]);
@@ -204,7 +205,7 @@ export default function FormaPage() {
                   ⚽ QUINIELAS MX
                 </p>
                 <p style={{ fontSize: "9pt", color: "#555" }}>
-                  Jornada {jornada.numero} · {jornada.temporada} · Liga MX
+                  Jornada {jornada.numero} · {jornada.temporada} · {jornada.liga}
                 </p>
                 <p style={{ fontSize: "8pt", color: "#555" }}>
                   {tienepicks
