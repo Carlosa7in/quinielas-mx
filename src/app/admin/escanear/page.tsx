@@ -69,7 +69,7 @@ function detectarEsquinas(
       }
     }
 
-    if (maxOscuro < 0.25) return null; // No encontró marcador
+    if (maxOscuro < 0.45) return null; // No encontró marcador
     centros[zona.key] = [cx, cy];
   }
 
@@ -88,7 +88,7 @@ function detectarPicks(
   h: number,
   numPartidos: number
 ): string[] {
-  const UMBRAL = 0.18;
+  const UMBRAL = 0.28;
 
   // Zona de partidos: empieza ~28% desde arriba, termina ~82% desde arriba
   const yInicio = h * 0.28;
@@ -185,30 +185,41 @@ function EscanearInner() {
     const w = canvas.width;
     const h = canvas.height;
 
-    // Intentar detectar esquinas
+    // Intentar detectar esquinas — requeridas para proceder
     const esquinas = detectarEsquinas(ctx, w, h);
 
-    let ctxAnalizar = ctx;
-
-    if (esquinas) {
-      // Si encontró marcadores, recortar y perspectiva
-      const { tl, tr, bl } = esquinas;
-      const anchoForma = tr[0] - tl[0];
-      const altoForma = bl[1] - tl[1];
-
-      const canvasForma = document.createElement("canvas");
-      canvasForma.width = anchoForma;
-      canvasForma.height = altoForma;
-      const ctxForma = canvasForma.getContext("2d")!;
-      ctxForma.drawImage(canvas, tl[0], tl[1], anchoForma, altoForma, 0, 0, anchoForma, altoForma);
-      ctxAnalizar = ctxForma;
+    if (!esquinas) {
+      // No se encontró la forma — mostrar error y volver a cámara
+      setImagenCapturada(canvas.toDataURL("image/jpeg", 0.8));
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      // Resetear picks vacíos y pasar a confirmación con advertencia
+      const picksVacios: PicksDetectados = {};
+      const confianzaVacia: Record<string, boolean> = {};
+      jornada.partidos.forEach((p) => {
+        picksVacios[p.id] = "";
+        confianzaVacia[p.id] = false;
+      });
+      setPicksDetectados(picksVacios);
+      setConfianza(confianzaVacia);
+      setFase("confirmacion");
+      return;
     }
 
-    // Detectar picks
+    // Recortar la forma usando los marcadores de esquina
+    const { tl, tr, bl } = esquinas;
+    const anchoForma = tr[0] - tl[0];
+    const altoForma = bl[1] - tl[1];
+    const canvasForma = document.createElement("canvas");
+    canvasForma.width = anchoForma;
+    canvasForma.height = altoForma;
+    const ctxForma = canvasForma.getContext("2d")!;
+    ctxForma.drawImage(canvas, tl[0], tl[1], anchoForma, altoForma, 0, 0, anchoForma, altoForma);
+
+    // Detectar picks solo dentro de la forma recortada
     const picks = detectarPicks(
-      ctxAnalizar,
-      ctxAnalizar.canvas.width,
-      ctxAnalizar.canvas.height,
+      ctxForma,
+      canvasForma.width,
+      canvasForma.height,
       jornada.partidos.length
     );
 
