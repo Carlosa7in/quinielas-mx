@@ -212,7 +212,10 @@ function ConsultarInner() {
     setCargando(false); setBuscado(true);
 
     if (!res.ok) { setError(data.error || "Error al buscar"); return; }
-    const lista: Quiniela[] = data.quinielas ?? [];
+    const ORDEN: Record<string, number> = { pendiente: 0, ganadora: 1, perdedora: 2 };
+    const lista: Quiniela[] = (data.quinielas ?? []).sort(
+      (a: Quiniela, b: Quiniela) => (ORDEN[a.estado] ?? 9) - (ORDEN[b.estado] ?? 9)
+    );
     setQuinielas(lista);
     if (lista.length === 1) setDetalle(lista[0]);
   };
