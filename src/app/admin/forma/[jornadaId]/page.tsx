@@ -335,6 +335,11 @@ export default function FormaPage() {
         @media print {
           body { margin: 0; }
           .print\\:hidden { display: none !important; }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
         }
       `}</style>
     </>

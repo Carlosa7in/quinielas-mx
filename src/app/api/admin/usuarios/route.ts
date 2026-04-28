@@ -15,8 +15,7 @@ export async function GET(req: NextRequest) {
   }
   const usuarios = await prisma.usuario.findMany({
     where: { rol: { in: ["admin", "superadmin"] } },
-    select: { id: true, nombre: true, username: true, email: true, rol: true, createdAt: true },
-    orderBy: { createdAt: "asc" },
+    select: { id: true, nombre: true, username: true, email: true, rol: true },
   });
   return NextResponse.json(usuarios);
 }
@@ -40,7 +39,7 @@ export async function POST(req: NextRequest) {
   const hash = await bcrypt.hash(password, 10);
   const usuario = await prisma.usuario.create({
     data: { nombre, username: username || null, email, password: hash, rol },
-    select: { id: true, nombre: true, username: true, email: true, rol: true, createdAt: true },
+    select: { id: true, nombre: true, username: true, email: true, rol: true },
   });
   return NextResponse.json(usuario, { status: 201 });
 }
@@ -52,7 +51,10 @@ export async function DELETE(req: NextRequest) {
   }
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "ID requerido" }, { status: 400 });
-  const usuario = await prisma.usuario.findUnique({ where: { id } });
+  const usuario = await prisma.usuario.findUnique({
+    where: { id },
+    select: { id: true, rol: true },
+  });
   if (!usuario) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
   if (usuario.rol === "superadmin") {
     return NextResponse.json({ error: "No se puede eliminar al superadmin" }, { status: 400 });

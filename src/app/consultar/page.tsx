@@ -18,7 +18,6 @@ type Quiniela = {
   estado: string;
   aciertos: number | null;
   canal: string;
-  createdAt: string;
   jornada: { numero: number; temporada: string };
   picks: Pick[];
 };

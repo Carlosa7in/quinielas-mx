@@ -8,11 +8,22 @@ export async function GET(req: Request) {
 
   const quinielas = await prisma.quiniela.findMany({
     where: jornadaId ? { jornadaId } : undefined,
-    include: {
-      picks: true,
+    select: {
+      id: true,
+      folio: true,
+      nombreCliente: true,
+      telefonoCliente: true,
+      canal: true,
+      monto: true,
+      estado: true,
+      puntos: true,
+      aciertos: true,
       jornada: { select: { numero: true, temporada: true } },
+      picks: {
+        select: { id: true, prediccion: true, acertado: true, partidoId: true },
+      },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { folio: "desc" },
   });
 
   return NextResponse.json(quinielas);

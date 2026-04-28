@@ -48,7 +48,6 @@ type Quiniela = {
   canal: string;
   monto: number;
   estado: string;
-  createdAt: string;
   jornada: { numero: number; temporada: string };
   picks: Pick[];
 };
@@ -98,7 +97,7 @@ export default function TicketPage() {
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text(`Liga MX · Jornada ${quiniela.jornada.numero} · ${quiniela.jornada.temporada}`, 40, 14, { align: "center" });
-    doc.text(new Date(quiniela.createdAt).toLocaleString("es-MX"), 40, 20, { align: "center" });
+    doc.text(`Folio: ${quiniela.folio}`, 40, 20, { align: "center" });
 
     // Folio
     doc.setTextColor(0, 0, 0);
@@ -248,7 +247,7 @@ export default function TicketPage() {
             <p className="text-xs text-green-300 font-mono">FOLIO</p>
             <p className="font-mono font-bold text-lg tracking-wider mt-1">{quiniela.folio}</p>
             <p className="text-green-200 text-xs mt-1">
-              {quiniela.nombreCliente} · {new Date(quiniela.createdAt).toLocaleString("es-MX")}
+              {quiniela.nombreCliente}
             </p>
           </div>
 

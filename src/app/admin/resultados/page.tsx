@@ -5,8 +5,9 @@ type Partido = {
   id: string;
   equipoLocal: string;
   equipoVisita: string;
-  fechaHora: string;
   resultado: string | null;
+  golesLocal: number | null;
+  golesVisita: number | null;
 };
 
 type Jornada = {
@@ -17,102 +18,110 @@ type Jornada = {
   partidos: Partido[];
 };
 
+type EstadoPartido = {
+  resultado: string;
+  golesLocal: string;
+  golesVisita: string;
+  guardando: boolean;
+  guardado: boolean;
+  error: string;
+};
+
 export default function ResultadosPage() {
   const [jornada, setJornada] = useState<Jornada | null>(null);
-  const [resultados, setResultados] = useState<Record<string, { resultado: string; golesLocal: string; golesVisita: string }>>({});
-  const [enviando, setEnviando] = useState(false);
-  const [respuesta, setRespuesta] = useState<{ ganadoras: { folio: string; nombreCliente: string; aciertos: number }[]; totalQuinielas: number } | null>(null);
-  const [error, setError] = useState("");
+  const [estados, setEstados] = useState<Record<string, EstadoPartido>>({});
+  const [finalizada, setFinalizada] = useState(false);
+  const [ganadoras, setGanadoras] = useState<{ folio: string; nombreCliente: string | null; aciertos: number | null }[]>([]);
 
   useEffect(() => {
     fetch("/api/jornadas")
       .then((r) => r.json())
       .then((data) => {
-        if (!data.error) {
-          setJornada(data);
-          // Pre-llenar con resultados existentes
-          const pre: typeof resultados = {};
-          for (const p of data.partidos) {
-            pre[p.id] = {
-              resultado: p.resultado ?? "",
-              golesLocal: p.golesLocal?.toString() ?? "",
-              golesVisita: p.golesVisita?.toString() ?? "",
-            };
-          }
-          setResultados(pre);
+        if (data.error) return;
+        setJornada(data);
+        if (data.estado === "finalizada") setFinalizada(true);
+
+        const init: Record<string, EstadoPartido> = {};
+        for (const p of data.partidos) {
+          init[p.id] = {
+            resultado: p.resultado ?? "",
+            golesLocal: p.golesLocal?.toString() ?? "",
+            golesVisita: p.golesVisita?.toString() ?? "",
+            guardando: false,
+            guardado: !!p.resultado,
+            error: "",
+          };
         }
+        setEstados(init);
       });
   }, []);
 
-  const setResultado = (partidoId: string, campo: string, valor: string) => {
-    setResultados((prev) => ({
+  const set = (partidoId: string, campo: keyof EstadoPartido, valor: string | boolean) => {
+    setEstados((prev) => ({
       ...prev,
-      [partidoId]: { ...(prev[partidoId] ?? {}), [campo]: valor } as typeof prev[string],
+      [partidoId]: { ...prev[partidoId], [campo]: valor },
     }));
   };
 
-  const todosCompletos = jornada?.partidos.every((p) => resultados[p.id]?.resultado) ?? false;
+  const guardar = async (partidoId: string) => {
+    if (!jornada) return;
+    const e = estados[partidoId];
+    if (!e?.resultado) return;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!todosCompletos || !jornada) return;
-    setEnviando(true);
-    setError("");
-
-    const payload = {
-      jornadaId: jornada.id,
-      resultados: jornada.partidos.map((p) => ({
-        partidoId: p.id,
-        resultado: resultados[p.id].resultado,
-        golesLocal: parseInt(resultados[p.id].golesLocal) || 0,
-        golesVisita: parseInt(resultados[p.id].golesVisita) || 0,
-      })),
-    };
+    set(partidoId, "guardando", true);
+    set(partidoId, "error", "");
 
     const res = await fetch("/api/admin/resultados", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        jornadaId: jornada.id,
+        partidoId,
+        resultado: e.resultado,
+        golesLocal: parseInt(e.golesLocal) || 0,
+        golesVisita: parseInt(e.golesVisita) || 0,
+      }),
     });
 
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error || "Error al guardar");
+      set(partidoId, "error", data.error || "Error al guardar");
     } else {
-      setRespuesta(data);
+      set(partidoId, "guardado", true);
+      if (data.finalizada) {
+        setFinalizada(true);
+        setGanadoras(data.ganadoras ?? []);
+      }
     }
-    setEnviando(false);
+    set(partidoId, "guardando", false);
   };
 
-  if (respuesta) {
+  const resueltos = Object.values(estados).filter((e) => e.guardado).length;
+  const total = jornada?.partidos.length ?? 0;
+
+  if (finalizada && ganadoras.length >= 0 && resueltos === total && total > 0) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="bg-green-900 text-white py-4 px-4">
           <div className="max-w-xl mx-auto">
-            <h1 className="text-xl font-bold">Resultados Registrados</h1>
+            <h1 className="text-xl font-bold">Jornada Finalizada</h1>
           </div>
         </div>
         <div className="max-w-xl mx-auto px-4 py-6 space-y-4">
           <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
             <div className="text-3xl mb-2">🏆</div>
-            <h2 className="text-green-800 font-bold text-lg">Jornada finalizada</h2>
-            <p className="text-green-600 text-sm">
-              {respuesta.totalQuinielas} quinielas calculadas
-            </p>
+            <h2 className="text-green-800 font-bold text-lg">Todos los resultados registrados</h2>
+            <p className="text-green-600 text-sm">{total} partidos resueltos</p>
           </div>
 
-          {respuesta.ganadoras.length > 0 ? (
+          {ganadoras.length > 0 ? (
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-              <h3 className="font-bold text-yellow-800 mb-3">
-                Ganadores ({respuesta.ganadoras.length})
-              </h3>
-              {respuesta.ganadoras.map((g) => (
+              <h3 className="font-bold text-yellow-800 mb-3">Ganadores ({ganadoras.length})</h3>
+              {ganadoras.map((g) => (
                 <div key={g.folio} className="bg-white rounded-lg p-3 mb-2">
                   <p className="font-bold text-gray-800">{g.nombreCliente || "-"}</p>
                   <p className="text-xs font-mono text-gray-500">{g.folio}</p>
-                  <p className="text-green-600 text-sm font-bold">
-                    {g.aciertos} aciertos
-                  </p>
+                  <p className="text-green-600 text-sm font-bold">{g.aciertos} aciertos</p>
                 </div>
               ))}
             </div>
@@ -137,9 +146,7 @@ export default function ResultadosPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-green-900 text-white py-4 px-4">
         <div className="max-w-xl mx-auto">
-          <a href="/admin" className="text-green-300 text-sm">
-            ← Admin
-          </a>
+          <a href="/admin" className="text-green-300 text-sm">← Admin</a>
           <h1 className="text-xl font-bold mt-1">Registrar Resultados</h1>
           {jornada && (
             <p className="text-green-300 text-xs">
@@ -149,76 +156,116 @@ export default function ResultadosPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-xl mx-auto px-4 py-4 space-y-4">
-        {jornada?.partidos.map((partido) => (
-          <div key={partido.id} className="bg-white rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-semibold text-sm text-gray-800">
-                {partido.equipoLocal}{" "}
-                <span className="text-gray-400 font-normal">vs</span>{" "}
-                {partido.equipoVisita}
-              </p>
-              <p className="text-xs text-gray-400">
-                {new Date(partido.fechaHora).toLocaleDateString("es-MX", {
-                  day: "numeric",
-                  month: "short",
-                })}
-              </p>
+      <div className="max-w-xl mx-auto px-4 py-4 space-y-3">
+        {/* Progreso */}
+        {total > 0 && (
+          <div className="bg-white rounded-xl p-4">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gray-600 font-medium">Partidos resueltos</span>
+              <span className="font-bold text-green-700">{resueltos} / {total}</span>
             </div>
-
-            {/* Resultado */}
-            <div className="flex gap-2 mb-3">
-              {["1", "X", "2"].map((op) => (
-                <button
-                  key={op}
-                  type="button"
-                  onClick={() => setResultado(partido.id, "resultado", op)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
-                    resultados[partido.id]?.resultado === op
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  {op === "1" ? "Local (1)" : op === "2" ? "Visita (2)" : "Empate (X)"}
-                </button>
-              ))}
-            </div>
-
-            {/* Marcador */}
-            <div className="flex items-center gap-2 text-sm">
-              <input
-                type="number"
-                min="0"
-                placeholder="0"
-                value={resultados[partido.id]?.golesLocal ?? ""}
-                onChange={(e) => setResultado(partido.id, "golesLocal", e.target.value)}
-                className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-              <span className="text-gray-400 text-xs">{partido.equipoLocal} - {partido.equipoVisita}</span>
-              <input
-                type="number"
-                min="0"
-                placeholder="0"
-                value={resultados[partido.id]?.golesVisita ?? ""}
-                onChange={(e) => setResultado(partido.id, "golesVisita", e.target.value)}
-                className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-green-600 h-2 rounded-full transition-all"
+                style={{ width: `${(resueltos / total) * 100}%` }}
               />
             </div>
+            {resueltos > 0 && resueltos < total && (
+              <p className="text-xs text-yellow-600 mt-2 text-center">
+                Los aciertos parciales ya son visibles para los participantes
+              </p>
+            )}
           </div>
-        ))}
-
-        {error && (
-          <p className="text-red-600 text-sm bg-red-50 rounded-lg p-3">{error}</p>
         )}
 
-        <button
-          type="submit"
-          disabled={!todosCompletos || enviando}
-          className="w-full bg-blue-700 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-colors"
-        >
-          {enviando ? "Calculando..." : "Guardar Resultados y Calcular Ganadores"}
-        </button>
-      </form>
+        {/* Partidos */}
+        {jornada?.partidos.map((partido) => {
+          const e = estados[partido.id];
+          if (!e) return null;
+
+          return (
+            <div
+              key={partido.id}
+              className={`bg-white rounded-xl p-4 border-2 transition-colors ${
+                e.guardado ? "border-green-200" : "border-transparent"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-semibold text-sm text-gray-800">
+                  {partido.equipoLocal}{" "}
+                  <span className="text-gray-400 font-normal">vs</span>{" "}
+                  {partido.equipoVisita}
+                </p>
+                {e.guardado && (
+                  <span className="text-green-600 text-xs font-bold bg-green-50 px-2 py-0.5 rounded-full">
+                    ✓ Guardado
+                  </span>
+                )}
+              </div>
+
+              {/* Botones resultado */}
+              <div className="flex gap-2 mb-3">
+                {[
+                  { val: "1", label: "Local (1)" },
+                  { val: "X", label: "Empate (X)" },
+                  { val: "2", label: "Visita (2)" },
+                ].map(({ val, label }) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => {
+                      set(partido.id, "resultado", val);
+                      set(partido.id, "guardado", false);
+                    }}
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
+                      e.resultado === val
+                        ? "bg-green-600 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Marcador */}
+              <div className="flex items-center gap-2 text-sm mb-3">
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={e.golesLocal}
+                  onChange={(ev) => { set(partido.id, "golesLocal", ev.target.value); set(partido.id, "guardado", false); }}
+                  className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <span className="text-gray-400 text-xs flex-1 text-center">
+                  {partido.equipoLocal} — {partido.equipoVisita}
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={e.golesVisita}
+                  onChange={(ev) => { set(partido.id, "golesVisita", ev.target.value); set(partido.id, "guardado", false); }}
+                  className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              {e.error && (
+                <p className="text-red-600 text-xs mb-2">{e.error}</p>
+              )}
+
+              <button
+                onClick={() => guardar(partido.id)}
+                disabled={!e.resultado || e.guardando}
+                className="w-full bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 text-white font-bold py-2 rounded-lg text-sm transition-colors"
+              >
+                {e.guardando ? "Guardando..." : e.guardado ? "Actualizar resultado" : "Guardar resultado"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -15,22 +15,42 @@ const handler = NextAuth({
         if (!credentials?.login || !credentials?.password) return null;
 
         const login = credentials.login.trim().toLowerCase();
-        const usuario = await prisma.usuario.findFirst({
-          where: {
-            OR: [
-              { email: login },
-              { username: login },
-            ],
-          },
-        });
+        let usuario;
+        try {
+          usuario = await prisma.usuario.findFirst({
+            where: {
+              OR: [
+                { email: login },
+                { username: login },
+              ],
+            },
+            select: {
+              id: true,
+              email: true,
+              username: true,
+              nombre: true,
+              password: true,
+              rol: true,
+            },
+          });
+        } catch (err) {
+          console.error("[AUTH] prisma.findFirst error:", err);
+          return null;
+        }
+
+        console.log("[AUTH] usuario encontrado:", usuario ? usuario.email : "null");
 
         if (!usuario) return null;
 
-        const passwordValida = await bcrypt.compare(
-          credentials.password,
-          usuario.password
-        );
+        let passwordValida;
+        try {
+          passwordValida = await bcrypt.compare(credentials.password, usuario.password);
+        } catch (err) {
+          console.error("[AUTH] bcrypt error:", err);
+          return null;
+        }
 
+        console.log("[AUTH] password valida:", passwordValida);
 
         if (!passwordValida) return null;
 
