@@ -27,7 +27,7 @@ function LoginForm() {
       setError("Usuario o contraseña incorrectos");
       setLoading(false);
     } else {
-      router.push(callbackUrl);
+      window.location.href = callbackUrl;
     }
   };
 
