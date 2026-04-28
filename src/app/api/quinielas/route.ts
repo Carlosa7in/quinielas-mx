@@ -83,9 +83,50 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const folio = searchParams.get("folio");
+  const telefono = searchParams.get("telefono");
+
+  // Buscar por teléfono — devuelve lista de quinielas
+  if (telefono) {
+    const telefonoLimpio = telefono.replace(/\D/g, "");
+    try {
+      const quinielas = await prisma.quiniela.findMany({
+        where: { telefonoCliente: telefonoLimpio },
+        select: {
+          folio: true,
+          nombreCliente: true,
+          estado: true,
+          aciertos: true,
+          monto: true,
+          jornada: { select: { numero: true, temporada: true, liga: true } },
+          picks: {
+            select: {
+              id: true,
+              prediccion: true,
+              acertado: true,
+              partido: {
+                select: {
+                  equipoLocal: true,
+                  equipoVisita: true,
+                  orden: true,
+                  resultado: true,
+                  golesLocal: true,
+                  golesVisita: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { folio: "desc" },
+      });
+      return NextResponse.json({ quinielas });
+    } catch (err) {
+      console.error("[QUINIELAS GET telefono] error:", err);
+      return NextResponse.json({ error: "Error al buscar: " + String(err) }, { status: 500 });
+    }
+  }
 
   if (!folio) {
-    return NextResponse.json({ error: "Folio requerido" }, { status: 400 });
+    return NextResponse.json({ error: "Folio o teléfono requerido" }, { status: 400 });
   }
 
   try {
