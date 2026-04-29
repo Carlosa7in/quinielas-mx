@@ -44,6 +44,13 @@ export default function Home() {
           También puedes registrarte directamente en tienda y te damos tu ticket impreso.
         </p>
 
+        <Link
+          href="/reglamento"
+          className="block text-green-300 hover:text-white text-sm transition-colors underline underline-offset-2"
+        >
+          📜 Ver reglamento
+        </Link>
+
         <Link href="/admin" className="block text-green-400 hover:text-green-200 text-xs transition-colors">
           Acceso Administrador
         </Link>

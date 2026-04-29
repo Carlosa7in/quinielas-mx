@@ -396,6 +396,12 @@ export default function TicketPage() {
             Consultar resultados
           </a>
           <a
+            href="/reglamento"
+            className="block w-full text-center text-green-600 text-sm font-medium py-2 hover:underline transition-colors"
+          >
+            📜 Ver reglamento
+          </a>
+          <a
             href="/"
             className="block w-full text-center text-green-700 font-semibold py-2 transition-colors"
           >
