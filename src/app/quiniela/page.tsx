@@ -28,6 +28,9 @@ type Jornada = {
 const LIGA_ICON: Record<string, string> = {
   "Liga MX": "🇲🇽",
   "Champions League": "⭐",
+  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "La Liga": "🇪🇸",
+  "Mixta": "⚽",
 };
 
 /* ─── Pantalla de selección de jornada ─── */
@@ -61,7 +64,7 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
     if (!data.error) cb(data);
   };
 
-  const LIGA_ORDEN: Record<string, number> = { "Liga MX": 0, "Champions League": 1 };
+  const LIGA_ORDEN: Record<string, number> = { "Liga MX": 0, "Champions League": 1, "Premier League": 2, "La Liga": 3, "Mixta": 4 };
   const ligas = [...new Set(jornadas.map((j) => j.liga))]
     .sort((a, b) => (LIGA_ORDEN[a] ?? 9) - (LIGA_ORDEN[b] ?? 9));
   const filtradas = jornadas.filter((j) => j.liga === ligaActiva);

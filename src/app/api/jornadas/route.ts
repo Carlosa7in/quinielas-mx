@@ -9,7 +9,7 @@ const JORNADA_SELECT = {
   liga: true,
   estado: true,
   partidos: {
-    select: { id: true, equipoLocal: true, equipoVisita: true, orden: true, resultado: true, golesLocal: true, golesVisita: true },
+    select: { id: true, liga: true, equipoLocal: true, equipoVisita: true, orden: true, resultado: true, golesLocal: true, golesVisita: true },
     orderBy: { orden: "asc" } as const,
   },
   quinielas: { select: { id: true, estado: true } },
@@ -58,6 +58,7 @@ export async function POST(req: Request) {
       const partido = await prisma.partido.create({
         data: {
           jornadaId: jornada.id,
+          liga: p.liga ?? "Liga MX",
           equipoLocal: p.equipoLocal,
           equipoVisita: p.equipoVisita,
           fechaHora: new Date(p.fechaHora),

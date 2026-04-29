@@ -40,6 +40,7 @@ model Partido {
   id           String   @id @default(cuid())
   jornadaId    String
   jornada      Jornada  @relation(fields: [jornadaId], references: [id])
+  liga         String   @default("Liga MX")
   equipoLocal  String
   equipoVisita String
   fechaHora    DateTime

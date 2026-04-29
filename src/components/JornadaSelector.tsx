@@ -17,6 +17,9 @@ export type JornadaResumen = {
 const LIGA_ICON: Record<string, string> = {
   "Liga MX": "🇲🇽",
   "Champions League": "⭐",
+  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "La Liga": "🇪🇸",
+  "Mixta": "⚽",
 };
 
 interface Props {
@@ -46,7 +49,7 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
       });
   }, []);
 
-  const LIGA_ORDEN: Record<string, number> = { "Liga MX": 0, "Champions League": 1 };
+  const LIGA_ORDEN: Record<string, number> = { "Liga MX": 0, "Champions League": 1, "Premier League": 2, "La Liga": 3, "Mixta": 4 };
   const jornadasVisibles = soloActivas ? jornadas.filter((j) => j.estado === "abierta") : jornadas;
   const ligas = [...new Set(jornadasVisibles.map((j) => j.liga))]
     .sort((a, b) => (LIGA_ORDEN[a] ?? 9) - (LIGA_ORDEN[b] ?? 9));

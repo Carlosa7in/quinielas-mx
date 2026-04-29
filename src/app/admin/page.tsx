@@ -19,6 +19,9 @@ type JornadaResumen = {
 const LIGA_ICON: Record<string, string> = {
   "Liga MX": "🇲🇽",
   "Champions League": "⭐",
+  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "La Liga": "🇪🇸",
+  "Mixta": "⚽",
 };
 
 export default function AdminPage() {

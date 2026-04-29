@@ -3,60 +3,80 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { EQUIPOS_POR_LIGA, LIGAS } from "@/lib/equipos";
 
+const MIN_PARTIDOS = 6;
+const MAX_PARTIDOS = 9;
+
 type PartidoForm = {
+  liga: string;
   equipoLocal: string;
   equipoVisita: string;
   fechaHora: string;
 };
 
-const PARTIDO_VACIO = { equipoLocal: "", equipoVisita: "", fechaHora: "" };
+const PARTIDO_VACIO = (liga = "Liga MX"): PartidoForm => ({
+  liga,
+  equipoLocal: "",
+  equipoVisita: "",
+  fechaHora: "",
+});
 
-// Ejemplos de nombres por liga para el placeholder
-const NOMBRE_PLACEHOLDER: Record<string, string> = {
-  "Liga MX": "Jornada 12",
-  "Champions League": "Cuartos de Final - Ida",
+const LIGA_ICONO: Record<string, string> = {
+  "Liga MX": "🇲🇽",
+  "Champions League": "⭐",
+  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "La Liga": "🇪🇸",
 };
 
 export default function NuevaJornadaPage() {
   const router = useRouter();
-  const [liga, setLiga] = useState("Liga MX");
   const [nombre, setNombre] = useState("");
   const [temporada, setTemporada] = useState("Clausura 2026");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [partidos, setPartidos] = useState<PartidoForm[]>(
-    Array.from({ length: 9 }, () => ({ ...PARTIDO_VACIO }))
+    Array.from({ length: MIN_PARTIDOS }, () => PARTIDO_VACIO())
   );
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
-  const equiposLiga = EQUIPOS_POR_LIGA[liga] ?? [];
-
   const updatePartido = (i: number, campo: keyof PartidoForm, valor: string) => {
     setPartidos((prev) => {
       const nuevo = [...prev];
-      // Si cambia el local y coincide con el visita actual, limpiar visita
-      if (campo === "equipoLocal" && valor === nuevo[i].equipoVisita) {
-        nuevo[i] = { ...nuevo[i], equipoLocal: valor, equipoVisita: "" };
-      } else if (campo === "equipoVisita" && valor === nuevo[i].equipoLocal) {
-        nuevo[i] = { ...nuevo[i], equipoVisita: valor, equipoLocal: "" };
-      } else {
-        nuevo[i] = { ...nuevo[i], [campo]: valor };
+      const p = { ...nuevo[i], [campo]: valor };
+
+      // Si cambia la liga, limpiar equipos
+      if (campo === "liga") {
+        p.equipoLocal = "";
+        p.equipoVisita = "";
       }
+      // Evitar mismo equipo en ambos lados
+      if (campo === "equipoLocal" && valor === nuevo[i].equipoVisita) p.equipoVisita = "";
+      if (campo === "equipoVisita" && valor === nuevo[i].equipoLocal) p.equipoLocal = "";
+
+      nuevo[i] = p;
       return nuevo;
     });
   };
 
   const agregarPartido = () => {
-    setPartidos((prev) => [...prev, { ...PARTIDO_VACIO }]);
+    if (partidos.length >= MAX_PARTIDOS) return;
+    // Nueva fila hereda la liga del último partido
+    const ultimaLiga = partidos[partidos.length - 1]?.liga ?? "Liga MX";
+    setPartidos((prev) => [...prev, PARTIDO_VACIO(ultimaLiga)]);
   };
 
   const quitarPartido = (i: number) => {
+    if (partidos.length <= MIN_PARTIDOS) return;
     setPartidos((prev) => prev.filter((_, idx) => idx !== i));
   };
 
-  // Equipos ya usados como local en OTROS partidos (para destacar duplicados)
-  const equiposEnUso = partidos.flatMap((p) => [p.equipoLocal, p.equipoVisita]).filter(Boolean);
+  const partidosValidos = partidos.filter(
+    (p) => p.equipoLocal && p.equipoVisita && p.fechaHora && p.equipoLocal !== p.equipoVisita
+  );
+
+  // Detectar la liga global de la jornada automáticamente
+  const ligasUsadas = [...new Set(partidosValidos.map((p) => p.liga))];
+  const ligaJornada = ligasUsadas.length === 1 ? ligasUsadas[0] : ligasUsadas.length > 1 ? "Mixta" : "Liga MX";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,20 +84,15 @@ export default function NuevaJornadaPage() {
       setError("Completa todos los campos obligatorios");
       return;
     }
-
-    const partidosValidos = partidos.filter(
-      (p) => p.equipoLocal && p.equipoVisita && p.fechaHora && p.equipoLocal !== p.equipoVisita
-    );
-    if (partidosValidos.length < 1) {
-      setError("Agrega al menos un partido válido");
+    if (partidosValidos.length < MIN_PARTIDOS) {
+      setError(`Necesitas al menos ${MIN_PARTIDOS} partidos completos`);
       return;
     }
-
-    // Detectar equipo repetido en varios partidos
+    // Validar equipos duplicados entre partidos
     const equiposUsados: string[] = [];
     for (const p of partidosValidos) {
       if (equiposUsados.includes(p.equipoLocal) || equiposUsados.includes(p.equipoVisita)) {
-        setError(`Un equipo aparece en más de un partido. Revisa los partidos.`);
+        setError("Un equipo aparece en más de un partido. Revísalos.");
         return;
       }
       equiposUsados.push(p.equipoLocal, p.equipoVisita);
@@ -86,7 +101,6 @@ export default function NuevaJornadaPage() {
     setEnviando(true);
     setError("");
 
-    // numero lo derivamos del nombre si contiene un número, si no usamos timestamp
     const numMatch = nombre.match(/\d+/);
     const numero = numMatch ? parseInt(numMatch[0]) : Date.now() % 10000;
 
@@ -97,7 +111,7 @@ export default function NuevaJornadaPage() {
         numero,
         nombre: nombre.trim(),
         temporada,
-        liga,
+        liga: ligaJornada,
         fechaInicio,
         fechaFin,
         partidos: partidosValidos.map((p, i) => ({ ...p, orden: i + 1 })),
@@ -106,7 +120,7 @@ export default function NuevaJornadaPage() {
 
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error || "Error al crear jornada");
+      setError(data.error || "Error al crear");
       setEnviando(false);
     } else {
       router.push("/admin");
@@ -123,48 +137,21 @@ export default function NuevaJornadaPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="max-w-xl mx-auto px-4 py-4 space-y-4">
-        {/* Info jornada */}
+
+        {/* Datos generales */}
         <div className="bg-white rounded-xl p-4 space-y-3">
           <h2 className="font-semibold text-gray-700">Datos generales</h2>
 
-          {/* Liga */}
-          <div>
-            <label className="text-xs text-gray-500">Liga *</label>
-            <div className="flex gap-2 mt-1">
-              {LIGAS.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  onClick={() => {
-                    setLiga(l);
-                    setPartidos(Array.from({ length: l === "Liga MX" ? 9 : 8 }, () => ({ ...PARTIDO_VACIO })));
-                  }}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                    liga === l
-                      ? "bg-green-700 text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  {l === "Liga MX" ? "🇲🇽 Liga MX" : "⭐ Champions"}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Nombre de la fecha */}
           <div>
             <label className="text-xs text-gray-500">Nombre de la fecha *</label>
             <input
               type="text"
-              placeholder={NOMBRE_PLACEHOLDER[liga] ?? "Jornada 1"}
+              placeholder="Jornada 12 · Cuartos de Final - Ida · Semifinal Vuelta"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               required
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
-            <p className="text-xs text-gray-400 mt-1">
-              Ejemplos: "Jornada 12", "Cuartos de Final - Ida", "Semifinal Vuelta"
-            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -179,7 +166,15 @@ export default function NuevaJornadaPage() {
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
-            <div />
+            <div className="flex items-end pb-0.5">
+              {/* Liga calculada automáticamente */}
+              <div className="flex-1">
+                <label className="text-xs text-gray-400">Liga (automática)</label>
+                <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-500">
+                  {LIGA_ICONO[ligaJornada] ?? "⚽"} {ligaJornada}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -206,40 +201,69 @@ export default function NuevaJornadaPage() {
           </div>
         </div>
 
-        {/* Partidos */}
-        <div className="space-y-3">
-          <h2 className="font-semibold text-gray-700 px-1">
-            Partidos ({partidos.filter((p) => p.equipoLocal && p.equipoVisita).length})
+        {/* Contador de partidos */}
+        <div className="flex items-center justify-between px-1">
+          <h2 className="font-semibold text-gray-700">
+            Partidos
+            <span className={`ml-2 text-sm font-normal ${
+              partidosValidos.length < MIN_PARTIDOS ? "text-red-500" : "text-green-600"
+            }`}>
+              {partidosValidos.length}/{MAX_PARTIDOS}
+            </span>
           </h2>
+          <span className="text-xs text-gray-400">mín {MIN_PARTIDOS} · máx {MAX_PARTIDOS}</span>
+        </div>
 
+        {/* Lista de partidos */}
+        <div className="space-y-2">
           {partidos.map((partido, i) => {
-            // Equipos disponibles: todos excepto el seleccionado en el otro lado,
-            // y marcar los ya usados en otros partidos
+            const equiposLiga = EQUIPOS_POR_LIGA[partido.liga] ?? [];
             const usadosEnOtros = partidos
               .filter((_, idx) => idx !== i)
               .flatMap((p) => [p.equipoLocal, p.equipoVisita])
               .filter(Boolean);
 
-            const opcionesLocal = equiposLiga.filter((eq) => eq !== partido.equipoVisita);
+            const opcionesLocal  = equiposLiga.filter((eq) => eq !== partido.equipoVisita);
             const opcionesVisita = equiposLiga.filter((eq) => eq !== partido.equipoLocal);
 
+            const esValido = partido.equipoLocal && partido.equipoVisita && partido.fechaHora;
+
             return (
-              <div key={i} className="bg-white rounded-xl p-4 space-y-2">
+              <div key={i} className={`bg-white rounded-xl p-3 space-y-2 border-l-4 ${
+                esValido ? "border-green-400" : "border-gray-200"
+              }`}>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-gray-400">Partido {i + 1}</span>
-                  {partidos.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => quitarPartido(i)}
-                      className="text-red-400 hover:text-red-600 text-xs"
-                    >
-                      Quitar
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => quitarPartido(i)}
+                    disabled={partidos.length <= MIN_PARTIDOS}
+                    className="text-red-400 hover:text-red-600 text-xs disabled:text-gray-200 disabled:cursor-not-allowed"
+                  >
+                    Quitar
+                  </button>
                 </div>
 
+                {/* Selector de liga del partido */}
+                <div className="flex gap-1.5 flex-wrap">
+                  {LIGAS.map((liga) => (
+                    <button
+                      key={liga}
+                      type="button"
+                      onClick={() => updatePartido(i, "liga", liga)}
+                      className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                        partido.liga === liga
+                          ? "bg-green-700 text-white"
+                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      }`}
+                    >
+                      {LIGA_ICONO[liga] ?? "⚽"} {liga}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Equipos */}
                 <div className="grid grid-cols-2 gap-2">
-                  {/* Local */}
                   <select
                     value={partido.equipoLocal}
                     onChange={(e) => updatePartido(i, "equipoLocal", e.target.value)}
@@ -251,18 +275,12 @@ export default function NuevaJornadaPage() {
                   >
                     <option value="">Local</option>
                     {opcionesLocal.map((eq) => (
-                      <option
-                        key={eq}
-                        value={eq}
-                        disabled={usadosEnOtros.includes(eq)}
-                        style={usadosEnOtros.includes(eq) ? { color: "#bbb" } : {}}
-                      >
+                      <option key={eq} value={eq} disabled={usadosEnOtros.includes(eq)}>
                         {usadosEnOtros.includes(eq) ? `${eq} (ya asignado)` : eq}
                       </option>
                     ))}
                   </select>
 
-                  {/* Visita */}
                   <select
                     value={partido.equipoVisita}
                     onChange={(e) => updatePartido(i, "equipoVisita", e.target.value)}
@@ -274,18 +292,14 @@ export default function NuevaJornadaPage() {
                   >
                     <option value="">Visita</option>
                     {opcionesVisita.map((eq) => (
-                      <option
-                        key={eq}
-                        value={eq}
-                        disabled={usadosEnOtros.includes(eq)}
-                        style={usadosEnOtros.includes(eq) ? { color: "#bbb" } : {}}
-                      >
+                      <option key={eq} value={eq} disabled={usadosEnOtros.includes(eq)}>
                         {usadosEnOtros.includes(eq) ? `${eq} (ya asignado)` : eq}
                       </option>
                     ))}
                   </select>
                 </div>
 
+                {/* Fecha/hora */}
                 <input
                   type="datetime-local"
                   value={partido.fechaHora}
@@ -295,15 +309,28 @@ export default function NuevaJornadaPage() {
               </div>
             );
           })}
+        </div>
 
+        {/* Botón agregar */}
+        {partidos.length < MAX_PARTIDOS && (
           <button
             type="button"
             onClick={agregarPartido}
             className="w-full border-2 border-dashed border-gray-300 hover:border-green-400 text-gray-500 hover:text-green-600 py-3 rounded-xl text-sm font-medium transition-colors"
           >
-            + Agregar partido
+            + Agregar partido ({partidos.length}/{MAX_PARTIDOS})
           </button>
-        </div>
+        )}
+
+        {/* Resumen de ligas incluidas */}
+        {ligasUsadas.length > 1 && (
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm text-blue-700">
+            <p className="font-semibold">⚽ Quiniela mixta</p>
+            <p className="text-xs mt-1 text-blue-500">
+              {ligasUsadas.map((l) => `${LIGA_ICONO[l] ?? "⚽"} ${l}`).join(" · ")}
+            </p>
+          </div>
+        )}
 
         {error && (
           <p className="text-red-600 text-sm bg-red-50 rounded-lg p-3">{error}</p>
@@ -311,10 +338,12 @@ export default function NuevaJornadaPage() {
 
         <button
           type="submit"
-          disabled={enviando}
-          className="w-full bg-green-700 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold py-4 rounded-xl transition-colors"
+          disabled={enviando || partidosValidos.length < MIN_PARTIDOS}
+          className="w-full bg-green-700 hover:bg-green-600 disabled:bg-gray-300 text-white font-bold py-4 rounded-xl transition-colors"
         >
-          {enviando ? "Creando..." : "Crear Fecha"}
+          {enviando
+            ? "Creando..."
+            : `Crear fecha (${partidosValidos.length} partidos · ${ligaJornada})`}
         </button>
       </form>
     </div>

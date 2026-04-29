@@ -27,22 +27,45 @@ const LOGOS: Record<string, string> = {
   "Tijuana":               "https://a.espncdn.com/i/teamlogos/soccer/500/10125.png",
   "Toluca":                "https://a.espncdn.com/i/teamlogos/soccer/500/223.png",
 
-  // ── UEFA Champions League ────────────────────────────────────────
-  "Real Madrid":           "https://a.espncdn.com/i/teamlogos/soccer/500/86.png",
-  "Barcelona":             "https://a.espncdn.com/i/teamlogos/soccer/500/83.png",
+  // ── Premier League (solo los que no están ya arriba) ─────────────
+  "Newcastle":             "https://a.espncdn.com/i/teamlogos/soccer/500/361.png",
+  "West Ham":              "https://a.espncdn.com/i/teamlogos/soccer/500/371.png",
+  "Brighton":              "https://a.espncdn.com/i/teamlogos/soccer/500/331.png",
+  "Everton":               "https://a.espncdn.com/i/teamlogos/soccer/500/368.png",
+  "Fulham":                "https://a.espncdn.com/i/teamlogos/soccer/500/370.png",
+  "Nottingham Forest":     "https://a.espncdn.com/i/teamlogos/soccer/500/393.png",
+  "Brentford":             "https://a.espncdn.com/i/teamlogos/soccer/500/337.png",
+  "Wolverhampton":         "https://a.espncdn.com/i/teamlogos/soccer/500/380.png",
+  "Crystal Palace":        "https://a.espncdn.com/i/teamlogos/soccer/500/384.png",
+  "Leicester City":        "https://a.espncdn.com/i/teamlogos/soccer/500/375.png",
+  "Ipswich Town":          "https://a.espncdn.com/i/teamlogos/soccer/500/373.png",
+  "Southampton":           "https://a.espncdn.com/i/teamlogos/soccer/500/376.png",
+  "Bournemouth":           "https://a.espncdn.com/i/teamlogos/soccer/500/349.png",
+
+  // ── La Liga (solo los que no están ya arriba) ─────────────────────
+  "Athletic Club":         "https://a.espncdn.com/i/teamlogos/soccer/500/93.png",
+  "Real Sociedad":         "https://a.espncdn.com/i/teamlogos/soccer/500/89.png",
+  "Real Betis":            "https://a.espncdn.com/i/teamlogos/soccer/500/244.png",
+  "Valencia":              "https://a.espncdn.com/i/teamlogos/soccer/500/94.png",
+  "Osasuna":               "https://a.espncdn.com/i/teamlogos/soccer/500/97.png",
+  "Girona":                "https://a.espncdn.com/i/teamlogos/soccer/500/9812.png",
+  "Celta Vigo":            "https://a.espncdn.com/i/teamlogos/soccer/500/1246.png",
+  "Rayo Vallecano":        "https://a.espncdn.com/i/teamlogos/soccer/500/728.png",
+  "Getafe":                "https://a.espncdn.com/i/teamlogos/soccer/500/3842.png",
+  "Deportivo Alavés":      "https://a.espncdn.com/i/teamlogos/soccer/500/3751.png",
+  "Mallorca":              "https://a.espncdn.com/i/teamlogos/soccer/500/95.png",
+  "Leganés":               "https://a.espncdn.com/i/teamlogos/soccer/500/9784.png",
+  "Espanyol":              "https://a.espncdn.com/i/teamlogos/soccer/500/88.png",
+  "Las Palmas":            "https://a.espncdn.com/i/teamlogos/soccer/500/5593.png",
+  "Valladolid":            "https://a.espncdn.com/i/teamlogos/soccer/500/717.png",
+
+  // ── UEFA Champions League (solo los que no están ya arriba) ───────
   "Bayern Munich":         "https://a.espncdn.com/i/teamlogos/soccer/500/132.png",
-  "Manchester City":       "https://a.espncdn.com/i/teamlogos/soccer/500/382.png",
   "PSG":                   "https://a.espncdn.com/i/teamlogos/soccer/500/160.png",
   "Paris Saint-Germain":   "https://a.espncdn.com/i/teamlogos/soccer/500/160.png",
-  "Liverpool":             "https://a.espncdn.com/i/teamlogos/soccer/500/364.png",
-  "Chelsea":               "https://a.espncdn.com/i/teamlogos/soccer/500/363.png",
-  "Arsenal":               "https://a.espncdn.com/i/teamlogos/soccer/500/359.png",
-  "Manchester United":     "https://a.espncdn.com/i/teamlogos/soccer/500/360.png",
-  "Tottenham":             "https://a.espncdn.com/i/teamlogos/soccer/500/367.png",
   "Juventus":              "https://a.espncdn.com/i/teamlogos/soccer/500/111.png",
   "Inter Milan":           "https://a.espncdn.com/i/teamlogos/soccer/500/110.png",
   "AC Milan":              "https://a.espncdn.com/i/teamlogos/soccer/500/103.png",
-  "Atlético Madrid":       "https://a.espncdn.com/i/teamlogos/soccer/500/1068.png",
   "Borussia Dortmund":     "https://a.espncdn.com/i/teamlogos/soccer/500/124.png",
   "Bayer Leverkusen":      "https://a.espncdn.com/i/teamlogos/soccer/500/123.png",
   "RB Leipzig":            "https://a.espncdn.com/i/teamlogos/soccer/500/3908.png",
@@ -56,13 +79,14 @@ const LOGOS: Record<string, string> = {
   "Napoli":                "https://a.espncdn.com/i/teamlogos/soccer/500/113.png",
   "Roma":                  "https://a.espncdn.com/i/teamlogos/soccer/500/104.png",
   "Lazio":                 "https://a.espncdn.com/i/teamlogos/soccer/500/112.png",
-  "Sevilla":               "https://a.espncdn.com/i/teamlogos/soccer/500/243.png",
-  "Villarreal":            "https://a.espncdn.com/i/teamlogos/soccer/500/449.png",
-  "Aston Villa":           "https://a.espncdn.com/i/teamlogos/soccer/500/362.png",
   "Celtic":                "https://a.espncdn.com/i/teamlogos/soccer/500/254.png",
-  "Galatasaray":           "https://a.espncdn.com/i/teamlogos/soccer/500/361.png",
+  "Galatasaray":           "https://a.espncdn.com/i/teamlogos/soccer/500/2832.png",
   "Shakhtar Donetsk":      "https://a.espncdn.com/i/teamlogos/soccer/500/381.png",
   "Red Bull Salzburg":     "https://a.espncdn.com/i/teamlogos/soccer/500/2820.png",
+  "Monaco":                "https://a.espncdn.com/i/teamlogos/soccer/500/157.png",
+  "Atalanta":              "https://a.espncdn.com/i/teamlogos/soccer/500/3371.png",
+  "Lille":                 "https://a.espncdn.com/i/teamlogos/soccer/500/162.png",
+  "Brest":                 "https://a.espncdn.com/i/teamlogos/soccer/500/9984.png",
 };
 
 // Equipos activos por liga en la temporada actual.
@@ -76,14 +100,27 @@ export const EQUIPOS_POR_LIGA: Record<string, string[]> = {
     "Tijuana", "Atlético San Luis", "Puebla",
   ],
   "Champions League": [
-    // Fase de liga 2024-25 — 36 equipos
-    // Octavos de final clasificados (actualizar conforme avance el torneo)
+    // Octavos de final 2024-25
     "Real Madrid", "Barcelona", "Bayern Munich", "Liverpool",
     "Arsenal", "Inter Milan", "Atlético Madrid", "Borussia Dortmund",
     "Bayer Leverkusen", "Manchester City", "PSG", "Aston Villa",
     "Benfica", "Monaco", "Club Brugge", "Atalanta",
-    "Feyenoord", "PSV", "Milan", "Juventus",
+    "Feyenoord", "PSV", "AC Milan", "Juventus",
     "Lille", "Sporting CP", "Celtic", "Brest",
+  ],
+  "Premier League": [
+    // Temporada 2024-25
+    "Arsenal", "Liverpool", "Manchester City", "Chelsea", "Aston Villa",
+    "Tottenham", "Manchester United", "Newcastle", "West Ham", "Brighton",
+    "Wolverhampton", "Fulham", "Bournemouth", "Crystal Palace", "Brentford",
+    "Nottingham Forest", "Everton", "Leicester City", "Ipswich Town", "Southampton",
+  ],
+  "La Liga": [
+    // Temporada 2024-25
+    "Real Madrid", "Barcelona", "Atlético Madrid", "Athletic Club", "Real Sociedad",
+    "Villarreal", "Real Betis", "Sevilla", "Valencia", "Osasuna",
+    "Girona", "Celta Vigo", "Rayo Vallecano", "Getafe", "Deportivo Alavés",
+    "Mallorca", "Leganés", "Espanyol", "Las Palmas", "Valladolid",
   ],
 };
 
