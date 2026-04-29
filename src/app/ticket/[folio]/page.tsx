@@ -223,8 +223,24 @@ export default function TicketPage() {
   }
 
   return (
+    <>
+    <style>{`
+      @media print {
+        body * { visibility: hidden; }
+        #ticket-receipt, #ticket-receipt * { visibility: visible; }
+        #ticket-receipt {
+          position: fixed !important;
+          top: 0 !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+        }
+        img {
+          filter: grayscale(1) contrast(4) brightness(0.25) !important;
+        }
+      }
+    `}</style>
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-green-800 text-white py-6 px-4">
+      <div className="bg-green-800 text-white py-6 px-4 print:hidden">
         <div className="max-w-lg mx-auto">
           <h1 className="text-2xl font-bold">Quiniela Registrada</h1>
           <p className="text-green-200 text-sm mt-1">
@@ -235,14 +251,14 @@ export default function TicketPage() {
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Mensaje de éxito */}
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center print:hidden">
           <div className="text-3xl mb-2">🎉</div>
           <h2 className="text-green-800 font-bold text-lg">¡Quiniela registrada!</h2>
           <p className="text-green-600 text-sm">Guarda tu folio para consultar resultados</p>
         </div>
 
         {/* Ticket estilo boleta térmica */}
-        <div className="flex justify-center">
+        <div id="ticket-receipt" className="flex justify-center">
           <div
             className="w-full bg-white shadow-lg"
             style={{
@@ -372,13 +388,21 @@ export default function TicketPage() {
         </div>
 
         {/* Acciones */}
-        <div className="space-y-3">
-          {/* Imprimir ticket */}
+        <div className="space-y-3 print:hidden">
+          {/* Imprimir directo a térmica */}
+          <button
+            onClick={() => window.print()}
+            className="w-full bg-green-800 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+          >
+            <span>🧾</span> Imprimir en Térmica
+          </button>
+
+          {/* Descargar PDF */}
           <button
             onClick={descargarPDF}
             className="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
-            <span>🖨️</span> Imprimir Ticket PDF
+            <span>🖨️</span> Descargar PDF
           </button>
 
           {/* Enviar por WhatsApp */}
@@ -474,10 +498,11 @@ export default function TicketPage() {
           </a>
         </div>
 
-        <p className="text-xs text-gray-400 text-center">
+        <p className="text-xs text-gray-400 text-center print:hidden">
           Conserva tu folio para reclamar tu premio en caso de ganar.
         </p>
       </div>
     </div>
+    </>
   );
 }

@@ -186,10 +186,16 @@ function FormaTicket({ jornada, picks }: { jornada: Jornada; picks: Record<strin
         const V = sel === "2" ? "[■]" : "[ ]";
         return (
           <div key={partido.id} style={{ marginBottom: "3px", borderBottom: "1px dotted #ccc", paddingBottom: "2px" }}>
-            <div style={{ fontSize: "7.5pt", fontWeight: "bold", display: "flex", gap: "2px", alignItems: "baseline" }}>
-              <span style={{ color: "#555", minWidth: "5mm" }}>{i + 1}.</span>
-              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {partido.equipoLocal} vs {partido.equipoVisita}
+            <div style={{ fontSize: "7pt", fontWeight: "bold", display: "flex", gap: "2px", alignItems: "center" }}>
+              <span style={{ color: "#555", minWidth: "5mm", flexShrink: 0 }}>{i + 1}.</span>
+              <LogoEquipo equipo={partido.equipoLocal} size={13} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                {partido.equipoLocal}
+              </span>
+              <span style={{ color: "#888", fontSize: "6pt", flexShrink: 0, margin: "0 1px" }}>vs</span>
+              <LogoEquipo equipo={partido.equipoVisita} size={13} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                {partido.equipoVisita}
               </span>
             </div>
             <div style={{ fontSize: "9pt", fontWeight: "bold", display: "flex", gap: "6px", paddingLeft: "5mm", marginTop: "1px" }}>
@@ -359,6 +365,9 @@ export default function FormaPage() {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             color-adjust: exact !important;
+          }
+          img {
+            filter: grayscale(1) contrast(4) brightness(0.25) !important;
           }
         }
       `}</style>
