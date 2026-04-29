@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { LogoEquipo } from "@/components/LogoEquipo";
 import { Suspense } from "react";
@@ -26,6 +26,23 @@ type Quiniela = {
   monto: number;
   jornada: { numero: number; temporada: string; liga: string };
   picks: Pick[];
+};
+
+type Participante = {
+  folio: string;
+  nombre: string;
+  aciertos: number | null;
+  estado: string;
+  totalPicks: number;
+};
+
+type JornadaPreliminares = {
+  id: string;
+  numero: number;
+  temporada: string;
+  liga: string;
+  totalQuinielas: number;
+  participantes: Participante[];
 };
 
 const LABEL: Record<string, string> = { "1": "L", "X": "E", "2": "V" };
@@ -178,12 +195,268 @@ function TarjetaQuiniela({ q, onClick }: { q: Quiniela; onClick: () => void }) {
   );
 }
 
+/* ─── Scanner QR ─── */
+function ScannerQR({ onFolioDetectado }: { onFolioDetectado: (folio: string) => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animRef = useRef<number | null>(null);
+  const [error, setError] = useState("");
+  const [escaneando, setEscaneando] = useState(false);
+  const [detectado, setDetectado] = useState("");
+
+  useEffect(() => {
+    iniciar();
+    return () => detener();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const iniciar = async () => {
+    setError("");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        setEscaneando(true);
+        escanearFrame();
+      }
+    } catch {
+      setError("No se pudo acceder a la cámara. Verifica los permisos.");
+    }
+  };
+
+  const detener = () => {
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    setEscaneando(false);
+  };
+
+  const escanearFrame = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || video.readyState < 2) {
+      animRef.current = requestAnimationFrame(escanearFrame);
+      return;
+    }
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+
+    // Intentar con BarcodeDetector (Chrome nativo)
+    if ("BarcodeDetector" in window) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
+      detector.detect(canvas).then((codes: { rawValue: string }[]) => {
+        if (codes.length > 0) {
+          procesarURL(codes[0].rawValue);
+        } else {
+          animRef.current = requestAnimationFrame(escanearFrame);
+        }
+      }).catch(() => {
+        animRef.current = requestAnimationFrame(escanearFrame);
+      });
+    } else {
+      // Fallback: jsQR
+      import("jsqr").then(({ default: jsQR }) => {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code) {
+          procesarURL(code.data);
+        } else {
+          animRef.current = requestAnimationFrame(escanearFrame);
+        }
+      }).catch(() => {
+        animRef.current = requestAnimationFrame(escanearFrame);
+      });
+    }
+  };
+
+  const procesarURL = (rawValue: string) => {
+    detener();
+    // Extraer folio: puede ser una URL "/ticket/QMX-J1-xxx" o directamente el folio
+    let folio = rawValue.trim();
+    const match = folio.match(/\/ticket\/([A-Z0-9-]+)/i);
+    if (match) folio = match[1].toUpperCase();
+    else folio = folio.toUpperCase();
+
+    setDetectado(folio);
+    setTimeout(() => onFolioDetectado(folio), 600);
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+      <p className="text-sm text-gray-500">Apunta la cámara al código QR de tu ticket</p>
+
+      <div className="relative rounded-xl overflow-hidden bg-black aspect-square max-h-72">
+        <video
+          ref={videoRef}
+          className="w-full h-full object-cover"
+          playsInline
+          muted
+        />
+        <canvas ref={canvasRef} className="hidden" />
+
+        {/* Visor */}
+        {escaneando && !detectado && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-48 h-48 border-2 border-white rounded-2xl opacity-60" />
+            <div className="absolute w-48 h-1 bg-green-400 opacity-70 animate-bounce" />
+          </div>
+        )}
+
+        {detectado && (
+          <div className="absolute inset-0 bg-green-500/80 flex items-center justify-center">
+            <div className="text-center text-white">
+              <p className="text-4xl mb-1">✅</p>
+              <p className="font-bold text-sm font-mono">{detectado}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <div className="bg-red-50 text-red-600 text-sm rounded-lg p-3 text-center">
+          {error}
+          <button onClick={iniciar} className="block mx-auto mt-2 text-red-700 font-bold underline text-xs">
+            Intentar de nuevo
+          </button>
+        </div>
+      )}
+
+      {escaneando && !error && (
+        <p className="text-xs text-gray-400 text-center animate-pulse">Buscando código QR...</p>
+      )}
+    </div>
+  );
+}
+
+/* ─── Preliminares ─── */
+function Preliminares({ onVerFolio }: { onVerFolio: (folio: string) => void }) {
+  const [datos, setDatos] = useState<JornadaPreliminares[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [jornadaActiva, setJornadaActiva] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/preliminares")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDatos(data);
+          setJornadaActiva(data[0].id);
+        }
+      })
+      .finally(() => setCargando(false));
+  }, []);
+
+  if (cargando) return (
+    <div className="text-center py-4 text-gray-400 text-sm animate-pulse">Cargando resultados...</div>
+  );
+
+  if (datos.length === 0) return null;
+
+  const jornada = datos.find((j) => j.id === jornadaActiva) ?? datos[0];
+  const hayAciertos = jornada.participantes.some((p) => p.aciertos !== null);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between px-1">
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">🏆 Preliminares</p>
+        <p className="text-xs text-gray-400">{jornada.totalQuinielas} participantes</p>
+      </div>
+
+      {/* Selector de jornada si hay más de una activa */}
+      {datos.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {datos.map((j) => (
+            <button
+              key={j.id}
+              onClick={() => setJornadaActiva(j.id)}
+              className={`shrink-0 text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                jornadaActiva === j.id
+                  ? "bg-green-700 text-white"
+                  : "bg-white text-gray-500 border border-gray-200"
+              }`}
+            >
+              {j.liga} J{j.numero}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        {/* Cabecera */}
+        <div className="bg-green-800 text-white px-4 py-2.5 flex items-center gap-2">
+          <span className="text-xs font-bold flex-1">{jornada.liga} · Jornada {jornada.numero}</span>
+          <span className="text-xs text-green-300">{jornada.temporada}</span>
+        </div>
+
+        {jornada.participantes.length === 0 ? (
+          <p className="text-center text-gray-400 text-sm py-6">Aún no hay participantes</p>
+        ) : (
+          <ul className="divide-y divide-gray-50">
+            {jornada.participantes.map((p, i) => {
+              const esLider = hayAciertos && i === 0 && p.aciertos !== null;
+              return (
+                <li key={p.folio}>
+                  <button
+                    onClick={() => onVerFolio(p.folio)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    {/* Posición */}
+                    <span className={`text-xs font-black w-6 text-center shrink-0 ${
+                      i === 0 ? "text-yellow-500" : i === 1 ? "text-gray-400" : i === 2 ? "text-amber-600" : "text-gray-300"
+                    }`}>
+                      {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
+                    </span>
+
+                    {/* Nombre */}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold truncate ${esLider ? "text-green-700" : "text-gray-800"}`}>
+                        {p.nombre}
+                      </p>
+                      <p className="text-xs text-gray-400 font-mono">{p.folio}</p>
+                    </div>
+
+                    {/* Estado / aciertos */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {p.aciertos !== null ? (
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                          p.estado === "ganadora" ? "bg-green-500 text-white" :
+                          p.estado === "perdedora" ? "bg-red-400 text-white" :
+                          "bg-gray-100 text-gray-600"
+                        }`}>
+                          {p.aciertos}/{p.totalPicks}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-300">⏳</span>
+                      )}
+                      <span className="text-gray-300 text-xs">›</span>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Página principal ─── */
 function ConsultarInner() {
   const searchParams = useSearchParams();
   const folioParam = searchParams.get("folio");
 
-  const [modo, setModo] = useState<"telefono" | "folio">("telefono");
+  const [modo, setModo] = useState<"telefono" | "folio" | "qr">("telefono");
   const [telefono, setTelefono] = useState("");
   const [folio, setFolio] = useState(folioParam ?? "");
   const [quinielas, setQuinielas] = useState<Quiniela[]>([]);
@@ -201,11 +474,15 @@ function ConsultarInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const limpiar = () => {
+    setError(""); setDetalle(null); setQuinielas([]); setBuscado(false);
+  };
+
   const buscarTelefono = async (e: React.FormEvent) => {
     e.preventDefault();
     const num = telefono.replace(/\D/g, "");
     if (num.length < 10) return;
-    setCargando(true); setError(""); setQuinielas([]); setDetalle(null); setBuscado(false);
+    setCargando(true); limpiar();
 
     const res = await fetch(`/api/quinielas?telefono=${num}`);
     const data = await res.json();
@@ -223,7 +500,7 @@ function ConsultarInner() {
   const buscarFolio = async (f?: string) => {
     const val = (f ?? folio).trim().toUpperCase();
     if (!val) return;
-    setCargando(true); setError(""); setDetalle(null); setBuscado(false);
+    setCargando(true); limpiar();
 
     const res = await fetch(`/api/quinielas?folio=${val}`);
     const data = await res.json();
@@ -231,6 +508,19 @@ function ConsultarInner() {
 
     if (!res.ok) { setError(data.error || "No encontrada"); return; }
     setDetalle(data);
+  };
+
+  const alEscanear = (folioEscaneado: string) => {
+    setModo("folio");
+    setFolio(folioEscaneado);
+    buscarFolio(folioEscaneado);
+  };
+
+  const alVerFolioPreliminares = (f: string) => {
+    setModo("folio");
+    setFolio(f);
+    buscarFolio(f);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -249,16 +539,22 @@ function ConsultarInner() {
         {/* Tabs */}
         <div className="flex bg-white rounded-xl shadow-sm overflow-hidden">
           <button
-            onClick={() => { setModo("telefono"); setError(""); setDetalle(null); setQuinielas([]); setBuscado(false); }}
+            onClick={() => { setModo("telefono"); limpiar(); }}
             className={`flex-1 py-3 text-sm font-semibold transition-colors ${modo === "telefono" ? "bg-green-700 text-white" : "text-gray-500 hover:bg-gray-50"}`}
           >
-            📱 Por teléfono
+            📱 Teléfono
           </button>
           <button
-            onClick={() => { setModo("folio"); setError(""); setDetalle(null); setQuinielas([]); setBuscado(false); }}
+            onClick={() => { setModo("folio"); limpiar(); }}
             className={`flex-1 py-3 text-sm font-semibold transition-colors ${modo === "folio" ? "bg-green-700 text-white" : "text-gray-500 hover:bg-gray-50"}`}
           >
-            🎫 Por folio
+            🎫 Folio
+          </button>
+          <button
+            onClick={() => { setModo("qr"); limpiar(); }}
+            className={`flex-1 py-3 text-sm font-semibold transition-colors ${modo === "qr" ? "bg-green-700 text-white" : "text-gray-500 hover:bg-gray-50"}`}
+          >
+            📷 QR
           </button>
         </div>
 
@@ -310,6 +606,11 @@ function ConsultarInner() {
           </form>
         )}
 
+        {/* Scanner QR */}
+        {modo === "qr" && (
+          <ScannerQR onFolioDetectado={alEscanear} />
+        )}
+
         {/* Error */}
         {error && (
           <div className="bg-red-50 text-red-600 rounded-xl p-4 text-sm text-center">{error}</div>
@@ -341,6 +642,12 @@ function ConsultarInner() {
             onBack={quinielas.length > 1 ? () => setDetalle(null) : undefined}
           />
         )}
+
+        {/* Divider */}
+        <div className="border-t border-gray-200 pt-2" />
+
+        {/* Preliminares */}
+        <Preliminares onVerFolio={alVerFolioPreliminares} />
       </div>
     </div>
   );
