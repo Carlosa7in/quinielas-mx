@@ -118,13 +118,13 @@ function FormaCarta({ jornada, picks }: { jornada: Jornada; picks: Record<string
 
       {/* Datos cliente */}
       <div className="mt-3" style={{ fontSize: "7.5pt" }}>
-        <div className="flex gap-2 mb-1">
+        <div style={{ marginBottom: "6px" }}>
           <span style={{ whiteSpace: "nowrap" }}>Nombre:</span>
-          <div style={{ flex: 1, borderBottom: "1px solid black" }} />
+          <div style={{ borderBottom: "1px solid black", height: "10mm", marginTop: "1px" }} />
         </div>
-        <div className="flex gap-2">
+        <div>
           <span style={{ whiteSpace: "nowrap" }}>Teléfono:</span>
-          <div style={{ flex: 1, borderBottom: "1px solid black" }} />
+          <div style={{ borderBottom: "1px solid black", height: "10mm", marginTop: "1px" }} />
         </div>
       </div>
 
@@ -201,9 +201,11 @@ function FormaTicket({ jornada, picks }: { jornada: Jornada; picks: Record<strin
       })}
 
       {/* Datos cliente */}
-      <div style={{ borderTop: "1px dashed #000", paddingTop: "3px", marginTop: "3px", fontSize: "7.5pt" }}>
-        <p>Nombre: ______________________</p>
-        <p style={{ marginTop: "2px" }}>Tel: ______________________</p>
+      <div style={{ borderTop: "1px dashed #000", paddingTop: "4px", marginTop: "4px", fontSize: "7.5pt" }}>
+        <p style={{ marginBottom: "1px" }}>Nombre:</p>
+        <div style={{ borderBottom: "1px solid #000", height: "10mm", marginBottom: "5px" }} />
+        <p style={{ marginBottom: "1px" }}>Teléfono:</p>
+        <div style={{ borderBottom: "1px solid #000", height: "10mm" }} />
       </div>
 
       {/* Footer */}
