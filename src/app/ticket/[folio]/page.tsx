@@ -241,68 +241,133 @@ export default function TicketPage() {
           <p className="text-green-600 text-sm">Guarda tu folio para consultar resultados</p>
         </div>
 
-        {/* Ticket */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-          {/* Header verde */}
-          <div className="bg-green-800 text-white p-4 text-center">
-            <p className="text-xs text-green-300 font-mono">FOLIO</p>
-            <p className="font-mono font-bold text-lg tracking-wider mt-1">{quiniela.folio}</p>
-            <p className="text-green-200 text-xs mt-1">
-              {quiniela.nombreCliente}
-            </p>
-          </div>
+        {/* Ticket estilo boleta térmica */}
+        <div className="flex justify-center">
+          <div
+            className="w-full bg-white shadow-lg"
+            style={{
+              maxWidth: "320px",
+              fontFamily: "'Courier New', Courier, monospace",
+              fontSize: "12px",
+              lineHeight: "1.5",
+            }}
+          >
+            {/* Borde dentado superior */}
+            <div style={{
+              height: "12px",
+              background: "radial-gradient(circle at 50% 0%, #f9fafb 6px, white 6px) 0 0 / 14px 12px repeat-x",
+              borderLeft: "1px solid #e5e7eb",
+              borderRight: "1px solid #e5e7eb",
+            }} />
 
-          {/* Partidos */}
-          <div className="p-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">
-              Pronósticos
-            </h3>
-            <div className="space-y-2">
-              {[...quiniela.picks]
-                .sort((a, b) => a.partido.orden - b.partido.orden)
-                .map((pick, i) => {
-                  const label = pick.prediccion === "1" ? "L" : pick.prediccion === "2" ? "V" : "E";
-                  const acertado = (pick as { acertado?: boolean | null }).acertado;
-                  return (
-                    <div key={pick.id} className="flex items-center gap-2 text-sm">
-                      {/* número */}
-                      <span className="text-gray-300 text-xs w-4 text-right shrink-0">{i + 1}</span>
-                      {/* logos + nombres */}
-                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                        <LogoEquipo equipo={pick.partido.equipoLocal} size={18} />
-                        <span className="text-gray-600 text-xs truncate">{pick.partido.equipoLocal}</span>
-                        <span className="text-gray-300 text-xs shrink-0">vs</span>
-                        <LogoEquipo equipo={pick.partido.equipoVisita} size={18} />
-                        <span className="text-gray-600 text-xs truncate">{pick.partido.equipoVisita}</span>
-                      </div>
-                      {/* badge predicción */}
-                      <span className={`font-bold text-xs px-2 py-1 rounded shrink-0 ${
-                        acertado === true
-                          ? "bg-green-500 text-white"
-                          : acertado === false
-                          ? "bg-red-400 text-white"
-                          : "bg-green-100 text-green-800"
-                      }`}>
-                        {label}
-                      </span>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-
-          {/* Total + QR */}
-          <div className="border-t border-dashed border-gray-200 p-4 flex justify-between items-center">
-            <div>
-              <span className="text-gray-600 text-sm block">Costo pagado:</span>
-              <span className="font-bold text-green-700">${quiniela.monto.toFixed(2)} MXN</span>
-            </div>
-            {qrDataUrl && (
-              <div className="text-center">
-                <img src={qrDataUrl} alt="QR Quiniela" className="w-16 h-16" />
-                <p className="text-xs text-gray-400 mt-0.5">Consultar</p>
+            {/* Cuerpo */}
+            <div style={{
+              padding: "12px 20px 16px",
+              borderLeft: "1px solid #e5e7eb",
+              borderRight: "1px solid #e5e7eb",
+            }}>
+              {/* Encabezado */}
+              <div style={{ textAlign: "center", marginBottom: "10px" }}>
+                <p style={{ fontWeight: "bold", fontSize: "15px", letterSpacing: "2px", marginBottom: "2px" }}>
+                  QUINIELAS MX
+                </p>
+                <p style={{ fontSize: "10px", color: "#6b7280" }}>
+                  {quiniela.jornada.liga} · {quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`}
+                </p>
+                <p style={{ fontSize: "10px", color: "#6b7280" }}>{quiniela.jornada.temporada}</p>
               </div>
-            )}
+
+              {/* Separador */}
+              <p style={{ borderTop: "1px dashed #d1d5db", margin: "8px 0" }} />
+
+              {/* Datos del cliente */}
+              <div style={{ marginBottom: "8px" }}>
+                <p><span style={{ color: "#6b7280" }}>NOMBRE: </span><strong>{quiniela.nombreCliente ?? "—"}</strong></p>
+                {quiniela.telefonoCliente && (
+                  <p><span style={{ color: "#6b7280" }}>TEL: </span>{quiniela.telefonoCliente}</p>
+                )}
+                <p><span style={{ color: "#6b7280" }}>FOLIO: </span><strong style={{ letterSpacing: "1px" }}>{quiniela.folio}</strong></p>
+              </div>
+
+              {/* Separador */}
+              <p style={{ borderTop: "1px dashed #d1d5db", margin: "8px 0" }} />
+
+              {/* Pronósticos */}
+              <p style={{ fontWeight: "bold", marginBottom: "6px", fontSize: "11px" }}>PRONÓSTICOS:</p>
+              <div style={{ marginBottom: "4px" }}>
+                {[...quiniela.picks]
+                  .sort((a, b) => a.partido.orden - b.partido.orden)
+                  .map((pick, i) => {
+                    const label = pick.prediccion === "1" ? "L" : pick.prediccion === "2" ? "V" : "E";
+                    const acertado = (pick as { acertado?: boolean | null }).acertado;
+                    const colorLabel =
+                      acertado === true ? "#16a34a" :
+                      acertado === false ? "#ef4444" : "#111827";
+                    return (
+                      <div key={pick.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "3px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "5px", flex: 1, minWidth: 0 }}>
+                          <span style={{ color: "#9ca3af", minWidth: "14px" }}>{i + 1}.</span>
+                          <LogoEquipo equipo={pick.partido.equipoLocal} size={14} />
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80px" }}>
+                            {pick.partido.equipoLocal}
+                          </span>
+                          <span style={{ color: "#9ca3af", flexShrink: 0 }}>vs</span>
+                          <LogoEquipo equipo={pick.partido.equipoVisita} size={14} />
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80px" }}>
+                            {pick.partido.equipoVisita}
+                          </span>
+                        </div>
+                        <span style={{
+                          fontWeight: "bold",
+                          color: colorLabel,
+                          border: `1px solid ${colorLabel}`,
+                          borderRadius: "3px",
+                          padding: "0 5px",
+                          marginLeft: "6px",
+                          flexShrink: 0,
+                          fontSize: "11px",
+                        }}>
+                          {label}
+                        </span>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {/* Separador */}
+              <p style={{ borderTop: "1px dashed #d1d5db", margin: "8px 0" }} />
+
+              {/* Total + QR */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <p style={{ color: "#6b7280", fontSize: "10px" }}>TOTAL PAGADO</p>
+                  <p style={{ fontWeight: "bold", fontSize: "16px" }}>${quiniela.monto.toFixed(2)} MXN</p>
+                </div>
+                {qrDataUrl && (
+                  <div style={{ textAlign: "center" }}>
+                    <img src={qrDataUrl} alt="QR" style={{ width: "64px", height: "64px" }} />
+                    <p style={{ fontSize: "9px", color: "#9ca3af", marginTop: "2px" }}>Consultar</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Separador */}
+              <p style={{ borderTop: "1px dashed #d1d5db", margin: "8px 0" }} />
+
+              {/* Pie */}
+              <div style={{ textAlign: "center", color: "#6b7280", fontSize: "9px" }}>
+                <p>Conserva este ticket para reclamar tu premio.</p>
+                <p style={{ marginTop: "2px" }}>quinielas.mx</p>
+              </div>
+            </div>
+
+            {/* Borde dentado inferior */}
+            <div style={{
+              height: "12px",
+              background: "radial-gradient(circle at 50% 100%, #f9fafb 6px, white 6px) 0 0 / 14px 12px repeat-x",
+              borderLeft: "1px solid #e5e7eb",
+              borderRight: "1px solid #e5e7eb",
+            }} />
           </div>
         </div>
 
