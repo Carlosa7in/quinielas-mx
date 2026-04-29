@@ -151,7 +151,7 @@ function FormaTicket({ jornada, picks }: { jornada: Jornada; picks: Record<strin
       className="bg-white mx-auto my-0 print:break-after-page forma-ticket"
       style={{
         width: "100%", maxWidth: "72mm",
-        padding: "3mm 4mm", fontFamily: "'Courier New', monospace",
+        padding: "8mm 4mm", fontFamily: "'Courier New', monospace",
         border: "1px dashed #999", pageBreakInside: "avoid", boxSizing: "border-box",
       }}
     >
