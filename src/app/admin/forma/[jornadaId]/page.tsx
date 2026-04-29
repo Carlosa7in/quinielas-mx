@@ -151,7 +151,7 @@ function FormaTicket({ jornada, picks }: { jornada: Jornada; picks: Record<strin
       className="bg-white mx-auto my-0 print:break-after-page forma-ticket"
       style={{
         width: "100%", maxWidth: "72mm",
-        padding: "8mm 4mm", fontFamily: "'Courier New', monospace",
+        padding: "16mm 4mm", fontFamily: "'Courier New', monospace",
         border: "1px dashed #999", pageBreakInside: "avoid", boxSizing: "border-box",
       }}
     >
@@ -201,11 +201,11 @@ function FormaTicket({ jornada, picks }: { jornada: Jornada; picks: Record<strin
       })}
 
       {/* Datos cliente */}
-      <div style={{ borderTop: "1px dashed #000", paddingTop: "4px", marginTop: "4px", fontSize: "7.5pt" }}>
-        <p style={{ marginBottom: "1px" }}>Nombre:</p>
-        <div style={{ borderBottom: "1px solid #000", height: "10mm", marginBottom: "5px" }} />
-        <p style={{ marginBottom: "1px" }}>Teléfono:</p>
-        <div style={{ borderBottom: "1px solid #000", height: "10mm" }} />
+      <div style={{ borderTop: "1px dashed #000", paddingTop: "6px", marginTop: "6px", fontSize: "7.5pt" }}>
+        <p style={{ marginBottom: "2px" }}>Nombre:</p>
+        <div style={{ borderBottom: "1px solid #000", height: "18mm", marginBottom: "8px" }} />
+        <p style={{ marginBottom: "2px" }}>Teléfono:</p>
+        <div style={{ borderBottom: "1px solid #000", height: "18mm" }} />
       </div>
 
       {/* Footer */}
