@@ -7,7 +7,10 @@ export type JornadaResumen = {
   temporada: string;
   liga: string;
   estado: string;
-  _count: { quinielas: number; partidos: number };
+  totalQuinielas: number;
+  totalPartidos: number;
+  recaudado: number;
+  ganadoras: number;
 };
 
 const LIGA_ICON: Record<string, string> = {
@@ -115,8 +118,8 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
                         </span>
                       </div>
                       <div className="flex gap-3 mt-1 text-xs text-gray-400">
-                        <span>⚽ {j._count.partidos} partidos</span>
-                        <span>🎯 {j._count.quinielas} quinielas</span>
+                        <span>⚽ {j.totalPartidos} partidos</span>
+                        <span>🎯 {j.totalQuinielas} quinielas</span>
                       </div>
                     </div>
                     <span className="text-green-600 text-xl">→</span>

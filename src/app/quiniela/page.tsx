@@ -18,7 +18,10 @@ type Jornada = {
   liga: string;
   estado: string;
   partidos: Partido[];
-  _count?: { quinielas: number; partidos: number };
+  totalQuinielas?: number;
+  totalPartidos?: number;
+  recaudado?: number;
+  ganadoras?: number;
 };
 
 const LIGA_ICON: Record<string, string> = {
@@ -135,8 +138,8 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
               </div>
               <div className="flex items-center justify-between mt-3">
                 <div className="flex gap-3 text-xs text-gray-400">
-                  <span>⚽ {j._count?.partidos ?? "?"} partidos</span>
-                  <span>🎯 {j._count?.quinielas ?? 0} inscritos</span>
+                  <span>⚽ {j.totalPartidos ?? "?"} partidos</span>
+                  <span>🎯 {j.totalQuinielas ?? 0} inscritos</span>
                 </div>
                 <span className="text-yellow-600 font-bold text-sm">$20 MXN</span>
               </div>
