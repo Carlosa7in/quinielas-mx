@@ -27,7 +27,7 @@ export default function Home() {
             href="/clasificacion"
             className="block w-full bg-white/10 hover:bg-white/20 border border-white/30 text-white font-semibold py-3 px-6 rounded-xl transition-colors text-sm"
           >
-            📊 Tabla General Liga MX
+            📊 Clasificación
           </Link>
         </div>
 

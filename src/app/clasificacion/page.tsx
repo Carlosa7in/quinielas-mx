@@ -30,7 +30,7 @@ function colorClase(color: string, elemento: "fila" | "pos" | "pts"): string {
   const map: Record<string, Record<string, string>> = {
     green:  { fila: "bg-green-50",  pos: "text-green-700",  pts: "text-green-700"  },
     yellow: { fila: "bg-yellow-50", pos: "text-yellow-600", pts: "text-yellow-600" },
-    gray:   { fila: "bg-white",     pos: "text-gray-400",   pts: "text-gray-600"   },
+    gray:   { fila: "bg-red-50",     pos: "text-red-400",    pts: "text-red-500"    },
   };
   return map[color]?.[elemento] ?? "";
 }
@@ -149,7 +149,7 @@ function TablaEquipos({ datos, expandido, setExpandido }: {
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                         zona.color === "green" ? "bg-green-100 text-green-700" :
                         zona.color === "yellow" ? "bg-yellow-100 text-yellow-700" :
-                        "bg-gray-100 text-gray-500"
+                        "bg-red-100 text-red-500"
                       }`}>{zona.label}</span>
                     </div>
                   </div>
