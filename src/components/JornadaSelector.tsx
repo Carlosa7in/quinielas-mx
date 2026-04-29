@@ -45,8 +45,10 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
       });
   }, []);
 
+  const LIGA_ORDEN: Record<string, number> = { "Liga MX": 0, "Champions League": 1 };
   const jornadasVisibles = soloActivas ? jornadas.filter((j) => j.estado === "abierta") : jornadas;
-  const ligas = [...new Set(jornadasVisibles.map((j) => j.liga))];
+  const ligas = [...new Set(jornadasVisibles.map((j) => j.liga))]
+    .sort((a, b) => (LIGA_ORDEN[a] ?? 9) - (LIGA_ORDEN[b] ?? 9));
   const jornadasFiltradas = jornadasVisibles.filter((j) => j.liga === ligaActiva);
 
   return (

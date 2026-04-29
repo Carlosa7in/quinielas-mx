@@ -13,7 +13,7 @@ export async function GET() {
       _count: { select: { quinielas: true, partidos: true } },
       quinielas: { select: { monto: true, estado: true } },
     },
-    orderBy: [{ liga: "asc" }, { numero: "desc" }],
+    orderBy: [{ liga: "desc" }, { numero: "desc" }],
   });
 
   // Calcular stats por jornada y devolver limpio

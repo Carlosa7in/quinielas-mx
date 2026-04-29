@@ -60,7 +60,9 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
     if (!data.error) cb(data);
   };
 
-  const ligas = [...new Set(jornadas.map((j) => j.liga))];
+  const LIGA_ORDEN: Record<string, number> = { "Liga MX": 0, "Champions League": 1 };
+  const ligas = [...new Set(jornadas.map((j) => j.liga))]
+    .sort((a, b) => (LIGA_ORDEN[a] ?? 9) - (LIGA_ORDEN[b] ?? 9));
   const filtradas = jornadas.filter((j) => j.liga === ligaActiva);
 
   if (cargando) {
