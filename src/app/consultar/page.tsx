@@ -28,12 +28,14 @@ type Quiniela = {
   picks: Pick[];
 };
 
-type Participante = {
-  folio: string;
-  nombre: string;
-  aciertos: number | null;
-  estado: string;
-  totalPicks: number;
+type Partido = {
+  id: string;
+  orden: number;
+  equipoLocal: string;
+  equipoVisita: string;
+  resultado: string | null;
+  golesLocal: number | null;
+  golesVisita: number | null;
 };
 
 type JornadaPreliminares = {
@@ -41,8 +43,7 @@ type JornadaPreliminares = {
   numero: number;
   temporada: string;
   liga: string;
-  totalQuinielas: number;
-  participantes: Participante[];
+  partidos: Partido[];
 };
 
 const LABEL: Record<string, string> = { "1": "L", "X": "E", "2": "V" };
@@ -338,8 +339,15 @@ function ScannerQR({ onFolioDetectado }: { onFolioDetectado: (folio: string) => 
   );
 }
 
-/* ─── Preliminares ─── */
-function Preliminares({ onVerFolio }: { onVerFolio: (folio: string) => void }) {
+const RESULTADO_LABEL: Record<string, string> = { "1": "L", "X": "E", "2": "V" };
+const RESULTADO_COLOR: Record<string, string> = {
+  "1": "bg-green-100 text-green-700",
+  "X": "bg-yellow-100 text-yellow-700",
+  "2": "bg-blue-100 text-blue-700",
+};
+
+/* ─── Preliminares: resultados de partidos ─── */
+function Preliminares() {
   const [datos, setDatos] = useState<JornadaPreliminares[]>([]);
   const [cargando, setCargando] = useState(true);
   const [jornadaActiva, setJornadaActiva] = useState<string | null>(null);
@@ -363,13 +371,13 @@ function Preliminares({ onVerFolio }: { onVerFolio: (folio: string) => void }) {
   if (datos.length === 0) return null;
 
   const jornada = datos.find((j) => j.id === jornadaActiva) ?? datos[0];
-  const hayAciertos = jornada.participantes.some((p) => p.aciertos !== null);
+  const hayResultados = jornada.partidos.some((p) => p.resultado !== null);
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between px-1">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">🏆 Preliminares</p>
-        <p className="text-xs text-gray-400">{jornada.totalQuinielas} participantes</p>
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">📋 Resultados</p>
+        <p className="text-xs text-gray-400">{jornada.partidos.length} partidos</p>
       </div>
 
       {/* Selector de jornada si hay más de una activa */}
@@ -393,59 +401,65 @@ function Preliminares({ onVerFolio }: { onVerFolio: (folio: string) => void }) {
 
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         {/* Cabecera */}
-        <div className="bg-green-800 text-white px-4 py-2.5 flex items-center gap-2">
-          <span className="text-xs font-bold flex-1">{jornada.liga} · Jornada {jornada.numero}</span>
+        <div className="bg-green-800 text-white px-4 py-2.5 flex items-center justify-between">
+          <span className="text-sm font-bold">{jornada.liga} · Jornada {jornada.numero}</span>
           <span className="text-xs text-green-300">{jornada.temporada}</span>
         </div>
 
-        {jornada.participantes.length === 0 ? (
-          <p className="text-center text-gray-400 text-sm py-6">Aún no hay participantes</p>
-        ) : (
-          <ul className="divide-y divide-gray-50">
-            {jornada.participantes.map((p, i) => {
-              const esLider = hayAciertos && i === 0 && p.aciertos !== null;
-              return (
-                <li key={p.folio}>
-                  <button
-                    onClick={() => onVerFolio(p.folio)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left"
-                  >
-                    {/* Posición */}
-                    <span className={`text-xs font-black w-6 text-center shrink-0 ${
-                      i === 0 ? "text-yellow-500" : i === 1 ? "text-gray-400" : i === 2 ? "text-amber-600" : "text-gray-300"
-                    }`}>
-                      {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
-                    </span>
-
-                    {/* Nombre */}
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-semibold truncate ${esLider ? "text-green-700" : "text-gray-800"}`}>
-                        {p.nombre}
-                      </p>
-                      <p className="text-xs text-gray-400 font-mono">{p.folio}</p>
-                    </div>
-
-                    {/* Estado / aciertos */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      {p.aciertos !== null ? (
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                          p.estado === "ganadora" ? "bg-green-500 text-white" :
-                          p.estado === "perdedora" ? "bg-red-400 text-white" :
-                          "bg-gray-100 text-gray-600"
-                        }`}>
-                          {p.aciertos}/{p.totalPicks}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-300">⏳</span>
-                      )}
-                      <span className="text-gray-300 text-xs">›</span>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+        {!hayResultados && (
+          <div className="px-4 py-3 bg-yellow-50 text-yellow-700 text-xs text-center">
+            ⏳ Los resultados se irán publicando conforme avance la jornada
+          </div>
         )}
+
+        <div className="divide-y divide-gray-50">
+          {jornada.partidos.map((p) => {
+            const marcador = p.golesLocal !== null && p.golesVisita !== null
+              ? `${p.golesLocal} - ${p.golesVisita}`
+              : null;
+
+            return (
+              <div key={p.id} className="flex items-center px-4 py-2.5 gap-2">
+                {/* Número */}
+                <span className="text-xs text-gray-300 w-5 text-right shrink-0">{p.orden}</span>
+
+                {/* Local */}
+                <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+                  <span className="text-xs text-gray-700 truncate text-right">{p.equipoLocal}</span>
+                  <LogoEquipo equipo={p.equipoLocal} size={20} />
+                </div>
+
+                {/* Marcador / vs */}
+                <div className="shrink-0 w-16 text-center">
+                  {marcador ? (
+                    <span className="text-xs font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-md">
+                      {marcador}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-300">vs</span>
+                  )}
+                </div>
+
+                {/* Visita */}
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <LogoEquipo equipo={p.equipoVisita} size={20} />
+                  <span className="text-xs text-gray-700 truncate">{p.equipoVisita}</span>
+                </div>
+
+                {/* Resultado 1/X/2 */}
+                <div className="shrink-0 w-7 text-right">
+                  {p.resultado ? (
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${RESULTADO_COLOR[p.resultado] ?? "bg-gray-100 text-gray-500"}`}>
+                      {RESULTADO_LABEL[p.resultado] ?? p.resultado}
+                    </span>
+                  ) : (
+                    <span className="text-gray-200 text-xs">–</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -514,13 +528,6 @@ function ConsultarInner() {
     setModo("folio");
     setFolio(folioEscaneado);
     buscarFolio(folioEscaneado);
-  };
-
-  const alVerFolioPreliminares = (f: string) => {
-    setModo("folio");
-    setFolio(f);
-    buscarFolio(f);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -646,8 +653,8 @@ function ConsultarInner() {
         {/* Divider */}
         <div className="border-t border-gray-200 pt-2" />
 
-        {/* Preliminares */}
-        <Preliminares onVerFolio={alVerFolioPreliminares} />
+        {/* Resultados de partidos */}
+        <Preliminares />
       </div>
     </div>
   );

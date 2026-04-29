@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/preliminares — public leaderboard for active jornadas
+// GET /api/preliminares — resultados de partidos de jornadas activas
 export async function GET() {
   try {
     const jornadas = await prisma.jornada.findMany({
@@ -11,36 +11,23 @@ export async function GET() {
         numero: true,
         temporada: true,
         liga: true,
-        quinielas: {
+        partidos: {
           select: {
-            folio: true,
-            nombreCliente: true,
-            estado: true,
-            aciertos: true,
-            picks: { select: { id: true } },
+            id: true,
+            orden: true,
+            equipoLocal: true,
+            equipoVisita: true,
+            resultado: true,
+            golesLocal: true,
+            golesVisita: true,
           },
-          orderBy: [{ aciertos: "desc" }, { folio: "asc" }],
+          orderBy: { orden: "asc" },
         },
       },
       orderBy: { numero: "desc" },
     });
 
-    const resultado = jornadas.map((j) => ({
-      id: j.id,
-      numero: j.numero,
-      temporada: j.temporada,
-      liga: j.liga,
-      totalQuinielas: j.quinielas.length,
-      participantes: j.quinielas.map((q) => ({
-        folio: q.folio,
-        nombre: q.nombreCliente ?? "—",
-        aciertos: q.aciertos,
-        estado: q.estado,
-        totalPicks: q.picks.length,
-      })),
-    }));
-
-    return NextResponse.json(resultado);
+    return NextResponse.json(jornadas);
   } catch (err) {
     console.error("[PRELIMINARES]", err);
     return NextResponse.json({ error: "Error al cargar" }, { status: 500 });
