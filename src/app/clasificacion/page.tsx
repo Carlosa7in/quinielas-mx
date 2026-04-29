@@ -82,7 +82,7 @@ function TablaEquipos({ datos, expandido, setExpandido }: {
         {zonas.map((z) => (
           <span key={z.label} className="flex items-center gap-1.5">
             <span className={`w-3 h-3 rounded-sm inline-block ${
-              z.color === "green" ? "bg-green-500" : z.color === "yellow" ? "bg-yellow-400" : "bg-gray-300"
+              z.color === "green" ? "bg-green-500" : z.color === "yellow" ? "bg-yellow-400" : "bg-red-300"
             }`} />
             {z.label}
           </span>
