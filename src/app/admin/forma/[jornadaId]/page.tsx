@@ -366,9 +366,6 @@ export default function FormaPage() {
             print-color-adjust: exact !important;
             color-adjust: exact !important;
           }
-          img {
-            filter: grayscale(1) contrast(4) brightness(0.25) !important;
-          }
         }
       `}</style>
     </>

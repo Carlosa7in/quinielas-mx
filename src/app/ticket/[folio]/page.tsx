@@ -234,9 +234,6 @@ export default function TicketPage() {
           left: 50% !important;
           transform: translateX(-50%) !important;
         }
-        img {
-          filter: grayscale(1) contrast(4) brightness(0.25) !important;
-        }
       }
     `}</style>
     <div className="min-h-screen bg-gray-50">
