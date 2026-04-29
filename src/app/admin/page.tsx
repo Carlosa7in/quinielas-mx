@@ -3,27 +3,35 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 
-type Jornada = {
+type JornadaResumen = {
   id: string;
   numero: number;
   temporada: string;
+  liga: string;
   estado: string;
-  partidos: { id: string }[];
-  quinielas: { id: string; estado: string }[];
+  totalQuinielas: number;
+  totalPartidos: number;
+  recaudado: number;
+  ganadoras: number;
+};
+
+const LIGA_ICON: Record<string, string> = {
+  "Liga MX": "🇲🇽",
+  "Champions League": "⭐",
 };
 
 export default function AdminPage() {
   const { data: session } = useSession();
   const rol = (session?.user as { role?: string })?.role ?? "";
-  const [jornada, setJornada] = useState<Jornada | null>(null);
+  const [jornadas, setJornadas] = useState<JornadaResumen[]>([]);
+  const [cargando, setCargando] = useState(true);
   const [seedStatus, setSeedStatus] = useState("");
 
   useEffect(() => {
-    fetch("/api/jornadas")
+    fetch("/api/jornadas/todas")
       .then((r) => r.json())
-      .then((data) => {
-        if (!data.error) setJornada(data);
-      });
+      .then((data) => setJornadas(data))
+      .finally(() => setCargando(false));
   }, []);
 
   const inicializarDatos = async () => {
@@ -34,17 +42,22 @@ export default function AdminPage() {
     window.location.reload();
   };
 
-  const totalQuinielas = jornada?.quinielas?.length ?? 0;
-  const ganadoras = jornada?.quinielas?.filter((q) => q.estado === "ganadora").length ?? 0;
-  const recaudado = totalQuinielas * 20;
+  const activas = jornadas.filter((j) => j.estado === "abierta");
+  const hayJornadas = jornadas.length > 0;
+
+  // Stats globales
+  const totalQuinielas = jornadas.reduce((s, j) => s + j.totalQuinielas, 0);
+  const totalRecaudado = jornadas.reduce((s, j) => s + j.recaudado, 0);
+  const totalGanadoras = jornadas.reduce((s, j) => s + j.ganadoras, 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <div className="bg-green-900 text-white py-6 px-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Panel Admin</h1>
-            <p className="text-green-300 text-sm">Quinielas MX · Liga MX</p>
+            <p className="text-green-300 text-sm">Quinielas MX</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
@@ -62,53 +75,80 @@ export default function AdminPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* Jornada activa */}
-        {jornada ? (
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="font-bold text-gray-800">
-                  Jornada {jornada.numero} · {jornada.temporada}
-                </h2>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    jornada.estado === "abierta"
-                      ? "bg-green-100 text-green-700"
-                      : jornada.estado === "finalizada"
-                      ? "bg-gray-100 text-gray-600"
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}
-                >
-                  {jornada.estado}
-                </span>
-              </div>
-              <div className="text-right text-sm text-gray-500">
-                {jornada.partidos.length} partidos
-              </div>
-            </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-green-50 rounded-lg p-3 text-center">
+        {/* Stats globales */}
+        {hayJornadas && (
+          <div>
+            <p className="text-xs text-gray-400 font-medium px-1 mb-2">RESUMEN GLOBAL</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-white rounded-xl p-3 text-center shadow-sm">
                 <p className="text-2xl font-bold text-green-700">{totalQuinielas}</p>
                 <p className="text-xs text-gray-500">Quinielas</p>
               </div>
-              <div className="bg-yellow-50 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold text-yellow-600">${recaudado}</p>
+              <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                <p className="text-2xl font-bold text-yellow-600">${totalRecaudado}</p>
                 <p className="text-xs text-gray-500">Recaudado</p>
               </div>
-              <div className="bg-blue-50 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold text-blue-600">{ganadoras}</p>
+              <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                <p className="text-2xl font-bold text-blue-600">{totalGanadoras}</p>
                 <p className="text-xs text-gray-500">Ganadoras</p>
               </div>
             </div>
           </div>
-        ) : (
+        )}
+
+        {/* Jornadas activas */}
+        {cargando ? (
+          <div className="bg-white rounded-xl p-8 text-center text-gray-400 shadow-sm">
+            Cargando...
+          </div>
+        ) : activas.length === 0 ? (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
-            <p className="text-yellow-700 font-medium">No hay jornada activa</p>
-            <p className="text-yellow-600 text-sm mt-1">
-              Crea una nueva jornada o inicializa datos de ejemplo
+            <p className="text-yellow-700 font-medium">No hay jornadas activas</p>
+            <p className="text-yellow-600 text-sm mt-1">Crea una nueva jornada para comenzar</p>
+          </div>
+        ) : (
+          <div>
+            <p className="text-xs text-gray-400 font-medium px-1 mb-2">
+              JORNADAS ACTIVAS ({activas.length})
             </p>
+            <div className="space-y-3">
+              {activas.map((j) => (
+                <div key={j.id} className="bg-white rounded-xl shadow-sm p-4">
+                  {/* Título */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{LIGA_ICON[j.liga] ?? "⚽"}</span>
+                      <div>
+                        <p className="font-bold text-gray-800">
+                          {j.liga} · Jornada {j.numero}
+                        </p>
+                        <p className="text-xs text-gray-400">{j.temporada}</p>
+                      </div>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700">
+                      abierta
+                    </span>
+                  </div>
+
+                  {/* Stats de la jornada */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-green-50 rounded-lg p-2.5 text-center">
+                      <p className="text-xl font-bold text-green-700">{j.totalQuinielas}</p>
+                      <p className="text-xs text-gray-500">Quinielas</p>
+                    </div>
+                    <div className="bg-yellow-50 rounded-lg p-2.5 text-center">
+                      <p className="text-xl font-bold text-yellow-600">${j.recaudado}</p>
+                      <p className="text-xs text-gray-500">Recaudado</p>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-2.5 text-center">
+                      <p className="text-xl font-bold text-blue-600">{j.totalPartidos}</p>
+                      <p className="text-xs text-gray-500">Partidos</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -195,11 +235,11 @@ export default function AdminPage() {
         </div>
 
         {/* Seed datos de ejemplo */}
-        {!jornada && (
+        {!hayJornadas && !cargando && (
           <div className="bg-white border border-gray-200 rounded-xl p-4">
             <h3 className="font-semibold text-gray-700 mb-2">Datos de ejemplo</h3>
             <p className="text-gray-500 text-sm mb-3">
-              Crea un administrador y una jornada de ejemplo para empezar a probar.
+              Crea una jornada de ejemplo para empezar a probar.
             </p>
             <button
               onClick={inicializarDatos}
