@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { LogoEquipo } from "@/components/LogoEquipo";
 import { JornadaSelector, type JornadaResumen } from "@/components/JornadaSelector";
 
@@ -24,6 +25,8 @@ type Jornada = {
 export default function TiendaPage() {
   const [modo, setModo] = useState<"selector" | "seleccion" | "manual">("selector");
   const router = useRouter();
+  const { data: session } = useSession();
+  const usuarioId = (session?.user as { id?: string })?.id ?? null;
   const [jornada, setJornada] = useState<Jornada | null>(null);
   const [picks, setPicks] = useState<Record<string, string>>({});
   const [nombre, setNombre] = useState("");
@@ -70,6 +73,7 @@ export default function TiendaPage() {
         nombre,
         telefono,
         canal: "tienda",
+        usuarioId,
       }),
     });
 

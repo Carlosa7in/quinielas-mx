@@ -222,13 +222,26 @@ export default function AdminPage() {
 
           {rol === "superadmin" && (
             <Link
+              href="/admin/comisiones"
+              className="bg-orange-600 hover:bg-orange-500 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+            >
+              <span className="text-2xl">💰</span>
+              <div>
+                <p className="font-bold">Comisiones</p>
+                <p className="text-orange-200 text-sm">Ventas y recaudado por punto de venta</p>
+              </div>
+            </Link>
+          )}
+
+          {rol === "superadmin" && (
+            <Link
               href="/admin/usuarios"
               className="bg-purple-900 hover:bg-purple-800 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
             >
               <span className="text-2xl">👥</span>
               <div>
                 <p className="font-bold">Administradores</p>
-                <p className="text-purple-300 text-sm">Gestionar accesos al panel admin</p>
+                <p className="text-purple-300 text-sm">Gestionar accesos y puntos de venta</p>
               </div>
             </Link>
           )}

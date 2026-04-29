@@ -10,15 +10,16 @@ datasource db {
 }
 
 model Usuario {
-  id        String     @id @default(cuid())
-  nombre    String
-  username  String?    @unique
-  email     String     @unique
-  telefono  String?
-  password  String
-  rol       String     @default("user")
-  createdAt DateTime   @default(now())
-  quinielas Quiniela[]
+  id          String     @id @default(cuid())
+  nombre      String
+  username    String?    @unique
+  email       String     @unique
+  telefono    String?
+  password    String
+  rol         String     @default("user")
+  puntoVenta  String?
+  createdAt   DateTime   @default(now())
+  quinielas   Quiniela[]
 }
 
 model Jornada {
