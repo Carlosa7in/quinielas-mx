@@ -27,6 +27,17 @@ const LIGA_ICONO: Record<string, string> = {
   "La Liga": "🇪🇸",
 };
 
+// Formatear Date → YYYYMMDD
+function toYYYYMMDD(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+}
+// Formatear Date → YYYY-MM-DD (para input type=date)
+function toInputDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export default function NuevaJornadaPage() {
   const router = useRouter();
   const [nombre, setNombre] = useState("");
@@ -38,6 +49,89 @@ export default function NuevaJornadaPage() {
   );
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
+
+  // ── Estado del panel ESPN ──────────────────────────────────────────
+  const hoy = new Date();
+  const masdiez = new Date(hoy); masdiez.setDate(hoy.getDate() + 10);
+  const [panelEspn, setPanelEspn] = useState(false);
+  const [espnLiga, setEspnLiga] = useState("Liga MX");
+  const [espnDesde, setEspnDesde] = useState(toInputDate(hoy));
+  const [espnHasta, setEspnHasta] = useState(toInputDate(masdiez));
+  const [espnCargando, setEspnCargando] = useState(false);
+  const [espnMensaje, setEspnMensaje] = useState<{ tipo: "ok" | "error" | "warn"; texto: string } | null>(null);
+  const [espnDesconocidos, setEspnDesconocidos] = useState<string[]>([]);
+
+  const cargarDesdeEspn = async () => {
+    setEspnCargando(true);
+    setEspnMensaje(null);
+    setEspnDesconocidos([]);
+    try {
+      const desde = toYYYYMMDD(new Date(espnDesde));
+      const hasta = toYYYYMMDD(new Date(espnHasta));
+      const res = await fetch(
+        `/api/espn-partidos?liga=${encodeURIComponent(espnLiga)}&desde=${desde}&hasta=${hasta}`
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setEspnMensaje({ tipo: "error", texto: data.error ?? "Error al consultar ESPN" });
+        return;
+      }
+
+      const fetchedPartidos: PartidoForm[] = (data.partidos ?? []).map(
+        (p: { equipoLocal: string; equipoVisita: string; fechaHora: string; liga: string }) => ({
+          liga: p.liga,
+          equipoLocal: p.equipoLocal,
+          equipoVisita: p.equipoVisita,
+          fechaHora: p.fechaHora,
+        })
+      );
+
+      if (fetchedPartidos.length === 0) {
+        setEspnMensaje({ tipo: "warn", texto: `No se encontraron partidos de ${espnLiga} en ese rango de fechas.` });
+        return;
+      }
+
+      // Detectar equipos no reconocidos en nuestro sistema
+      const equiposSistema = EQUIPOS_POR_LIGA[espnLiga] ?? [];
+      const desconocidos = fetchedPartidos.flatMap((p) => {
+        const d: string[] = [];
+        if (p.equipoLocal  && !equiposSistema.includes(p.equipoLocal))  d.push(p.equipoLocal);
+        if (p.equipoVisita && !equiposSistema.includes(p.equipoVisita)) d.push(p.equipoVisita);
+        return d;
+      });
+      const uniqueDesc = [...new Set(desconocidos)];
+      setEspnDesconocidos(uniqueDesc);
+
+      // Limitar a MAX_PARTIDOS partidos (tomar los primeros)
+      const cargados = fetchedPartidos.slice(0, MAX_PARTIDOS);
+
+      // Rellenar hasta MIN_PARTIDOS si hacen falta
+      const relleno = cargados.length < MIN_PARTIDOS
+        ? [...cargados, ...Array.from({ length: MIN_PARTIDOS - cargados.length }, () => PARTIDO_VACIO(espnLiga))]
+        : cargados;
+
+      setPartidos(relleno);
+
+      // Auto-rellenar nombre con sugerencia ESPN y fechas
+      if (data.nombreSugerido && !nombre.trim()) {
+        setNombre(data.nombreSugerido);
+      }
+      if (!fechaInicio) setFechaInicio(espnDesde);
+      if (!fechaFin)   setFechaFin(espnHasta);
+
+      setEspnMensaje({
+        tipo: uniqueDesc.length > 0 ? "warn" : "ok",
+        texto: `✅ ${cargados.length} partido${cargados.length !== 1 ? "s" : ""} cargado${cargados.length !== 1 ? "s" : ""} desde ESPN` +
+          (fetchedPartidos.length > MAX_PARTIDOS
+            ? ` (se mostraron los primeros ${MAX_PARTIDOS} de ${fetchedPartidos.length})`
+            : ""),
+      });
+    } catch {
+      setEspnMensaje({ tipo: "error", texto: "No se pudo conectar con ESPN" });
+    } finally {
+      setEspnCargando(false);
+    }
+  };
 
   const updatePartido = (i: number, campo: keyof PartidoForm, valor: string) => {
     setPartidos((prev) => {
@@ -137,6 +231,108 @@ export default function NuevaJornadaPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="max-w-xl mx-auto px-4 py-4 space-y-4">
+
+        {/* ── Panel ESPN ─────────────────────────────────────────────── */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <button
+            type="button"
+            onClick={() => { setPanelEspn((v) => !v); setEspnMensaje(null); }}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg">📡</span>
+              <div className="text-left">
+                <p className="font-semibold text-gray-800 text-sm">Cargar partidos desde ESPN</p>
+                <p className="text-xs text-gray-400">Importa el calendario automáticamente</p>
+              </div>
+            </div>
+            <span className="text-gray-400 text-sm">{panelEspn ? "▲" : "▼"}</span>
+          </button>
+
+          {panelEspn && (
+            <div className="border-t border-gray-100 px-4 pb-4 pt-3 space-y-3">
+              {/* Liga */}
+              <div>
+                <label className="text-xs text-gray-500">Liga a importar</label>
+                <div className="flex gap-1.5 flex-wrap mt-1">
+                  {LIGAS.map((liga) => (
+                    <button
+                      key={liga}
+                      type="button"
+                      onClick={() => setEspnLiga(liga)}
+                      className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                        espnLiga === liga
+                          ? "bg-blue-700 text-white"
+                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      }`}
+                    >
+                      {LIGA_ICONO[liga] ?? "⚽"} {liga}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rango de fechas */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-gray-500">Desde</label>
+                  <input
+                    type="date"
+                    value={espnDesde}
+                    onChange={(e) => setEspnDesde(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Hasta</label>
+                  <input
+                    type="date"
+                    value={espnHasta}
+                    onChange={(e) => setEspnHasta(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Botón cargar */}
+              <button
+                type="button"
+                onClick={cargarDesdeEspn}
+                disabled={espnCargando}
+                className="w-full bg-blue-700 hover:bg-blue-600 disabled:bg-blue-300 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {espnCargando ? (
+                  <>
+                    <span className="animate-spin">⟳</span>
+                    Consultando ESPN...
+                  </>
+                ) : (
+                  <>📥 Cargar partidos</>
+                )}
+              </button>
+
+              {/* Mensaje resultado */}
+              {espnMensaje && (
+                <div className={`rounded-lg p-3 text-sm ${
+                  espnMensaje.tipo === "ok"    ? "bg-green-50 text-green-700" :
+                  espnMensaje.tipo === "warn"  ? "bg-yellow-50 text-yellow-700" :
+                                                 "bg-red-50 text-red-700"
+                }`}>
+                  {espnMensaje.texto}
+                </div>
+              )}
+
+              {/* Equipos no reconocidos */}
+              {espnDesconocidos.length > 0 && (
+                <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 text-xs text-orange-700">
+                  <p className="font-semibold mb-1">⚠️ Equipos no reconocidos en el sistema:</p>
+                  <p className="text-orange-600">{espnDesconocidos.join(", ")}</p>
+                  <p className="mt-1 text-orange-500">Puedes seleccionarlos manualmente en los desplegables.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Datos generales */}
         <div className="bg-white rounded-xl p-4 space-y-3">
@@ -274,6 +470,10 @@ export default function NuevaJornadaPage() {
                     }`}
                   >
                     <option value="">Local</option>
+                    {/* Si el valor actual no está en la lista (p.ej. cargado de ESPN), mostrarlo igual */}
+                    {partido.equipoLocal && !opcionesLocal.includes(partido.equipoLocal) && (
+                      <option value={partido.equipoLocal}>{partido.equipoLocal} ⚠️</option>
+                    )}
                     {opcionesLocal.map((eq) => (
                       <option key={eq} value={eq} disabled={usadosEnOtros.includes(eq)}>
                         {usadosEnOtros.includes(eq) ? `${eq} (ya asignado)` : eq}
@@ -291,6 +491,10 @@ export default function NuevaJornadaPage() {
                     }`}
                   >
                     <option value="">Visita</option>
+                    {/* Si el valor actual no está en la lista (p.ej. cargado de ESPN), mostrarlo igual */}
+                    {partido.equipoVisita && !opcionesVisita.includes(partido.equipoVisita) && (
+                      <option value={partido.equipoVisita}>{partido.equipoVisita} ⚠️</option>
+                    )}
                     {opcionesVisita.map((eq) => (
                       <option key={eq} value={eq} disabled={usadosEnOtros.includes(eq)}>
                         {usadosEnOtros.includes(eq) ? `${eq} (ya asignado)` : eq}
