@@ -20,6 +20,11 @@ type Jornada = {
   partidos: Partido[];
 };
 
+// Normalizar caracteres para impresoras térmicas sin soporte UTF-8 completo
+function norm(s: string): string {
+  return (s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
 function CornerMarker({ position }: { position: string }) {
   return (
     <div className={`absolute w-10 h-10 ${position}`} style={{ lineHeight: 0 }}>
@@ -152,25 +157,21 @@ function FormaTicket({ jornada, picks }: { jornada: Jornada; picks: Record<strin
       className="bg-white mx-auto my-0 print:break-after-page forma-ticket"
       style={{
         width: "100%", maxWidth: "72mm",
-        padding: "16mm 4mm", fontFamily: "'Courier New', monospace",
+        padding: "4mm", fontFamily: "'Courier New', Courier, monospace",
         border: "1px dashed #999", pageBreakInside: "avoid", boxSizing: "border-box",
       }}
     >
-      {/* Encabezado */}
+      {/* Encabezado — sin emojis ni acentos para compatibilidad térmica */}
       <div style={{ textAlign: "center", borderBottom: "1px solid #000", paddingBottom: "3px", marginBottom: "4px" }}>
         <p style={{ fontSize: "11pt", fontWeight: "900", letterSpacing: "2px" }}>QUINIELAS MX</p>
-        <p style={{ fontSize: "7.5pt", fontWeight: "bold" }}>
-          {jornada.liga}
-        </p>
+        <p style={{ fontSize: "7.5pt", fontWeight: "bold" }}>{norm(jornada.liga)}</p>
         <p style={{ fontSize: "7.5pt" }}>
-          {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
+          {norm(jornada.nombre ?? `Jornada ${jornada.numero}`)} * {norm(jornada.temporada)}
         </p>
-        {!tienepicks && (
-          <p style={{ fontSize: "7pt", marginTop: "2px" }}>$20 MXN — Marca con pluma</p>
-        )}
-        {tienepicks && (
-          <p style={{ fontSize: "7pt", marginTop: "2px" }}>*** PICKS PRE-SELECCIONADOS ***</p>
-        )}
+        {!tienepicks
+          ? <p style={{ fontSize: "7pt", marginTop: "2px" }}>$20 MXN - Marca con pluma</p>
+          : <p style={{ fontSize: "7pt", marginTop: "2px" }}>*** PICKS PRE-SELECCIONADOS ***</p>
+        }
       </div>
 
       {/* Leyenda */}
@@ -178,47 +179,39 @@ function FormaTicket({ jornada, picks }: { jornada: Jornada; picks: Record<strin
         [ L=Local  E=Empate  V=Visita ]
       </p>
 
-      {/* Partidos */}
+      {/* Partidos — 2 líneas: nombre arriba, casillas abajo (sin logos) */}
       {partidos.map((partido, i) => {
         const sel = picks[partido.id];
-        const L = sel === "1" ? "[■]" : "[ ]";
-        const E = sel === "X" ? "[■]" : "[ ]";
-        const V = sel === "2" ? "[■]" : "[ ]";
+        const L = sel === "1" ? "[*]" : "[ ]";
+        const E = sel === "X" ? "[*]" : "[ ]";
+        const V = sel === "2" ? "[*]" : "[ ]";
         return (
-          <div key={partido.id} style={{ marginBottom: "3px", borderBottom: "1px dotted #ccc", paddingBottom: "2px" }}>
-            <div style={{ fontSize: "7pt", fontWeight: "bold", display: "flex", gap: "2px", alignItems: "center" }}>
-              <span style={{ color: "#555", minWidth: "5mm", flexShrink: 0 }}>{i + 1}.</span>
-              <LogoEquipo equipo={partido.equipoLocal} size={13} />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-                {partido.equipoLocal}
-              </span>
-              <span style={{ color: "#888", fontSize: "6pt", flexShrink: 0, margin: "0 1px" }}>vs</span>
-              <LogoEquipo equipo={partido.equipoVisita} size={13} />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-                {partido.equipoVisita}
-              </span>
-            </div>
-            <div style={{ fontSize: "9pt", fontWeight: "bold", display: "flex", gap: "6px", paddingLeft: "5mm", marginTop: "1px" }}>
-              <span>L{L}</span>
-              <span>E{E}</span>
-              <span>V{V}</span>
-            </div>
+          <div key={partido.id} style={{ marginBottom: "4px", borderBottom: "1px dotted #bbb", paddingBottom: "3px" }}>
+            {/* Línea 1: número y equipos */}
+            <p style={{ fontSize: "7.5pt", fontWeight: "bold", margin: 0 }}>
+              <span style={{ color: "#555" }}>{i + 1}.</span>{" "}
+              {norm(partido.equipoLocal)} vs {norm(partido.equipoVisita)}
+            </p>
+            {/* Línea 2: casillas L E V */}
+            <p style={{ fontSize: "9pt", fontWeight: "bold", paddingLeft: "6mm", margin: "2px 0 0" }}>
+              L{L}{"  "}E{E}{"  "}V{V}
+            </p>
           </div>
         );
       })}
 
       {/* Datos cliente */}
       <div style={{ borderTop: "1px dashed #000", paddingTop: "6px", marginTop: "6px", fontSize: "7.5pt" }}>
-        <p style={{ marginBottom: "2px" }}>Nombre:</p>
-        <div style={{ borderBottom: "1px solid #000", height: "18mm", marginBottom: "8px" }} />
-        <p style={{ marginBottom: "2px" }}>Teléfono:</p>
-        <div style={{ borderBottom: "1px solid #000", height: "18mm" }} />
+        <p style={{ margin: "0 0 2px" }}>Nombre:</p>
+        <div style={{ borderBottom: "1px solid #000", height: "16mm", marginBottom: "6px" }} />
+        <p style={{ margin: "0 0 2px" }}>Telefono:</p>
+        <div style={{ borderBottom: "1px solid #000", height: "16mm" }} />
       </div>
 
       {/* Footer */}
       <div style={{ textAlign: "center", borderTop: "1px solid #000", marginTop: "4px", paddingTop: "3px", fontSize: "6.5pt" }}>
-        <p>No válido como comprobante de pago.</p>
-        <p>{jornada.nombre ?? `Jornada ${jornada.numero}`} · quinielas.mx</p>
+        <p style={{ margin: 0 }}>No valido como comprobante de pago.</p>
+        <p style={{ margin: 0 }}>{norm(jornada.nombre ?? `Jornada ${jornada.numero}`)} * quinielas.mx</p>
       </div>
     </div>
   );
@@ -258,6 +251,22 @@ export default function FormaPage() {
     setFormasPicks((prev) => { const n = [...prev]; n[idx] = {}; return n; });
   };
 
+  // Inyectar @page dinámico según modo de impresión
+  const handlePrint = () => {
+    if (modo === "ticket") {
+      const s = document.createElement("style");
+      s.id = "__page-size-ticket";
+      s.textContent = "@page { size: 80mm auto; margin: 0; }";
+      document.head.appendChild(s);
+      setTimeout(() => {
+        window.print();
+        document.getElementById("__page-size-ticket")?.remove();
+      }, 80);
+    } else {
+      window.print();
+    }
+  };
+
   if (!jornada) {
     return <div className="flex items-center justify-center min-h-screen"><p className="text-gray-400">Cargando forma...</p></div>;
   }
@@ -275,7 +284,7 @@ export default function FormaPage() {
               </p>
             </div>
             <button
-              onClick={() => window.print()}
+              onClick={handlePrint}
               className="bg-yellow-400 text-green-900 font-bold px-5 py-2 rounded-lg text-sm"
             >
               🖨️ Imprimir
@@ -353,18 +362,25 @@ export default function FormaPage() {
       <style>{`
         html, body { overflow-x: hidden; }
         @media print {
-          body { margin: 0; }
+          body { margin: 0; padding: 0; }
           .print\\:hidden { display: none !important; }
-          .forma-hoja { width: 148mm !important; max-width: 148mm !important; }
+          .forma-hoja {
+            width: 148mm !important;
+            max-width: 148mm !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
           .forma-ticket {
             width: 72mm !important;
             max-width: 72mm !important;
             border: none !important;
+            padding: 4mm !important;
           }
+          /* Quitar logos en cualquier modo de impresión */
+          img { display: none !important; }
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            color-adjust: exact !important;
           }
         }
       `}</style>

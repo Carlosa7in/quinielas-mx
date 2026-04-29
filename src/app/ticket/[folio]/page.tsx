@@ -53,6 +53,11 @@ type Quiniela = {
   picks: Pick[];
 };
 
+// Normalizar caracteres especiales para impresoras térmicas (no soportan UTF-8 completo)
+function norm(s: string): string {
+  return (s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
 export default function TicketPage() {
   const params = useParams();
   const folio = params.folio as string;
@@ -225,15 +230,26 @@ export default function TicketPage() {
   return (
     <>
     <style>{`
+      #print-ticket { display: none; }
       @media print {
-        body * { visibility: hidden; }
-        #ticket-receipt, #ticket-receipt * { visibility: visible; }
-        #ticket-receipt {
+        @page { size: 80mm auto; margin: 0; }
+        body { visibility: hidden; margin: 0; padding: 0; }
+        #print-ticket {
+          display: block !important;
+          visibility: visible !important;
           position: fixed !important;
-          top: 0 !important;
-          left: 50% !important;
-          transform: translateX(-50%) !important;
+          top: 0; left: 0;
+          width: 100%;
+          padding: 3mm 4mm;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 9pt;
+          line-height: 1.5;
+          color: #000 !important;
+          background: white !important;
         }
+        #print-ticket * { visibility: visible !important; }
+        #print-ticket p  { margin: 0; }
+        #print-ticket img { display: block !important; }
       }
     `}</style>
     <div className="min-h-screen bg-gray-50">
@@ -382,6 +398,44 @@ export default function TicketPage() {
               borderRight: "1px solid #e5e7eb",
             }} />
           </div>
+        </div>
+
+        {/* ── Área exclusiva para impresión térmica (oculta en pantalla) ── */}
+        <div id="print-ticket">
+          <p style={{ textAlign: "center", fontWeight: "bold", fontSize: "13pt", letterSpacing: "2px" }}>QUINIELAS MX</p>
+          <p style={{ textAlign: "center" }}>{norm(quiniela.jornada.liga)}</p>
+          <p style={{ textAlign: "center" }}>
+            {norm(quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`)} * {norm(quiniela.jornada.temporada)}
+          </p>
+          <div style={{ borderTop: "1px solid #000", margin: "4px 0" }} />
+          <p><strong>FOLIO:</strong> {quiniela.folio}</p>
+          <p><strong>NOMBRE:</strong> {norm(quiniela.nombreCliente ?? "—")}</p>
+          {quiniela.telefonoCliente && <p><strong>TEL:</strong> {quiniela.telefonoCliente}</p>}
+          <p><strong>TOTAL:</strong> ${quiniela.monto.toFixed(2)} MXN</p>
+          <div style={{ borderTop: "1px solid #000", margin: "4px 0" }} />
+          <p style={{ fontWeight: "bold" }}>PRONOSTICOS:</p>
+          {[...quiniela.picks]
+            .sort((a, b) => a.partido.orden - b.partido.orden)
+            .map((pick, i) => {
+              const label =
+                pick.prediccion === "1" ? "LOCAL" :
+                pick.prediccion === "2" ? "VISITA" : "EMPATE";
+              return (
+                <div key={pick.id} style={{ marginBottom: "3px" }}>
+                  <p>{i + 1}. {norm(pick.partido.equipoLocal)} vs {norm(pick.partido.equipoVisita)}</p>
+                  <p style={{ paddingLeft: "6mm" }}>[{label}]</p>
+                </div>
+              );
+            })}
+          <div style={{ borderTop: "1px solid #000", margin: "4px 0" }} />
+          <p style={{ textAlign: "center", fontSize: "8pt" }}>Conserva este ticket para reclamar tu premio.</p>
+          <p style={{ textAlign: "center", fontSize: "8pt" }}>tablitasquinielas.net</p>
+          {qrDataUrl && (
+            <div style={{ textAlign: "center", marginTop: "6px" }}>
+              <img src={qrDataUrl} alt="QR" style={{ width: "55mm", height: "55mm", margin: "0 auto" }} />
+              <p style={{ fontSize: "7pt", textAlign: "center", marginTop: "2px" }}>Escanea para consultar resultados</p>
+            </div>
+          )}
         </div>
 
         {/* Acciones */}
