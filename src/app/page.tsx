@@ -23,6 +23,12 @@ export default function Home() {
           >
             Consultar Quiniela
           </Link>
+          <Link
+            href="/clasificacion"
+            className="block w-full bg-white/10 hover:bg-white/20 border border-white/30 text-white font-semibold py-3 px-6 rounded-xl transition-colors text-sm"
+          >
+            📊 Tabla General Liga MX
+          </Link>
         </div>
 
         <div className="bg-white/10 rounded-xl p-4 text-sm text-green-100 space-y-2">
