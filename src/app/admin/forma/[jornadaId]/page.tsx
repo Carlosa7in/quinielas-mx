@@ -202,14 +202,14 @@ export default function FormaPage() {
               <CornerMarker position="bottom-2 right-2" />
 
               {/* Encabezado */}
-              <div className="text-center mb-3 pt-2">
-                <p className="font-bold" style={{ fontSize: "14pt" }}>
+              <div className="text-center mb-2 pt-2" style={{ borderBottom: "2px solid #000", paddingBottom: "4px" }}>
+                <p style={{ fontSize: "13pt", fontWeight: "900", letterSpacing: "1px" }}>
                   ⚽ QUINIELAS MX
                 </p>
-                <p style={{ fontSize: "9pt", color: "#555" }}>
-                  Jornada {jornada.numero} · {jornada.temporada} · {jornada.liga}
+                <p style={{ fontSize: "8.5pt", fontWeight: "bold" }}>
+                  {jornada.liga} · Jornada {jornada.numero} · {jornada.temporada}
                 </p>
-                <p style={{ fontSize: "8pt", color: "#555" }}>
+                <p style={{ fontSize: "7.5pt", color: "#333" }}>
                   {tienepicks
                     ? "✦ Forma con picks pre-seleccionados ✦"
                     : "Costo: $20 MXN — Marca con pluma o bolígrafo"}
@@ -218,54 +218,68 @@ export default function FormaPage() {
 
               {/* Instrucciones */}
               <div
-                className="mb-2 px-2 py-1 rounded text-center"
-                style={{ backgroundColor: "#1e3a5f", color: "#fff", fontSize: "7pt", fontWeight: "bold" }}
+                style={{
+                  border: "1.5px solid #000",
+                  borderRadius: "3px",
+                  padding: "2px 6px",
+                  marginBottom: "4px",
+                  fontSize: "7pt",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  letterSpacing: "0.5px",
+                }}
               >
                 L = Gana Local &nbsp;|&nbsp; E = Empate &nbsp;|&nbsp; V = Gana Visita
               </div>
 
               {/* Cabecera columnas */}
               <div
-                className="flex mb-1"
-                style={{ fontSize: "7pt", fontWeight: "bold", backgroundColor: "#1e3a5f", color: "#fff", padding: "2px 0" }}
+                className="flex"
+                style={{
+                  fontSize: "7pt",
+                  fontWeight: "900",
+                  borderBottom: "2px solid #000",
+                  borderTop: "1px solid #000",
+                  padding: "2px 0",
+                  marginBottom: "1px",
+                }}
               >
-                <div style={{ flex: 1, paddingLeft: "2px" }}>PARTIDO</div>
-                <div style={{ width: "16mm", textAlign: "center" }}>L</div>
-                <div style={{ width: "16mm", textAlign: "center" }}>E</div>
-                <div style={{ width: "16mm", textAlign: "center" }}>V</div>
+                <div style={{ width: "5mm" }} />
+                <div style={{ flex: 1 }}>PARTIDO</div>
+                <div style={{ width: "13mm", textAlign: "center" }}>L</div>
+                <div style={{ width: "13mm", textAlign: "center" }}>E</div>
+                <div style={{ width: "13mm", textAlign: "center" }}>V</div>
               </div>
 
               {/* Partidos */}
               {jornada.partidos.map((partido, i) => {
                 const seleccionado = picks[partido.id];
-                const colorFila = i % 2 === 0 ? "#fff" : "#f5f8ff";
                 return (
                   <div
                     key={partido.id}
                     className="flex items-center"
                     style={{
-                      borderBottom: "1px solid #ddd",
+                      borderBottom: "1px solid #bbb",
                       paddingTop: "2px",
                       paddingBottom: "2px",
-                      backgroundColor: colorFila,
                     }}
                   >
                     {/* Número */}
-                    <span style={{ color: "#999", fontSize: "6pt", width: "5mm", textAlign: "center", flexShrink: 0 }}>
+                    <span style={{ fontSize: "6pt", width: "5mm", textAlign: "center", flexShrink: 0, color: "#555" }}>
                       {i + 1}
                     </span>
 
                     {/* Logo local + nombre */}
-                    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "3px", fontSize: "7pt" }}>
-                      <LogoEquipo equipo={partido.equipoLocal} size={16} />
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "3px" }}>
+                      <LogoEquipo equipo={partido.equipoLocal} size={14} />
                       <strong style={{ fontSize: "6.5pt" }}>{partido.equipoLocal}</strong>
                     </div>
 
-                    <span style={{ fontSize: "6pt", color: "#888", width: "5mm", textAlign: "center", flexShrink: 0 }}>vs</span>
+                    <span style={{ fontSize: "6pt", width: "5mm", textAlign: "center", flexShrink: 0 }}>vs</span>
 
                     {/* Logo visita + nombre */}
-                    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "3px", fontSize: "7pt" }}>
-                      <LogoEquipo equipo={partido.equipoVisita} size={16} />
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "3px" }}>
+                      <LogoEquipo equipo={partido.equipoVisita} size={14} />
                       <strong style={{ fontSize: "6.5pt" }}>{partido.equipoVisita}</strong>
                     </div>
 
@@ -276,24 +290,34 @@ export default function FormaPage() {
                       return (
                         <div
                           key={op}
-                          style={{ width: "16mm", display: "flex", justifyContent: "center", alignItems: "center" }}
+                          style={{ width: "13mm", display: "flex", justifyContent: "center", alignItems: "center" }}
                         >
                           <div
                             style={{
-                              width: "10mm",
-                              height: "9mm",
-                              border: "2px solid #1e3a5f",
+                              width: "9mm",
+                              height: "8mm",
+                              border: esSel ? "3px solid #000" : "1.5px solid #555",
                               borderRadius: "2px",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              fontSize: "9pt",
+                              fontSize: "8pt",
                               fontWeight: "bold",
-                              backgroundColor: esSel ? "#1e3a5f" : "#fff",
-                              color: esSel ? "#fff" : "#ccc",
+                              position: "relative",
                             }}
                           >
-                            {etiqueta}
+                            {esSel ? etiqueta : <span style={{ color: "#aaa", fontSize: "7pt" }}>{etiqueta}</span>}
+                            {/* Marca de selección — X grande cuando está seleccionado */}
+                            {esSel && (
+                              <span style={{
+                                position: "absolute",
+                                top: "-1px", left: "-1px", right: "-1px", bottom: "-1px",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                fontSize: "11pt", fontWeight: "900", color: "#000",
+                              }}>
+                                {etiqueta}
+                              </span>
+                            )}
                           </div>
                         </div>
                       );
@@ -316,14 +340,14 @@ export default function FormaPage() {
 
               {/* Footer */}
               <div className="flex justify-between items-end mt-3">
-                <p style={{ fontSize: "6pt", color: "#aaa", maxWidth: "80mm" }}>
+                <p style={{ fontSize: "6pt", color: "#444", maxWidth: "80mm" }}>
                   Esta forma no es comprobante. Al pagar en caja recibirás tu ticket oficial con folio.
                 </p>
                 <div
                   style={{
-                    width: "18mm", height: "18mm", border: "2px solid black",
+                    width: "18mm", height: "18mm", border: "2px solid #000",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "5pt", textAlign: "center", color: "#666",
+                    fontSize: "9pt", fontWeight: "bold", textAlign: "center",
                   }}
                 >
                   J{jornada.numero}
