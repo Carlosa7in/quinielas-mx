@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 const JORNADA_SELECT = {
   id: true,
   numero: true,
+  nombre: true,
   temporada: true,
   liga: true,
   estado: true,
@@ -34,19 +35,20 @@ export async function GET(req: Request) {
 // POST /api/jornadas - crear jornada (admin)
 export async function POST(req: Request) {
   const body = await req.json();
-  const { numero, temporada, liga, fechaInicio, fechaFin, partidos } = body;
+  const { numero, nombre, temporada, liga, fechaInicio, fechaFin, partidos } = body;
 
   try {
     // Crear jornada sin partidos primero (NeonHTTP no soporta transacciones)
     const jornada = await prisma.jornada.create({
       data: {
         numero,
+        nombre: nombre ?? null,
         temporada,
         liga: liga ?? "Liga MX",
         fechaInicio: new Date(fechaInicio),
         fechaFin: new Date(fechaFin),
       },
-      select: { id: true, numero: true, temporada: true, liga: true, estado: true },
+      select: { id: true, numero: true, nombre: true, temporada: true, liga: true, estado: true },
     });
 
     // Crear partidos uno a uno

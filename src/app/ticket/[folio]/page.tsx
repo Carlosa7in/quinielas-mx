@@ -7,7 +7,7 @@ function generarMensajeWhatsApp(quiniela: {
   folio: string;
   nombreCliente: string | null;
   monto: number;
-  jornada: { numero: number; temporada: string };
+  jornada: { numero: number; nombre: string | null; temporada: string };
   picks: { prediccion: string; partido: { equipoLocal: string; equipoVisita: string; orden: number } }[];
 }): string {
   const picks = [...quiniela.picks]
@@ -20,7 +20,7 @@ function generarMensajeWhatsApp(quiniela: {
     `━━━━━━━━━━━━━━━━━━━━\n` +
     `📋 *Folio:* ${quiniela.folio}\n` +
     `👤 *Nombre:* ${quiniela.nombreCliente ?? "-"}\n` +
-    `🏆 *Jornada ${quiniela.jornada.numero}* · ${quiniela.jornada.temporada}\n` +
+    `🏆 *${quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`}* · ${quiniela.jornada.temporada}\n` +
     `💵 *Monto:* $${quiniela.monto.toFixed(2)} MXN\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
     `*Tus pronósticos:*\n${picks}\n` +
@@ -49,7 +49,7 @@ type Quiniela = {
   canal: string;
   monto: number;
   estado: string;
-  jornada: { numero: number; temporada: string; liga: string };
+  jornada: { numero: number; nombre: string | null; temporada: string; liga: string };
   picks: Pick[];
 };
 
@@ -97,7 +97,7 @@ export default function TicketPage() {
     doc.text("QUINIELAS MX", 40, 8, { align: "center" });
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.text(`Liga MX · Jornada ${quiniela.jornada.numero} · ${quiniela.jornada.temporada}`, 40, 14, { align: "center" });
+    doc.text(`${quiniela.jornada.liga} · ${quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`} · ${quiniela.jornada.temporada}`, 40, 14, { align: "center" });
     doc.text(`Folio: ${quiniela.folio}`, 40, 20, { align: "center" });
 
     // Folio
@@ -228,7 +228,7 @@ export default function TicketPage() {
         <div className="max-w-lg mx-auto">
           <h1 className="text-2xl font-bold">Quiniela Registrada</h1>
           <p className="text-green-200 text-sm mt-1">
-            {quiniela.jornada.liga} · Jornada {quiniela.jornada.numero} · {quiniela.jornada.temporada}
+            {quiniela.jornada.liga} · {quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`} · {quiniela.jornada.temporada}
           </p>
         </div>
       </div>

@@ -10,3 +10,11 @@ export function generarFolio(numeroJornada: number): string {
   const aleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
   return `QMX-J${numeroJornada}-${anio}${mes}${dia}-${aleatorio}`;
 }
+
+/**
+ * Devuelve el nombre legible de una jornada.
+ * Usa el campo libre `nombre` si existe, si no "Jornada X".
+ */
+export function nombreJornada(j: { numero: number; nombre?: string | null }): string {
+  return j.nombre?.trim() || `Jornada ${j.numero}`;
+}

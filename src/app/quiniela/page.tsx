@@ -14,6 +14,7 @@ type Partido = {
 type Jornada = {
   id: string;
   numero: number;
+  nombre: string | null;
   temporada: string;
   liga: string;
   estado: string;
@@ -131,7 +132,7 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
                   <span className="text-lg">{LIGA_ICON[j.liga] ?? "⚽"}</span>
                   <div>
                     <p className="font-bold text-gray-800">
-                      {j.liga} · Jornada {j.numero}
+                      {j.liga} · {j.nombre ?? `Jornada ${j.numero}`}
                     </p>
                     <p className="text-xs text-gray-400">{j.temporada}</p>
                   </div>
@@ -222,7 +223,7 @@ export default function QuinielaPage() {
           </button>
           <h1 className="text-2xl font-bold">Registrar Quiniela</h1>
           <p className="text-green-200 text-sm">
-            {LIGA_ICON[jornada.liga] ?? "⚽"} {jornada.liga} · Jornada {jornada.numero} · {jornada.temporada} · $20 MXN
+            {LIGA_ICON[jornada.liga] ?? "⚽"} {jornada.liga} · {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada} · $20 MXN
           </p>
         </div>
       </div>

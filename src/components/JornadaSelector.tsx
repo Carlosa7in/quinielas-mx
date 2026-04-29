@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 export type JornadaResumen = {
   id: string;
   numero: number;
+  nombre: string | null;
   temporada: string;
   liga: string;
   estado: string;
@@ -108,7 +109,7 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-gray-800">
-                          Jornada {j.numero}
+                          {j.nombre ?? `Jornada ${j.numero}`}
                         </span>
                         <span className="text-gray-500 text-sm">· {j.temporada}</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${

@@ -24,7 +24,7 @@ type Quiniela = {
   estado: string;
   aciertos: number | null;
   monto: number;
-  jornada: { numero: number; temporada: string; liga: string };
+  jornada: { numero: number; nombre: string | null; temporada: string; liga: string };
   picks: Pick[];
 };
 
@@ -79,7 +79,7 @@ function DetalleQuiniela({ q, onBack }: { q: Quiniela; onBack?: () => void }) {
             <p className="text-green-300 text-xs font-mono">{q.folio}</p>
             <p className="font-bold text-lg">{q.nombreCliente ?? "—"}</p>
             <p className="text-green-300 text-xs mt-0.5">
-              {q.jornada.liga} · Jornada {q.jornada.numero} · {q.jornada.temporada}
+              {q.jornada.liga} · {q.jornada.nombre ?? `Jornada ${q.jornada.numero}`} · {q.jornada.temporada}
             </p>
           </div>
           <span className={`text-xs font-bold px-3 py-1 rounded-full capitalize shrink-0 ${estadoBadge(q.estado)}`}>
@@ -171,7 +171,7 @@ function TarjetaQuiniela({ q, onClick }: { q: Quiniela; onClick: () => void }) {
         <div>
           <p className="text-xs text-gray-400 font-mono">{q.folio}</p>
           <p className="font-bold text-gray-800 text-sm">
-            {q.jornada.liga} · Jornada {q.jornada.numero}
+            {q.jornada.liga} · {q.jornada.nombre ?? `Jornada ${q.jornada.numero}`}
           </p>
           <p className="text-xs text-gray-400">{q.jornada.temporada}</p>
         </div>

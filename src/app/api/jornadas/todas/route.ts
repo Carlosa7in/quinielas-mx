@@ -7,6 +7,7 @@ export async function GET() {
     select: {
       id: true,
       numero: true,
+      nombre: true,
       temporada: true,
       liga: true,
       estado: true,
@@ -20,6 +21,7 @@ export async function GET() {
   const resultado = jornadas.map((j) => ({
     id: j.id,
     numero: j.numero,
+    nombre: j.nombre ?? null,
     temporada: j.temporada,
     liga: j.liga,
     estado: j.estado,

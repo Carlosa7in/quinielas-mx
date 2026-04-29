@@ -25,6 +25,7 @@ model Usuario {
 model Jornada {
   id          String     @id @default(cuid())
   numero      Int
+  nombre      String?
   temporada   String
   liga        String     @default("Liga MX")
   estado      String     @default("abierta")

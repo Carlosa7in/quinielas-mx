@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 type JornadaResumen = {
   id: string;
   numero: number;
+  nombre: string | null;
   temporada: string;
   liga: string;
   estado: string;
@@ -121,7 +122,7 @@ export default function AdminPage() {
                       <span className="text-lg">{LIGA_ICON[j.liga] ?? "⚽"}</span>
                       <div>
                         <p className="font-bold text-gray-800">
-                          {j.liga} · Jornada {j.numero}
+                          {j.liga} · {j.nombre ?? `Jornada ${j.numero}`}
                         </p>
                         <p className="text-xs text-gray-400">{j.temporada}</p>
                       </div>

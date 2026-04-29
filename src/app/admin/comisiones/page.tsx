@@ -5,6 +5,7 @@ import Link from "next/link";
 type JornadaOpcion = {
   id: string;
   numero: number;
+  nombre: string | null;
   temporada: string;
   liga: string;
 };
@@ -83,7 +84,7 @@ export default function ComisionesPage() {
             <option value="">Todas las jornadas</option>
             {jornadas.map((j) => (
               <option key={j.id} value={j.id}>
-                {j.liga} · Jornada {j.numero} · {j.temporada}
+                {j.liga} · {j.nombre ?? `Jornada ${j.numero}`} · {j.temporada}
               </option>
             ))}
           </select>

@@ -65,22 +65,25 @@ const LOGOS: Record<string, string> = {
   "Red Bull Salzburg":     "https://a.espncdn.com/i/teamlogos/soccer/500/2820.png",
 };
 
+// Equipos activos por liga en la temporada actual.
+// Actualizar aquí cuando un equipo sea eliminado/relegado.
 export const EQUIPOS_POR_LIGA: Record<string, string[]> = {
   "Liga MX": [
+    // Clausura 2026 — 17 equipos (León descendió a Liga de Expansión)
     "América", "Guadalajara", "Cruz Azul", "Pumas UNAM", "Tigres UANL",
-    "Monterrey", "León", "Santos Laguna", "Toluca", "Atlas",
+    "Monterrey", "Santos Laguna", "Toluca", "Atlas",
     "Pachuca", "Necaxa", "Querétaro", "FC Juárez", "Mazatlán",
     "Tijuana", "Atlético San Luis", "Puebla",
   ],
   "Champions League": [
-    "Real Madrid", "Barcelona", "Bayern Munich", "Manchester City",
-    "PSG", "Liverpool", "Chelsea", "Arsenal", "Manchester United",
-    "Juventus", "Inter Milan", "AC Milan", "Atlético Madrid",
-    "Borussia Dortmund", "Bayer Leverkusen", "RB Leipzig",
-    "Ajax", "Porto", "Benfica", "Sporting CP", "PSV", "Feyenoord",
-    "Club Brugge", "Napoli", "Roma", "Lazio", "Sevilla", "Villarreal",
-    "Aston Villa", "Celtic", "Galatasaray", "Shakhtar Donetsk",
-    "Red Bull Salzburg", "Tottenham",
+    // Fase de liga 2024-25 — 36 equipos
+    // Octavos de final clasificados (actualizar conforme avance el torneo)
+    "Real Madrid", "Barcelona", "Bayern Munich", "Liverpool",
+    "Arsenal", "Inter Milan", "Atlético Madrid", "Borussia Dortmund",
+    "Bayer Leverkusen", "Manchester City", "PSG", "Aston Villa",
+    "Benfica", "Monaco", "Club Brugge", "Atalanta",
+    "Feyenoord", "PSV", "Milan", "Juventus",
+    "Lille", "Sporting CP", "Celtic", "Brest",
   ],
 };
 

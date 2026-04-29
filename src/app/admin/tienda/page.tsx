@@ -17,6 +17,7 @@ type Partido = {
 type Jornada = {
   id: string;
   numero: number;
+  nombre: string | null;
   temporada: string;
   liga: string;
   partidos: Partido[];
@@ -110,7 +111,7 @@ export default function TiendaPage() {
             <h1 className="text-xl font-bold mt-1">Registro en Tienda</h1>
             {jornada && (
               <p className="text-green-300 text-xs">
-                Jornada {jornada.numero} · {jornada.temporada}
+                {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
               </p>
             )}
           </div>
@@ -177,7 +178,7 @@ export default function TiendaPage() {
             <h1 className="text-xl font-bold">Registro en Tienda</h1>
             {jornada && (
               <p className="text-green-300 text-xs">
-                Jornada {jornada.numero} · {jornada.temporada}
+                {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
               </p>
             )}
           </div>

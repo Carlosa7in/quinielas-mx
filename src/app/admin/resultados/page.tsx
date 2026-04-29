@@ -14,6 +14,7 @@ type Partido = {
 type Jornada = {
   id: string;
   numero: number;
+  nombre: string | null;
   temporada: string;
   estado: string;
   partidos: Partido[];
@@ -152,7 +153,7 @@ export default function ResultadosPage() {
           <h1 className="text-xl font-bold mt-1">Registrar Resultados</h1>
           {jornada && (
             <p className="text-green-300 text-xs">
-              Jornada {jornada.numero} · {jornada.temporada}
+              {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
             </p>
           )}
         </div>

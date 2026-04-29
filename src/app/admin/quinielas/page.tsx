@@ -19,6 +19,7 @@ type Quiniela = {
 type Jornada = {
   id: string;
   numero: number;
+  nombre: string | null;
   temporada: string;
   liga: string;
   estado: string;
@@ -63,7 +64,7 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
         <div>
           <div className="flex items-center gap-2">
             <span className="font-bold text-gray-800">
-              Jornada {jornada.numero} · {jornada.temporada}
+              {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
             </span>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
               jornada.estado === "abierta"

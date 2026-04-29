@@ -97,7 +97,7 @@ export async function GET(req: Request) {
           estado: true,
           aciertos: true,
           monto: true,
-          jornada: { select: { numero: true, temporada: true, liga: true } },
+          jornada: { select: { numero: true, nombre: true, temporada: true, liga: true } },
           picks: {
             select: {
               id: true,
@@ -141,7 +141,7 @@ export async function GET(req: Request) {
         estado: true,
         puntos: true,
         aciertos: true,
-        jornada: { select: { numero: true, temporada: true, liga: true } },
+        jornada: { select: { numero: true, nombre: true, temporada: true, liga: true } },
         picks: {
           select: {
             id: true,

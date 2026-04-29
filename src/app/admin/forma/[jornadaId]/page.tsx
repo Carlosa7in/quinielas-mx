@@ -14,6 +14,7 @@ type Partido = {
 type Jornada = {
   id: string;
   numero: number;
+  nombre: string | null;
   temporada: string;
   liga: string;
   partidos: Partido[];
@@ -60,7 +61,7 @@ function FormaCarta({ jornada, picks }: { jornada: Jornada; picks: Record<string
       <div className="text-center mb-2 pt-2" style={{ borderBottom: "2px solid #000", paddingBottom: "4px" }}>
         <p style={{ fontSize: "13pt", fontWeight: "900", letterSpacing: "1px" }}>⚽ QUINIELAS MX</p>
         <p style={{ fontSize: "8.5pt", fontWeight: "bold" }}>
-          {jornada.liga} · Jornada {jornada.numero} · {jornada.temporada}
+          {jornada.liga} · {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
         </p>
         <p style={{ fontSize: "7.5pt", color: "#333" }}>
           {tienepicks ? "✦ Forma con picks pre-seleccionados ✦" : "Costo: $20 MXN — Marca con pluma o bolígrafo"}
@@ -134,7 +135,7 @@ function FormaCarta({ jornada, picks }: { jornada: Jornada; picks: Record<string
           Esta forma no es comprobante. Al pagar en caja recibirás tu ticket oficial con folio.
         </p>
         <div style={{ width: "18mm", height: "18mm", border: "2px solid #000", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9pt", fontWeight: "bold" }}>
-          J{jornada.numero}
+          {jornada.nombre ?? `J${jornada.numero}`}
         </div>
       </div>
     </div>
@@ -162,7 +163,7 @@ function FormaTicket({ jornada, picks }: { jornada: Jornada; picks: Record<strin
           {jornada.liga}
         </p>
         <p style={{ fontSize: "7.5pt" }}>
-          Jornada {jornada.numero} · {jornada.temporada}
+          {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
         </p>
         {!tienepicks && (
           <p style={{ fontSize: "7pt", marginTop: "2px" }}>$20 MXN — Marca con pluma</p>
@@ -211,7 +212,7 @@ function FormaTicket({ jornada, picks }: { jornada: Jornada; picks: Record<strin
       {/* Footer */}
       <div style={{ textAlign: "center", borderTop: "1px solid #000", marginTop: "4px", paddingTop: "3px", fontSize: "6.5pt" }}>
         <p>No válido como comprobante de pago.</p>
-        <p>Jornada {jornada.numero} · quinielas.mx</p>
+        <p>{jornada.nombre ?? `Jornada ${jornada.numero}`} · quinielas.mx</p>
       </div>
     </div>
   );
@@ -264,7 +265,7 @@ export default function FormaPage() {
             <div>
               <a href="/admin/forma" className="text-green-300 text-sm">← Formas</a>
               <p className="font-bold mt-0.5">
-                {jornada.liga} · Jornada {jornada.numero}
+                {jornada.liga} · {jornada.nombre ?? `Jornada ${jornada.numero}`}
               </p>
             </div>
             <button
