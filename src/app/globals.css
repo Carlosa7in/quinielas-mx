@@ -5,13 +5,12 @@
   --foreground: #1a1a1a;
 
   /* Paleta de marca Tablitas Quinielas */
-  --brand-from: #9C5028;   /* café medio — color de los tablones del logo */
-  --brand-to:   #5A2810;   /* café oscuro — fondo profundo */
+  --brand-bg: #7C3A14;   /* café sólido — color de los tablones del logo */
 }
 
-/* Fondo degradado de marca — usar en todos los headers y pantallas principales */
+/* Fondo de marca — usar en todos los headers y pantallas principales */
 .bg-brand {
-  background: linear-gradient(to bottom, var(--brand-from), var(--brand-to));
+  background-color: var(--brand-bg);
 }
 
 body {
