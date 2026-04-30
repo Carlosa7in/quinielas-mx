@@ -6,8 +6,9 @@ import { Providers } from "./providers";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Quinielas MX - Liga MX",
-  description: "Registra tu quiniela de la Liga MX",
+  title: "Tablitas Quinielas",
+  description: "Registra tu quiniela de futbol — Tablitas Quinielas",
+  icons: { icon: "/logo-tablitas.svg" },
 };
 
 export default function RootLayout({
