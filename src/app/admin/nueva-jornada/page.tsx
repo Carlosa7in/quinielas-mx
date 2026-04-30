@@ -175,7 +175,6 @@ export default function NuevaJornadaPage() {
   };
 
   const quitarPartido = (i: number) => {
-    if (partidos.length <= MIN_PARTIDOS) return;
     setPartidos((prev) => prev.filter((_, idx) => idx !== i));
   };
 
@@ -197,16 +196,30 @@ export default function NuevaJornadaPage() {
       setError(`Necesitas al menos ${MIN_PARTIDOS} partidos completos`);
       return;
     }
-    // Validar duplicados por liga (en mixtas cada liga tiene su propio pool de equipos)
-    const equiposPorLiga: Record<string, string[]> = {};
+    // Validar duplicados por liga — se permiten partidos de vuelta (mismo par, roles invertidos)
+    // Reglas: (1) el partido exacto (local|visita) no puede repetirse; (2) un equipo solo puede
+    // aparecer con un mismo rival (máx. 2 veces: ida + vuelta).
+    const porLiga: Record<string, { paresOrdenados: string[]; rivalPorEquipo: Record<string, string> }> = {};
     for (const p of partidosValidos) {
-      if (!equiposPorLiga[p.liga]) equiposPorLiga[p.liga] = [];
-      const pool = equiposPorLiga[p.liga];
-      if (pool.includes(p.equipoLocal) || pool.includes(p.equipoVisita)) {
-        setError(`Un equipo de ${p.liga} aparece en más de un partido. Revísalos.`);
+      if (!porLiga[p.liga]) porLiga[p.liga] = { paresOrdenados: [], rivalPorEquipo: {} };
+      const { paresOrdenados, rivalPorEquipo } = porLiga[p.liga];
+
+      // Rechazar partido exactamente duplicado
+      const parOrdenado = `${p.equipoLocal}|${p.equipoVisita}`;
+      if (paresOrdenados.includes(parOrdenado)) {
+        setError(`El partido ${p.equipoLocal} vs ${p.equipoVisita} está duplicado en ${p.liga}.`);
         return;
       }
-      pool.push(p.equipoLocal, p.equipoVisita);
+      paresOrdenados.push(parOrdenado);
+
+      // Cada equipo solo puede tener un rival único (puede repetirse como ida+vuelta)
+      for (const [equipo, rival] of [[p.equipoLocal, p.equipoVisita], [p.equipoVisita, p.equipoLocal]] as [string, string][]) {
+        if (rivalPorEquipo[equipo] !== undefined && rivalPorEquipo[equipo] !== rival) {
+          setError(`${equipo} aparece con dos rivales distintos en ${p.liga}. Revísalos.`);
+          return;
+        }
+        rivalPorEquipo[equipo] = rival;
+      }
     }
 
     setEnviando(true);
@@ -455,9 +468,17 @@ export default function NuevaJornadaPage() {
         <div className="space-y-2">
           {partidos.map((partido, i) => {
             const equiposLiga = EQUIPOS_POR_LIGA[partido.liga] ?? [];
-            // Solo marcar duplicados dentro de la misma liga
+            // Marcar equipos conflictivos: usados en otro partido de la misma liga,
+            // EXCEPTO si ese partido es la vuelta del actual (mismos equipos, roles invertidos).
             const usadosEnOtros = partidos
-              .filter((_, idx) => idx !== i && partidos[idx].liga === partido.liga)
+              .filter((_, idx) => {
+                if (idx === i) return false;
+                if (partidos[idx].liga !== partido.liga) return false;
+                // Si es el partido de vuelta (roles invertidos), no es conflicto
+                const otro = partidos[idx];
+                if (otro.equipoLocal === partido.equipoVisita && otro.equipoVisita === partido.equipoLocal) return false;
+                return true;
+              })
               .flatMap((p) => [p.equipoLocal, p.equipoVisita])
               .filter(Boolean);
 
@@ -475,8 +496,7 @@ export default function NuevaJornadaPage() {
                   <button
                     type="button"
                     onClick={() => quitarPartido(i)}
-                    disabled={partidos.length <= MIN_PARTIDOS}
-                    className="text-red-400 hover:text-red-600 text-xs disabled:text-gray-200 disabled:cursor-not-allowed"
+                    className="text-red-400 hover:text-red-600 text-xs"
                   >
                     Quitar
                   </button>
