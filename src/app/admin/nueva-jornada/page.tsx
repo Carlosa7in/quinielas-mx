@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { EQUIPOS_POR_LIGA, LIGAS } from "@/lib/equipos";
+import { LIGAS } from "@/lib/equipos";
 
 const MIN_PARTIDOS = 6;
 const MAX_PARTIDOS = 9;
@@ -40,6 +40,38 @@ function toInputDate(d: Date): string {
 
 export default function NuevaJornadaPage() {
   const router = useRouter();
+
+  // ── Catálogo de equipos desde la DB ───────────────────────────────
+  const [equiposPorLiga, setEquiposPorLiga] = useState<Record<string, string[]>>({});
+  const [agregandoEquipo, setAgregandoEquipo] = useState<string | null>(null); // nombre del equipo en proceso
+
+  const cargarEquipos = () =>
+    fetch("/api/admin/equipos")
+      .then((r) => r.json())
+      .then((data) => {
+        const mapa: Record<string, string[]> = {};
+        for (const eq of data.equipos ?? []) {
+          if (!mapa[eq.liga]) mapa[eq.liga] = [];
+          mapa[eq.liga].push(eq.nombre);
+        }
+        setEquiposPorLiga(mapa);
+      });
+
+  useEffect(() => { cargarEquipos(); }, []);
+
+  const agregarEquipoAlSistema = async (nombre: string, liga: string) => {
+    setAgregandoEquipo(nombre);
+    await fetch("/api/admin/equipos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre, liga }),
+    });
+    await cargarEquipos();
+    setAgregandoEquipo(null);
+    // Quitar de la lista de desconocidos
+    setEspnDesconocidos((prev) => prev.filter((e) => e !== nombre));
+  };
+
   const [nombre, setNombre] = useState("");
   const [temporada, setTemporada] = useState("Clausura 2026");
   const [fechaInicio, setFechaInicio] = useState("");
@@ -102,7 +134,7 @@ export default function NuevaJornadaPage() {
       }
 
       // Detectar equipos no reconocidos
-      const equiposSistema = EQUIPOS_POR_LIGA[espnLiga] ?? [];
+      const equiposSistema = equiposPorLiga[espnLiga] ?? [];
       const desconocidos = fetchedPartidos.flatMap((p) => {
         const d: string[] = [];
         if (p.equipoLocal  && !equiposSistema.includes(p.equipoLocal))  d.push(p.equipoLocal);
@@ -376,12 +408,24 @@ export default function NuevaJornadaPage() {
                 </div>
               )}
 
-              {/* Equipos no reconocidos */}
+              {/* Equipos no reconocidos — se pueden agregar al catálogo con un clic */}
               {espnDesconocidos.length > 0 && (
-                <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 text-xs text-orange-700">
-                  <p className="font-semibold mb-1">⚠️ Equipos no reconocidos en el sistema:</p>
-                  <p className="text-orange-600">{espnDesconocidos.join(", ")}</p>
-                  <p className="mt-1 text-orange-500">Puedes seleccionarlos manualmente en los desplegables.</p>
+                <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 text-xs text-orange-700 space-y-2">
+                  <p className="font-semibold">⚠️ Equipos nuevos — no están en el catálogo aún:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {espnDesconocidos.map((eq) => (
+                      <button
+                        key={eq}
+                        type="button"
+                        disabled={agregandoEquipo === eq}
+                        onClick={() => agregarEquipoAlSistema(eq, espnLiga)}
+                        className="flex items-center gap-1 bg-orange-100 hover:bg-amber-100 disabled:opacity-50 border border-orange-300 text-orange-800 px-2 py-1 rounded-full transition-colors"
+                      >
+                        {agregandoEquipo === eq ? "Agregando…" : `+ ${eq}`}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-orange-500">Toca un equipo para agregarlo al catálogo de {espnLiga}.</p>
                 </div>
               )}
             </div>
@@ -467,7 +511,7 @@ export default function NuevaJornadaPage() {
         {/* Lista de partidos */}
         <div className="space-y-2">
           {partidos.map((partido, i) => {
-            const equiposLiga = EQUIPOS_POR_LIGA[partido.liga] ?? [];
+            const equiposLiga = equiposPorLiga[partido.liga] ?? [];
             // Marcar equipos conflictivos: usados en otro partido de la misma liga,
             // EXCEPTO si ese partido es la vuelta del actual (mismos equipos, roles invertidos).
             const usadosEnOtros = partidos

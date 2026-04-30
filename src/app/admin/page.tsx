@@ -250,6 +250,19 @@ export default function AdminPage() {
               </div>
             </Link>
           )}
+
+          {["superadmin", "admin"].includes(rol) && (
+            <Link
+              href="/admin/equipos"
+              className="bg-stone-800 hover:bg-stone-700 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+            >
+              <span className="text-2xl">⚽</span>
+              <div>
+                <p className="font-bold">Catálogo de Equipos</p>
+                <p className="text-stone-300 text-sm">Agregar y gestionar equipos por liga</p>
+              </div>
+            </Link>
+          )}
         </div>
 
         {/* Seed datos de ejemplo */}

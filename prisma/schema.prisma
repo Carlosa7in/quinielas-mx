@@ -87,3 +87,12 @@ model Pick {
   prediccion String
   acertado   Boolean?
 }
+
+model Equipo {
+  id      String  @id @default(cuid())
+  nombre  String
+  liga    String
+  logoUrl String  @default("")
+
+  @@unique([nombre, liga])
+}
