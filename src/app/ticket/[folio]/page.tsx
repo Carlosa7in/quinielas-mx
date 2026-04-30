@@ -86,7 +86,7 @@ export default function TicketPage() {
       // Cargar logo Tablitas + logos de equipos en paralelo
       const equiposUnicos = [...new Set(picks.flatMap(p => [p.partido.equipoLocal, p.partido.equipoVisita]))];
       const [logoTablitas, ...equipoImgs] = await Promise.all([
-        loadImg("/logo-tablitas.svg"),
+        loadImg("/logo-tablitas.png"),
         ...equiposUnicos.map(eq => loadImg(getLogoUrl(eq))),
       ]);
       const logoMap: Record<string, HTMLImageElement | null> = {};

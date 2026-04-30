@@ -8,7 +8,7 @@ const geist = Geist({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Tablitas Quinielas",
   description: "Registra tu quiniela de futbol — Tablitas Quinielas",
-  icons: { icon: "/logo-tablitas.svg" },
+  icons: { icon: "/logo-tablitas.png" },
 };
 
 export default function RootLayout({
