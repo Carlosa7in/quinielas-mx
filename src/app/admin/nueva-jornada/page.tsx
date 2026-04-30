@@ -193,14 +193,16 @@ export default function NuevaJornadaPage() {
       setError(`Necesitas al menos ${MIN_PARTIDOS} partidos completos`);
       return;
     }
-    // Validar equipos duplicados entre partidos
-    const equiposUsados: string[] = [];
+    // Validar duplicados por liga (en mixtas cada liga tiene su propio pool de equipos)
+    const equiposPorLiga: Record<string, string[]> = {};
     for (const p of partidosValidos) {
-      if (equiposUsados.includes(p.equipoLocal) || equiposUsados.includes(p.equipoVisita)) {
-        setError("Un equipo aparece en más de un partido. Revísalos.");
+      if (!equiposPorLiga[p.liga]) equiposPorLiga[p.liga] = [];
+      const pool = equiposPorLiga[p.liga];
+      if (pool.includes(p.equipoLocal) || pool.includes(p.equipoVisita)) {
+        setError(`Un equipo de ${p.liga} aparece en más de un partido. Revísalos.`);
         return;
       }
-      equiposUsados.push(p.equipoLocal, p.equipoVisita);
+      pool.push(p.equipoLocal, p.equipoVisita);
     }
 
     setEnviando(true);
@@ -445,8 +447,9 @@ export default function NuevaJornadaPage() {
         <div className="space-y-2">
           {partidos.map((partido, i) => {
             const equiposLiga = EQUIPOS_POR_LIGA[partido.liga] ?? [];
+            // Solo marcar duplicados dentro de la misma liga
             const usadosEnOtros = partidos
-              .filter((_, idx) => idx !== i)
+              .filter((_, idx) => idx !== i && partidos[idx].liga === partido.liga)
               .flatMap((p) => [p.equipoLocal, p.equipoVisita])
               .filter(Boolean);
 
