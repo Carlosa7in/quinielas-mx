@@ -15,9 +15,9 @@ export async function GET(req: NextRequest) {
 
   const jornadaId = req.nextUrl.searchParams.get("jornadaId") || undefined;
 
-  // Todos los vendedores/admins
+  // Todos los vendedores/admins/tienda
   const usuarios = await prisma.usuario.findMany({
-    where: { rol: { in: ["admin", "vendedor"] } },
+    where: { rol: { in: ["admin", "vendedor", "tienda"] } },
     select: { id: true, nombre: true, rol: true, puntoVenta: true },
     orderBy: { nombre: "asc" },
   });

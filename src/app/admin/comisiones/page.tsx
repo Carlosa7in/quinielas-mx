@@ -47,26 +47,39 @@ export default function ComisionesPage() {
       .finally(() => setCargando(false));
   }, [jornadaId]);
 
-  const totalGeneral = reporte.reduce((s, v) => s + v.total, 0);
+  const COMISION_TIENDA = 2;   // $2 por quiniela vendida en tienda
+  const PCT_DUENOS      = 0.15; // 15%
+
+  const totalGeneral    = reporte.reduce((s, v) => s + v.total, 0);
   const recaudadoGeneral = reporte.reduce((s, v) => s + v.recaudado, 0);
+  // Quinielas vendidas en tienda (canal tienda, usuarios con rol tienda/vendedor/admin)
+  const totalTienda     = reporte.reduce((s, v) => s + v.total, 0); // todas son "tienda" canal
+  const cutDuenos       = recaudadoGeneral * PCT_DUENOS;
+  const cutTienda       = totalTienda * COMISION_TIENDA;
+  const bolsaNeta       = Math.max(recaudadoGeneral - cutDuenos - cutTienda, 0);
 
   const ROL_LABEL: Record<string, string> = {
     superadmin: "Superadmin",
     admin: "Admin",
     vendedor: "Vendedor",
+    tienda: "Tienda",
   };
 
   const ROL_COLOR: Record<string, string> = {
     superadmin: "bg-purple-100 text-purple-700",
     admin: "bg-blue-100 text-blue-700",
     vendedor: "bg-green-100 text-green-700",
+    tienda: "bg-amber-100 text-amber-700",
   };
+
+  const fmt = (n: number) =>
+    n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-green-900 text-white py-4 px-4">
+      <div className="bg-amber-950 text-white py-4 px-4">
         <div className="max-w-2xl mx-auto">
-          <Link href="/admin" className="text-green-300 text-sm">← Admin</Link>
+          <Link href="/admin" className="text-amber-400 text-sm">← Admin</Link>
           <h1 className="text-xl font-bold mt-1">Comisiones por Punto de Venta</h1>
         </div>
       </div>
@@ -97,10 +110,35 @@ export default function ComisionesPage() {
             <p className="text-xs text-gray-500">Quinielas vendidas</p>
           </div>
           <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-            <p className="text-2xl font-bold text-yellow-600">${recaudadoGeneral}</p>
+            <p className="text-2xl font-bold text-yellow-600">${fmt(recaudadoGeneral)}</p>
             <p className="text-xs text-gray-500">Total recaudado</p>
           </div>
         </div>
+
+        {/* Desglose financiero */}
+        {recaudadoGeneral > 0 && (
+          <div className="bg-stone-900 text-white rounded-2xl p-4 space-y-3">
+            <p className="text-xs font-bold tracking-widest text-stone-400 uppercase">Desglose financiero</p>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-stone-300">Total recaudado</span>
+                <span className="font-bold">${fmt(recaudadoGeneral)}</span>
+              </div>
+              <div className="flex justify-between text-red-400">
+                <span>− 15% dueños</span>
+                <span className="font-bold">−${fmt(cutDuenos)}</span>
+              </div>
+              <div className="flex justify-between text-orange-400">
+                <span>− Comisión tienda ($2 × {totalTienda})</span>
+                <span className="font-bold">−${fmt(cutTienda)}</span>
+              </div>
+              <div className="border-t border-stone-700 pt-2 flex justify-between text-green-400">
+                <span className="font-bold">💰 Bolsa para premios</span>
+                <span className="font-black text-base">${fmt(bolsaNeta)}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabla de vendedores */}
         {cargando ? (
@@ -134,18 +172,20 @@ export default function ComisionesPage() {
                   </div>
 
                   {v.total > 0 && (
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-green-50 rounded-lg p-2.5 text-center">
-                        <p className="text-xl font-bold text-green-700">{v.total}</p>
-                        <p className="text-xs text-gray-500">Quinielas</p>
-                      </div>
-                      <div className="bg-yellow-50 rounded-lg p-2.5 text-center">
-                        <p className="text-xl font-bold text-yellow-600">${v.recaudado}</p>
-                        <p className="text-xs text-gray-500">Recaudado</p>
-                      </div>
-                      <div className="bg-blue-50 rounded-lg p-2.5 text-center">
-                        <p className="text-xl font-bold text-blue-600">{v.ganadoras}</p>
-                        <p className="text-xs text-gray-500">Ganadoras</p>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-green-50 rounded-lg p-2.5 text-center">
+                          <p className="text-xl font-bold text-green-700">{v.total}</p>
+                          <p className="text-xs text-gray-500">Quinielas</p>
+                        </div>
+                        <div className="bg-yellow-50 rounded-lg p-2.5 text-center">
+                          <p className="text-xl font-bold text-yellow-600">${fmt(v.recaudado)}</p>
+                          <p className="text-xs text-gray-500">Recaudado</p>
+                        </div>
+                        <div className="bg-orange-50 rounded-lg p-2.5 text-center">
+                          <p className="text-xl font-bold text-orange-600">${fmt(v.total * COMISION_TIENDA)}</p>
+                          <p className="text-xs text-gray-500">Comisión</p>
+                        </div>
                       </div>
                     </div>
                   )}
