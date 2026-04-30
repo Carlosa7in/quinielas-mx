@@ -76,7 +76,7 @@ export default function ParticipantesPage() {
 
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-amber-950 text-white py-4 px-4">
+        <div className="bg-brand text-white py-4 px-4">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             <div>
               <button onClick={() => setModoBroadcast(false)} className="text-amber-400 text-sm">
@@ -175,7 +175,7 @@ export default function ParticipantesPage() {
   // ── LISTA DE PARTICIPANTES ──────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-amber-950 text-white py-4 px-4">
+      <div className="bg-brand text-white py-4 px-4">
         <div className="max-w-xl mx-auto">
           <a href="/admin" className="text-amber-400 text-sm">← Admin</a>
           <div className="flex items-center justify-between mt-0.5">

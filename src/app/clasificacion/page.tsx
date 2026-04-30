@@ -213,7 +213,7 @@ export default function ClasificacionPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-amber-950 text-white py-5 px-4">
+      <div className="bg-brand text-white py-5 px-4">
         <div className="max-w-lg mx-auto">
           <Link href="/" className="text-amber-400 text-sm mb-2 inline-block">← Inicio</Link>
           {/* eslint-disable-next-line @next/next/no-img-element */}

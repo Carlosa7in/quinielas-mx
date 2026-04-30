@@ -296,7 +296,7 @@ export default function TicketPage() {
       }
     `}</style>
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-amber-950 text-white py-6 px-4 print:hidden">
+      <div className="bg-brand text-white py-6 px-4 print:hidden">
         <div className="max-w-lg mx-auto">
           <h1 className="text-2xl font-bold">Quiniela Registrada</h1>
           <p className="text-amber-300/70 text-sm mt-1">
@@ -501,7 +501,7 @@ export default function TicketPage() {
           {/* Imprimir en térmica */}
           <button
             onClick={() => window.print()}
-            className="w-full bg-amber-950 hover:bg-amber-900 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-brand hover:bg-amber-900 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <span>🧾</span> Imprimir en Térmica
           </button>

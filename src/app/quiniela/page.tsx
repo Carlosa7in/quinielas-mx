@@ -71,7 +71,7 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#7A3A12] to-[#3A1A06] flex items-center justify-center">
+      <div className="min-h-screen bg-brand flex items-center justify-center">
         <div className="text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-4 animate-pulse" style={{ height: "110px", objectFit: "contain" }} />
@@ -83,7 +83,7 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
 
   if (jornadas.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#7A3A12] to-[#3A1A06] flex items-center justify-center text-white px-4">
+      <div className="min-h-screen bg-brand flex items-center justify-center text-white px-4">
         <div className="text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-4 opacity-60" style={{ height: "90px", objectFit: "contain" }} />
@@ -98,7 +98,7 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-amber-950 text-white py-6 px-4">
+      <div className="bg-brand text-white py-6 px-4">
         <div className="max-w-lg mx-auto">
           <a href="/" className="text-amber-400 text-sm mb-2 inline-block">← Inicio</a>
           <h1 className="text-2xl font-bold">Registrar Quiniela</h1>
@@ -218,7 +218,7 @@ export default function QuinielaPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-amber-950 text-white py-6 px-4">
+      <div className="bg-brand text-white py-6 px-4">
         <div className="max-w-lg mx-auto">
           <button
             onClick={() => { setJornada(null); setPicks({}); }}
@@ -316,7 +316,7 @@ export default function QuinielaPage() {
         )}
 
         {/* Resumen y envío */}
-        <div className="bg-amber-950 text-white rounded-xl p-4">
+        <div className="bg-brand text-white rounded-xl p-4">
           <div className="flex justify-between mb-3 text-sm">
             <span>Pronósticos:</span>
             <span>{Object.keys(picks).length}/{partidosOrdenados.length} seleccionados</span>

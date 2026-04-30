@@ -275,7 +275,7 @@ export default function FormaPage() {
   return (
     <>
       {/* Controles */}
-      <div className="print:hidden bg-amber-950 text-white py-3 px-4">
+      <div className="print:hidden bg-brand text-white py-3 px-4">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-3">
             <div>
@@ -292,7 +292,7 @@ export default function FormaPage() {
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 bg-amber-950/50 rounded-xl p-3">
+          <div className="flex flex-wrap items-center gap-3 bg-brand/50 rounded-xl p-3">
             {/* Tipo de impresora */}
             <div className="flex rounded-lg overflow-hidden border border-amber-700 text-sm">
               <button

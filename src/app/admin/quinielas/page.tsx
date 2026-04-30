@@ -175,7 +175,7 @@ export default function QuinielasAdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-amber-950 text-white py-4 px-4">
+      <div className="bg-brand text-white py-4 px-4">
         <div className="max-w-3xl mx-auto">
           <Link href="/admin" className="text-amber-400 text-sm">← Admin</Link>
           <h1 className="text-xl font-bold mt-1">Quinielas</h1>

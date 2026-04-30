@@ -282,7 +282,7 @@ function EscanearInner() {
   if (fase === "camara") {
     return (
       <div className="min-h-screen bg-black flex flex-col">
-        <div className="bg-amber-950 text-white py-3 px-4 flex items-center justify-between">
+        <div className="bg-brand text-white py-3 px-4 flex items-center justify-between">
           <a href="/admin/tienda" className="text-amber-400 text-sm">← Tienda</a>
           <p className="font-bold">Escanear Forma</p>
           <div />
@@ -347,7 +347,7 @@ function EscanearInner() {
 
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-amber-950 text-white py-3 px-4 flex items-center justify-between">
+        <div className="bg-brand text-white py-3 px-4 flex items-center justify-between">
           <button
             onClick={() => setFase("camara")}
             className="text-amber-400 text-sm"
@@ -447,7 +447,7 @@ function EscanearInner() {
   // ── FASE: DATOS DEL CLIENTE ───────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-amber-950 text-white py-3 px-4 flex items-center justify-between">
+      <div className="bg-brand text-white py-3 px-4 flex items-center justify-between">
         <button onClick={() => setFase("confirmacion")} className="text-amber-400 text-sm">
           ← Picks
         </button>

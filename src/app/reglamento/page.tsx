@@ -83,7 +83,7 @@ export default function ReglamentoPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-amber-950 text-white py-6 px-4">
+      <div className="bg-brand text-white py-6 px-4">
         <div className="max-w-lg mx-auto">
           <Link href="/" className="text-amber-400 text-sm mb-2 inline-block">
             ← Inicio
@@ -100,7 +100,7 @@ export default function ReglamentoPage() {
         {/* Reglas */}
         {secciones.map((sec) => (
           <div key={sec.titulo} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="flex items-center gap-3 px-4 py-3 bg-amber-950 text-white">
+            <div className="flex items-center gap-3 px-4 py-3 bg-brand text-white">
               <span className="text-xl">{sec.icono}</span>
               <h2 className="font-bold text-sm">{sec.titulo}</h2>
             </div>

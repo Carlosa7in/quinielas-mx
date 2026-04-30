@@ -32,7 +32,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#7A3A12] to-[#3A1A06] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-brand flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -68,7 +68,7 @@ function DetalleQuiniela({ q, onBack }: { q: Quiniela; onBack?: () => void }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="bg-amber-950 text-white p-4">
+      <div className="bg-brand text-white p-4">
         {onBack && (
           <button onClick={onBack} className="text-amber-400 text-sm mb-2 flex items-center gap-1">
             ← Mis quinielas
@@ -401,7 +401,7 @@ function Preliminares() {
 
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         {/* Cabecera */}
-        <div className="bg-amber-950 text-white px-4 py-2.5 flex items-center justify-between">
+        <div className="bg-brand text-white px-4 py-2.5 flex items-center justify-between">
           <span className="text-sm font-bold">{jornada.liga} · Jornada {jornada.numero}</span>
           <span className="text-xs text-amber-400">{jornada.temporada}</span>
         </div>
@@ -533,7 +533,7 @@ function ConsultarInner() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-amber-950 text-white py-5 px-4">
+      <div className="bg-brand text-white py-5 px-4">
         <div className="max-w-lg mx-auto">
           <a href="/" className="text-amber-400 text-sm mb-1 inline-block">← Inicio</a>
           <h1 className="text-2xl font-bold">Consultar Quiniela</h1>
