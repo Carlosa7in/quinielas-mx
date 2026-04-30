@@ -63,14 +63,15 @@ const LOGOS: Record<string, string> = {
   "Osasuna":               "https://a.espncdn.com/i/teamlogos/soccer/500/97.png",
   "Girona":                "https://a.espncdn.com/i/teamlogos/soccer/500/9812.png",
   "Celta Vigo":            "https://a.espncdn.com/i/teamlogos/soccer/500/1246.png",
-  "Rayo Vallecano":        "https://a.espncdn.com/i/teamlogos/soccer/500/728.png",
+  "Rayo Vallecano":        "https://a.espncdn.com/i/teamlogos/soccer/500/101.png",
   "Getafe":                "https://a.espncdn.com/i/teamlogos/soccer/500/3842.png",
   "Deportivo Alavés":      "https://a.espncdn.com/i/teamlogos/soccer/500/3751.png",
   "Mallorca":              "https://a.espncdn.com/i/teamlogos/soccer/500/95.png",
-  "Leganés":               "https://a.espncdn.com/i/teamlogos/soccer/500/9784.png",
+  "Leganés":               "https://a.espncdn.com/i/teamlogos/soccer/500/17534.png",
   "Espanyol":              "https://a.espncdn.com/i/teamlogos/soccer/500/88.png",
   "Las Palmas":            "https://a.espncdn.com/i/teamlogos/soccer/500/5593.png",
-  "Valladolid":            "https://a.espncdn.com/i/teamlogos/soccer/500/717.png",
+  // Valladolid: sin logo verificado — muestra iniciales
+
 
   // ── UEFA Champions League ─────────────────────────────────────────
   "Bayern Munich":         "https://a.espncdn.com/i/teamlogos/soccer/500/132.png",
@@ -85,21 +86,21 @@ const LOGOS: Record<string, string> = {
   "Ajax":                  "https://a.espncdn.com/i/teamlogos/soccer/500/169.png",
   "Porto":                 "https://a.espncdn.com/i/teamlogos/soccer/500/235.png",
   "Benfica":               "https://a.espncdn.com/i/teamlogos/soccer/500/236.png",
-  "Sporting CP":           "https://a.espncdn.com/i/teamlogos/soccer/500/744.png",
+  "Sporting CP":           "https://a.espncdn.com/i/teamlogos/soccer/500/2250.png",
   "PSV":                   "https://a.espncdn.com/i/teamlogos/soccer/500/167.png",
-  "Feyenoord":             "https://a.espncdn.com/i/teamlogos/soccer/500/168.png",
-  "Club Brugge":           "https://a.espncdn.com/i/teamlogos/soccer/500/1872.png",
+  "Feyenoord":             "https://a.espncdn.com/i/teamlogos/soccer/500/142.png",
+  "Club Brugge":           "https://a.espncdn.com/i/teamlogos/soccer/500/570.png",
   "Napoli":                "https://a.espncdn.com/i/teamlogos/soccer/500/113.png",
   "Roma":                  "https://a.espncdn.com/i/teamlogos/soccer/500/104.png",
   "Lazio":                 "https://a.espncdn.com/i/teamlogos/soccer/500/112.png",
   "Celtic":                "https://a.espncdn.com/i/teamlogos/soccer/500/254.png",
   "Galatasaray":           "https://a.espncdn.com/i/teamlogos/soccer/500/2832.png",
   "Shakhtar Donetsk":      "https://a.espncdn.com/i/teamlogos/soccer/500/381.png",
-  "Red Bull Salzburg":     "https://a.espncdn.com/i/teamlogos/soccer/500/2820.png",
-  "Monaco":                "https://a.espncdn.com/i/teamlogos/soccer/500/157.png",
-  "Atalanta":              "https://a.espncdn.com/i/teamlogos/soccer/500/3371.png",
+  "Red Bull Salzburg":     "https://a.espncdn.com/i/teamlogos/soccer/500/2790.png",
+  "Monaco":                "https://a.espncdn.com/i/teamlogos/soccer/500/174.png",
+  "Atalanta":              "https://a.espncdn.com/i/teamlogos/soccer/500/105.png",
   "Lille":                 "https://a.espncdn.com/i/teamlogos/soccer/500/162.png",
-  "Brest":                 "https://a.espncdn.com/i/teamlogos/soccer/500/9984.png",
+  "Brest":                 "https://a.espncdn.com/i/teamlogos/soccer/500/6997.png",
 };
 
 // Equipos activos por liga en la temporada actual.

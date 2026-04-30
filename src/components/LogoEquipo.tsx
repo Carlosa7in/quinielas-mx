@@ -4,46 +4,50 @@ import { getLogoUrl } from "@/lib/equipos";
 
 interface LogoEquipoProps {
   equipo: string;
-  size?: number;       // px
+  size?: number;
   className?: string;
 }
 
 function iniciales(nombre: string): string {
   return nombre
     .split(" ")
-    .filter((w) => w.length > 2) // ignorar "de", "FC", etc.
+    .filter((w) => w.length > 2)
     .slice(0, 2)
     .map((w) => w[0])
     .join("")
     .toUpperCase() || nombre.slice(0, 2).toUpperCase();
 }
 
-export function LogoEquipo({ equipo, size = 28, className = "" }: LogoEquipoProps) {
-  const [url, setUrl] = useState<string>("");
-  const [error, setError] = useState(false);
+function Fallback({ equipo, size, className }: LogoEquipoProps) {
+  return (
+    <div
+      className={`flex items-center justify-center rounded-full bg-amber-100 text-amber-800 font-bold shrink-0 ${className ?? ""}`}
+      style={{ width: size, height: size, fontSize: (size ?? 28) * 0.35 }}
+    >
+      {iniciales(equipo)}
+    </div>
+  );
+}
 
+export function LogoEquipo({ equipo, size = 28, className = "" }: LogoEquipoProps) {
+  const url = getLogoUrl(equipo);
+  const [broken, setBroken] = useState(false);
+
+  // Resetear cuando cambia el equipo
   useEffect(() => {
-    setError(false);
-    setUrl(getLogoUrl(equipo));
+    setBroken(false);
   }, [equipo]);
 
-  // Fallback: círculo con iniciales
-  if (!url || error) {
-    return (
-      <div
-        className={`flex items-center justify-center rounded-full bg-amber-100 text-amber-800 font-bold shrink-0 ${className}`}
-        style={{ width: size, height: size, fontSize: size * 0.35 }}
-      >
-        {iniciales(equipo)}
-      </div>
-    );
+  if (!url || broken) {
+    return <Fallback equipo={equipo} size={size} className={className} />;
   }
 
   return (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={url}
       alt={equipo}
-      onError={() => setError(true)}
+      onError={() => setBroken(true)}
       className={`object-contain shrink-0 ${className}`}
       style={{ width: size, height: size }}
     />
