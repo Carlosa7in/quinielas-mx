@@ -2,13 +2,21 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+type JornadaBolsa = {
+  id: string; nombre: string | null; numero: number; liga: string; bolsa: number;
+};
+
 function BolsaWidget() {
-  const [bolsa, setBolsa] = useState<number | null>(null);
+  const [bolsa, setBolsa]       = useState<number | null>(null);
+  const [jornadas, setJornadas] = useState<JornadaBolsa[]>([]);
 
   useEffect(() => {
     fetch("/api/bolsa")
       .then((r) => r.json())
-      .then((d) => setBolsa(d.bolsa ?? 0))
+      .then((d) => {
+        setBolsa(d.bolsa ?? 0);
+        setJornadas(d.jornadas ?? []);
+      })
       .catch(() => setBolsa(null));
   }, []);
 
@@ -16,25 +24,36 @@ function BolsaWidget() {
     n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, #1a3a1a 0%, #0f2210 100%)", border: "1px solid #2d5a2d" }}>
+    <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.1)" }}>
       <div className="px-4 pt-3 pb-1 text-center">
-        <p className="text-green-400 text-xs font-bold tracking-widest uppercase">💰 Bolsa acumulada 💰</p>
+        <p className="text-amber-300/70 text-xs font-bold tracking-widest uppercase">💰 Bolsa acumulada 💰</p>
       </div>
-      <div className="px-4 pb-4 text-center">
+      <div className="px-4 pb-3 text-center">
         {bolsa === null ? (
-          <p className="text-green-300/50 text-2xl font-bold tracking-widest animate-pulse">$—</p>
+          <p className="text-amber-200/40 text-2xl font-bold tracking-widest animate-pulse">$—</p>
         ) : (
           <p
-            className="font-black tracking-wider"
+            className="font-black"
             style={{
-              fontSize: "clamp(1.6rem, 8vw, 2.4rem)",
-              color: "#7dff7d",
-              textShadow: "0 0 20px #00ff0060, 0 0 40px #00ff0030",
-              letterSpacing: "0.05em",
+              fontSize: "clamp(1.8rem, 9vw, 2.6rem)",
+              color: "#FFD166",
+              letterSpacing: "0.04em",
             }}
           >
             ${fmt(bolsa)}
           </p>
+        )}
+
+        {/* Desglose si hay más de una jornada activa */}
+        {jornadas.length > 1 && (
+          <div className="mt-2 space-y-0.5">
+            {jornadas.map((j) => (
+              <p key={j.id} className="text-xs text-amber-200/50">
+                {j.liga} · {j.nombre ?? `Jornada ${j.numero}`}
+                <span className="text-amber-300/70 font-semibold ml-1">${fmt(j.bolsa)}</span>
+              </p>
+            ))}
+          </div>
         )}
       </div>
     </div>
