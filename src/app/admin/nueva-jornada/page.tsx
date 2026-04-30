@@ -62,9 +62,10 @@ export default function NuevaJornadaPage() {
   const [espnDesconocidos, setEspnDesconocidos] = useState<string[]>([]);
 
   const cargarDesdeEspn = async () => {
-    // Partidos reales ya cargados (con al menos un campo)
-    const existentes = partidos.filter((p) => p.equipoLocal || p.equipoVisita || p.fechaHora);
-    const slotsLibres = MAX_PARTIDOS - existentes.length;
+    // Leer estado actual con snapshot (evita stale closure)
+    const snapshot = partidos;
+    const existentesSnap = snapshot.filter((p) => p.equipoLocal || p.equipoVisita || p.fechaHora);
+    const slotsLibres = MAX_PARTIDOS - existentesSnap.length;
 
     if (slotsLibres <= 0) {
       setEspnMensaje({ tipo: "warn", texto: `Ya tienes ${MAX_PARTIDOS} partidos. Quita alguno para agregar más.` });
@@ -100,42 +101,45 @@ export default function NuevaJornadaPage() {
         return;
       }
 
-      // Solo tomar los que caben en los slots libres
-      const nuevos = fetchedPartidos.slice(0, slotsLibres);
-
-      // Detectar equipos no reconocidos en nuestro sistema
+      // Detectar equipos no reconocidos
       const equiposSistema = EQUIPOS_POR_LIGA[espnLiga] ?? [];
-      const desconocidos = nuevos.flatMap((p) => {
+      const desconocidos = fetchedPartidos.flatMap((p) => {
         const d: string[] = [];
         if (p.equipoLocal  && !equiposSistema.includes(p.equipoLocal))  d.push(p.equipoLocal);
         if (p.equipoVisita && !equiposSistema.includes(p.equipoVisita)) d.push(p.equipoVisita);
         return d;
       });
-      const uniqueDesc = [...new Set(desconocidos)];
-      setEspnDesconocidos(uniqueDesc);
+      setEspnDesconocidos([...new Set(desconocidos)]);
 
-      // Fusionar: existentes reales + nuevos de ESPN
-      const merged = [...existentes, ...nuevos];
+      // Fusionar usando el estado MÁS RECIENTE (prev) — evita stale closure
+      const ligaActual = espnLiga;
+      const fetchedCopy = [...fetchedPartidos];
+      let agregados = 0;
+      let totalEncontrados = fetchedCopy.length;
 
-      // Rellenar con filas vacías hasta MIN_PARTIDOS si hacen falta
-      const conRelleno = merged.length < MIN_PARTIDOS
-        ? [...merged, ...Array.from({ length: MIN_PARTIDOS - merged.length }, () => PARTIDO_VACIO(espnLiga))]
-        : merged;
-
-      setPartidos(conRelleno);
+      setPartidos((prev) => {
+        const existentes = prev.filter((p) => p.equipoLocal || p.equipoVisita || p.fechaHora);
+        const libres = MAX_PARTIDOS - existentes.length;
+        const nuevos = fetchedCopy.slice(0, libres);
+        agregados = nuevos.length;
+        const merged = [...existentes, ...nuevos];
+        return merged.length < MIN_PARTIDOS
+          ? [...merged, ...Array.from({ length: MIN_PARTIDOS - merged.length }, () => PARTIDO_VACIO(ligaActual))]
+          : merged;
+      });
 
       // Auto-rellenar nombre y fechas solo si están vacíos
       if (data.nombreSugerido && !nombre.trim()) setNombre(data.nombreSugerido);
       if (!fechaInicio) setFechaInicio(espnDesde);
       if (!fechaFin)   setFechaFin(espnHasta);
 
-      const recortado = fetchedPartidos.length > slotsLibres
-        ? ` (solo cabían ${slotsLibres} de ${fetchedPartidos.length} encontrados)`
+      const recortado = totalEncontrados > slotsLibres
+        ? ` (solo cabían ${slotsLibres} de ${totalEncontrados} encontrados)`
         : "";
 
       setEspnMensaje({
-        tipo: uniqueDesc.length > 0 ? "warn" : "ok",
-        texto: `✅ ${nuevos.length} partido${nuevos.length !== 1 ? "s" : ""} de ${espnLiga} agregado${nuevos.length !== 1 ? "s" : ""}${recortado}`,
+        tipo: desconocidos.length > 0 ? "warn" : "ok",
+        texto: `✅ ${agregados} partido${agregados !== 1 ? "s" : ""} de ${espnLiga} agregado${agregados !== 1 ? "s" : ""}${recortado}`,
       });
     } catch {
       setEspnMensaje({ tipo: "error", texto: "No se pudo conectar con ESPN" });
