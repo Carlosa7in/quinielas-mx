@@ -32,12 +32,12 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-green-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-b from-amber-950 to-stone-950 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-4" style={{ height: "100px", objectFit: "contain" }} />
-          <p className="text-green-300 text-sm mt-1">Panel de Administración</p>
+          <p className="text-amber-300/70 text-sm mt-1">Panel de Administración</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 space-y-4">
@@ -71,7 +71,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-green-700 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold py-2.5 rounded-xl transition-colors"
+            className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-stone-400 text-stone-900 font-bold py-2.5 rounded-xl transition-colors"
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>

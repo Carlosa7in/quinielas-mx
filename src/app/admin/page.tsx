@@ -57,7 +57,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-green-900 text-white py-6 px-4">
+      <div className="bg-amber-950 text-white py-6 px-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -71,7 +71,7 @@ export default function AdminPage() {
             </div>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-green-300 hover:text-white text-sm border border-green-700 hover:border-green-400 px-3 py-1.5 rounded-lg transition-colors"
+              className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
             >
               Salir
             </button>
