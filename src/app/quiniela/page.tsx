@@ -71,10 +71,11 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-green-900 flex items-center justify-center text-white">
+      <div className="min-h-screen bg-gradient-to-b from-amber-950 to-[#281105] flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl mb-4 animate-pulse">⚽</div>
-          <p>Cargando jornadas...</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-4 animate-pulse" style={{ height: "110px", objectFit: "contain" }} />
+          <p className="text-amber-300/70 text-sm">Cargando jornadas...</p>
         </div>
       </div>
     );
@@ -82,11 +83,12 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
 
   if (jornadas.length === 0) {
     return (
-      <div className="min-h-screen bg-green-900 flex items-center justify-center text-white px-4">
+      <div className="min-h-screen bg-gradient-to-b from-amber-950 to-[#281105] flex items-center justify-center text-white px-4">
         <div className="text-center">
-          <div className="text-4xl mb-4">😕</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-4 opacity-60" style={{ height: "90px", objectFit: "contain" }} />
           <h2 className="text-xl font-bold mb-2">No hay jornadas abiertas</h2>
-          <p className="text-green-300 text-sm">Vuelve pronto, pronto habrá una nueva jornada.</p>
+          <p className="text-amber-300/60 text-sm">Vuelve pronto, pronto habrá una nueva jornada.</p>
           <a href="/" className="mt-6 inline-block text-yellow-300 underline">← Inicio</a>
         </div>
       </div>
