@@ -93,7 +93,7 @@ export default function TiendaPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600">{error}</p>
-          <a href="/admin" className="text-green-700 underline mt-4 inline-block">
+          <a href="/admin" className="text-amber-700 underline mt-4 inline-block">
             Volver al admin
           </a>
         </div>
@@ -105,12 +105,12 @@ export default function TiendaPage() {
   if (modo === "seleccion") {
     return (
       <div className="min-h-screen bg-gray-100">
-        <div className="bg-green-900 text-white py-4 px-4">
+        <div className="bg-amber-950 text-white py-4 px-4">
           <div className="max-w-xl mx-auto">
-            <a href="/admin" className="text-green-300 text-sm">← Admin</a>
+            <a href="/admin" className="text-amber-400 text-sm">← Admin</a>
             <h1 className="text-xl font-bold mt-1">Registro en Tienda</h1>
             {jornada && (
-              <p className="text-green-300 text-xs">
+              <p className="text-amber-400 text-xs">
                 {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
               </p>
             )}
@@ -125,7 +125,7 @@ export default function TiendaPage() {
           {/* Opción A — Manual */}
           <button
             onClick={() => setModo("manual")}
-            className="w-full bg-white border-2 border-green-600 hover:bg-green-50 rounded-2xl p-6 flex items-center gap-4 transition-colors text-left"
+            className="w-full bg-white border-2 border-amber-600 hover:bg-amber-50 rounded-2xl p-6 flex items-center gap-4 transition-colors text-left"
           >
             <span className="text-4xl">✏️</span>
             <div>
@@ -169,22 +169,22 @@ export default function TiendaPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="bg-green-900 text-white py-4 px-4">
+      <div className="bg-amber-950 text-white py-4 px-4">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <div>
-            <a href="/admin" className="text-green-300 text-sm">
+            <a href="/admin" className="text-amber-400 text-sm">
               ← Admin
             </a>
             <h1 className="text-xl font-bold">Registro en Tienda</h1>
             {jornada && (
-              <p className="text-green-300 text-xs">
+              <p className="text-amber-400 text-xs">
                 {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
               </p>
             )}
           </div>
           <div className="text-right">
             <p className="text-yellow-300 font-bold">$20 MXN</p>
-            <p className="text-green-300 text-xs">por quiniela</p>
+            <p className="text-amber-400 text-xs">por quiniela</p>
           </div>
         </div>
       </div>
@@ -199,14 +199,14 @@ export default function TiendaPage() {
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
           <input
             type="tel"
             placeholder="Teléfono (opcional)"
             value={telefono}
             onChange={(e) => setTelefono(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
         </div>
 
@@ -214,7 +214,7 @@ export default function TiendaPage() {
         <div className="bg-white rounded-xl p-4">
           <h2 className="font-semibold text-gray-700 mb-3">
             Pronósticos{" "}
-            <span className="text-green-600 font-normal text-sm">
+            <span className="text-amber-600 font-normal text-sm">
               ({Object.keys(picks).length}/{jornada?.partidos.length ?? 0})
             </span>
           </h2>
@@ -240,7 +240,7 @@ export default function TiendaPage() {
                       onClick={() => seleccionar(partido.id, op)}
                       className={`w-9 h-8 rounded text-xs font-bold transition-colors ${
                         picks[partido.id] === op
-                          ? "bg-green-600 text-white"
+                          ? "bg-amber-700 text-white"
                           : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
@@ -260,7 +260,7 @@ export default function TiendaPage() {
         <button
           type="submit"
           disabled={!picksCompletos || !nombre || enviando}
-          className="w-full bg-green-700 hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-colors text-lg"
+          className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-colors text-lg"
         >
           {enviando
             ? "Registrando..."

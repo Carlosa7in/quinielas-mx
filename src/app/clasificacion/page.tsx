@@ -92,7 +92,7 @@ function TablaEquipos({ datos, expandido, setExpandido }: {
 
       {/* Cabecera */}
       <div
-        className="bg-green-800 text-white rounded-t-xl px-3 py-2 grid text-xs font-bold"
+        className="bg-amber-900 text-white rounded-t-xl px-3 py-2 grid text-xs font-bold"
         style={{ gridTemplateColumns: "28px 1fr 30px 26px 26px 26px 26px 26px 32px" }}
       >
         <span className="text-center">#</span>

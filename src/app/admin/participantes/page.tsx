@@ -76,15 +76,15 @@ export default function ParticipantesPage() {
 
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-green-900 text-white py-4 px-4">
+        <div className="bg-amber-950 text-white py-4 px-4">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             <div>
-              <button onClick={() => setModoBroadcast(false)} className="text-green-300 text-sm">
+              <button onClick={() => setModoBroadcast(false)} className="text-amber-400 text-sm">
                 ← Participantes
               </button>
               <h1 className="text-xl font-bold mt-0.5">Notificar por WhatsApp</h1>
             </div>
-            <span className="text-green-200 text-sm font-bold">
+            <span className="text-amber-300/70 text-sm font-bold">
               {totalEnviados}/{total}
             </span>
           </div>
@@ -95,7 +95,7 @@ export default function ParticipantesPage() {
           <div className="bg-white rounded-xl p-4">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-gray-600">Progreso</span>
-              <span className="font-bold text-green-700">{totalEnviados} de {total} enviados</span>
+              <span className="font-bold text-amber-400">{totalEnviados} de {total} enviados</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
@@ -114,14 +114,14 @@ export default function ParticipantesPage() {
               value={mensaje}
               onChange={(e) => setMensaje(e.target.value)}
               rows={8}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
             />
           </div>
 
           {!completado ? (
             <div className="bg-white rounded-xl p-4 space-y-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center font-bold text-green-700">
+                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center font-bold text-amber-700">
                   {indiceActual + 1}
                 </div>
                 <div>
@@ -145,7 +145,7 @@ export default function ParticipantesPage() {
               {/* Lista de pendientes */}
               <div className="border-t pt-3 space-y-1 max-h-40 overflow-y-auto">
                 {clientesConTel.map((c, i) => (
-                  <div key={c.id} className={`flex items-center gap-2 text-sm py-0.5 ${i === indiceActual ? "font-bold text-green-700" : ""}`}>
+                  <div key={c.id} className={`flex items-center gap-2 text-sm py-0.5 ${i === indiceActual ? "font-bold text-amber-700" : ""}`}>
                     <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${enviados.has(c.id) ? "bg-green-500 text-white" : i === indiceActual ? "bg-yellow-400 text-white" : "bg-gray-200 text-gray-500"}`}>
                       {enviados.has(c.id) ? "✓" : i + 1}
                     </span>
@@ -155,13 +155,13 @@ export default function ParticipantesPage() {
               </div>
             </div>
           ) : (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
               <div className="text-4xl mb-2">🎉</div>
-              <h2 className="text-green-800 font-bold text-lg">¡Todos notificados!</h2>
-              <p className="text-green-600 text-sm">{total} mensajes enviados</p>
+              <h2 className="text-amber-900 font-bold text-lg">¡Todos notificados!</h2>
+              <p className="text-amber-700 text-sm">{total} mensajes enviados</p>
               <button
                 onClick={() => setModoBroadcast(false)}
-                className="mt-4 bg-green-700 text-white font-bold px-6 py-2 rounded-xl"
+                className="mt-4 bg-amber-700 text-white font-bold px-6 py-2 rounded-xl"
               >
                 Volver a participantes
               </button>
@@ -175,9 +175,9 @@ export default function ParticipantesPage() {
   // ── LISTA DE PARTICIPANTES ──────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-green-900 text-white py-4 px-4">
+      <div className="bg-amber-950 text-white py-4 px-4">
         <div className="max-w-xl mx-auto">
-          <a href="/admin" className="text-green-300 text-sm">← Admin</a>
+          <a href="/admin" className="text-amber-400 text-sm">← Admin</a>
           <div className="flex items-center justify-between mt-0.5">
             <h1 className="text-xl font-bold">Participantes</h1>
             <button
@@ -191,7 +191,7 @@ export default function ParticipantesPage() {
               Notificar a todos
             </button>
           </div>
-          <p className="text-green-300 text-xs mt-1">{clientes.length} participantes registrados</p>
+          <p className="text-amber-400 text-xs mt-1">{clientes.length} participantes registrados</p>
         </div>
       </div>
 
@@ -202,7 +202,7 @@ export default function ParticipantesPage() {
           placeholder="Buscar por nombre o teléfono..."
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
 
         {cargando ? (
@@ -216,7 +216,7 @@ export default function ParticipantesPage() {
         ) : (
           clientesFiltrados.map((c) => (
             <div key={c.id} className="bg-white rounded-xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center font-bold text-green-700 text-sm shrink-0">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center font-bold text-amber-700 text-sm shrink-0">
                 {c.nombre.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">

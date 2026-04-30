@@ -92,7 +92,7 @@ export default function ComisionesPage() {
           <select
             value={jornadaId}
             onChange={(e) => setJornadaId(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
             <option value="">Todas las jornadas</option>
             {jornadas.map((j) => (

@@ -43,7 +43,7 @@ function BolsaWidget() {
 
 export default function Home() {
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-amber-950 to-[#281105] text-white px-4">
+    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-[#7A3A12] to-[#3A1A06] text-white px-4">
       <div className="max-w-md w-full text-center space-y-6">
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}

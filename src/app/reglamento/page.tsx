@@ -100,7 +100,7 @@ export default function ReglamentoPage() {
         {/* Reglas */}
         {secciones.map((sec) => (
           <div key={sec.titulo} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="flex items-center gap-3 px-4 py-3 bg-green-800 text-white">
+            <div className="flex items-center gap-3 px-4 py-3 bg-amber-950 text-white">
               <span className="text-xl">{sec.icono}</span>
               <h2 className="font-bold text-sm">{sec.titulo}</h2>
             </div>
@@ -135,7 +135,7 @@ export default function ReglamentoPage() {
         <div className="flex flex-col gap-3 pb-6">
           <Link
             href="/quiniela"
-            className="block w-full text-center bg-green-700 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition-colors"
+            className="block w-full text-center bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-colors"
           >
             ⚽ Registrar mi quiniela
           </Link>

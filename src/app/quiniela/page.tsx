@@ -71,7 +71,7 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-950 to-[#281105] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-[#7A3A12] to-[#3A1A06] flex items-center justify-center">
         <div className="text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-4 animate-pulse" style={{ height: "110px", objectFit: "contain" }} />
@@ -83,7 +83,7 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
 
   if (jornadas.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-950 to-[#281105] flex items-center justify-center text-white px-4">
+      <div className="min-h-screen bg-gradient-to-b from-[#7A3A12] to-[#3A1A06] flex items-center justify-center text-white px-4">
         <div className="text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-4 opacity-60" style={{ height: "90px", objectFit: "contain" }} />
@@ -98,11 +98,11 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-green-800 text-white py-6 px-4">
+      <div className="bg-amber-950 text-white py-6 px-4">
         <div className="max-w-lg mx-auto">
-          <a href="/" className="text-green-300 text-sm mb-2 inline-block">← Inicio</a>
+          <a href="/" className="text-amber-400 text-sm mb-2 inline-block">← Inicio</a>
           <h1 className="text-2xl font-bold">Registrar Quiniela</h1>
-          <p className="text-green-200 text-sm">Elige la jornada en la que quieres participar</p>
+          <p className="text-amber-300/70 text-sm">Elige la jornada en la que quieres participar</p>
         </div>
       </div>
 
@@ -115,7 +115,7 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
                 key={liga}
                 onClick={() => setLigaActiva(liga)}
                 className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-                  ligaActiva === liga ? "bg-green-700 text-white" : "text-gray-500 hover:bg-gray-50"
+                  ligaActiva === liga ? "bg-amber-700 text-white" : "text-gray-500 hover:bg-gray-50"
                 }`}
               >
                 {LIGA_ICON[liga] ?? "⚽"} {liga}
@@ -130,7 +130,7 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
             <button
               key={j.id}
               onClick={() => cargarJornada(j, onSelect)}
-              className="w-full bg-white rounded-2xl shadow-sm p-5 text-left hover:shadow-md hover:border-green-300 border-2 border-transparent transition-all"
+              className="w-full bg-white rounded-2xl shadow-sm p-5 text-left hover:shadow-md hover:border-amber-300 border-2 border-transparent transition-all"
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
                     <p className="text-xs text-gray-400">{j.temporada}</p>
                   </div>
                 </div>
-                <span className="text-green-600 font-bold text-xl">→</span>
+                <span className="text-amber-600 font-bold text-xl">→</span>
               </div>
               <div className="flex items-center justify-between mt-3">
                 <div className="flex gap-3 text-xs text-gray-400">
@@ -218,16 +218,16 @@ export default function QuinielaPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-green-800 text-white py-6 px-4">
+      <div className="bg-amber-950 text-white py-6 px-4">
         <div className="max-w-lg mx-auto">
           <button
             onClick={() => { setJornada(null); setPicks({}); }}
-            className="text-green-300 text-sm mb-2 inline-block"
+            className="text-amber-400 text-sm mb-2 inline-block"
           >
             ← Cambiar jornada
           </button>
           <h1 className="text-2xl font-bold">Registrar Quiniela</h1>
-          <p className="text-green-200 text-sm">
+          <p className="text-amber-300/70 text-sm">
             {LIGA_ICON[jornada.liga] ?? "⚽"} {jornada.liga} · {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada} · $20 MXN
           </p>
         </div>
@@ -243,14 +243,14 @@ export default function QuinielaPage() {
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
           <input
             type="tel"
             placeholder="Teléfono (opcional, para consultar después)"
             value={telefono}
             onChange={(e) => setTelefono(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
           <p className="text-xs text-gray-400">
             Con tu teléfono podrás consultar tus quinielas fácilmente
@@ -261,7 +261,7 @@ export default function QuinielaPage() {
         <div className="space-y-3">
           <h2 className="font-semibold text-gray-700 px-1">
             Selecciona tus pronósticos{" "}
-            <span className="text-green-600 font-normal text-sm">
+            <span className="text-amber-600 font-normal text-sm">
               ({Object.keys(picks).length}/{partidosOrdenados.length})
             </span>
           </h2>
@@ -316,7 +316,7 @@ export default function QuinielaPage() {
         )}
 
         {/* Resumen y envío */}
-        <div className="bg-green-800 text-white rounded-xl p-4">
+        <div className="bg-amber-950 text-white rounded-xl p-4">
           <div className="flex justify-between mb-3 text-sm">
             <span>Pronósticos:</span>
             <span>{Object.keys(picks).length}/{partidosOrdenados.length} seleccionados</span>
@@ -328,12 +328,12 @@ export default function QuinielaPage() {
           <button
             type="submit"
             disabled={!picksCompletos || !nombre || enviando}
-            className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-gray-400 disabled:cursor-not-allowed text-green-900 font-bold py-3 rounded-xl transition-colors"
+            className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-gray-400 disabled:cursor-not-allowed text-amber-950 font-bold py-3 rounded-xl transition-colors"
           >
             {enviando ? "Registrando..." : "Registrar Quiniela ($20)"}
           </button>
           {!picksCompletos && (
-            <p className="text-green-300 text-xs text-center mt-2">
+            <p className="text-amber-400 text-xs text-center mt-2">
               Selecciona todos los partidos para continuar
             </p>
           )}

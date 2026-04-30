@@ -175,9 +175,9 @@ export default function QuinielasAdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-green-900 text-white py-4 px-4">
+      <div className="bg-amber-950 text-white py-4 px-4">
         <div className="max-w-3xl mx-auto">
-          <Link href="/admin" className="text-green-300 text-sm">← Admin</Link>
+          <Link href="/admin" className="text-amber-400 text-sm">← Admin</Link>
           <h1 className="text-xl font-bold mt-1">Quinielas</h1>
         </div>
       </div>
@@ -207,7 +207,7 @@ export default function QuinielasAdminPage() {
                 key={l}
                 onClick={() => setLigaFiltro(l)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                  ligaFiltro === l ? "bg-green-700 text-white" : "bg-white text-gray-500 hover:bg-gray-50"
+                  ligaFiltro === l ? "bg-amber-700 text-white" : "bg-white text-gray-500 hover:bg-gray-50"
                 }`}
               >
                 {l === "todas" ? "Todas" : l === "Liga MX" ? "🇲🇽 Liga MX" : "⭐ Champions"}
@@ -222,7 +222,7 @@ export default function QuinielasAdminPage() {
             onClick={() => setTab("activa")}
             className={`flex-1 py-3 text-sm font-semibold transition-colors ${
               tab === "activa"
-                ? "bg-green-700 text-white"
+                ? "bg-amber-700 text-white"
                 : "text-gray-500 hover:bg-gray-50"
             }`}
           >
@@ -237,7 +237,7 @@ export default function QuinielasAdminPage() {
             onClick={() => setTab("pasadas")}
             className={`flex-1 py-3 text-sm font-semibold transition-colors ${
               tab === "pasadas"
-                ? "bg-green-700 text-white"
+                ? "bg-amber-700 text-white"
                 : "text-gray-500 hover:bg-gray-50"
             }`}
           >
@@ -256,7 +256,7 @@ export default function QuinielasAdminPage() {
           placeholder="Buscar por folio, nombre o teléfono..."
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
 
         {/* Contenido */}

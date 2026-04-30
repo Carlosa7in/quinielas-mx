@@ -57,9 +57,9 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-green-900 text-white py-4 px-4">
+      <div className="bg-amber-950 text-white py-4 px-4">
         <div className="max-w-xl mx-auto">
-          <a href={backHref} className="text-green-300 text-sm">← Admin</a>
+          <a href={backHref} className="text-amber-400 text-sm">← Admin</a>
           <h1 className="text-xl font-bold mt-1">{titulo}</h1>
         </div>
       </div>
@@ -72,7 +72,7 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
             <p className="text-3xl mb-2">📅</p>
             <p>{soloActivas ? "No hay jornadas abiertas" : "No hay jornadas creadas"}</p>
             {!soloActivas && (
-              <a href="/admin/nueva-jornada" className="text-green-700 underline text-sm mt-2 inline-block">
+              <a href="/admin/nueva-jornada" className="text-amber-700 underline text-sm mt-2 inline-block">
                 Crear primera jornada →
               </a>
             )}
@@ -88,7 +88,7 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
                     onClick={() => setLigaActiva(liga)}
                     className={`flex-1 py-3 text-sm font-semibold transition-colors ${
                       ligaActiva === liga
-                        ? "bg-green-700 text-white"
+                        ? "bg-amber-700 text-white"
                         : "text-gray-500 hover:bg-gray-50"
                     }`}
                   >
@@ -107,7 +107,7 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
                   <button
                     key={j.id}
                     onClick={() => onSelect(j)}
-                    className="w-full bg-white rounded-xl p-4 flex items-center justify-between hover:bg-green-50 hover:border-green-300 border-2 border-transparent transition-all text-left shadow-sm"
+                    className="w-full bg-white rounded-xl p-4 flex items-center justify-between hover:bg-amber-50 hover:border-amber-300 border-2 border-transparent transition-all text-left shadow-sm"
                   >
                     <div>
                       <div className="flex items-center gap-2">
@@ -128,7 +128,7 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
                         <span>🎯 {j.totalQuinielas} quinielas</span>
                       </div>
                     </div>
-                    <span className="text-green-600 text-xl">→</span>
+                    <span className="text-amber-600 text-xl">→</span>
                   </button>
                 ))
               )}

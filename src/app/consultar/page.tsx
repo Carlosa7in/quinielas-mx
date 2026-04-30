@@ -68,17 +68,17 @@ function DetalleQuiniela({ q, onBack }: { q: Quiniela; onBack?: () => void }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="bg-green-800 text-white p-4">
+      <div className="bg-amber-950 text-white p-4">
         {onBack && (
-          <button onClick={onBack} className="text-green-300 text-sm mb-2 flex items-center gap-1">
+          <button onClick={onBack} className="text-amber-400 text-sm mb-2 flex items-center gap-1">
             ← Mis quinielas
           </button>
         )}
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-green-300 text-xs font-mono">{q.folio}</p>
+            <p className="text-amber-400 text-xs font-mono">{q.folio}</p>
             <p className="font-bold text-lg">{q.nombreCliente ?? "—"}</p>
-            <p className="text-green-300 text-xs mt-0.5">
+            <p className="text-amber-400 text-xs mt-0.5">
               {q.jornada.liga} · {q.jornada.nombre ?? `Jornada ${q.jornada.numero}`} · {q.jornada.temporada}
             </p>
           </div>
@@ -90,7 +90,7 @@ function DetalleQuiniela({ q, onBack }: { q: Quiniela; onBack?: () => void }) {
         {q.aciertos !== null && (
           <div className="mt-3 bg-white/10 rounded-xl py-2 text-center">
             <span className="text-3xl font-black text-yellow-300">{q.aciertos}</span>
-            <span className="text-green-200 text-sm"> / {picks.length} aciertos</span>
+            <span className="text-amber-300/70 text-sm"> / {picks.length} aciertos</span>
           </div>
         )}
       </div>
@@ -165,7 +165,7 @@ function TarjetaQuiniela({ q, onClick }: { q: Quiniela; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="w-full bg-white rounded-2xl shadow-sm p-4 text-left hover:shadow-md transition-shadow border-2 border-transparent hover:border-green-200"
+      className="w-full bg-white rounded-2xl shadow-sm p-4 text-left hover:shadow-md transition-shadow border-2 border-transparent hover:border-amber-200"
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div>
@@ -389,7 +389,7 @@ function Preliminares() {
               onClick={() => setJornadaActiva(j.id)}
               className={`shrink-0 text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
                 jornadaActiva === j.id
-                  ? "bg-green-700 text-white"
+                  ? "bg-amber-700 text-white"
                   : "bg-white text-gray-500 border border-gray-200"
               }`}
             >
@@ -401,9 +401,9 @@ function Preliminares() {
 
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         {/* Cabecera */}
-        <div className="bg-green-800 text-white px-4 py-2.5 flex items-center justify-between">
+        <div className="bg-amber-950 text-white px-4 py-2.5 flex items-center justify-between">
           <span className="text-sm font-bold">{jornada.liga} · Jornada {jornada.numero}</span>
-          <span className="text-xs text-green-300">{jornada.temporada}</span>
+          <span className="text-xs text-amber-400">{jornada.temporada}</span>
         </div>
 
         {!hayResultados && (
@@ -533,11 +533,11 @@ function ConsultarInner() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-green-800 text-white py-5 px-4">
+      <div className="bg-amber-950 text-white py-5 px-4">
         <div className="max-w-lg mx-auto">
-          <a href="/" className="text-green-300 text-sm mb-1 inline-block">← Inicio</a>
+          <a href="/" className="text-amber-400 text-sm mb-1 inline-block">← Inicio</a>
           <h1 className="text-2xl font-bold">Consultar Quiniela</h1>
-          <p className="text-green-200 text-sm">Encuentra tus pronósticos y resultados</p>
+          <p className="text-amber-300/70 text-sm">Encuentra tus pronósticos y resultados</p>
         </div>
       </div>
 
@@ -547,19 +547,19 @@ function ConsultarInner() {
         <div className="flex bg-white rounded-xl shadow-sm overflow-hidden">
           <button
             onClick={() => { setModo("telefono"); limpiar(); }}
-            className={`flex-1 py-3 text-sm font-semibold transition-colors ${modo === "telefono" ? "bg-green-700 text-white" : "text-gray-500 hover:bg-gray-50"}`}
+            className={`flex-1 py-3 text-sm font-semibold transition-colors ${modo === "telefono" ? "bg-amber-700 text-white" : "text-gray-500 hover:bg-gray-50"}`}
           >
             📱 Teléfono
           </button>
           <button
             onClick={() => { setModo("folio"); limpiar(); }}
-            className={`flex-1 py-3 text-sm font-semibold transition-colors ${modo === "folio" ? "bg-green-700 text-white" : "text-gray-500 hover:bg-gray-50"}`}
+            className={`flex-1 py-3 text-sm font-semibold transition-colors ${modo === "folio" ? "bg-amber-700 text-white" : "text-gray-500 hover:bg-gray-50"}`}
           >
             🎫 Folio
           </button>
           <button
             onClick={() => { setModo("qr"); limpiar(); }}
-            className={`flex-1 py-3 text-sm font-semibold transition-colors ${modo === "qr" ? "bg-green-700 text-white" : "text-gray-500 hover:bg-gray-50"}`}
+            className={`flex-1 py-3 text-sm font-semibold transition-colors ${modo === "qr" ? "bg-amber-700 text-white" : "text-gray-500 hover:bg-gray-50"}`}
           >
             📷 QR
           </button>
@@ -578,14 +578,14 @@ function ConsultarInner() {
                 placeholder="55 1234 5678"
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                 autoFocus
               />
             </div>
             <button
               type="submit"
               disabled={cargando || telefono.replace(/\D/g, "").length < 10}
-              className="w-full bg-green-700 hover:bg-green-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl text-sm transition-colors"
+              className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl text-sm transition-colors"
             >
               {cargando ? "Buscando..." : "Buscar mis quinielas"}
             </button>
@@ -601,12 +601,12 @@ function ConsultarInner() {
               placeholder="QMX-J1-..."
               value={folio}
               onChange={(e) => setFolio(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500 uppercase"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500 uppercase"
             />
             <button
               type="submit"
               disabled={cargando || !folio.trim()}
-              className="w-full bg-green-700 hover:bg-green-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl text-sm transition-colors"
+              className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl text-sm transition-colors"
             >
               {cargando ? "Buscando..." : "Buscar"}
             </button>

@@ -223,9 +223,9 @@ export default function NuevaJornadaPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-green-900 text-white py-4 px-4">
+      <div className="bg-amber-950 text-white py-4 px-4">
         <div className="max-w-xl mx-auto">
-          <a href="/admin" className="text-green-300 text-sm">← Admin</a>
+          <a href="/admin" className="text-amber-400 text-sm">← Admin</a>
           <h1 className="text-xl font-bold mt-1">Nueva Fecha / Jornada</h1>
         </div>
       </div>
@@ -346,7 +346,7 @@ export default function NuevaJornadaPage() {
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               required
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
@@ -359,7 +359,7 @@ export default function NuevaJornadaPage() {
                 value={temporada}
                 onChange={(e) => setTemporada(e.target.value)}
                 required
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
             <div className="flex items-end pb-0.5">
@@ -381,7 +381,7 @@ export default function NuevaJornadaPage() {
                 value={fechaInicio}
                 onChange={(e) => setFechaInicio(e.target.value)}
                 required
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
             <div>
@@ -391,7 +391,7 @@ export default function NuevaJornadaPage() {
                 value={fechaFin}
                 onChange={(e) => setFechaFin(e.target.value)}
                 required
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
@@ -449,7 +449,7 @@ export default function NuevaJornadaPage() {
                       onClick={() => updatePartido(i, "liga", liga)}
                       className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
                         partido.liga === liga
-                          ? "bg-green-700 text-white"
+                          ? "bg-amber-700 text-white"
                           : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                       }`}
                     >
@@ -463,7 +463,7 @@ export default function NuevaJornadaPage() {
                   <select
                     value={partido.equipoLocal}
                     onChange={(e) => updatePartido(i, "equipoLocal", e.target.value)}
-                    className={`border rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    className={`border rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
                       partido.equipoLocal && usadosEnOtros.includes(partido.equipoLocal)
                         ? "border-red-300 bg-red-50"
                         : "border-gray-200"
@@ -484,7 +484,7 @@ export default function NuevaJornadaPage() {
                   <select
                     value={partido.equipoVisita}
                     onChange={(e) => updatePartido(i, "equipoVisita", e.target.value)}
-                    className={`border rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    className={`border rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
                       partido.equipoVisita && usadosEnOtros.includes(partido.equipoVisita)
                         ? "border-red-300 bg-red-50"
                         : "border-gray-200"
@@ -508,7 +508,7 @@ export default function NuevaJornadaPage() {
                   type="datetime-local"
                   value={partido.fechaHora}
                   onChange={(e) => updatePartido(i, "fechaHora", e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
             );
@@ -520,7 +520,7 @@ export default function NuevaJornadaPage() {
           <button
             type="button"
             onClick={agregarPartido}
-            className="w-full border-2 border-dashed border-gray-300 hover:border-green-400 text-gray-500 hover:text-green-600 py-3 rounded-xl text-sm font-medium transition-colors"
+            className="w-full border-2 border-dashed border-gray-300 hover:border-amber-400 text-gray-500 hover:text-amber-600 py-3 rounded-xl text-sm font-medium transition-colors"
           >
             + Agregar partido ({partidos.length}/{MAX_PARTIDOS})
           </button>
@@ -543,7 +543,7 @@ export default function NuevaJornadaPage() {
         <button
           type="submit"
           disabled={enviando || partidosValidos.length < MIN_PARTIDOS}
-          className="w-full bg-green-700 hover:bg-green-600 disabled:bg-gray-300 text-white font-bold py-4 rounded-xl transition-colors"
+          className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-300 text-white font-bold py-4 rounded-xl transition-colors"
         >
           {enviando
             ? "Creando..."

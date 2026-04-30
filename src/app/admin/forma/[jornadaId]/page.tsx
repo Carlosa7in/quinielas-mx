@@ -275,11 +275,11 @@ export default function FormaPage() {
   return (
     <>
       {/* Controles */}
-      <div className="print:hidden bg-green-800 text-white py-3 px-4">
+      <div className="print:hidden bg-amber-950 text-white py-3 px-4">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <a href="/admin/forma" className="text-green-300 text-sm">← Formas</a>
+              <a href="/admin/forma" className="text-amber-400 text-sm">← Formas</a>
               <p className="font-bold mt-0.5">
                 {jornada.liga} · {jornada.nombre ?? `Jornada ${jornada.numero}`}
               </p>
@@ -292,18 +292,18 @@ export default function FormaPage() {
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 bg-green-900/50 rounded-xl p-3">
+          <div className="flex flex-wrap items-center gap-3 bg-amber-950/50 rounded-xl p-3">
             {/* Tipo de impresora */}
-            <div className="flex rounded-lg overflow-hidden border border-green-600 text-sm">
+            <div className="flex rounded-lg overflow-hidden border border-amber-700 text-sm">
               <button
                 onClick={() => setModo("ticket")}
-                className={`px-3 py-1.5 font-semibold transition-colors ${modo === "ticket" ? "bg-yellow-400 text-green-900" : "text-green-300 hover:bg-green-700"}`}
+                className={`px-3 py-1.5 font-semibold transition-colors ${modo === "ticket" ? "bg-yellow-400 text-amber-950" : "text-amber-400 hover:bg-amber-700"}`}
               >
                 🧾 Ticket 80mm
               </button>
               <button
                 onClick={() => setModo("carta")}
-                className={`px-3 py-1.5 font-semibold transition-colors ${modo === "carta" ? "bg-yellow-400 text-green-900" : "text-green-300 hover:bg-green-700"}`}
+                className={`px-3 py-1.5 font-semibold transition-colors ${modo === "carta" ? "bg-yellow-400 text-amber-950" : "text-amber-400 hover:bg-amber-700"}`}
               >
                 📄 Hoja carta
               </button>
@@ -311,10 +311,10 @@ export default function FormaPage() {
 
             {/* Cantidad */}
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-green-300">Formas:</span>
-              <button onClick={() => setCantidad((c) => Math.max(1, c - 1))} className="w-7 h-7 rounded-full bg-green-700 hover:bg-green-600 font-bold text-lg leading-none">−</button>
+              <span className="text-amber-400">Formas:</span>
+              <button onClick={() => setCantidad((c) => Math.max(1, c - 1))} className="w-7 h-7 rounded-full bg-amber-700 hover:bg-amber-600 font-bold text-lg leading-none">−</button>
               <span className="font-bold text-lg w-6 text-center">{cantidad}</span>
-              <button onClick={() => setCantidad((c) => Math.min(50, c + 1))} className="w-7 h-7 rounded-full bg-green-700 hover:bg-green-600 font-bold text-lg leading-none">+</button>
+              <button onClick={() => setCantidad((c) => Math.min(50, c + 1))} className="w-7 h-7 rounded-full bg-amber-700 hover:bg-amber-600 font-bold text-lg leading-none">+</button>
             </div>
 
             <button onClick={rellenarTodosAleatorio} className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-4 py-1.5 rounded-lg text-sm">

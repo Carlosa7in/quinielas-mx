@@ -73,9 +73,9 @@ export default function UsuariosPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="bg-green-900 text-white py-4 px-4">
+      <div className="bg-amber-950 text-white py-4 px-4">
         <div className="max-w-xl mx-auto">
-          <a href="/admin" className="text-green-300 text-sm">← Admin</a>
+          <a href="/admin" className="text-amber-400 text-sm">← Admin</a>
           <h1 className="text-xl font-bold mt-1">Usuarios y Puntos de Venta</h1>
         </div>
       </div>
@@ -88,26 +88,26 @@ export default function UsuariosPage() {
             <input
               type="text" placeholder="Nombre completo" value={nombre} required
               onChange={(e) => setNombre(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <input
               type="text" placeholder="Usuario para iniciar sesión" value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ""))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <input
               type="email" placeholder="Correo electrónico" value={email} required
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <input
               type="password" placeholder="Contraseña temporal" value={password} required
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <select
               value={rol} onChange={(e) => setRol(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               <option value="vendedor">Vendedor (punto de venta)</option>
               <option value="admin">Admin</option>
@@ -116,7 +116,7 @@ export default function UsuariosPage() {
             <input
               type="text" placeholder="Nombre del punto de venta (ej. Tienda Centro)" value={puntoVenta}
               onChange={(e) => setPuntoVenta(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <p className="text-xs text-gray-400">El punto de venta aparece en el reporte de comisiones.</p>
 
@@ -125,7 +125,7 @@ export default function UsuariosPage() {
 
             <button
               type="submit" disabled={enviando}
-              className="w-full bg-green-700 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold py-2.5 rounded-xl transition-colors"
+              className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-400 text-white font-bold py-2.5 rounded-xl transition-colors"
             >
               {enviando ? "Creando..." : "Crear usuario"}
             </button>
@@ -152,7 +152,7 @@ export default function UsuariosPage() {
                         </span>
                       </div>
                       <p className="text-gray-400 text-xs mt-0.5">
-                        {u.username && <span className="text-green-600">@{u.username} · </span>}
+                        {u.username && <span className="text-amber-600">@{u.username} · </span>}
                         {u.email}
                       </p>
 
@@ -164,10 +164,10 @@ export default function UsuariosPage() {
                             value={editPuntoVenta}
                             onChange={(e) => setEditPuntoVenta(e.target.value)}
                             placeholder="Nombre del punto de venta"
-                            className="flex-1 border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="flex-1 border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
                             autoFocus
                           />
-                          <button onClick={() => guardarPuntoVenta(u.id)} className="text-xs bg-green-700 text-white px-2 py-1 rounded-lg">Guardar</button>
+                          <button onClick={() => guardarPuntoVenta(u.id)} className="text-xs bg-amber-700 text-white px-2 py-1 rounded-lg">Guardar</button>
                           <button onClick={() => setEditandoId(null)} className="text-xs text-gray-400 px-2 py-1">Cancelar</button>
                         </div>
                       ) : (
@@ -176,8 +176,8 @@ export default function UsuariosPage() {
                           className="text-xs mt-1 text-left"
                         >
                           {u.puntoVenta
-                            ? <span className="text-green-700">📍 {u.puntoVenta} <span className="text-gray-400">(editar)</span></span>
-                            : <span className="text-gray-400 hover:text-green-700">+ Agregar punto de venta</span>
+                            ? <span className="text-amber-700">📍 {u.puntoVenta} <span className="text-gray-400">(editar)</span></span>
+                            : <span className="text-gray-400 hover:text-amber-700">+ Agregar punto de venta</span>
                           }
                         </button>
                       )}

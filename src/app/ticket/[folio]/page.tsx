@@ -254,7 +254,7 @@ export default function TicketPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">
           <p className="text-red-600">{error}</p>
-          <a href="/" className="text-green-700 underline mt-4 inline-block">
+          <a href="/" className="text-amber-700 underline mt-4 inline-block">
             Volver al inicio
           </a>
         </div>
@@ -296,10 +296,10 @@ export default function TicketPage() {
       }
     `}</style>
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-green-800 text-white py-6 px-4 print:hidden">
+      <div className="bg-amber-950 text-white py-6 px-4 print:hidden">
         <div className="max-w-lg mx-auto">
           <h1 className="text-2xl font-bold">Quiniela Registrada</h1>
-          <p className="text-green-200 text-sm mt-1">
+          <p className="text-amber-300/70 text-sm mt-1">
             {quiniela.jornada.liga} · {quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`} · {quiniela.jornada.temporada}
           </p>
         </div>
@@ -501,7 +501,7 @@ export default function TicketPage() {
           {/* Imprimir en térmica */}
           <button
             onClick={() => window.print()}
-            className="w-full bg-green-800 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-amber-950 hover:bg-amber-900 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <span>🧾</span> Imprimir en Térmica
           </button>
@@ -514,13 +514,13 @@ export default function TicketPage() {
           </a>
           <a
             href="/reglamento"
-            className="block w-full text-center text-green-600 text-sm font-medium py-2 hover:underline transition-colors"
+            className="block w-full text-center text-amber-600 text-sm font-medium py-2 hover:underline transition-colors"
           >
             📜 Ver reglamento
           </a>
           <a
             href="/"
-            className="block w-full text-center text-green-700 font-semibold py-2 transition-colors"
+            className="block w-full text-center text-amber-700 font-semibold py-2 transition-colors"
           >
             Volver al inicio
           </a>

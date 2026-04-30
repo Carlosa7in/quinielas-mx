@@ -105,7 +105,7 @@ export default function ResultadosPage() {
   if (finalizada && ganadoras.length >= 0 && resueltos === total && total > 0) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-green-900 text-white py-4 px-4">
+        <div className="bg-amber-950 text-white py-4 px-4">
           <div className="max-w-xl mx-auto">
             <h1 className="text-xl font-bold">Jornada Finalizada</h1>
           </div>
@@ -136,7 +136,7 @@ export default function ResultadosPage() {
 
           <a
             href="/admin"
-            className="block w-full text-center bg-green-700 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition-colors"
+            className="block w-full text-center bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-colors"
           >
             Volver al admin
           </a>
@@ -147,12 +147,12 @@ export default function ResultadosPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-green-900 text-white py-4 px-4">
+      <div className="bg-amber-950 text-white py-4 px-4">
         <div className="max-w-xl mx-auto">
-          <a href="/admin" className="text-green-300 text-sm">← Admin</a>
+          <a href="/admin" className="text-amber-400 text-sm">← Admin</a>
           <h1 className="text-xl font-bold mt-1">Registrar Resultados</h1>
           {jornada && (
-            <p className="text-green-300 text-xs">
+            <p className="text-amber-400 text-xs">
               {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
             </p>
           )}
@@ -165,7 +165,7 @@ export default function ResultadosPage() {
           <div className="bg-white rounded-xl p-4">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-gray-600 font-medium">Partidos resueltos</span>
-              <span className="font-bold text-green-700">{resueltos} / {total}</span>
+              <span className="font-bold text-amber-700">{resueltos} / {total}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
@@ -190,7 +190,7 @@ export default function ResultadosPage() {
             <div
               key={partido.id}
               className={`bg-white rounded-xl p-4 border-2 transition-colors ${
-                e.guardado ? "border-green-200" : "border-transparent"
+                e.guardado ? "border-amber-200" : "border-transparent"
               }`}
             >
               <div className="flex items-center justify-between mb-3">
@@ -222,7 +222,7 @@ export default function ResultadosPage() {
                     }}
                     className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
                       e.resultado === val
-                        ? "bg-green-600 text-white"
+                        ? "bg-amber-700 text-white"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
@@ -239,7 +239,7 @@ export default function ResultadosPage() {
                   placeholder="0"
                   value={e.golesLocal}
                   onChange={(ev) => { set(partido.id, "golesLocal", ev.target.value); set(partido.id, "guardado", false); }}
-                  className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
                 <span className="text-gray-400 text-xs flex-1 text-center">
                   {partido.equipoLocal} — {partido.equipoVisita}
@@ -250,7 +250,7 @@ export default function ResultadosPage() {
                   placeholder="0"
                   value={e.golesVisita}
                   onChange={(ev) => { set(partido.id, "golesVisita", ev.target.value); set(partido.id, "guardado", false); }}
-                  className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
 

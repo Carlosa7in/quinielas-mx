@@ -282,8 +282,8 @@ function EscanearInner() {
   if (fase === "camara") {
     return (
       <div className="min-h-screen bg-black flex flex-col">
-        <div className="bg-green-900 text-white py-3 px-4 flex items-center justify-between">
-          <a href="/admin/tienda" className="text-green-300 text-sm">← Tienda</a>
+        <div className="bg-amber-950 text-white py-3 px-4 flex items-center justify-between">
+          <a href="/admin/tienda" className="text-amber-400 text-sm">← Tienda</a>
           <p className="font-bold">Escanear Forma</p>
           <div />
         </div>
@@ -293,7 +293,7 @@ function EscanearInner() {
             <div>
               <p className="text-2xl mb-3">📷</p>
               <p className="text-red-400">{camaraError}</p>
-              <a href="/admin/tienda" className="text-green-400 underline mt-4 inline-block">
+              <a href="/admin/tienda" className="text-amber-400 underline mt-4 inline-block">
                 Usar captura manual
               </a>
             </div>
@@ -329,7 +329,7 @@ function EscanearInner() {
               </p>
               <button
                 onClick={capturar}
-                className="bg-yellow-400 text-green-900 font-bold text-lg px-10 py-4 rounded-full shadow-lg active:scale-95 transition-transform"
+                className="bg-yellow-400 text-amber-950 font-bold text-lg px-10 py-4 rounded-full shadow-lg active:scale-95 transition-transform"
               >
                 Capturar
               </button>
@@ -347,10 +347,10 @@ function EscanearInner() {
 
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-green-900 text-white py-3 px-4 flex items-center justify-between">
+        <div className="bg-amber-950 text-white py-3 px-4 flex items-center justify-between">
           <button
             onClick={() => setFase("camara")}
-            className="text-green-300 text-sm"
+            className="text-amber-400 text-sm"
           >
             ← Reescanear
           </button>
@@ -435,7 +435,7 @@ function EscanearInner() {
           <button
             onClick={() => setFase("datos")}
             disabled={!todosConfirmados}
-            className="w-full bg-green-700 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold py-4 rounded-xl transition-colors"
+            className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-400 text-white font-bold py-4 rounded-xl transition-colors"
           >
             Continuar con datos del cliente →
           </button>
@@ -447,8 +447,8 @@ function EscanearInner() {
   // ── FASE: DATOS DEL CLIENTE ───────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-green-900 text-white py-3 px-4 flex items-center justify-between">
-        <button onClick={() => setFase("confirmacion")} className="text-green-300 text-sm">
+      <div className="bg-amber-950 text-white py-3 px-4 flex items-center justify-between">
+        <button onClick={() => setFase("confirmacion")} className="text-amber-400 text-sm">
           ← Picks
         </button>
         <p className="font-bold">Datos del Cliente</p>
@@ -480,14 +480,14 @@ function EscanearInner() {
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
           <input
             type="tel"
             placeholder="Teléfono (opcional)"
             value={telefono}
             onChange={(e) => setTelefono(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
         </div>
 

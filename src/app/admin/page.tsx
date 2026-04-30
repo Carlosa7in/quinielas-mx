@@ -67,7 +67,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
               <p className="text-white text-sm font-medium">{session?.user?.name}</p>
-              <p className="text-green-400 text-xs capitalize">{rol}</p>
+              <p className="text-amber-400 text-xs capitalize">{rol}</p>
             </div>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
@@ -172,12 +172,12 @@ export default function AdminPage() {
 
           <Link
             href="/admin/tienda"
-            className="bg-green-700 hover:bg-green-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+            className="bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
           >
             <span className="text-2xl">🏪</span>
             <div>
               <p className="font-bold">Registro en Tienda</p>
-              <p className="text-green-200 text-sm">Registrar quiniela presencial e imprimir ticket</p>
+              <p className="text-amber-300/70 text-sm">Registrar quiniela presencial e imprimir ticket</p>
             </div>
           </Link>
 
@@ -266,7 +266,7 @@ export default function AdminPage() {
               Inicializar datos de prueba
             </button>
             {seedStatus && (
-              <p className="text-green-600 text-sm mt-2">{seedStatus}</p>
+              <p className="text-amber-600 text-sm mt-2">{seedStatus}</p>
             )}
           </div>
         )}
