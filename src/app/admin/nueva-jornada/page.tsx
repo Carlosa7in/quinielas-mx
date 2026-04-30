@@ -237,9 +237,13 @@ export default function NuevaJornadaPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-brand text-white py-4 px-4">
-        <div className="max-w-xl mx-auto">
-          <a href="/admin" className="text-amber-400 text-sm">← Admin</a>
-          <h1 className="text-xl font-bold mt-1">Nueva Fecha / Jornada</h1>
+        <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
+          <div>
+            <a href="/admin" className="text-amber-400 text-sm">← Admin</a>
+            <h1 className="text-xl font-bold mt-1">Nueva Fecha / Jornada</h1>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "44px", objectFit: "contain", flexShrink: 0 }} />
         </div>
       </div>
 

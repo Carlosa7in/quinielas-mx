@@ -214,12 +214,14 @@ export default function ClasificacionPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-brand text-white py-5 px-4">
-        <div className="max-w-lg mx-auto">
-          <Link href="/" className="text-amber-400 text-sm mb-2 inline-block">← Inicio</Link>
+        <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
+          <div>
+            <Link href="/" className="text-amber-400 text-sm mb-1 inline-block">← Inicio</Link>
+            <h1 className="text-2xl font-bold">Clasificación</h1>
+            <p className="text-amber-300/70 text-sm">{datos?.temporada || "Cargando..."}</p>
+          </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "44px", objectFit: "contain", marginBottom: "4px" }} />
-          <h1 className="text-2xl font-bold">Clasificación</h1>
-          <p className="text-amber-300/70 text-sm">{datos?.temporada || "Cargando..."}</p>
+          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "52px", objectFit: "contain", flexShrink: 0 }} />
         </div>
       </div>
 

@@ -534,10 +534,14 @@ function ConsultarInner() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-brand text-white py-5 px-4">
-        <div className="max-w-lg mx-auto">
-          <a href="/" className="text-amber-400 text-sm mb-1 inline-block">← Inicio</a>
-          <h1 className="text-2xl font-bold">Consultar Quiniela</h1>
-          <p className="text-amber-300/70 text-sm">Encuentra tus pronósticos y resultados</p>
+        <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
+          <div>
+            <a href="/" className="text-amber-400 text-sm mb-1 inline-block">← Inicio</a>
+            <h1 className="text-2xl font-bold">Consultar Quiniela</h1>
+            <p className="text-amber-300/70 text-sm">Encuentra tus pronósticos y resultados</p>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "52px", objectFit: "contain", flexShrink: 0 }} />
         </div>
       </div>
 
