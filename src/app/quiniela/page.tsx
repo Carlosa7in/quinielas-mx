@@ -23,6 +23,7 @@ type Jornada = {
   totalPartidos?: number;
   recaudado?: number;
   ganadoras?: number;
+  primerPartidoFecha?: string | null;
 };
 
 const LIGA_ICON: Record<string, string> = {
@@ -130,37 +131,74 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
 
         {/* Tarjetas de jornadas */}
         <div className="space-y-3">
-          {filtradas.map((j) => (
-            <button
-              key={j.id}
-              onClick={() => cargarJornada(j, onSelect)}
-              className="w-full bg-white rounded-2xl shadow-sm p-5 text-left hover:shadow-md hover:border-amber-300 border-2 border-transparent transition-all"
-            >
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{LIGA_ICON[j.liga] ?? "⚽"}</span>
-                  <div>
-                    <p className="font-bold text-gray-800">
-                      {j.liga} · {j.nombre ?? `Jornada ${j.numero}`}
-                    </p>
-                    <p className="text-xs text-gray-400">{j.temporada}</p>
+          {filtradas.map((j) => {
+            const cerrada = j.primerPartidoFecha
+              ? new Date() >= new Date(j.primerPartidoFecha)
+              : false;
+
+            return (
+              <button
+                key={j.id}
+                onClick={() => !cerrada && cargarJornada(j, onSelect)}
+                disabled={cerrada}
+                className={`w-full bg-white rounded-2xl shadow-sm p-5 text-left border-2 transition-all ${
+                  cerrada
+                    ? "opacity-60 cursor-not-allowed border-gray-200"
+                    : "hover:shadow-md hover:border-amber-300 border-transparent"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{LIGA_ICON[j.liga] ?? "⚽"}</span>
+                    <div>
+                      <p className="font-bold text-gray-800">
+                        {j.liga} · {j.nombre ?? `Jornada ${j.numero}`}
+                      </p>
+                      <p className="text-xs text-gray-400">{j.temporada}</p>
+                    </div>
                   </div>
+                  {cerrada
+                    ? <span className="text-red-400 text-sm font-semibold">🔒 Cerrada</span>
+                    : <span className="text-amber-600 font-bold text-xl">→</span>
+                  }
                 </div>
-                <span className="text-amber-600 font-bold text-xl">→</span>
-              </div>
-              <div className="flex items-center justify-between mt-3">
-                <div className="flex gap-3 text-xs text-gray-400">
-                  <span>⚽ {j.totalPartidos ?? "?"} partidos</span>
-                  <span>🎯 {j.totalQuinielas ?? 0} inscritos</span>
+                <div className="flex items-center justify-between mt-3">
+                  <div className="flex gap-3 text-xs text-gray-400">
+                    <span>⚽ {j.totalPartidos ?? "?"} partidos</span>
+                    <span>🎯 {j.totalQuinielas ?? 0} inscritos</span>
+                  </div>
+                  {!cerrada && <span className="text-yellow-600 font-bold text-sm">$20 MXN</span>}
                 </div>
-                <span className="text-yellow-600 font-bold text-sm">$20 MXN</span>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
   );
+}
+
+/* ─── Cuenta regresiva ─── */
+function useCuentaRegresiva(fechaISO: string | null) {
+  const calcular = () => {
+    if (!fechaISO) return null;
+    const diff = new Date(fechaISO).getTime() - Date.now();
+    if (diff <= 0) return null;
+    const h = Math.floor(diff / 3_600_000);
+    const m = Math.floor((diff % 3_600_000) / 60_000);
+    const s = Math.floor((diff % 60_000) / 1_000);
+    return { h, m, s, diff };
+  };
+
+  const [restante, setRestante] = useState(calcular);
+
+  useEffect(() => {
+    const t = setInterval(() => setRestante(calcular()), 1000);
+    return () => clearInterval(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fechaISO]);
+
+  return restante;
 }
 
 /* ─── Formulario de picks ─── */
@@ -173,7 +211,19 @@ export default function QuinielaPage() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
+  // Partido más próximo de la jornada = fecha límite de registro
+  const primerPartidoISO = jornada
+    ? jornada.partidos.reduce((min, p) =>
+        !min || p.fechaHora < min ? p.fechaHora : min, "")
+    : null;
+
+  const cuentaRegresiva = useCuentaRegresiva(primerPartidoISO);
+  const registroCerrado = primerPartidoISO
+    ? new Date() >= new Date(primerPartidoISO)
+    : false;
+
   const seleccionar = (partidoId: string, valor: string) => {
+    if (registroCerrado) return;
     setPicks((prev) => ({ ...prev, [partidoId]: valor }));
   };
 
@@ -234,6 +284,23 @@ export default function QuinielaPage() {
           <p className="text-amber-300/70 text-sm">
             {LIGA_ICON[jornada.liga] ?? "⚽"} {jornada.liga} · {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada} · $20 MXN
           </p>
+
+          {/* Cuenta regresiva / cierre */}
+          {registroCerrado ? (
+            <div className="mt-3 bg-red-900/60 border border-red-500/40 rounded-xl px-4 py-2 flex items-center gap-2">
+              <span className="text-lg">🔒</span>
+              <p className="text-sm font-semibold text-red-200">Registro cerrado — el primer partido ya comenzó</p>
+            </div>
+          ) : cuentaRegresiva && cuentaRegresiva.diff < 24 * 3_600_000 ? (
+            <div className="mt-3 bg-amber-900/50 border border-amber-400/30 rounded-xl px-4 py-2 flex items-center justify-between">
+              <span className="text-xs text-amber-300/80 font-semibold uppercase tracking-wide">⏱ Cierra en</span>
+              <span className="font-black text-yellow-300 tabular-nums text-lg">
+                {String(cuentaRegresiva.h).padStart(2, "0")}:
+                {String(cuentaRegresiva.m).padStart(2, "0")}:
+                {String(cuentaRegresiva.s).padStart(2, "0")}
+              </span>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -321,25 +388,34 @@ export default function QuinielaPage() {
 
         {/* Resumen y envío */}
         <div className="bg-brand text-white rounded-xl p-4">
-          <div className="flex justify-between mb-3 text-sm">
-            <span>Pronósticos:</span>
-            <span>{Object.keys(picks).length}/{partidosOrdenados.length} seleccionados</span>
-          </div>
-          <div className="flex justify-between mb-4 text-sm">
-            <span>Costo:</span>
-            <span className="font-bold text-yellow-300">$20 MXN</span>
-          </div>
-          <button
-            type="submit"
-            disabled={!picksCompletos || !nombre || enviando}
-            className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-gray-400 disabled:cursor-not-allowed text-amber-950 font-bold py-3 rounded-xl transition-colors"
-          >
-            {enviando ? "Registrando..." : "Registrar Quiniela ($20)"}
-          </button>
-          {!picksCompletos && (
-            <p className="text-amber-400 text-xs text-center mt-2">
-              Selecciona todos los partidos para continuar
-            </p>
+          {registroCerrado ? (
+            <div className="text-center py-2">
+              <p className="text-red-300 font-semibold text-sm">🔒 Registro cerrado</p>
+              <p className="text-amber-300/60 text-xs mt-1">El primer partido ya comenzó. No se aceptan más quinielas.</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-between mb-3 text-sm">
+                <span>Pronósticos:</span>
+                <span>{Object.keys(picks).length}/{partidosOrdenados.length} seleccionados</span>
+              </div>
+              <div className="flex justify-between mb-4 text-sm">
+                <span>Costo:</span>
+                <span className="font-bold text-yellow-300">$20 MXN</span>
+              </div>
+              <button
+                type="submit"
+                disabled={!picksCompletos || !nombre || enviando}
+                className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-gray-400 disabled:cursor-not-allowed text-amber-950 font-bold py-3 rounded-xl transition-colors"
+              >
+                {enviando ? "Registrando..." : "Registrar Quiniela ($20)"}
+              </button>
+              {!picksCompletos && (
+                <p className="text-amber-400 text-xs text-center mt-2">
+                  Selecciona todos los partidos para continuar
+                </p>
+              )}
+            </>
           )}
         </div>
 

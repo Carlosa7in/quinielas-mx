@@ -13,6 +13,7 @@ export async function GET() {
       estado: true,
       _count: { select: { quinielas: true, partidos: true } },
       quinielas: { select: { monto: true, estado: true } },
+      partidos: { select: { fechaHora: true }, orderBy: { fechaHora: "asc" }, take: 1 },
     },
     orderBy: [{ liga: "desc" }, { numero: "desc" }],
   });
@@ -29,6 +30,8 @@ export async function GET() {
     totalPartidos: j._count.partidos,
     recaudado: j.quinielas.reduce((s, q) => s + q.monto, 0),
     ganadoras: j.quinielas.filter((q) => q.estado === "ganadora").length,
+    // Fecha del primer partido — determina el cierre automático del registro
+    primerPartidoFecha: j.partidos[0]?.fechaHora ?? null,
   }));
 
   return NextResponse.json(resultado);

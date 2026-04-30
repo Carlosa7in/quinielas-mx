@@ -14,11 +14,25 @@ export async function POST(req: Request) {
   try {
     const jornada = await prisma.jornada.findUnique({
       where: { id: jornadaId },
-      select: { id: true, numero: true, estado: true },
+      select: {
+        id: true,
+        numero: true,
+        estado: true,
+        partidos: { select: { fechaHora: true }, orderBy: { fechaHora: "asc" }, take: 1 },
+      },
     });
 
     if (!jornada || jornada.estado !== "abierta") {
       return NextResponse.json({ error: "Jornada no disponible" }, { status: 400 });
+    }
+
+    // Verificar que no haya comenzado ningún partido
+    const primerPartido = jornada.partidos[0]?.fechaHora;
+    if (primerPartido && new Date() >= new Date(primerPartido)) {
+      return NextResponse.json(
+        { error: "El registro ya cerró — el primer partido ya comenzó." },
+        { status: 400 }
+      );
     }
 
     const folio = generarFolio(jornada.numero);
