@@ -27,7 +27,15 @@ const LOGOS: Record<string, string> = {
   "Tijuana":               "https://a.espncdn.com/i/teamlogos/soccer/500/10125.png",
   "Toluca":                "https://a.espncdn.com/i/teamlogos/soccer/500/223.png",
 
-  // ── Premier League (solo los que no están ya arriba) ─────────────
+  // ── Premier League ────────────────────────────────────────────────
+  "Arsenal":               "https://a.espncdn.com/i/teamlogos/soccer/500/359.png",
+  "Liverpool":             "https://a.espncdn.com/i/teamlogos/soccer/500/364.png",
+  "Manchester City":       "https://a.espncdn.com/i/teamlogos/soccer/500/382.png",
+  "Chelsea":               "https://a.espncdn.com/i/teamlogos/soccer/500/363.png",
+  "Aston Villa":           "https://a.espncdn.com/i/teamlogos/soccer/500/362.png",
+  "Tottenham":             "https://a.espncdn.com/i/teamlogos/soccer/500/367.png",
+  "Tottenham Hotspur":     "https://a.espncdn.com/i/teamlogos/soccer/500/367.png",
+  "Manchester United":     "https://a.espncdn.com/i/teamlogos/soccer/500/360.png",
   "Newcastle":             "https://a.espncdn.com/i/teamlogos/soccer/500/361.png",
   "West Ham":              "https://a.espncdn.com/i/teamlogos/soccer/500/371.png",
   "Brighton":              "https://a.espncdn.com/i/teamlogos/soccer/500/331.png",
@@ -42,7 +50,12 @@ const LOGOS: Record<string, string> = {
   "Southampton":           "https://a.espncdn.com/i/teamlogos/soccer/500/376.png",
   "Bournemouth":           "https://a.espncdn.com/i/teamlogos/soccer/500/349.png",
 
-  // ── La Liga (solo los que no están ya arriba) ─────────────────────
+  // ── La Liga ───────────────────────────────────────────────────────
+  "Real Madrid":           "https://a.espncdn.com/i/teamlogos/soccer/500/86.png",
+  "Barcelona":             "https://a.espncdn.com/i/teamlogos/soccer/500/83.png",
+  "Atlético Madrid":       "https://a.espncdn.com/i/teamlogos/soccer/500/1068.png",
+  "Villarreal":            "https://a.espncdn.com/i/teamlogos/soccer/500/102.png",
+  "Sevilla":               "https://a.espncdn.com/i/teamlogos/soccer/500/243.png",
   "Athletic Club":         "https://a.espncdn.com/i/teamlogos/soccer/500/93.png",
   "Real Sociedad":         "https://a.espncdn.com/i/teamlogos/soccer/500/89.png",
   "Real Betis":            "https://a.espncdn.com/i/teamlogos/soccer/500/244.png",
@@ -59,7 +72,7 @@ const LOGOS: Record<string, string> = {
   "Las Palmas":            "https://a.espncdn.com/i/teamlogos/soccer/500/5593.png",
   "Valladolid":            "https://a.espncdn.com/i/teamlogos/soccer/500/717.png",
 
-  // ── UEFA Champions League (solo los que no están ya arriba) ───────
+  // ── UEFA Champions League ─────────────────────────────────────────
   "Bayern Munich":         "https://a.espncdn.com/i/teamlogos/soccer/500/132.png",
   "PSG":                   "https://a.espncdn.com/i/teamlogos/soccer/500/160.png",
   "Paris Saint-Germain":   "https://a.espncdn.com/i/teamlogos/soccer/500/160.png",

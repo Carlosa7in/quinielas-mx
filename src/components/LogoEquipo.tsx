@@ -31,7 +31,7 @@ export function LogoEquipo({ equipo, size = 28, className = "" }: LogoEquipoProp
   if (!url || error) {
     return (
       <div
-        className={`flex items-center justify-center rounded-full bg-green-100 text-green-800 font-bold shrink-0 ${className}`}
+        className={`flex items-center justify-center rounded-full bg-amber-100 text-amber-800 font-bold shrink-0 ${className}`}
         style={{ width: size, height: size, fontSize: size * 0.35 }}
       >
         {iniciales(equipo)}
