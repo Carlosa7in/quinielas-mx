@@ -19,19 +19,19 @@ export default function Home() {
           </Link>
           <Link
             href="/consultar"
-            className="block w-full bg-white/8 hover:bg-white/15 border border-amber-800/40 text-stone-100 font-semibold text-lg py-4 px-6 rounded-xl transition-colors"
+            className="block w-full bg-white/8 hover:bg-white/15 text-stone-100 font-semibold text-lg py-4 px-6 rounded-xl transition-colors"
           >
             Consultar Quiniela
           </Link>
           <Link
             href="/clasificacion"
-            className="block w-full bg-white/8 hover:bg-white/15 border border-amber-800/40 text-stone-200 font-semibold py-3 px-6 rounded-xl transition-colors text-sm"
+            className="block w-full bg-white/8 hover:bg-white/15 text-stone-200 font-semibold py-3 px-6 rounded-xl transition-colors text-sm"
           >
             📊 Clasificación
           </Link>
         </div>
 
-        <div className="bg-white/5 border border-amber-900/30 rounded-xl p-4 text-sm text-stone-300 space-y-2">
+        <div className="bg-white/5 rounded-xl p-4 text-sm text-stone-300 space-y-2">
           <div className="flex justify-between">
             <span>Costo por quiniela:</span>
             <span className="font-bold text-amber-400">$20 MXN</span>
