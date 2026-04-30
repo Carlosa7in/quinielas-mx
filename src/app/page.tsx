@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-amber-950 to-stone-950 text-white px-4">
+    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-amber-950 to-[#281105] text-white px-4">
       <div className="max-w-md w-full text-center space-y-8">
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -52,7 +52,7 @@ export default function Home() {
 
         <Link
           href="/reglamento"
-          className="block text-amber-600 hover:text-amber-400 text-sm transition-colors underline underline-offset-2"
+          className="block text-amber-600 hover:text-amber-400 text-sm font-bold transition-colors"
         >
           📜 Ver reglamento
         </Link>

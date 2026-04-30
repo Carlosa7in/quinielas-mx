@@ -213,11 +213,13 @@ export default function ClasificacionPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-green-800 text-white py-5 px-4">
+      <div className="bg-amber-950 text-white py-5 px-4">
         <div className="max-w-lg mx-auto">
-          <Link href="/" className="text-green-300 text-sm mb-1 inline-block">← Inicio</Link>
+          <Link href="/" className="text-amber-400 text-sm mb-2 inline-block">← Inicio</Link>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "44px", objectFit: "contain", marginBottom: "4px" }} />
           <h1 className="text-2xl font-bold">Clasificación</h1>
-          <p className="text-green-200 text-sm">{datos?.temporada || "Cargando..."}</p>
+          <p className="text-amber-300/70 text-sm">{datos?.temporada || "Cargando..."}</p>
         </div>
       </div>
 
@@ -229,7 +231,7 @@ export default function ClasificacionPage() {
               key={l.id}
               onClick={() => { setLigaActiva(l.id); setExpandido(null); }}
               className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-                ligaActiva === l.id ? "bg-green-700 text-white" : "text-gray-500 hover:bg-gray-50"
+                ligaActiva === l.id ? "bg-amber-700 text-white" : "text-gray-500 hover:bg-gray-50"
               }`}
             >
               {l.label}
