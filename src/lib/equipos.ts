@@ -66,11 +66,11 @@ const LOGOS: Record<string, string> = {
   "Rayo Vallecano":        "https://a.espncdn.com/i/teamlogos/soccer/500/101.png",
   "Getafe":                "https://a.espncdn.com/i/teamlogos/soccer/500/3842.png",
   "Deportivo Alavés":      "https://a.espncdn.com/i/teamlogos/soccer/500/3751.png",
-  "Mallorca":              "https://a.espncdn.com/i/teamlogos/soccer/500/95.png",
+  "Mallorca":              "https://a.espncdn.com/i/teamlogos/soccer/500/84.png",
   "Leganés":               "https://a.espncdn.com/i/teamlogos/soccer/500/17534.png",
   "Espanyol":              "https://a.espncdn.com/i/teamlogos/soccer/500/88.png",
   "Las Palmas":            "https://a.espncdn.com/i/teamlogos/soccer/500/5593.png",
-  // Valladolid: sin logo verificado — muestra iniciales
+  "Valladolid":            "https://a.espncdn.com/i/teamlogos/soccer/500/95.png",
 
 
   // ── UEFA Champions League ─────────────────────────────────────────
