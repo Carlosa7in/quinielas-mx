@@ -39,15 +39,15 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
       .then((r) => r.json())
       .then((data: JornadaResumen[]) => {
         setJornadas(data);
-        // Seleccionar la primera liga de las jornadas visibles
         const visibles = soloActivas ? data.filter((j) => j.estado === "abierta") : data;
         if (visibles.length > 0) {
           const ligas = [...new Set(visibles.map((j) => j.liga))];
           setLigaActiva(ligas[0]);
         }
-        setCargando(false);
-      });
-  }, []);
+      })
+      .catch(() => {/* sin jornadas */})
+      .finally(() => setCargando(false));
+  }, [soloActivas]);
 
   const LIGA_ORDEN: Record<string, number> = { "Liga MX": 0, "Champions League": 1, "Premier League": 2, "La Liga": 3, "Mixta": 4 };
   const jornadasVisibles = soloActivas ? jornadas.filter((j) => j.estado === "abierta") : jornadas;

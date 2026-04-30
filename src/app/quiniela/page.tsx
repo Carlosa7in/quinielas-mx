@@ -54,8 +54,9 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
         if (activas.length === 1) {
           cargarJornada(activas[0], onSelect);
         }
-        setCargando(false);
-      });
+      })
+      .catch(() => {/* sin jornadas — el estado vacío se muestra abajo */})
+      .finally(() => setCargando(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -223,6 +223,7 @@ export default function FormaPage() {
   const params = useParams();
   const jornadaId = params.jornadaId as string;
   const [jornada, setJornada] = useState<Jornada | null>(null);
+  const [cargando, setCargando] = useState(true);
   const [cantidad, setCantidad] = useState(1);
   const [modo, setModo] = useState<"carta" | "ticket">("ticket");
   const [formasPicks, setFormasPicks] = useState<Record<string, string>[]>([]);
@@ -230,7 +231,9 @@ export default function FormaPage() {
   useEffect(() => {
     fetch(`/api/jornadas?id=${jornadaId}`)
       .then((r) => r.json())
-      .then((data) => { if (!data.error) setJornada(data); });
+      .then((data) => { if (!data.error) setJornada(data); })
+      .catch(() => {})
+      .finally(() => setCargando(false));
   }, [jornadaId]);
 
   useEffect(() => {
@@ -268,8 +271,17 @@ export default function FormaPage() {
     }
   };
 
-  if (!jornada) {
+  if (cargando) {
     return <div className="flex items-center justify-center min-h-screen"><p className="text-gray-400">Cargando forma...</p></div>;
+  }
+
+  if (!jornada) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-3">
+        <p className="text-gray-500 font-semibold">Jornada no encontrada</p>
+        <a href="/admin" className="text-amber-700 underline text-sm">← Volver al admin</a>
+      </div>
+    );
   }
 
   return (
