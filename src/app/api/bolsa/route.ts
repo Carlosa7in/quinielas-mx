@@ -6,6 +6,14 @@ const COMISION_TIENDA   = 2;      // $2 por quiniela vendida en tienda
 
 // GET /api/bolsa — pública, sin auth
 export async function GET() {
+  // Primer partido de cualquier jornada abierta → fecha límite de registro
+  const primerPartidoRow = await prisma.partido.findFirst({
+    where: { jornada: { estado: "abierta" } },
+    orderBy: { fechaHora: "asc" },
+    select: { fechaHora: true },
+  });
+  const primerPartidoFecha = primerPartidoRow?.fechaHora ?? null;
+
   const quinielas = await prisma.quiniela.findMany({
     where: { jornada: { estado: "abierta" } },
     select: {
@@ -49,6 +57,7 @@ export async function GET() {
     bolsa,
     totalRecaudado,
     totalQuinielas: quinielas.length,
-    jornadas,          // desglose por jornada
+    jornadas,
+    primerPartidoFecha,
   });
 }
