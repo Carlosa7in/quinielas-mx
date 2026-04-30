@@ -62,6 +62,15 @@ export default function NuevaJornadaPage() {
   const [espnDesconocidos, setEspnDesconocidos] = useState<string[]>([]);
 
   const cargarDesdeEspn = async () => {
+    // Partidos reales ya cargados (con al menos un campo)
+    const existentes = partidos.filter((p) => p.equipoLocal || p.equipoVisita || p.fechaHora);
+    const slotsLibres = MAX_PARTIDOS - existentes.length;
+
+    if (slotsLibres <= 0) {
+      setEspnMensaje({ tipo: "warn", texto: `Ya tienes ${MAX_PARTIDOS} partidos. Quita alguno para agregar más.` });
+      return;
+    }
+
     setEspnCargando(true);
     setEspnMensaje(null);
     setEspnDesconocidos([]);
@@ -91,9 +100,12 @@ export default function NuevaJornadaPage() {
         return;
       }
 
+      // Solo tomar los que caben en los slots libres
+      const nuevos = fetchedPartidos.slice(0, slotsLibres);
+
       // Detectar equipos no reconocidos en nuestro sistema
       const equiposSistema = EQUIPOS_POR_LIGA[espnLiga] ?? [];
-      const desconocidos = fetchedPartidos.flatMap((p) => {
+      const desconocidos = nuevos.flatMap((p) => {
         const d: string[] = [];
         if (p.equipoLocal  && !equiposSistema.includes(p.equipoLocal))  d.push(p.equipoLocal);
         if (p.equipoVisita && !equiposSistema.includes(p.equipoVisita)) d.push(p.equipoVisita);
@@ -102,29 +114,28 @@ export default function NuevaJornadaPage() {
       const uniqueDesc = [...new Set(desconocidos)];
       setEspnDesconocidos(uniqueDesc);
 
-      // Limitar a MAX_PARTIDOS partidos (tomar los primeros)
-      const cargados = fetchedPartidos.slice(0, MAX_PARTIDOS);
+      // Fusionar: existentes reales + nuevos de ESPN
+      const merged = [...existentes, ...nuevos];
 
-      // Rellenar hasta MIN_PARTIDOS si hacen falta
-      const relleno = cargados.length < MIN_PARTIDOS
-        ? [...cargados, ...Array.from({ length: MIN_PARTIDOS - cargados.length }, () => PARTIDO_VACIO(espnLiga))]
-        : cargados;
+      // Rellenar con filas vacías hasta MIN_PARTIDOS si hacen falta
+      const conRelleno = merged.length < MIN_PARTIDOS
+        ? [...merged, ...Array.from({ length: MIN_PARTIDOS - merged.length }, () => PARTIDO_VACIO(espnLiga))]
+        : merged;
 
-      setPartidos(relleno);
+      setPartidos(conRelleno);
 
-      // Auto-rellenar nombre con sugerencia ESPN y fechas
-      if (data.nombreSugerido && !nombre.trim()) {
-        setNombre(data.nombreSugerido);
-      }
+      // Auto-rellenar nombre y fechas solo si están vacíos
+      if (data.nombreSugerido && !nombre.trim()) setNombre(data.nombreSugerido);
       if (!fechaInicio) setFechaInicio(espnDesde);
       if (!fechaFin)   setFechaFin(espnHasta);
 
+      const recortado = fetchedPartidos.length > slotsLibres
+        ? ` (solo cabían ${slotsLibres} de ${fetchedPartidos.length} encontrados)`
+        : "";
+
       setEspnMensaje({
         tipo: uniqueDesc.length > 0 ? "warn" : "ok",
-        texto: `✅ ${cargados.length} partido${cargados.length !== 1 ? "s" : ""} cargado${cargados.length !== 1 ? "s" : ""} desde ESPN` +
-          (fetchedPartidos.length > MAX_PARTIDOS
-            ? ` (se mostraron los primeros ${MAX_PARTIDOS} de ${fetchedPartidos.length})`
-            : ""),
+        texto: `✅ ${nuevos.length} partido${nuevos.length !== 1 ? "s" : ""} de ${espnLiga} agregado${nuevos.length !== 1 ? "s" : ""}${recortado}`,
       });
     } catch {
       setEspnMensaje({ tipo: "error", texto: "No se pudo conectar con ESPN" });
@@ -251,6 +262,26 @@ export default function NuevaJornadaPage() {
 
           {panelEspn && (
             <div className="border-t border-gray-100 px-4 pb-4 pt-3 space-y-3">
+
+              {/* Slots disponibles */}
+              {(() => {
+                const reales = partidos.filter((p) => p.equipoLocal || p.equipoVisita || p.fechaHora).length;
+                const libres = MAX_PARTIDOS - reales;
+                return (
+                  <div className={`text-xs px-3 py-2 rounded-lg font-medium ${
+                    libres === 0 ? "bg-red-50 text-red-600" :
+                    libres <= 3  ? "bg-yellow-50 text-yellow-700" :
+                                   "bg-blue-50 text-blue-600"
+                  }`}>
+                    {reales === 0
+                      ? `Cargará hasta ${MAX_PARTIDOS} partidos`
+                      : libres === 0
+                      ? `⛔ Lleno (${reales}/${MAX_PARTIDOS}) — quita partidos para agregar más`
+                      : `➕ Se agregarán a los ${reales} existentes · quedan ${libres} slot${libres !== 1 ? "s" : ""} libres`}
+                  </div>
+                );
+              })()}
+
               {/* Liga */}
               <div>
                 <label className="text-xs text-gray-500">Liga a importar</label>
