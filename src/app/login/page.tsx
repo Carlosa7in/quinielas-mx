@@ -35,8 +35,8 @@ function LoginForm() {
     <div className="min-h-screen bg-green-900 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">⚽</div>
-          <h1 className="text-white text-2xl font-bold">Quinielas MX</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-4" style={{ height: "100px", objectFit: "contain" }} />
           <p className="text-green-300 text-sm mt-1">Panel de Administración</p>
         </div>
 

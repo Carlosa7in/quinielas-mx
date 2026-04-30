@@ -88,8 +88,10 @@ export default function ReglamentoPage() {
           <Link href="/" className="text-green-300 text-sm mb-2 inline-block">
             ← Inicio
           </Link>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "48px", objectFit: "contain", marginBottom: "6px" }} />
           <h1 className="text-2xl font-bold">Reglamento</h1>
-          <p className="text-green-200 text-sm">Quinielas MX · Reglas oficiales</p>
+          <p className="text-green-200 text-sm">Tablitas Quinielas · Reglas oficiales</p>
         </div>
       </div>
 

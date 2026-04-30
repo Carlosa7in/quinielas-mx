@@ -340,9 +340,8 @@ export default function TicketPage() {
             }}>
               {/* Encabezado */}
               <div style={{ textAlign: "center", marginBottom: "10px" }}>
-                <p style={{ fontWeight: "bold", fontSize: "15px", letterSpacing: "2px", marginBottom: "2px" }}>
-                  QUINIELAS MX
-                </p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "56px", objectFit: "contain", margin: "0 auto 4px" }} />
                 <p style={{ fontSize: "10px", color: "#6b7280" }}>
                   {quiniela.jornada.liga} · {quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`}
                 </p>
@@ -445,7 +444,7 @@ export default function TicketPage() {
 
         {/* ── Área exclusiva para impresión térmica (oculta en pantalla) ── */}
         <div id="print-ticket">
-          <p style={{ textAlign: "center", fontWeight: "bold", fontSize: "13pt", letterSpacing: "2px" }}>QUINIELAS MX</p>
+          <p style={{ textAlign: "center", fontWeight: "bold", fontSize: "13pt", letterSpacing: "2px" }}>TABLITAS QUINIELAS</p>
           <p style={{ textAlign: "center" }}>{norm(quiniela.jornada.liga)}</p>
           <p style={{ textAlign: "center" }}>
             {norm(quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`)} * {norm(quiniela.jornada.temporada)}

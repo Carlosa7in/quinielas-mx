@@ -59,9 +59,10 @@ export default function AdminPage() {
       {/* Header */}
       <div className="bg-green-900 text-white py-6 px-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "40px", objectFit: "contain" }} />
             <h1 className="text-2xl font-bold">Panel Admin</h1>
-            <p className="text-green-300 text-sm">Quinielas MX</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">

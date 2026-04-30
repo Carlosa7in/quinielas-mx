@@ -5,8 +5,8 @@ export default function Home() {
     <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-green-800 to-green-900 text-white px-4">
       <div className="max-w-md w-full text-center space-y-8">
         <div>
-          <div className="text-6xl mb-2">⚽</div>
-          <h1 className="text-4xl font-bold tracking-tight">Quinielas MX</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-4" style={{ height: "120px", objectFit: "contain" }} />
           <p className="mt-2 text-green-200 text-lg">Liga MX · Temporada 2025</p>
         </div>
 

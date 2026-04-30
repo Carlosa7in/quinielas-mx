@@ -64,7 +64,8 @@ function FormaCarta({ jornada, picks }: { jornada: Jornada; picks: Record<string
 
       {/* Encabezado */}
       <div className="text-center mb-2 pt-2" style={{ borderBottom: "2px solid #000", paddingBottom: "4px" }}>
-        <p style={{ fontSize: "13pt", fontWeight: "900", letterSpacing: "1px" }}>⚽ QUINIELAS MX</p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "44px", objectFit: "contain", margin: "0 auto 2px", display: "block" }} />
         <p style={{ fontSize: "8.5pt", fontWeight: "bold" }}>
           {jornada.liga} · {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
         </p>
@@ -163,7 +164,7 @@ function FormaTicket({ jornada, picks }: { jornada: Jornada; picks: Record<strin
     >
       {/* Encabezado — sin emojis ni acentos para compatibilidad térmica */}
       <div style={{ textAlign: "center", borderBottom: "1px solid #000", paddingBottom: "3px", marginBottom: "4px" }}>
-        <p style={{ fontSize: "11pt", fontWeight: "900", letterSpacing: "2px" }}>QUINIELAS MX</p>
+        <p style={{ fontSize: "11pt", fontWeight: "900", letterSpacing: "2px" }}>TABLITAS QUINIELAS</p>
         <p style={{ fontSize: "7.5pt", fontWeight: "bold" }}>{norm(jornada.liga)}</p>
         <p style={{ fontSize: "7.5pt" }}>
           {norm(jornada.nombre ?? `Jornada ${jornada.numero}`)} * {norm(jornada.temporada)}

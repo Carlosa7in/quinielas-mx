@@ -31,12 +31,12 @@ export default function ParticipantesPage() {
   // Mensaje por defecto cuando abre el broadcast
   const abrirBroadcast = () => {
     setMensaje(
-      `⚽ *QUINIELAS MX — Nueva Jornada disponible!*\n\n` +
+      `⚽ *TABLITAS QUINIELAS — Nueva Jornada disponible!*\n\n` +
       `¡Ya puedes registrar tus pronósticos para la siguiente jornada de Liga MX!\n\n` +
       `👉 Regístrate aquí: ${typeof window !== "undefined" ? window.location.origin : ""}/quiniela\n\n` +
       `💵 Solo $20 MXN por quiniela\n` +
       `🏆 Adivina todos los resultados y gana el premio\n\n` +
-      `_Quinielas MX_`
+      `_Tablitas Quinielas_`
     );
     setIndiceActual(0);
     setEnviados(new Set());
@@ -237,7 +237,7 @@ export default function ParticipantesPage() {
                 </div>
               </div>
               <button
-                onClick={() => abrirWhatsApp(c.telefono, mensaje || `Hola ${c.nombre}, hay nueva jornada en Quinielas MX 🎯`)}
+                onClick={() => abrirWhatsApp(c.telefono, mensaje || `Hola ${c.nombre}, hay nueva jornada en Tablitas Quinielas 🎯`)}
                 className="shrink-0 bg-[#25D366] hover:bg-[#20b858] text-white p-2 rounded-lg transition-colors"
                 title="Enviar WhatsApp"
               >
