@@ -24,16 +24,14 @@ function BolsaWidget() {
     n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.1)" }}>
-      <div className="px-4 pt-3 pb-1 text-center">
-        <p className="text-amber-300/70 text-xs font-bold tracking-widest uppercase">💰 Bolsa acumulada 💰</p>
-      </div>
-      <div className="px-4 pb-3 text-center">
+    <div className="rounded-2xl py-4 px-4 text-center" style={{ background: "rgba(0,0,0,0.2)" }}>
+      <p className="text-amber-300/60 text-xs font-bold tracking-widest uppercase mb-2">💰 Bolsa acumulada 💰</p>
+      <div>
         {bolsa === null ? (
-          <p className="text-amber-200/40 text-2xl font-bold tracking-widest animate-pulse">$—</p>
+          <p className="text-amber-200/30 text-2xl font-bold tracking-widest animate-pulse">$—</p>
         ) : (
-          <p
-            className="font-black"
+          <span
+            className="bolsa-numero font-black"
             style={{
               fontSize: "clamp(1.8rem, 9vw, 2.6rem)",
               color: "#FFD166",
@@ -41,7 +39,7 @@ function BolsaWidget() {
             }}
           >
             ${fmt(bolsa)}
-          </p>
+          </span>
         )}
 
         {/* Desglose si hay más de una jornada activa */}

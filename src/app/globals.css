@@ -5,12 +5,30 @@
   --foreground: #1a1a1a;
 
   /* Paleta de marca Tablitas Quinielas */
-  --brand-bg: #7C3A14;   /* café sólido — color de los tablones del logo */
+  --brand-bg: #4A2810;   /* café oscuro apagado — menos agresivo, más elegante */
 }
 
 /* Fondo de marca — usar en todos los headers y pantallas principales */
 .bg-brand {
   background-color: var(--brand-bg);
+}
+
+/* ── Animación bolsa acumulada ── */
+@keyframes bolsa-breathe {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow: 0 0 12px rgba(255, 209, 102, 0.3);
+  }
+  50% {
+    transform: scale(1.06);
+    text-shadow: 0 0 28px rgba(255, 209, 102, 0.7), 0 0 50px rgba(255, 209, 102, 0.3);
+  }
+}
+
+.bolsa-numero {
+  display: inline-block;
+  animation: bolsa-breathe 2.8s ease-in-out infinite;
+  transform-origin: center;
 }
 
 body {
