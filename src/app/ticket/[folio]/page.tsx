@@ -313,6 +313,48 @@ export default function TicketPage() {
           <p className="text-green-600 text-sm">Guarda tu folio para consultar resultados</p>
         </div>
 
+        {/* Instrucciones de pago */}
+        {(quiniela.canal === "transferencia" || quiniela.canal === "oxxo") && (
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 print:hidden">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">{quiniela.canal === "oxxo" ? "🏪" : "🏦"}</span>
+              <div>
+                <p className="font-bold text-amber-900">
+                  {quiniela.canal === "oxxo" ? "Deposita en OXXO" : "Realiza tu transferencia"}
+                </p>
+                <p className="text-xs text-amber-700">Usa tu folio como concepto de pago</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg p-3 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Banco</span>
+                <span className="font-semibold text-gray-800">BBVA</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">CLABE</span>
+                <span className="font-bold text-gray-900 tracking-widest text-xs">012180015525085351</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Titular</span>
+                <span className="font-semibold text-gray-800">Juan Carlos Arias Ariza</span>
+              </div>
+              <div className="flex justify-between border-t pt-2 mt-1">
+                <span className="text-gray-500">Concepto / Referencia</span>
+                <span className="font-bold text-amber-700">{quiniela.folio}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Monto</span>
+                <span className="font-bold text-green-700">${quiniela.monto.toFixed(2)} MXN</span>
+              </div>
+            </div>
+            {quiniela.canal === "oxxo" && (
+              <p className="text-xs text-amber-700 mt-2 text-center">
+                En OXXO di &quot;depósito a CLABE&quot; y proporciona el número
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Ticket estilo boleta térmica */}
         <div id="ticket-receipt" className="flex justify-center">
           <div
@@ -411,7 +453,9 @@ export default function TicketPage() {
               {/* Total + QR */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <p style={{ color: "#6b7280", fontSize: "10px" }}>TOTAL PAGADO</p>
+                  <p style={{ color: "#6b7280", fontSize: "10px" }}>
+                    {quiniela.canal === "tienda" ? "TOTAL PAGADO" : "TOTAL A PAGAR"}
+                  </p>
                   <p style={{ fontWeight: "bold", fontSize: "16px" }}>${quiniela.monto.toFixed(2)} MXN</p>
                 </div>
                 {qrDataUrl && (

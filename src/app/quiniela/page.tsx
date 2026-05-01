@@ -209,6 +209,7 @@ export default function QuinielaPage() {
   const [picks, setPicks] = useState<Record<string, string>>({});
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [metodoPago, setMetodoPago] = useState<"transferencia" | "oxxo">("transferencia");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
@@ -249,7 +250,7 @@ export default function QuinielaPage() {
         })),
         nombre,
         telefono,
-        canal: "online",
+        canal: metodoPago,
       }),
     });
 
@@ -382,6 +383,44 @@ export default function QuinielaPage() {
             </div>
           ))}
         </div>
+
+        {/* Método de pago */}
+        {!registroCerrado && (
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <h2 className="font-semibold text-gray-700 mb-3">¿Cómo vas a pagar?</h2>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMetodoPago("transferencia")}
+                className={`rounded-xl p-3 text-center border-2 transition-colors ${
+                  metodoPago === "transferencia"
+                    ? "border-amber-500 bg-amber-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <p className="text-2xl mb-1">🏦</p>
+                <p className="text-sm font-semibold text-gray-800">Transferencia</p>
+                <p className="text-xs text-gray-400">SPEI / Banca en línea</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMetodoPago("oxxo")}
+                className={`rounded-xl p-3 text-center border-2 transition-colors ${
+                  metodoPago === "oxxo"
+                    ? "border-amber-500 bg-amber-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <p className="text-2xl mb-1">🏪</p>
+                <p className="text-sm font-semibold text-gray-800">Depósito OXXO</p>
+                <p className="text-xs text-gray-400">Efectivo en cualquier OXXO</p>
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mt-2 text-center">
+              Ambos usan la misma CLABE — recibirás los datos en el ticket
+            </p>
+          </div>
+        )}
 
         {error && (
           <p className="text-red-600 text-sm text-center bg-red-50 rounded-lg p-3">{error}</p>
