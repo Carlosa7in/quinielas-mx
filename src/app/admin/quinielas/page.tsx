@@ -11,6 +11,7 @@ type Quiniela = {
   telefonoCliente: string | null;
   canal: string;
   estado: string;
+  estadoPago: string;
   monto: number;
   aciertos: number | null;
   picks: Pick[];
@@ -40,10 +41,93 @@ function pickColor(p: Pick) {
   return "bg-gray-100 text-gray-600";
 }
 
+const CANAL_ICON: Record<string, string> = {
+  tienda: "🏪",
+  transferencia: "🏦",
+  oxxo: "🏪",
+  online: "💻",
+};
+
+const PAGO_LABEL: Record<string, { label: string; cls: string }> = {
+  confirmado:   { label: "✓ Pagado",    cls: "bg-green-100 text-green-700" },
+  pendiente:    { label: "⏳ Pendiente", cls: "bg-yellow-100 text-yellow-700" },
+  no_realizado: { label: "✗ No pagó",   cls: "bg-red-100 text-red-600" },
+};
+
+function PagoBadge({
+  quiniela,
+  onUpdate,
+}: {
+  quiniela: Quiniela;
+  onUpdate: (id: string, estadoPago: string) => void;
+}) {
+  const [cargando, setCargando] = useState(false);
+
+  // Tienda siempre es efectivo, no se gestiona aquí
+  if (quiniela.canal === "tienda") {
+    return <span className="text-xs text-gray-400">💵 Efectivo</span>;
+  }
+
+  const cambiar = async (nuevoEstado: string) => {
+    setCargando(true);
+    await fetch(`/api/admin/quinielas/${quiniela.id}/pago`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ estadoPago: nuevoEstado }),
+    });
+    onUpdate(quiniela.id, nuevoEstado);
+    setCargando(false);
+  };
+
+  const actual = PAGO_LABEL[quiniela.estadoPago] ?? PAGO_LABEL.pendiente;
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${actual.cls}`}>
+        {actual.label}
+      </span>
+      {quiniela.estadoPago !== "confirmado" && (
+        <button
+          onClick={() => cambiar("confirmado")}
+          disabled={cargando}
+          className="text-xs text-green-700 font-semibold hover:underline disabled:opacity-50"
+        >
+          {cargando ? "..." : "✓ Confirmar"}
+        </button>
+      )}
+      {quiniela.estadoPago !== "no_realizado" && quiniela.estadoPago !== "confirmado" && (
+        <button
+          onClick={() => cambiar("no_realizado")}
+          disabled={cargando}
+          className="text-xs text-red-500 hover:underline disabled:opacity-50"
+        >
+          ✗ No pagó
+        </button>
+      )}
+      {quiniela.estadoPago === "confirmado" && (
+        <button
+          onClick={() => cambiar("pendiente")}
+          disabled={cargando}
+          className="text-xs text-gray-400 hover:underline disabled:opacity-50"
+        >
+          Deshacer
+        </button>
+      )}
+    </div>
+  );
+}
+
 function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string }) {
   const [abierta, setAbierta] = useState(true);
+  const [quinielas, setQuinielas] = useState(jornada.quinielas);
 
-  const filtradas = jornada.quinielas.filter((q) =>
+  const actualizarPago = (id: string, estadoPago: string) => {
+    setQuinielas((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, estadoPago } : q))
+    );
+  };
+
+  const filtradas = quinielas.filter((q) =>
     (q.folio + (q.nombreCliente ?? "") + (q.telefonoCliente ?? ""))
       .toLowerCase()
       .includes(busqueda.toLowerCase())
@@ -52,6 +136,7 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
   const total = filtradas.length;
   const recaudado = filtradas.reduce((s, q) => s + q.monto, 0);
   const ganadoras = filtradas.filter((q) => q.estado === "ganadora").length;
+  const pendientesPago = filtradas.filter((q) => q.canal !== "tienda" && q.estadoPago === "pendiente").length;
   const totalPicks = filtradas[0]?.picks.length ?? 0;
 
   return (
@@ -74,9 +159,12 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
               {jornada.estado}
             </span>
           </div>
-          <div className="flex gap-4 mt-1 text-xs text-gray-500">
+          <div className="flex gap-4 mt-1 text-xs text-gray-500 flex-wrap">
             <span>🎯 {total} quinielas</span>
             <span>💵 ${recaudado}</span>
+            {pendientesPago > 0 && (
+              <span className="text-yellow-600 font-semibold">⏳ {pendientesPago} sin confirmar</span>
+            )}
             {ganadoras > 0 && <span className="text-yellow-600 font-bold">🏆 {ganadoras} ganadoras</span>}
           </div>
         </div>
@@ -96,12 +184,18 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm">{q.canal === "tienda" ? "🏪" : "💻"}</span>
+                      <span className="text-sm">{CANAL_ICON[q.canal] ?? "💻"}</span>
                       <span className="font-semibold text-sm text-gray-800 truncate">
                         {q.nombreCliente ?? "Sin nombre"}
                       </span>
                       {q.telefonoCliente && (
                         <span className="text-gray-400 text-xs">{q.telefonoCliente}</span>
+                      )}
+                      {q.canal === "transferencia" && (
+                        <span className="text-xs text-blue-500 font-medium">Transferencia</span>
+                      )}
+                      {q.canal === "oxxo" && (
+                        <span className="text-xs text-orange-500 font-medium">OXXO</span>
                       )}
                     </div>
                     <p className="font-mono text-xs text-gray-400 mt-0.5">{q.folio}</p>
@@ -118,8 +212,8 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                     </div>
                   </div>
 
-                  {/* Estado + aciertos */}
-                  <div className="flex flex-col items-end gap-1 shrink-0">
+                  {/* Estado juego + pago */}
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${estadoColor(q.estado)}`}>
                       {q.estado}
                     </span>
@@ -128,6 +222,7 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                         {q.aciertos}/{totalPicks}
                       </span>
                     )}
+                    <PagoBadge quiniela={q} onUpdate={actualizarPago} />
                     <Link
                       href={`/ticket/${q.folio}`}
                       className="text-green-700 text-xs font-medium hover:underline"

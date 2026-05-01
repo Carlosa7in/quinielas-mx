@@ -72,6 +72,7 @@ model Quiniela {
   canal           String   @default("online")
   monto           Float    @default(20.0)
   estado          String   @default("pendiente")
+  estadoPago      String   @default("pendiente") // "pendiente" | "confirmado" | "no_realizado"
   puntos          Int?
   aciertos        Int?
   createdAt       DateTime @default(now())

@@ -66,6 +66,9 @@ export async function POST(req: Request) {
       }
     }
 
+    // estadoPago: tienda = confirmado (paga en efectivo al momento), online = pendiente
+    const estadoPago = canal === "tienda" ? "confirmado" : "pendiente";
+
     // Crear quiniela sin picks anidados (NeonHTTP no soporta transacciones)
     const quiniela = await prisma.quiniela.create({
       data: {
@@ -76,6 +79,7 @@ export async function POST(req: Request) {
         nombreCliente: nombre || null,
         telefonoCliente: telefono || null,
         canal,
+        estadoPago,
       },
       select: { id: true, folio: true },
     });
