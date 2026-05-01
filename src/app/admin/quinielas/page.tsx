@@ -54,20 +54,8 @@ const PAGO_LABEL: Record<string, { label: string; cls: string }> = {
   no_realizado: { label: "✗ No pagó",   cls: "bg-red-100 text-red-600" },
 };
 
-function PagoBadge({
-  quiniela,
-  onUpdate,
-}: {
-  quiniela: Quiniela;
-  onUpdate: (id: string, estadoPago: string) => void;
-}) {
+function usePagoCambio(quiniela: Quiniela, onUpdate: (id: string, ep: string) => void) {
   const [cargando, setCargando] = useState(false);
-
-  // Tienda siempre es efectivo, no se gestiona aquí
-  if (quiniela.canal === "tienda") {
-    return <span className="text-xs text-gray-400">💵 Efectivo</span>;
-  }
-
   const cambiar = async (nuevoEstado: string) => {
     setCargando(true);
     await fetch(`/api/admin/quinielas/${quiniela.id}/pago`, {
@@ -78,41 +66,54 @@ function PagoBadge({
     onUpdate(quiniela.id, nuevoEstado);
     setCargando(false);
   };
+  return { cambiar, cargando };
+}
 
-  const actual = PAGO_LABEL[quiniela.estadoPago] ?? PAGO_LABEL.pendiente;
+// Badge compacto para la columna derecha
+function PagoBadgeCompact({ quiniela }: { quiniela: Quiniela }) {
+  if (quiniela.canal === "tienda") {
+    return <span className="text-xs text-gray-400 font-medium">💵 Efectivo</span>;
+  }
+  const { label, cls } = PAGO_LABEL[quiniela.estadoPago] ?? PAGO_LABEL.pendiente;
+  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cls}`}>{label}</span>;
+}
 
+// Barra de acción de pago — aparece debajo de los picks solo cuando hay algo que hacer
+function PagoAcciones({
+  quiniela,
+  onUpdate,
+}: {
+  quiniela: Quiniela;
+  onUpdate: (id: string, ep: string) => void;
+}) {
+  const { cambiar, cargando } = usePagoCambio(quiniela, onUpdate);
+
+  // Tienda = efectivo al momento, no necesita acción
+  if (quiniela.canal === "tienda") return null;
+  // Ya confirmado — solo opción de deshacer discreta
+  if (quiniela.estadoPago === "confirmado") {
+    return (
+      <button onClick={() => cambiar("pendiente")} disabled={cargando}
+        className="text-xs text-gray-400 hover:text-gray-600 hover:underline mt-1 disabled:opacity-50">
+        {cargando ? "..." : "Deshacer confirmación"}
+      </button>
+    );
+  }
+
+  const metodo = quiniela.canal === "oxxo" ? "OXXO" : "transferencia";
   return (
-    <div className="flex flex-col items-end gap-1">
-      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${actual.cls}`}>
-        {actual.label}
+    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+      <span className="text-xs text-gray-400 flex-1">
+        ⏳ {metodo} pendiente
       </span>
-      {quiniela.estadoPago !== "confirmado" && (
-        <button
-          onClick={() => cambiar("confirmado")}
-          disabled={cargando}
-          className="text-xs text-green-700 font-semibold hover:underline disabled:opacity-50"
-        >
-          {cargando ? "..." : "✓ Confirmar"}
-        </button>
-      )}
-      {quiniela.estadoPago !== "no_realizado" && quiniela.estadoPago !== "confirmado" && (
-        <button
-          onClick={() => cambiar("no_realizado")}
-          disabled={cargando}
-          className="text-xs text-red-500 hover:underline disabled:opacity-50"
-        >
-          ✗ No pagó
-        </button>
-      )}
-      {quiniela.estadoPago === "confirmado" && (
-        <button
-          onClick={() => cambiar("pendiente")}
-          disabled={cargando}
-          className="text-xs text-gray-400 hover:underline disabled:opacity-50"
-        >
-          Deshacer
-        </button>
-      )}
+      <button onClick={() => cambiar("confirmado")} disabled={cargando}
+        className="text-xs bg-green-100 hover:bg-green-200 text-green-800 font-semibold px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50">
+        {cargando ? "..." : "✓ Confirmar pago"}
+      </button>
+      <button onClick={() => cambiar("no_realizado")} disabled={cargando}
+        className="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-semibold px-2 py-1 rounded-lg transition-colors disabled:opacity-50">
+        {cargando ? "..." : "✗ No pagó"}
+      </button>
     </div>
   );
 }
@@ -181,9 +182,9 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
             <div className="divide-y divide-gray-50">
               {filtradas.map((q) => (
                 <div key={q.id} className="px-4 py-3 flex items-start gap-3">
-                  {/* Info */}
+                  {/* Info principal */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-sm">{CANAL_ICON[q.canal] ?? "💻"}</span>
                       <span className="font-semibold text-sm text-gray-800 truncate">
                         {q.nombreCliente ?? "Sin nombre"}
@@ -202,27 +203,23 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                     {/* Picks */}
                     <div className="flex gap-1 mt-2 flex-wrap">
                       {q.picks.map((p, i) => (
-                        <span
-                          key={i}
-                          className={`text-xs font-bold px-1.5 py-0.5 rounded ${pickColor(p)}`}
-                        >
+                        <span key={i} className={`text-xs font-bold px-1.5 py-0.5 rounded ${pickColor(p)}`}>
                           {LABEL[p.prediccion] ?? p.prediccion}
                         </span>
                       ))}
                     </div>
+                    {/* Acciones de pago — solo cuando hay algo que hacer */}
+                    <PagoAcciones quiniela={q} onUpdate={actualizarPago} />
                   </div>
 
-                  {/* Estado juego + pago */}
-                  <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${estadoColor(q.estado)}`}>
-                      {q.estado}
-                    </span>
+                  {/* Columna derecha: pago + resultado + ticket */}
+                  <div className="flex flex-col items-end gap-1.5 shrink-0 min-w-[80px]">
+                    <PagoBadgeCompact quiniela={q} />
                     {q.aciertos !== null && (
-                      <span className="text-xs text-gray-500">
-                        {q.aciertos}/{totalPicks}
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${estadoColor(q.estado)}`}>
+                        {q.aciertos}/{totalPicks} {q.estado === "ganadora" ? "🏆" : ""}
                       </span>
                     )}
-                    <PagoBadge quiniela={q} onUpdate={actualizarPago} />
                     <Link
                       href={`/ticket/${q.folio}`}
                       className="text-green-700 text-xs font-medium hover:underline"
