@@ -9,7 +9,7 @@ const JORNADA_SELECT = {
   liga: true,
   estado: true,
   partidos: {
-    select: { id: true, liga: true, equipoLocal: true, equipoVisita: true, orden: true, resultado: true, golesLocal: true, golesVisita: true, fechaHora: true },
+    select: { id: true, liga: true, equipoLocal: true, equipoVisita: true, orden: true, resultado: true, golesLocal: true, golesVisita: true },
     orderBy: { orden: "asc" } as const,
   },
   quinielas: { select: { id: true, estado: true } },
@@ -29,7 +29,27 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Jornada no encontrada" }, { status: 404 });
   }
 
-  return NextResponse.json(jornada);
+  // Leer fechaHora via raw SQL para evitar crash si algún partido tiene dato corrupto
+  let fechaHorasMap: Record<string, string> = {};
+  try {
+    const rows = await prisma.$queryRaw<{ id: string; fechaHora: Date }[]>`
+      SELECT id, "fechaHora" FROM "Partido"
+      WHERE "jornadaId" = ${jornada.id}
+        AND "fechaHora" IS NOT NULL
+    `;
+    for (const r of rows) {
+      fechaHorasMap[r.id] = r.fechaHora instanceof Date ? r.fechaHora.toISOString() : String(r.fechaHora);
+    }
+  } catch (e) {
+    console.error("[/api/jornadas] raw fechaHora query failed:", e);
+  }
+
+  const partidosConFecha = jornada.partidos.map((p) => ({
+    ...p,
+    fechaHora: fechaHorasMap[p.id] ?? null,
+  }));
+
+  return NextResponse.json({ ...jornada, partidos: partidosConFecha });
 }
 
 // POST /api/jornadas - crear jornada (admin)

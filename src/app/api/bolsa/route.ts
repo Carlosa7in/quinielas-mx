@@ -7,14 +7,20 @@ const COMISION_TIENDA   = 2;      // $2 por quiniela vendida en tienda
 // GET /api/bolsa — pública, sin auth
 export async function GET() {
   // Primer partido de cualquier jornada abierta → fecha límite de registro
-  // (findFirst top-level funciona bien con NeonHTTP, sin subquery lateral)
-  const partidos = await prisma.partido.findMany({
-    where: { jornada: { estado: "abierta" } },
-    select: { fechaHora: true },
-  });
-  const primerPartidoFecha = partidos.length > 0
-    ? partidos.reduce((min, p) => p.fechaHora < min ? p.fechaHora : min, partidos[0].fechaHora)
-    : null;
+  // Usamos raw SQL para evitar crash si alguna fila tiene fechaHora = {} (dato corrupto)
+  let primerPartidoFecha: Date | null = null;
+  try {
+    const rows = await prisma.$queryRaw<{ minFecha: Date }[]>`
+      SELECT MIN(p."fechaHora") AS "minFecha"
+      FROM "Partido" p
+      INNER JOIN "Jornada" j ON j.id = p."jornadaId"
+      WHERE j.estado = 'abierta'
+        AND p."fechaHora" IS NOT NULL
+    `;
+    primerPartidoFecha = rows[0]?.minFecha ?? null;
+  } catch (e) {
+    console.error("[/api/bolsa] raw fechaHora query failed:", e);
+  }
 
   const quinielas = await prisma.quiniela.findMany({
     where: { jornada: { estado: "abierta" } },

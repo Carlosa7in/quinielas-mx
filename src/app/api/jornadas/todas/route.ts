@@ -27,11 +27,26 @@ export async function GET() {
       select: { jornadaId: true, monto: true, estado: true },
     });
 
-    // Query 3: primer partido por jornada
-    const partidos = await prisma.partido.findMany({
+    // Query 3: count of partidos per jornada (no fechaHora to avoid {} corruption crash)
+    const partidosCount = await prisma.partido.findMany({
       where: { jornadaId: { in: ids } },
-      select: { jornadaId: true, fechaHora: true },
+      select: { jornadaId: true },
     });
+
+    // Query 4: min fechaHora per jornada via raw SQL (bypasses Prisma type coercion)
+    let minFechas: { jornadaId: string; minFecha: Date }[] = [];
+    try {
+      minFechas = await prisma.$queryRaw<{ jornadaId: string; minFecha: Date }[]>`
+        SELECT "jornadaId", MIN("fechaHora") AS "minFecha"
+        FROM "Partido"
+        WHERE "jornadaId" = ANY(${ids}::text[])
+          AND "fechaHora" IS NOT NULL
+        GROUP BY "jornadaId"
+      `;
+    } catch (e) {
+      console.error("[/api/jornadas/todas] raw fechaHora query failed:", e);
+      // Non-fatal: primerPartidoFecha will be null for all jornadas
+    }
 
     // Construir mapas
     const qMap = new Map<string, { monto: number; estado: string }[]>();
@@ -40,10 +55,14 @@ export async function GET() {
       qMap.get(q.jornadaId)!.push({ monto: q.monto, estado: q.estado });
     }
 
+    const pCountMap = new Map<string, number>();
+    for (const p of partidosCount) {
+      pCountMap.set(p.jornadaId, (pCountMap.get(p.jornadaId) ?? 0) + 1);
+    }
+
     const pMap = new Map<string, Date>();
-    for (const p of partidos) {
-      const curr = pMap.get(p.jornadaId);
-      if (!curr || p.fechaHora < curr) pMap.set(p.jornadaId, p.fechaHora);
+    for (const row of minFechas) {
+      pMap.set(row.jornadaId, row.minFecha);
     }
 
     const resultado = jornadas.map((j) => {
@@ -56,7 +75,7 @@ export async function GET() {
         liga: j.liga,
         estado: j.estado,
         totalQuinielas: qs.length,
-        totalPartidos: partidos.filter((p) => p.jornadaId === j.id).length,
+        totalPartidos: pCountMap.get(j.id) ?? 0,
         recaudado: qs.reduce((s, q) => s + q.monto, 0),
         ganadoras: qs.filter((q) => q.estado === "ganadora").length,
         primerPartidoFecha: pMap.get(j.id) ?? null,
