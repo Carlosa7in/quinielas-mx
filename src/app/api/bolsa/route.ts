@@ -7,12 +7,14 @@ const COMISION_TIENDA   = 2;      // $2 por quiniela vendida en tienda
 // GET /api/bolsa — pública, sin auth
 export async function GET() {
   // Primer partido de cualquier jornada abierta → fecha límite de registro
-  const primerPartidoRow = await prisma.partido.findFirst({
+  // (findFirst top-level funciona bien con NeonHTTP, sin subquery lateral)
+  const partidos = await prisma.partido.findMany({
     where: { jornada: { estado: "abierta" } },
-    orderBy: { fechaHora: "asc" },
     select: { fechaHora: true },
   });
-  const primerPartidoFecha = primerPartidoRow?.fechaHora ?? null;
+  const primerPartidoFecha = partidos.length > 0
+    ? partidos.reduce((min, p) => p.fechaHora < min ? p.fechaHora : min, partidos[0].fechaHora)
+    : null;
 
   const quinielas = await prisma.quiniela.findMany({
     where: { jornada: { estado: "abierta" } },
