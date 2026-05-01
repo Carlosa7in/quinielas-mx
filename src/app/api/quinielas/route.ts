@@ -14,25 +14,31 @@ export async function POST(req: Request) {
   try {
     const jornada = await prisma.jornada.findUnique({
       where: { id: jornadaId },
-      select: {
-        id: true,
-        numero: true,
-        estado: true,
-        partidos: { select: { fechaHora: true }, orderBy: { fechaHora: "asc" }, take: 1 },
-      },
+      select: { id: true, numero: true, estado: true },
     });
 
     if (!jornada || jornada.estado !== "abierta") {
       return NextResponse.json({ error: "Jornada no disponible" }, { status: 400 });
     }
 
-    // Verificar que no haya comenzado ningún partido
-    const primerPartido = jornada.partidos[0]?.fechaHora;
-    if (primerPartido && new Date() >= new Date(primerPartido)) {
-      return NextResponse.json(
-        { error: "El registro ya cerró — el primer partido ya comenzó." },
-        { status: 400 }
-      );
+    // Verificar que no haya comenzado ningún partido (raw SQL para evitar crash con fechaHora = {})
+    try {
+      const rows = await prisma.$queryRaw<{ minFecha: Date | null }[]>`
+        SELECT MIN("fechaHora") AS "minFecha"
+        FROM "Partido"
+        WHERE "jornadaId" = ${jornadaId}
+          AND "fechaHora" IS NOT NULL
+      `;
+      const primerPartido = rows[0]?.minFecha;
+      if (primerPartido && new Date() >= new Date(primerPartido)) {
+        return NextResponse.json(
+          { error: "El registro ya cerró — el primer partido ya comenzó." },
+          { status: 400 }
+        );
+      }
+    } catch (e) {
+      console.error("[QUINIELAS POST] fechaHora check failed:", e);
+      // Si no podemos verificar la fecha, dejamos pasar (la jornada está abierta según el estado)
     }
 
     const folio = generarFolio(jornada.numero);
