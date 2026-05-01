@@ -34,7 +34,8 @@ export default function AdminPage() {
   useEffect(() => {
     fetch("/api/jornadas/todas")
       .then((r) => r.json())
-      .then((data) => setJornadas(data))
+      .then((data) => { if (Array.isArray(data)) setJornadas(data); })
+      .catch(() => {})
       .finally(() => setCargando(false));
   }, []);
 
