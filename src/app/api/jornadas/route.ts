@@ -55,13 +55,18 @@ export async function POST(req: Request) {
     const partidosCreados = [];
     for (let i = 0; i < partidos.length; i++) {
       const p = partidos[i];
+      const fechaHora = new Date(p.fechaHora);
+      if (!p.fechaHora || isNaN(fechaHora.getTime())) {
+        console.error(`[JORNADAS] Partido ${i + 1} tiene fechaHora inválida:`, p.fechaHora);
+        continue; // saltar partido con fecha inválida
+      }
       const partido = await prisma.partido.create({
         data: {
           jornadaId: jornada.id,
           liga: p.liga ?? "Liga MX",
           equipoLocal: p.equipoLocal,
           equipoVisita: p.equipoVisita,
-          fechaHora: new Date(p.fechaHora),
+          fechaHora,
           orden: p.orden ?? i + 1,
         },
         select: { id: true, equipoLocal: true, equipoVisita: true, orden: true },
