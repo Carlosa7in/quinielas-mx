@@ -64,13 +64,14 @@ export default function TicketPage() {
     setCargandoPNG(true);
     try {
       const picks = [...quiniela.picks].sort((a, b) => a.partido.orden - b.partido.orden);
-      const scale = 2;
-      const W = 420;
-      const pad = 24;
-      const sans = (sz: number, w: "normal" | "bold" = "normal") =>
+      const CLABE  = "012180015525085351";
+      const scale  = 2;
+      const W      = 420;
+      const pad    = 28;
+      const sans   = (sz: number, w: "normal" | "bold" = "normal") =>
         `${w} ${sz}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
 
-      // ── Helper: imagen con timeout ────────────────────────────
+      // ── Helpers ───────────────────────────────────────────────
       const loadImg = (src: string): Promise<HTMLImageElement | null> =>
         new Promise((resolve) => {
           const img = new Image();
@@ -80,6 +81,35 @@ export default function TicketPage() {
           setTimeout(() => resolve(null), 4000);
           img.src = src;
         });
+
+      const roundRect = (
+        c: CanvasRenderingContext2D,
+        x: number, y: number, w: number, h: number, r: number
+      ) => {
+        c.beginPath();
+        c.moveTo(x + r, y);
+        c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r);
+        c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r);
+        c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y);
+        c.closePath();
+      };
+
+      // ── Código de barras CLABE (Code 128) ─────────────────────
+      const barcodeCanvas = document.createElement("canvas");
+      const hasPago = quiniela.canal === "transferencia" || quiniela.canal === "oxxo";
+      if (hasPago) {
+        const JsBarcode = (await import("jsbarcode")).default;
+        JsBarcode(barcodeCanvas, CLABE, {
+          format: "CODE128",
+          width: 2.2,
+          height: 56,
+          displayValue: false,
+          margin: 0,
+          background: "#ffffff",
+          lineColor: "#111827",
+        });
+      }
 
       // ── Cargar recursos ───────────────────────────────────────
       const equiposUnicos = [...new Set(picks.flatMap(p => [p.partido.equipoLocal, p.partido.equipoVisita]))];
@@ -91,17 +121,22 @@ export default function TicketPage() {
       const logoMap: Record<string, HTMLImageElement | null> = {};
       equiposUnicos.forEach((eq, i) => { logoMap[eq] = equipoImgs[i]; });
 
-      // ── Dimensiones ───────────────────────────────────────────
-      const HEADER_H   = 140;          // fondo verde con logo + jornada
-      const CARD_PAD   = 20;
-      const ROW_H      = 38;           // altura de cada pick
-      const PICK_H     = picks.length * ROW_H;
-      const QR_SZ      = 90;
-      const hasPago    = quiniela.canal === "transferencia" || quiniela.canal === "oxxo";
-      const PAGO_H     = hasPago ? 48 : 0;
-      const CARD_H     = CARD_PAD + 56 + 12 + PICK_H + 16 + QR_SZ + CARD_PAD + PAGO_H;
-      const FOOTER_H   = 36;
-      const H          = HEADER_H + 16 + CARD_H + 16 + FOOTER_H;
+      // ── Dimensiones dinámicas ─────────────────────────────────
+      const ROW_H   = 36;
+      const PICK_H  = picks.length * ROW_H;
+      const QR_SZ   = 100;
+      const BAR_H   = hasPago ? 72  : 0;   // sección pago: etiqueta + barcode
+      const LOGO_H  = logoTablitas
+        ? Math.round(72 * logoTablitas.naturalHeight / logoTablitas.naturalWidth)
+        : 50;
+
+      let H = 20                     // top
+        + LOGO_H + 8                 // logo
+        + 18 + 6 + 16 + 16          // liga · jornada · divider · nombre+folio
+        + 12                         // divider
+        + PICK_H + 16               // picks
+        + (hasPago ? 12 + BAR_H + 12 : 0)  // pago
+        + 12 + QR_SZ + 10 + 16 + 16; // divider + QR + textos + bottom
 
       const canvas = document.createElement("canvas");
       canvas.width  = W * scale;
@@ -109,218 +144,161 @@ export default function TicketPage() {
       const ctx = canvas.getContext("2d")!;
       ctx.scale(scale, scale);
 
-      // ── Helpers ───────────────────────────────────────────────
-      const roundRect = (x: number, y: number, w: number, h: number, r: number) => {
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + w - r, y);
-        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-        ctx.lineTo(x + w, y + h - r);
-        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        ctx.lineTo(x + r, y + h);
-        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-        ctx.lineTo(x, y + r);
-        ctx.quadraticCurveTo(x, y, x + r, y);
-        ctx.closePath();
-      };
-
-      // ── FONDO VERDE ───────────────────────────────────────────
-      const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0, "#14532d");
-      grad.addColorStop(1, "#166534");
-      ctx.fillStyle = grad;
+      // ── FONDO BLANCO ──────────────────────────────────────────
+      ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, W, H);
 
-      // ── HEADER: logo + jornada ────────────────────────────────
-      let y = 28;
-      const logoH = 60;
-      const logoW = Math.round(logoH * 200 / 215);
+      let y = 20;
+
+      // ── LOGO (proporcional) ───────────────────────────────────
+      const logoW = 72;
       if (logoTablitas) {
-        ctx.globalAlpha = 0.95;
-        ctx.drawImage(logoTablitas, (W - logoW) / 2, y, logoW, logoH);
-        ctx.globalAlpha = 1;
+        ctx.drawImage(logoTablitas, (W - logoW) / 2, y, logoW, LOGO_H);
       } else {
-        ctx.fillStyle = "#fff";
-        ctx.font = sans(22, "bold");
-        ctx.textAlign = "center";
-        ctx.fillText("TABLITAS", W / 2, y + 40);
+        ctx.font = sans(20, "bold"); ctx.fillStyle = "#14532d";
+        ctx.textAlign = "center"; ctx.fillText("TABLITAS", W / 2, y + 32);
       }
-      y += logoH + 12;
+      y += LOGO_H + 10;
+
+      // ── Liga · Jornada ────────────────────────────────────────
       ctx.textAlign = "center";
       ctx.font = sans(13, "bold");
-      ctx.fillStyle = "#fbbf24";
-      ctx.fillText(quiniela.jornada.liga, W / 2, y);
-      y += 18;
-      ctx.font = sans(12);
-      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.fillStyle = "#14532d";
+      ctx.fillText(quiniela.jornada.liga, W / 2, y); y += 18;
+      ctx.font = sans(11);
+      ctx.fillStyle = "#6b7280";
       ctx.fillText(
         `${quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`}  ·  ${quiniela.jornada.temporada}`,
         W / 2, y
-      );
+      ); y += 18;
 
-      // ── CARD BLANCA ───────────────────────────────────────────
-      const cardX = pad;
-      const cardY = HEADER_H + 10;
-      const cardW = W - pad * 2;
-      ctx.shadowColor = "rgba(0,0,0,0.25)";
-      ctx.shadowBlur = 20;
-      roundRect(cardX, cardY, cardW, CARD_H, 16);
-      ctx.fillStyle = "#ffffff";
-      ctx.fill();
-      ctx.shadowBlur = 0;
-
-      y = cardY + CARD_PAD;
-
-      // Nombre + folio
-      ctx.textAlign = "left";
-      ctx.font = sans(16, "bold");
-      ctx.fillStyle = "#111827";
-      ctx.fillText(quiniela.nombreCliente ?? "—", cardX + CARD_PAD, y + 16);
-
-      ctx.textAlign = "right";
-      ctx.font = sans(11);
-      ctx.fillStyle = "#9ca3af";
-      ctx.fillText(quiniela.folio, cardX + cardW - CARD_PAD, y + 16);
-
-      y += 28;
-      ctx.textAlign = "left";
-      ctx.font = sans(12);
-      ctx.fillStyle = "#16a34a";
-      ctx.fillText(`$${quiniela.monto.toFixed(2)} MXN`, cardX + CARD_PAD, y + 14);
-
-      // Divider
-      y += 26;
-      ctx.strokeStyle = "#f3f4f6";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(cardX + CARD_PAD, y);
-      ctx.lineTo(cardX + cardW - CARD_PAD, y);
-      ctx.stroke();
+      // Divider verde
+      ctx.strokeStyle = "#bbf7d0"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
       y += 14;
 
+      // ── Nombre + folio ────────────────────────────────────────
+      ctx.textAlign = "left";
+      ctx.font = sans(15, "bold"); ctx.fillStyle = "#111827";
+      ctx.fillText(quiniela.nombreCliente ?? "—", pad, y);
+      ctx.textAlign = "right";
+      ctx.font = sans(10); ctx.fillStyle = "#9ca3af";
+      ctx.fillText(quiniela.folio, W - pad, y); y += 16;
+      ctx.textAlign = "left";
+      ctx.font = sans(12, "bold"); ctx.fillStyle = "#16a34a";
+      ctx.fillText(`$${quiniela.monto.toFixed(2)} MXN`, pad, y); y += 14;
+
+      // Divider gris
+      ctx.strokeStyle = "#f3f4f6"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+      y += 12;
+
       // ── Picks ─────────────────────────────────────────────────
-      const logoSz = 22;
-      const COL_PRED = cardX + cardW - CARD_PAD - 52; // columna derecha para predicción
+      const logoSz   = 20;
+      const PRED_COL = W - pad - 30;
 
       for (let i = 0; i < picks.length; i++) {
         const p    = picks[i];
         const rowY = y + i * ROW_H;
         const midY = rowY + ROW_H / 2;
 
-        // Fondo alternado sutil
         if (i % 2 === 0) {
-          roundRect(cardX + 8, rowY + 2, cardW - 16, ROW_H - 4, 6);
-          ctx.fillStyle = "#f9fafb";
-          ctx.fill();
+          roundRect(ctx, pad - 4, rowY + 2, W - (pad - 4) * 2, ROW_H - 4, 6);
+          ctx.fillStyle = "#f9fafb"; ctx.fill();
         }
 
-        // Número
-        ctx.textAlign = "left";
-        ctx.font = sans(10);
-        ctx.fillStyle = "#d1d5db";
-        ctx.fillText(`${i + 1}`, cardX + CARD_PAD, midY + 4);
+        ctx.textAlign = "left"; ctx.font = sans(9); ctx.fillStyle = "#d1d5db";
+        ctx.fillText(`${i + 1}`, pad, midY + 4);
 
-        // Logo local
-        let x = cardX + CARD_PAD + 18;
+        let x = pad + 16;
         const lImg = logoMap[p.partido.equipoLocal];
         if (lImg) ctx.drawImage(lImg, x, midY - logoSz / 2, logoSz, logoSz);
-        x += logoSz + 5;
+        x += logoSz + 4;
 
-        // Nombre local (truncado)
-        ctx.font = sans(11, "bold");
-        ctx.fillStyle = "#1f2937";
-        const localMax = 80;
-        let localName = p.partido.equipoLocal;
-        while (ctx.measureText(localName).width > localMax && localName.length > 3)
-          localName = localName.slice(0, -1);
-        if (localName !== p.partido.equipoLocal) localName += "…";
-        ctx.fillText(localName, x, midY + 4);
-        x += localMax + 4;
+        ctx.font = sans(11, "bold"); ctx.fillStyle = "#1f2937";
+        const maxLocal = 82;
+        let ln = p.partido.equipoLocal;
+        while (ctx.measureText(ln).width > maxLocal && ln.length > 3) ln = ln.slice(0, -1);
+        if (ln !== p.partido.equipoLocal) ln += "…";
+        ctx.fillText(ln, x, midY + 4); x += maxLocal + 3;
 
-        // "vs"
-        ctx.font = sans(10);
-        ctx.fillStyle = "#9ca3af";
-        ctx.textAlign = "center";
-        ctx.fillText("vs", x + 10, midY + 4);
-        x += 22;
+        ctx.font = sans(9); ctx.fillStyle = "#9ca3af"; ctx.textAlign = "center";
+        ctx.fillText("vs", x + 8, midY + 4); x += 18;
 
-        // Logo visita
         const vImg = logoMap[p.partido.equipoVisita];
         if (vImg) ctx.drawImage(vImg, x, midY - logoSz / 2, logoSz, logoSz);
-        x += logoSz + 5;
+        x += logoSz + 4;
 
-        // Nombre visita (truncado)
-        ctx.textAlign = "left";
-        ctx.font = sans(11, "bold");
-        ctx.fillStyle = "#1f2937";
-        const visitMax = COL_PRED - x - 6;
-        let visitName = p.partido.equipoVisita;
-        while (ctx.measureText(visitName).width > visitMax && visitName.length > 3)
-          visitName = visitName.slice(0, -1);
-        if (visitName !== p.partido.equipoVisita) visitName += "…";
-        ctx.fillText(visitName, x, midY + 4);
+        ctx.textAlign = "left"; ctx.font = sans(11, "bold"); ctx.fillStyle = "#1f2937";
+        const maxVisit = PRED_COL - x - 4;
+        let vn = p.partido.equipoVisita;
+        while (ctx.measureText(vn).width > maxVisit && vn.length > 3) vn = vn.slice(0, -1);
+        if (vn !== p.partido.equipoVisita) vn += "…";
+        ctx.fillText(vn, x, midY + 4);
 
-        // Predicción pill
-        const pred  = p.prediccion;
-        const pText = pred === "1" ? "L" : pred === "2" ? "V" : "E";
-        const pBg   = pred === "1" ? "#dcfce7" : pred === "2" ? "#dbeafe" : "#fef9c3";
-        const pCol  = pred === "1" ? "#15803d" : pred === "2" ? "#1d4ed8" : "#854d0e";
-        const pW = 28; const pH = 20;
-        roundRect(COL_PRED, midY - pH / 2, pW, pH, 5);
+        const pred = p.prediccion;
+        const pTxt = pred === "1" ? "L" : pred === "2" ? "V" : "E";
+        const pBg  = pred === "1" ? "#dcfce7" : pred === "2" ? "#dbeafe" : "#fef9c3";
+        const pCol = pred === "1" ? "#15803d" : pred === "2" ? "#1d4ed8" : "#854d0e";
+        const pW = 26; const pH = 18;
+        roundRect(ctx, PRED_COL, midY - pH / 2, pW, pH, 4);
         ctx.fillStyle = pBg; ctx.fill();
-        ctx.textAlign = "center";
-        ctx.font = sans(11, "bold");
-        ctx.fillStyle = pCol;
-        ctx.fillText(pText, COL_PRED + pW / 2, midY + 4);
+        ctx.textAlign = "center"; ctx.font = sans(11, "bold"); ctx.fillStyle = pCol;
+        ctx.fillText(pTxt, PRED_COL + pW / 2, midY + 4);
       }
-
       y += PICK_H + 16;
 
-      // Divider
-      ctx.strokeStyle = "#f3f4f6";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(cardX + CARD_PAD, y);
-      ctx.lineTo(cardX + cardW - CARD_PAD, y);
-      ctx.stroke();
-      y += 14;
-
-      // ── QR + instrucciones de pago ────────────────────────────
-      if (qrImg) ctx.drawImage(qrImg, cardX + CARD_PAD, y, QR_SZ, QR_SZ);
-
-      const infoX = cardX + CARD_PAD + QR_SZ + 14;
-      const infoW = cardW - CARD_PAD * 2 - QR_SZ - 14;
-      ctx.textAlign = "left";
-      ctx.font = sans(10);
-      ctx.fillStyle = "#6b7280";
-      ctx.fillText("Escanea para ver resultados", infoX, y + 14);
-
+      // ── Sección de pago ───────────────────────────────────────
       if (hasPago) {
+        ctx.strokeStyle = "#fde68a"; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+        y += 12;
+
         const isOxxo = quiniela.canal === "oxxo";
-        ctx.font = sans(10, "bold");
+
+        // Etiqueta + datos en una línea
+        ctx.textAlign = "left"; ctx.font = sans(11, "bold");
         ctx.fillStyle = "#92400e";
-        ctx.fillText(isOxxo ? "Deposita en OXXO" : "Transfiere a BBVA", infoX, y + 34);
-        ctx.font = sans(9);
-        ctx.fillStyle = "#374151";
-        // CLABE en 2 partes para que quepa
-        const clabe = "012180015525085351";
-        const maxW = infoW;
-        ctx.fillText(clabe.slice(0, 9), infoX, y + 50);
-        ctx.fillText(clabe.slice(9), infoX, y + 62);
-        if (!isOxxo) {
-          ctx.font = sans(9);
-          ctx.fillStyle = "#6b7280";
-          ctx.fillText("Concepto: tu nombre", infoX, y + 76);
+        ctx.fillText(isOxxo ? "Deposita en OXXO" : "Transferencia BBVA", pad, y);
+
+        ctx.font = sans(10); ctx.fillStyle = "#374151";
+        const datosPago = `BBVA · Juan Carlos Arias · ${CLABE}`;
+        // si no cabe, partir en 2
+        if (ctx.measureText(datosPago).width < W - pad * 2 - 130) {
+          ctx.textAlign = "right";
+          ctx.fillText(datosPago, W - pad, y);
+        } else {
+          ctx.fillText(`BBVA · Juan Carlos Arias`, pad, y + 14);
+          ctx.font = sans(11, "bold"); ctx.fillStyle = "#111827";
+          ctx.fillText(CLABE, pad, y + 28);
+          y += 14;
         }
+        y += 18;
+        if (!isOxxo) {
+          ctx.font = sans(9); ctx.fillStyle = "#6b7280"; ctx.textAlign = "left";
+          ctx.fillText("Concepto: tu nombre completo", pad, y); y += 14;
+        }
+
+        // Código de barras centrado
+        const bW = Math.min(barcodeCanvas.width / scale, W - pad * 2);
+        const bH = barcodeCanvas.height / scale;
+        ctx.drawImage(barcodeCanvas, (W - bW) / 2, y, bW, bH);
+        y += bH + 12;
       }
 
-      y += QR_SZ + CARD_PAD + (hasPago ? PAGO_H : 0);
+      // Divider gris
+      ctx.strokeStyle = "#f3f4f6"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+      y += 12;
 
-      // ── FOOTER ────────────────────────────────────────────────
-      ctx.textAlign = "center";
-      ctx.font = sans(12);
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.fillText("tablitasquinielas.net", W / 2, cardY + CARD_H + 28);
+      // ── QR centrado ───────────────────────────────────────────
+      if (qrImg) ctx.drawImage(qrImg, (W - QR_SZ) / 2, y, QR_SZ, QR_SZ);
+      y += QR_SZ + 8;
+
+      ctx.textAlign = "center"; ctx.font = sans(9); ctx.fillStyle = "#9ca3af";
+      ctx.fillText("Escanea para consultar tus resultados", W / 2, y); y += 14;
+      ctx.font = sans(10, "bold"); ctx.fillStyle = "#14532d";
+      ctx.fillText("tablitasquinielas.net", W / 2, y);
 
       // ── Exportar / Compartir ──────────────────────────────────
       const dataUrl = canvas.toDataURL("image/png");
