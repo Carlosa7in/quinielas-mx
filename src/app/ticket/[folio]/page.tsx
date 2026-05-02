@@ -58,21 +58,19 @@ export default function TicketPage() {
       });
   }, [folio]);
 
-  // Genera una imagen PNG del ticket con logo + escudos de equipos
+  // Genera tarjeta digital PNG para compartir por WhatsApp
   const generarYCompartirPNG = async () => {
     if (!quiniela || !qrDataUrl) return;
     setCargandoPNG(true);
     try {
       const picks = [...quiniela.picks].sort((a, b) => a.partido.orden - b.partido.orden);
       const scale = 2;
-      const W = 390;
-      const pad = 22;
-      const lh = 20;
-      const qrSz = 150;
-      const logoW = 100;
-      const logoH = Math.round(logoW * 215 / 200); // mantener proporción del SVG
+      const W = 420;
+      const pad = 24;
+      const sans = (sz: number, w: "normal" | "bold" = "normal") =>
+        `${w} ${sz}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
 
-      // ── Helper: cargar imagen con timeout y fallback ──────────
+      // ── Helper: imagen con timeout ────────────────────────────
       const loadImg = (src: string): Promise<HTMLImageElement | null> =>
         new Promise((resolve) => {
           const img = new Image();
@@ -83,26 +81,27 @@ export default function TicketPage() {
           img.src = src;
         });
 
-      // Cargar logo Tablitas + logos de equipos en paralelo
+      // ── Cargar recursos ───────────────────────────────────────
       const equiposUnicos = [...new Set(picks.flatMap(p => [p.partido.equipoLocal, p.partido.equipoVisita]))];
-      const [logoTablitas, ...equipoImgs] = await Promise.all([
+      const [logoTablitas, qrImg, ...equipoImgs] = await Promise.all([
         loadImg("/logo-tablitas.png"),
+        loadImg(qrDataUrl),
         ...equiposUnicos.map(eq => loadImg(getLogoUrl(eq))),
       ]);
       const logoMap: Record<string, HTMLImageElement | null> = {};
       equiposUnicos.forEach((eq, i) => { logoMap[eq] = equipoImgs[i]; });
 
-      // ── Calcular altura total ─────────────────────────────────
-      const pickH = picks.length * (22 + lh + 6);
-      const H =
-        14 + logoH + 12 +                           // logo tablitas
-        lh + lh + 14 +                              // info jornada
-        14 +                                        // sep naranja
-        lh * (quiniela.telefonoCliente ? 4 : 3) +  // datos cliente
-        16 +                                        // sep punteado
-        lh + pickH +                                // picks
-        16 +                                        // sep punteado
-        qrSz + 20 + lh + 16;                       // QR + footer
+      // ── Dimensiones ───────────────────────────────────────────
+      const HEADER_H   = 140;          // fondo verde con logo + jornada
+      const CARD_PAD   = 20;
+      const ROW_H      = 38;           // altura de cada pick
+      const PICK_H     = picks.length * ROW_H;
+      const QR_SZ      = 90;
+      const hasPago    = quiniela.canal === "transferencia" || quiniela.canal === "oxxo";
+      const PAGO_H     = hasPago ? 48 : 0;
+      const CARD_H     = CARD_PAD + 56 + 12 + PICK_H + 16 + QR_SZ + CARD_PAD + PAGO_H;
+      const FOOTER_H   = 36;
+      const H          = HEADER_H + 16 + CARD_H + 16 + FOOTER_H;
 
       const canvas = document.createElement("canvas");
       canvas.width  = W * scale;
@@ -110,129 +109,218 @@ export default function TicketPage() {
       const ctx = canvas.getContext("2d")!;
       ctx.scale(scale, scale);
 
-      // Fondo papel crema
-      ctx.fillStyle = "#FAFAF7";
+      // ── Helpers ───────────────────────────────────────────────
+      const roundRect = (x: number, y: number, w: number, h: number, r: number) => {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      };
+
+      // ── FONDO VERDE ───────────────────────────────────────────
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, "#14532d");
+      grad.addColorStop(1, "#166534");
+      ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
-      ctx.strokeStyle = "#E5E7EB";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(0.5, 0.5, W - 1, H - 1);
 
-      const mono = (sz: number, bold = false) =>
-        `${bold ? "bold " : ""}${sz}px 'Courier New', Courier, monospace`;
-
-      let y = 14;
-
-      // ── Logo Tablitas ─────────────────────────────────────────
+      // ── HEADER: logo + jornada ────────────────────────────────
+      let y = 28;
+      const logoH = 60;
+      const logoW = Math.round(logoH * 200 / 215);
       if (logoTablitas) {
+        ctx.globalAlpha = 0.95;
         ctx.drawImage(logoTablitas, (W - logoW) / 2, y, logoW, logoH);
+        ctx.globalAlpha = 1;
       } else {
-        ctx.fillStyle = "#14532d";
-        ctx.fillRect(0, y, W, 55);
         ctx.fillStyle = "#fff";
+        ctx.font = sans(22, "bold");
         ctx.textAlign = "center";
-        ctx.font = "bold 20px sans-serif";
-        ctx.fillText("TABLITAS QUINIELAS", W / 2, y + 34);
+        ctx.fillText("TABLITAS", W / 2, y + 40);
       }
-      y += logoH + 10;
-
-      // ── Info jornada ──────────────────────────────────────────
+      y += logoH + 12;
       ctx.textAlign = "center";
-      ctx.font = mono(12, true);
-      ctx.fillStyle = "#374151";
+      ctx.font = sans(13, "bold");
+      ctx.fillStyle = "#fbbf24";
       ctx.fillText(quiniela.jornada.liga, W / 2, y);
-      y += lh;
-      ctx.font = mono(11);
-      ctx.fillStyle = "#6B7280";
+      y += 18;
+      ctx.font = sans(12);
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
       ctx.fillText(
         `${quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`}  ·  ${quiniela.jornada.temporada}`,
         W / 2, y
       );
-      y += lh + 12;
 
-      // Línea ámbar (color del logo)
-      ctx.strokeStyle = "#C8894A";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+      // ── CARD BLANCA ───────────────────────────────────────────
+      const cardX = pad;
+      const cardY = HEADER_H + 10;
+      const cardW = W - pad * 2;
+      ctx.shadowColor = "rgba(0,0,0,0.25)";
+      ctx.shadowBlur = 20;
+      roundRect(cardX, cardY, cardW, CARD_H, 16);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      y = cardY + CARD_PAD;
+
+      // Nombre + folio
+      ctx.textAlign = "left";
+      ctx.font = sans(16, "bold");
+      ctx.fillStyle = "#111827";
+      ctx.fillText(quiniela.nombreCliente ?? "—", cardX + CARD_PAD, y + 16);
+
+      ctx.textAlign = "right";
+      ctx.font = sans(11);
+      ctx.fillStyle = "#9ca3af";
+      ctx.fillText(quiniela.folio, cardX + cardW - CARD_PAD, y + 16);
+
+      y += 28;
+      ctx.textAlign = "left";
+      ctx.font = sans(12);
+      ctx.fillStyle = "#16a34a";
+      ctx.fillText(`$${quiniela.monto.toFixed(2)} MXN`, cardX + CARD_PAD, y + 14);
+
+      // Divider
+      y += 26;
+      ctx.strokeStyle = "#f3f4f6";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cardX + CARD_PAD, y);
+      ctx.lineTo(cardX + cardW - CARD_PAD, y);
+      ctx.stroke();
       y += 14;
 
-      // ── Datos cliente ─────────────────────────────────────────
-      ctx.textAlign = "left";
-      ctx.lineWidth = 1;
-      const fila = (label: string, value: string, color = "#111827") => {
-        ctx.font = mono(10); ctx.fillStyle = "#6B7280";
-        ctx.fillText(label, pad, y);
-        ctx.font = mono(11, true); ctx.fillStyle = color;
-        ctx.fillText(value, pad + ctx.measureText(label).width + 6, y);
-        y += lh;
-      };
-      fila("FOLIO:",   quiniela.folio);
-      fila("NOMBRE:",  quiniela.nombreCliente ?? "—");
-      if (quiniela.telefonoCliente) fila("TEL:", quiniela.telefonoCliente);
-      fila("TOTAL:",  `$${quiniela.monto.toFixed(2)} MXN`, "#16a34a");
+      // ── Picks ─────────────────────────────────────────────────
+      const logoSz = 22;
+      const COL_PRED = cardX + cardW - CARD_PAD - 52; // columna derecha para predicción
 
-      // Sep punteado
-      y += 6;
-      ctx.strokeStyle = "#D1D5DB"; ctx.setLineDash([5, 5]);
-      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
-      ctx.setLineDash([]); y += 14;
-
-      // ── Picks con logos de equipos ─────────────────────────────
-      ctx.font = mono(10, true); ctx.fillStyle = "#374151";
-      ctx.fillText("PRONOSTICOS:", pad, y);
-      y += lh;
-
-      const logoSz = 20; // tamaño del escudo en px
       for (let i = 0; i < picks.length; i++) {
-        const p = picks[i];
-        const label    = p.prediccion === "1" ? "LOCAL"  : p.prediccion === "2" ? "VISITA" : "EMPATE";
-        const colLabel = p.prediccion === "1" ? "#15803d": p.prediccion === "2" ? "#1d4ed8": "#b45309";
+        const p    = picks[i];
+        const rowY = y + i * ROW_H;
+        const midY = rowY + ROW_H / 2;
 
-        // Fila con logos + nombres
-        let x = pad;
-        ctx.font = mono(9); ctx.fillStyle = "#9CA3AF";
-        ctx.fillText(`${i + 1}.`, x, y + logoSz - 5); x += 18;
+        // Fondo alternado sutil
+        if (i % 2 === 0) {
+          roundRect(cardX + 8, rowY + 2, cardW - 16, ROW_H - 4, 6);
+          ctx.fillStyle = "#f9fafb";
+          ctx.fill();
+        }
 
+        // Número
+        ctx.textAlign = "left";
+        ctx.font = sans(10);
+        ctx.fillStyle = "#d1d5db";
+        ctx.fillText(`${i + 1}`, cardX + CARD_PAD, midY + 4);
+
+        // Logo local
+        let x = cardX + CARD_PAD + 18;
         const lImg = logoMap[p.partido.equipoLocal];
-        if (lImg) { ctx.drawImage(lImg, x, y, logoSz, logoSz); }
-        x += logoSz + 4;
-        ctx.font = mono(10, true); ctx.fillStyle = "#111827";
-        ctx.fillText(p.partido.equipoLocal, x, y + logoSz - 5);
-        x += ctx.measureText(p.partido.equipoLocal).width + 6;
+        if (lImg) ctx.drawImage(lImg, x, midY - logoSz / 2, logoSz, logoSz);
+        x += logoSz + 5;
 
-        ctx.font = mono(9); ctx.fillStyle = "#9CA3AF";
-        ctx.fillText("vs", x, y + logoSz - 5); x += ctx.measureText("vs").width + 6;
+        // Nombre local (truncado)
+        ctx.font = sans(11, "bold");
+        ctx.fillStyle = "#1f2937";
+        const localMax = 80;
+        let localName = p.partido.equipoLocal;
+        while (ctx.measureText(localName).width > localMax && localName.length > 3)
+          localName = localName.slice(0, -1);
+        if (localName !== p.partido.equipoLocal) localName += "…";
+        ctx.fillText(localName, x, midY + 4);
+        x += localMax + 4;
 
+        // "vs"
+        ctx.font = sans(10);
+        ctx.fillStyle = "#9ca3af";
+        ctx.textAlign = "center";
+        ctx.fillText("vs", x + 10, midY + 4);
+        x += 22;
+
+        // Logo visita
         const vImg = logoMap[p.partido.equipoVisita];
-        if (vImg) { ctx.drawImage(vImg, x, y, logoSz, logoSz); }
-        x += logoSz + 4;
-        ctx.font = mono(10, true); ctx.fillStyle = "#111827";
-        ctx.fillText(p.partido.equipoVisita, x, y + logoSz - 5);
-        y += 24;
+        if (vImg) ctx.drawImage(vImg, x, midY - logoSz / 2, logoSz, logoSz);
+        x += logoSz + 5;
 
-        // Label resultado
-        ctx.font = mono(10, true); ctx.fillStyle = colLabel;
-        ctx.fillText(`      [${label}]`, pad + 18, y);
-        y += lh + 4;
+        // Nombre visita (truncado)
+        ctx.textAlign = "left";
+        ctx.font = sans(11, "bold");
+        ctx.fillStyle = "#1f2937";
+        const visitMax = COL_PRED - x - 6;
+        let visitName = p.partido.equipoVisita;
+        while (ctx.measureText(visitName).width > visitMax && visitName.length > 3)
+          visitName = visitName.slice(0, -1);
+        if (visitName !== p.partido.equipoVisita) visitName += "…";
+        ctx.fillText(visitName, x, midY + 4);
+
+        // Predicción pill
+        const pred  = p.prediccion;
+        const pText = pred === "1" ? "L" : pred === "2" ? "V" : "E";
+        const pBg   = pred === "1" ? "#dcfce7" : pred === "2" ? "#dbeafe" : "#fef9c3";
+        const pCol  = pred === "1" ? "#15803d" : pred === "2" ? "#1d4ed8" : "#854d0e";
+        const pW = 28; const pH = 20;
+        roundRect(COL_PRED, midY - pH / 2, pW, pH, 5);
+        ctx.fillStyle = pBg; ctx.fill();
+        ctx.textAlign = "center";
+        ctx.font = sans(11, "bold");
+        ctx.fillStyle = pCol;
+        ctx.fillText(pText, COL_PRED + pW / 2, midY + 4);
       }
 
-      // Sep punteado
-      y += 4;
-      ctx.strokeStyle = "#D1D5DB"; ctx.setLineDash([5, 5]);
-      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
-      ctx.setLineDash([]); y += 14;
+      y += PICK_H + 16;
 
-      // ── QR ────────────────────────────────────────────────────
-      const qrImg = new Image();
-      await new Promise<void>((res) => { qrImg.onload = () => res(); qrImg.src = qrDataUrl; });
-      ctx.drawImage(qrImg, (W - qrSz) / 2, y, qrSz, qrSz);
-      y += qrSz + 8;
+      // Divider
+      ctx.strokeStyle = "#f3f4f6";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cardX + CARD_PAD, y);
+      ctx.lineTo(cardX + cardW - CARD_PAD, y);
+      ctx.stroke();
+      y += 14;
 
+      // ── QR + instrucciones de pago ────────────────────────────
+      if (qrImg) ctx.drawImage(qrImg, cardX + CARD_PAD, y, QR_SZ, QR_SZ);
+
+      const infoX = cardX + CARD_PAD + QR_SZ + 14;
+      const infoW = cardW - CARD_PAD * 2 - QR_SZ - 14;
+      ctx.textAlign = "left";
+      ctx.font = sans(10);
+      ctx.fillStyle = "#6b7280";
+      ctx.fillText("Escanea para ver resultados", infoX, y + 14);
+
+      if (hasPago) {
+        const isOxxo = quiniela.canal === "oxxo";
+        ctx.font = sans(10, "bold");
+        ctx.fillStyle = "#92400e";
+        ctx.fillText(isOxxo ? "Deposita en OXXO" : "Transfiere a BBVA", infoX, y + 34);
+        ctx.font = sans(9);
+        ctx.fillStyle = "#374151";
+        // CLABE en 2 partes para que quepa
+        const clabe = "012180015525085351";
+        const maxW = infoW;
+        ctx.fillText(clabe.slice(0, 9), infoX, y + 50);
+        ctx.fillText(clabe.slice(9), infoX, y + 62);
+        if (!isOxxo) {
+          ctx.font = sans(9);
+          ctx.fillStyle = "#6b7280";
+          ctx.fillText("Concepto: tu nombre", infoX, y + 76);
+        }
+      }
+
+      y += QR_SZ + CARD_PAD + (hasPago ? PAGO_H : 0);
+
+      // ── FOOTER ────────────────────────────────────────────────
       ctx.textAlign = "center";
-      ctx.font = mono(9); ctx.fillStyle = "#6B7280";
-      ctx.fillText("Escanea para consultar tus resultados", W / 2, y);
-      y += 16;
-      ctx.font = mono(10, true); ctx.fillStyle = "#C8894A";
-      ctx.fillText("tablitasquinielas.net", W / 2, y);
+      ctx.font = sans(12);
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.fillText("tablitasquinielas.net", W / 2, cardY + CARD_H + 28);
 
       // ── Exportar / Compartir ──────────────────────────────────
       const dataUrl = canvas.toDataURL("image/png");
@@ -322,7 +410,11 @@ export default function TicketPage() {
                 <p className="font-bold text-amber-900">
                   {quiniela.canal === "oxxo" ? "Deposita en OXXO" : "Realiza tu transferencia"}
                 </p>
-                <p className="text-xs text-amber-700">Usa tu folio como concepto de pago</p>
+                <p className="text-xs text-amber-700">
+                  {quiniela.canal === "oxxo"
+                    ? "Muestra esta pantalla en OXXO"
+                    : "Desde cualquier banco o app"}
+                </p>
               </div>
             </div>
             <div className="bg-white rounded-lg p-3 space-y-2 text-sm">
@@ -330,28 +422,30 @@ export default function TicketPage() {
                 <span className="text-gray-500">Banco</span>
                 <span className="font-semibold text-gray-800">BBVA</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-500">CLABE</span>
-                <span className="font-bold text-gray-900 tracking-widest text-xs">012180015525085351</span>
+                <span className="font-bold text-gray-900 tracking-wider text-sm font-mono">012180015525085351</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Titular</span>
                 <span className="font-semibold text-gray-800">Juan Carlos Arias Ariza</span>
               </div>
               <div className="flex justify-between border-t pt-2 mt-1">
-                <span className="text-gray-500">Concepto / Referencia</span>
-                <span className="font-bold text-amber-700">{quiniela.folio}</span>
-              </div>
-              <div className="flex justify-between">
                 <span className="text-gray-500">Monto</span>
-                <span className="font-bold text-green-700">${quiniela.monto.toFixed(2)} MXN</span>
+                <span className="font-bold text-green-700 text-base">${quiniela.monto.toFixed(2)} MXN</span>
               </div>
+              {quiniela.canal === "transferencia" && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Concepto</span>
+                  <span className="font-semibold text-amber-700">Tu nombre completo</span>
+                </div>
+              )}
             </div>
-            {quiniela.canal === "oxxo" && (
-              <p className="text-xs text-amber-700 mt-2 text-center">
-                En OXXO di &quot;depósito a CLABE&quot; y proporciona el número
-              </p>
-            )}
+            <p className="text-xs text-amber-700 mt-2 text-center">
+              {quiniela.canal === "oxxo"
+                ? 'Di "quiero hacer un depósito a CLABE" — no hay concepto'
+                : "Pon tu nombre como concepto para que podamos identificarte"}
+            </p>
           </div>
         )}
 
