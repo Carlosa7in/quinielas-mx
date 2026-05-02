@@ -66,8 +66,8 @@ export default function TicketPage() {
       const picks = [...quiniela.picks].sort((a, b) => a.partido.orden - b.partido.orden);
       const CLABE  = "012180015525085351";
       const scale  = 2;
-      const W      = 420;
-      const pad    = 28;
+      const W      = 480;
+      const pad    = 32;
       const sans   = (sz: number, w: "normal" | "bold" = "normal") =>
         `${w} ${sz}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
 
@@ -102,8 +102,8 @@ export default function TicketPage() {
         const JsBarcode = (await import("jsbarcode")).default;
         JsBarcode(barcodeCanvas, CLABE, {
           format: "CODE128",
-          width: 2.2,
-          height: 56,
+          width: 3,
+          height: 90,
           displayValue: false,
           margin: 0,
           background: "#ffffff",
@@ -122,21 +122,25 @@ export default function TicketPage() {
       equiposUnicos.forEach((eq, i) => { logoMap[eq] = equipoImgs[i]; });
 
       // ── Dimensiones dinámicas ─────────────────────────────────
-      const ROW_H   = 36;
-      const PICK_H  = picks.length * ROW_H;
-      const QR_SZ   = 100;
-      const BAR_H   = hasPago ? 72  : 0;   // sección pago: etiqueta + barcode
+      const LOGO_W  = 110;
       const LOGO_H  = logoTablitas
-        ? Math.round(72 * logoTablitas.naturalHeight / logoTablitas.naturalWidth)
-        : 50;
+        ? Math.round(LOGO_W * logoTablitas.naturalHeight / logoTablitas.naturalWidth)
+        : 70;
+      const ROW_H   = 48;
+      const PICK_H  = picks.length * ROW_H;
+      const QR_SZ   = 160;
+      const BAR_W   = W - pad * 2;
+      const BAR_H   = hasPago ? barcodeCanvas.height / scale : 0;
+      const PAGO_H  = hasPago
+        ? 20 + 24 + 20 + 20 + (quiniela.canal === "transferencia" ? 22 : 0) + 16 + BAR_H + 20
+        : 0;
 
-      let H = 20                     // top
-        + LOGO_H + 8                 // logo
-        + 18 + 6 + 16 + 16          // liga · jornada · divider · nombre+folio
-        + 12                         // divider
-        + PICK_H + 16               // picks
-        + (hasPago ? 12 + BAR_H + 12 : 0)  // pago
-        + 12 + QR_SZ + 10 + 16 + 16; // divider + QR + textos + bottom
+      const H = 28 + LOGO_H + 14        // logo
+        + 22 + 16 + 16                  // liga + jornada + divider
+        + 26 + 20 + 16                  // nombre + monto + divider
+        + PICK_H + 16                   // picks
+        + PAGO_H                        // pago
+        + 16 + QR_SZ + 14 + 22 + 28;   // divider + QR + textos + bottom
 
       const canvas = document.createElement("canvas");
       canvas.width  = W * scale;
@@ -148,54 +152,52 @@ export default function TicketPage() {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, W, H);
 
-      let y = 20;
+      let y = 28;
 
       // ── LOGO (proporcional) ───────────────────────────────────
-      const logoW = 72;
       if (logoTablitas) {
-        ctx.drawImage(logoTablitas, (W - logoW) / 2, y, logoW, LOGO_H);
+        ctx.drawImage(logoTablitas, (W - LOGO_W) / 2, y, LOGO_W, LOGO_H);
       } else {
-        ctx.font = sans(20, "bold"); ctx.fillStyle = "#14532d";
-        ctx.textAlign = "center"; ctx.fillText("TABLITAS", W / 2, y + 32);
+        ctx.font = sans(24, "bold"); ctx.fillStyle = "#14532d";
+        ctx.textAlign = "center"; ctx.fillText("TABLITAS", W / 2, y + 40);
       }
-      y += LOGO_H + 10;
+      y += LOGO_H + 14;
 
       // ── Liga · Jornada ────────────────────────────────────────
       ctx.textAlign = "center";
-      ctx.font = sans(13, "bold");
-      ctx.fillStyle = "#14532d";
-      ctx.fillText(quiniela.jornada.liga, W / 2, y); y += 18;
-      ctx.font = sans(11);
-      ctx.fillStyle = "#6b7280";
+      ctx.font = sans(16, "bold"); ctx.fillStyle = "#14532d";
+      ctx.fillText(quiniela.jornada.liga, W / 2, y); y += 22;
+      ctx.font = sans(13); ctx.fillStyle = "#6b7280";
       ctx.fillText(
         `${quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`}  ·  ${quiniela.jornada.temporada}`,
         W / 2, y
-      ); y += 18;
+      ); y += 16;
 
       // Divider verde
-      ctx.strokeStyle = "#bbf7d0"; ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "#bbf7d0"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
-      y += 14;
+      y += 16;
 
       // ── Nombre + folio ────────────────────────────────────────
       ctx.textAlign = "left";
-      ctx.font = sans(15, "bold"); ctx.fillStyle = "#111827";
+      ctx.font = sans(17, "bold"); ctx.fillStyle = "#111827";
       ctx.fillText(quiniela.nombreCliente ?? "—", pad, y);
       ctx.textAlign = "right";
-      ctx.font = sans(10); ctx.fillStyle = "#9ca3af";
-      ctx.fillText(quiniela.folio, W - pad, y); y += 16;
+      ctx.font = sans(11); ctx.fillStyle = "#9ca3af";
+      ctx.fillText(quiniela.folio, W - pad, y); y += 20;
       ctx.textAlign = "left";
-      ctx.font = sans(12, "bold"); ctx.fillStyle = "#16a34a";
-      ctx.fillText(`$${quiniela.monto.toFixed(2)} MXN`, pad, y); y += 14;
+      ctx.font = sans(14, "bold"); ctx.fillStyle = "#16a34a";
+      ctx.fillText(`$${quiniela.monto.toFixed(2)} MXN`, pad, y); y += 20;
 
       // Divider gris
-      ctx.strokeStyle = "#f3f4f6"; ctx.lineWidth = 1;
+      ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
-      y += 12;
+      y += 16;
 
       // ── Picks ─────────────────────────────────────────────────
-      const logoSz   = 20;
-      const PRED_COL = W - pad - 30;
+      const logoSz   = 30;
+      const PRED_W   = 36;
+      const PRED_COL = W - pad - PRED_W;
 
       for (let i = 0; i < picks.length; i++) {
         const p    = picks[i];
@@ -203,101 +205,105 @@ export default function TicketPage() {
         const midY = rowY + ROW_H / 2;
 
         if (i % 2 === 0) {
-          roundRect(ctx, pad - 4, rowY + 2, W - (pad - 4) * 2, ROW_H - 4, 6);
+          roundRect(ctx, pad - 6, rowY + 3, W - (pad - 6) * 2, ROW_H - 6, 8);
           ctx.fillStyle = "#f9fafb"; ctx.fill();
         }
 
-        ctx.textAlign = "left"; ctx.font = sans(9); ctx.fillStyle = "#d1d5db";
-        ctx.fillText(`${i + 1}`, pad, midY + 4);
+        // Número
+        ctx.textAlign = "left"; ctx.font = sans(11); ctx.fillStyle = "#d1d5db";
+        ctx.fillText(`${i + 1}`, pad, midY + 5);
 
-        let x = pad + 16;
+        let x = pad + 20;
         const lImg = logoMap[p.partido.equipoLocal];
         if (lImg) ctx.drawImage(lImg, x, midY - logoSz / 2, logoSz, logoSz);
-        x += logoSz + 4;
+        x += logoSz + 6;
 
-        ctx.font = sans(11, "bold"); ctx.fillStyle = "#1f2937";
-        const maxLocal = 82;
+        // Nombre local
+        ctx.font = sans(13, "bold"); ctx.fillStyle = "#1f2937"; ctx.textAlign = "left";
+        const maxLocal = 95;
         let ln = p.partido.equipoLocal;
         while (ctx.measureText(ln).width > maxLocal && ln.length > 3) ln = ln.slice(0, -1);
         if (ln !== p.partido.equipoLocal) ln += "…";
-        ctx.fillText(ln, x, midY + 4); x += maxLocal + 3;
+        ctx.fillText(ln, x, midY + 5); x += maxLocal + 6;
 
-        ctx.font = sans(9); ctx.fillStyle = "#9ca3af"; ctx.textAlign = "center";
-        ctx.fillText("vs", x + 8, midY + 4); x += 18;
+        // vs
+        ctx.font = sans(11); ctx.fillStyle = "#9ca3af"; ctx.textAlign = "center";
+        ctx.fillText("vs", x + 10, midY + 5); x += 22;
 
+        // Logo visita
         const vImg = logoMap[p.partido.equipoVisita];
         if (vImg) ctx.drawImage(vImg, x, midY - logoSz / 2, logoSz, logoSz);
-        x += logoSz + 4;
+        x += logoSz + 6;
 
-        ctx.textAlign = "left"; ctx.font = sans(11, "bold"); ctx.fillStyle = "#1f2937";
-        const maxVisit = PRED_COL - x - 4;
+        // Nombre visita
+        ctx.textAlign = "left"; ctx.font = sans(13, "bold"); ctx.fillStyle = "#1f2937";
+        const maxVisit = PRED_COL - x - 6;
         let vn = p.partido.equipoVisita;
         while (ctx.measureText(vn).width > maxVisit && vn.length > 3) vn = vn.slice(0, -1);
         if (vn !== p.partido.equipoVisita) vn += "…";
-        ctx.fillText(vn, x, midY + 4);
+        ctx.fillText(vn, x, midY + 5);
 
+        // Predicción pill
         const pred = p.prediccion;
         const pTxt = pred === "1" ? "L" : pred === "2" ? "V" : "E";
         const pBg  = pred === "1" ? "#dcfce7" : pred === "2" ? "#dbeafe" : "#fef9c3";
         const pCol = pred === "1" ? "#15803d" : pred === "2" ? "#1d4ed8" : "#854d0e";
-        const pW = 26; const pH = 18;
-        roundRect(ctx, PRED_COL, midY - pH / 2, pW, pH, 4);
+        const pH = 24;
+        roundRect(ctx, PRED_COL, midY - pH / 2, PRED_W, pH, 6);
         ctx.fillStyle = pBg; ctx.fill();
-        ctx.textAlign = "center"; ctx.font = sans(11, "bold"); ctx.fillStyle = pCol;
-        ctx.fillText(pTxt, PRED_COL + pW / 2, midY + 4);
+        ctx.textAlign = "center"; ctx.font = sans(13, "bold"); ctx.fillStyle = pCol;
+        ctx.fillText(pTxt, PRED_COL + PRED_W / 2, midY + 5);
       }
       y += PICK_H + 16;
 
       // ── Sección de pago ───────────────────────────────────────
       if (hasPago) {
-        ctx.strokeStyle = "#fde68a"; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
-        y += 12;
-
         const isOxxo = quiniela.canal === "oxxo";
 
-        // Etiqueta + datos en una línea
-        ctx.textAlign = "left"; ctx.font = sans(11, "bold");
-        ctx.fillStyle = "#92400e";
-        ctx.fillText(isOxxo ? "Deposita en OXXO" : "Transferencia BBVA", pad, y);
+        // Divider ámbar
+        ctx.strokeStyle = "#fde68a"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+        y += 20;
 
-        ctx.font = sans(10); ctx.fillStyle = "#374151";
-        const datosPago = `BBVA · Juan Carlos Arias · ${CLABE}`;
-        // si no cabe, partir en 2
-        if (ctx.measureText(datosPago).width < W - pad * 2 - 130) {
-          ctx.textAlign = "right";
-          ctx.fillText(datosPago, W - pad, y);
-        } else {
-          ctx.fillText(`BBVA · Juan Carlos Arias`, pad, y + 14);
-          ctx.font = sans(11, "bold"); ctx.fillStyle = "#111827";
-          ctx.fillText(CLABE, pad, y + 28);
-          y += 14;
-        }
-        y += 18;
+        // Título centrado grande
+        ctx.textAlign = "center"; ctx.font = sans(18, "bold"); ctx.fillStyle = "#92400e";
+        ctx.fillText(isOxxo ? "Deposita en OXXO" : "Transferencia BBVA", W / 2, y); y += 24;
+
+        // Datos centrados línea por línea
+        ctx.font = sans(14); ctx.fillStyle = "#374151";
+        ctx.fillText("BBVA  ·  Juan Carlos Arias Ariza", W / 2, y); y += 20;
+
+        // CLABE grande monospace
+        ctx.font = `bold 16px 'Courier New', Courier, monospace`;
+        ctx.fillStyle = "#111827";
+        ctx.fillText(CLABE, W / 2, y); y += 20;
+
         if (!isOxxo) {
-          ctx.font = sans(9); ctx.fillStyle = "#6b7280"; ctx.textAlign = "left";
-          ctx.fillText("Concepto: tu nombre completo", pad, y); y += 14;
+          ctx.font = sans(12); ctx.fillStyle = "#6b7280";
+          ctx.fillText("Concepto: tu nombre completo", W / 2, y); y += 22;
+        } else {
+          y += 4;
         }
 
-        // Código de barras centrado
-        const bW = Math.min(barcodeCanvas.width / scale, W - pad * 2);
-        const bH = barcodeCanvas.height / scale;
+        // Código de barras centrado y grande
+        const bW = Math.min(BAR_W, barcodeCanvas.width / scale);
+        const bH = BAR_H;
         ctx.drawImage(barcodeCanvas, (W - bW) / 2, y, bW, bH);
-        y += bH + 12;
+        y += bH + 20;
       }
 
       // Divider gris
-      ctx.strokeStyle = "#f3f4f6"; ctx.lineWidth = 1;
+      ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
-      y += 12;
+      y += 16;
 
-      // ── QR centrado ───────────────────────────────────────────
+      // ── QR centrado y grande ──────────────────────────────────
       if (qrImg) ctx.drawImage(qrImg, (W - QR_SZ) / 2, y, QR_SZ, QR_SZ);
-      y += QR_SZ + 8;
+      y += QR_SZ + 14;
 
-      ctx.textAlign = "center"; ctx.font = sans(9); ctx.fillStyle = "#9ca3af";
-      ctx.fillText("Escanea para consultar tus resultados", W / 2, y); y += 14;
-      ctx.font = sans(10, "bold"); ctx.fillStyle = "#14532d";
+      ctx.textAlign = "center"; ctx.font = sans(12); ctx.fillStyle = "#9ca3af";
+      ctx.fillText("Escanea para consultar tus resultados", W / 2, y); y += 22;
+      ctx.font = sans(13, "bold"); ctx.fillStyle = "#14532d";
       ctx.fillText("tablitasquinielas.net", W / 2, y);
 
       // ── Exportar / Compartir ──────────────────────────────────
