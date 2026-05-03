@@ -36,6 +36,8 @@ export default function TicketPage() {
   const searchParams = useSearchParams();
   const folio = params.folio as string;
   const totalBoletos = Number(searchParams.get("total") ?? 1);
+  // formas = cuántos formularios distintos se enviaron (vs combinaciones de reventado)
+  const totalFormas  = Number(searchParams.get("formas") ?? totalBoletos);
   const [quiniela, setQuiniela] = useState<Quiniela | null>(null);
   const [error, setError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
@@ -381,26 +383,40 @@ export default function TicketPage() {
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Mensaje de éxito */}
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center print:hidden">
-          <div className="text-3xl mb-2">🎉</div>
-          <h2 className="text-green-800 font-bold text-lg">
-            {totalBoletos > 1 ? `¡${totalBoletos} boletos registrados!` : "¡Quiniela registrada!"}
-          </h2>
-          <p className="text-green-600 text-sm">
-            {totalBoletos > 1
-              ? `Mostrando boleto 1 de ${totalBoletos} — todos tienen diferente folio`
-              : "Guarda tu folio para consultar resultados"}
-          </p>
-        </div>
+        {(() => {
+          const esReventado = totalFormas <= 1 && totalBoletos > 1;
+          const esMultiForma = totalFormas > 1;
+          return (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center print:hidden">
+              <div className="text-3xl mb-2">🎉</div>
+              <h2 className="text-green-800 font-bold text-lg">
+                {esReventado
+                  ? `¡Reventado registrado!`
+                  : esMultiForma
+                  ? `¡${totalFormas} boleto${totalFormas !== 1 ? "s" : ""} registrado${totalFormas !== 1 ? "s" : ""}!`
+                  : "¡Quiniela registrada!"}
+              </h2>
+              <p className="text-green-600 text-sm">
+                {esReventado
+                  ? `${totalBoletos} combinaciones — cada una con su propio folio`
+                  : esMultiForma && totalBoletos > totalFormas
+                  ? `${totalFormas} formas · ${totalBoletos} boletos en total`
+                  : "Guarda tu folio para consultar resultados"}
+              </p>
+            </div>
+          );
+        })()}
 
-        {/* Banner múltiples boletos */}
+        {/* Banner info cuando hay múltiples boletos */}
         {totalBoletos > 1 && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 print:hidden">
             <p className="text-blue-800 text-sm font-semibold mb-1">
-              📋 {totalBoletos} boletos registrados
+              {totalFormas <= 1
+                ? `📋 Reventado · ${totalBoletos} combinaciones`
+                : `📋 ${totalFormas} formas · ${totalBoletos} boletos`}
             </p>
             <p className="text-blue-600 text-xs">
-              Cada combinación tiene su propio folio. Consulta todos tus boletos con tu teléfono en la sección &quot;Consultar&quot;.
+              Cada boleto tiene su propio folio. Consulta todos con tu teléfono en la sección &quot;Consultar&quot;.
             </p>
           </div>
         )}

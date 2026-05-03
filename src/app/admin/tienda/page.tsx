@@ -239,7 +239,7 @@ export default function TiendaPage() {
       foliosTodos.push(...(data.folios ?? [data.folio]));
     }
 
-    router.push(`/ticket/${foliosTodos[0]}?imprimir=1&total=${foliosTodos.length}`);
+    router.push(`/ticket/${foliosTodos[0]}?imprimir=1&total=${foliosTodos.length}&formas=${formas.length}`);
   };
 
   /* ── Render manual ───────────────────────────────────────────── */

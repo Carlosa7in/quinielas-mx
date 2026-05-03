@@ -288,7 +288,10 @@ export default function QuinielaPage() {
 
     const total = data.folios?.length ?? 1;
     const primerFolio = data.folios?.[0] ?? data.folio;
-    router.push(`/ticket/${primerFolio}${total > 1 ? `?total=${total}` : ""}`);
+    const params = new URLSearchParams();
+    if (total > 1) { params.set("total", String(total)); params.set("formas", String(cantidad)); }
+    const qs = params.toString();
+    router.push(`/ticket/${primerFolio}${qs ? `?${qs}` : ""}`);
   };
 
   // Mostrar selector si no hay jornada elegida
@@ -358,72 +361,63 @@ export default function QuinielaPage() {
         </div>
 
         {/* Partidos */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1">
+        <div className="bg-white rounded-xl shadow-sm">
+          {/* Encabezado */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <h2 className="font-semibold text-gray-700">
               Pronósticos{" "}
               <span className="text-amber-600 font-normal text-sm">
-                ({Object.keys(picks).length}/{partidosOrdenados.length})
+                ({Object.keys(picks).filter(k => (picks[k]?.length ?? 0) > 0).length}/{partidosOrdenados.length})
               </span>
             </h2>
-            <p className="text-xs text-gray-400">Puedes marcar 1, 2 ó 3 opciones</p>
+            <p className="text-xs text-gray-400">Puedes marcar 1, 2 ó 3</p>
           </div>
 
+          {/* Lista compacta */}
           {partidosOrdenados.map((partido) => {
             const sel = picks[partido.id] ?? [];
-            const badge = sel.length === 2 ? "DOBLE" : sel.length === 3 ? "TRIPLE" : null;
+            const esDoble  = sel.length === 2;
+            const esTriple = sel.length === 3;
             return (
-              <div key={partido.id} className="bg-white rounded-xl shadow-sm p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-gray-400">
-                    {new Date(partido.fechaHora).toLocaleDateString("es-MX", {
-                      weekday: "short", day: "numeric", month: "short",
-                      hour: "2-digit", minute: "2-digit",
-                    })}
-                  </span>
-                  {badge && (
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                      badge === "TRIPLE"
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-blue-100 text-blue-700"
-                    }`}>
-                      {badge}
+              <div
+                key={partido.id}
+                className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 last:border-0"
+              >
+                {/* Equipos + badge */}
+                <div className="flex items-center gap-1.5 flex-1 text-sm min-w-0">
+                  <LogoEquipo equipo={partido.equipoLocal} size={24} />
+                  <span className="font-medium truncate">{partido.equipoLocal}</span>
+                  <span className="text-gray-400 shrink-0 text-xs">vs</span>
+                  <LogoEquipo equipo={partido.equipoVisita} size={24} />
+                  <span className="font-medium truncate">{partido.equipoVisita}</span>
+                  {esDoble && (
+                    <span className="shrink-0 text-[10px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                      DOBLE
+                    </span>
+                  )}
+                  {esTriple && (
+                    <span className="shrink-0 text-[10px] font-bold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
+                      TRIPLE
                     </span>
                   )}
                 </div>
 
-                {/* Equipos */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 flex-1 justify-end">
-                    <span className="font-semibold text-gray-800 text-sm text-right">{partido.equipoLocal}</span>
-                    <LogoEquipo equipo={partido.equipoLocal} size={28} />
-                  </div>
-                  <span className="text-gray-400 text-xs mx-3 font-bold">VS</span>
-                  <div className="flex items-center gap-2 flex-1">
-                    <LogoEquipo equipo={partido.equipoVisita} size={28} />
-                    <span className="font-semibold text-gray-800 text-sm">{partido.equipoVisita}</span>
-                  </div>
-                </div>
-
-                {/* Botones toggle — se pueden seleccionar varios */}
-                <div className="flex gap-2">
-                  {(["1", "X", "2"] as const).map((opcion) => {
-                    const activo = sel.includes(opcion);
-                    return (
-                      <button
-                        key={opcion}
-                        type="button"
-                        onClick={() => togglePick(partido.id, opcion)}
-                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
-                          activo
-                            ? "bg-green-600 text-white shadow ring-2 ring-green-400 ring-offset-1"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                      >
-                        {opcion === "1" ? "L · Local" : opcion === "2" ? "V · Visita" : "E · Empate"}
-                      </button>
-                    );
-                  })}
+                {/* Botones L / E / V */}
+                <div className="flex gap-1 shrink-0">
+                  {(["1", "X", "2"] as const).map((opcion) => (
+                    <button
+                      key={opcion}
+                      type="button"
+                      onClick={() => togglePick(partido.id, opcion)}
+                      className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
+                        sel.includes(opcion)
+                          ? "bg-amber-700 text-white shadow-sm"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {opcion === "1" ? "L" : opcion === "2" ? "V" : "E"}
+                    </button>
+                  ))}
                 </div>
               </div>
             );
