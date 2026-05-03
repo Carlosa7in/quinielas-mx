@@ -206,14 +206,18 @@ function useCuentaRegresiva(fechaISO: string | null) {
 export default function QuinielaPage() {
   const router = useRouter();
   const [jornada, setJornada] = useState<Jornada | null>(null);
-  const [picks, setPicks] = useState<Record<string, string>>({});
+  // picks: múltiples opciones por partido (reventado)
+  const [picks, setPicks] = useState<Record<string, string[]>>({});
+  const [cantidad, setCantidad] = useState(1);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [metodoPago, setMetodoPago] = useState<"transferencia" | "oxxo">("transferencia");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
-  // Partido más próximo de la jornada = fecha límite de registro
+  const BASE_PRICE = 20;
+
+  // Partido más próximo = fecha límite
   const primerPartidoISO = jornada
     ? jornada.partidos.reduce((min, p) =>
         !min || p.fechaHora < min ? p.fechaHora : min, "")
@@ -224,14 +228,34 @@ export default function QuinielaPage() {
     ? new Date() >= new Date(primerPartidoISO)
     : false;
 
-  const seleccionar = (partidoId: string, valor: string) => {
+  // Toggle: seleccionar o deseleccionar una opción por partido
+  const togglePick = (partidoId: string, opcion: string) => {
     if (registroCerrado) return;
-    setPicks((prev) => ({ ...prev, [partidoId]: valor }));
+    setPicks((prev) => {
+      const current = prev[partidoId] ?? [];
+      if (current.includes(opcion)) {
+        const next = current.filter((o) => o !== opcion);
+        if (next.length === 0) {
+          const { [partidoId]: _, ...rest } = prev;
+          return rest;
+        }
+        return { ...prev, [partidoId]: next };
+      }
+      return { ...prev, [partidoId]: [...current, opcion] };
+    });
   };
 
   const picksCompletos = jornada
-    ? jornada.partidos.every((p) => picks[p.id])
+    ? jornada.partidos.every((p) => (picks[p.id]?.length ?? 0) > 0)
     : false;
+
+  // Número de combinaciones = producto de selecciones por partido
+  const combinaciones = jornada && picksCompletos
+    ? jornada.partidos.reduce((prod, p) => prod * (picks[p.id]?.length ?? 1), 1)
+    : picksCompletos ? 1 : 0;
+
+  const precioCombos  = combinaciones * BASE_PRICE;   // por un juego
+  const totalPagar    = precioCombos * cantidad;       // con cantidad
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,10 +268,11 @@ export default function QuinielaPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         jornadaId: jornada!.id,
-        picks: Object.entries(picks).map(([partidoId, prediccion]) => ({
+        picks: Object.entries(picks).map(([partidoId, predicciones]) => ({
           partidoId,
-          prediccion,
+          predicciones,
         })),
+        cantidad,
         nombre,
         telefono,
         canal: metodoPago,
@@ -261,7 +286,9 @@ export default function QuinielaPage() {
       return;
     }
 
-    router.push(`/ticket/${data.folio}`);
+    const total = data.folios?.length ?? 1;
+    const primerFolio = data.folios?.[0] ?? data.folio;
+    router.push(`/ticket/${primerFolio}${total > 1 ? `?total=${total}` : ""}`);
   };
 
   // Mostrar selector si no hay jornada elegida
@@ -277,14 +304,14 @@ export default function QuinielaPage() {
       <div className="bg-brand text-white py-6 px-4">
         <div className="max-w-lg mx-auto">
           <button
-            onClick={() => { setJornada(null); setPicks({}); }}
+            onClick={() => { setJornada(null); setPicks({}); setCantidad(1); }}
             className="text-amber-400 text-sm mb-2 inline-block"
           >
             ← Cambiar jornada
           </button>
           <h1 className="text-2xl font-bold">Registrar Quiniela</h1>
           <p className="text-amber-300/70 text-sm">
-            {LIGA_ICON[jornada.liga] ?? "⚽"} {jornada.liga} · {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada} · $20 MXN
+            {LIGA_ICON[jornada.liga] ?? "⚽"} {jornada.liga} · {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
           </p>
 
           {/* Cuenta regresiva / cierre */}
@@ -332,56 +359,75 @@ export default function QuinielaPage() {
 
         {/* Partidos */}
         <div className="space-y-3">
-          <h2 className="font-semibold text-gray-700 px-1">
-            Selecciona tus pronósticos{" "}
-            <span className="text-amber-600 font-normal text-sm">
-              ({Object.keys(picks).length}/{partidosOrdenados.length})
-            </span>
-          </h2>
+          <div className="flex items-center justify-between px-1">
+            <h2 className="font-semibold text-gray-700">
+              Pronósticos{" "}
+              <span className="text-amber-600 font-normal text-sm">
+                ({Object.keys(picks).length}/{partidosOrdenados.length})
+              </span>
+            </h2>
+            <p className="text-xs text-gray-400">Puedes marcar 1, 2 ó 3 opciones</p>
+          </div>
 
-          {partidosOrdenados.map((partido) => (
-            <div key={partido.id} className="bg-white rounded-xl shadow-sm p-4">
-              <div className="text-xs text-gray-400 mb-3">
-                {new Date(partido.fechaHora).toLocaleDateString("es-MX", {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </div>
-
-              {/* Equipos con logos */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 flex-1 justify-end">
-                  <span className="font-semibold text-gray-800 text-sm text-right">{partido.equipoLocal}</span>
-                  <LogoEquipo equipo={partido.equipoLocal} size={28} />
+          {partidosOrdenados.map((partido) => {
+            const sel = picks[partido.id] ?? [];
+            const badge = sel.length === 2 ? "DOBLE" : sel.length === 3 ? "TRIPLE" : null;
+            return (
+              <div key={partido.id} className="bg-white rounded-xl shadow-sm p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-gray-400">
+                    {new Date(partido.fechaHora).toLocaleDateString("es-MX", {
+                      weekday: "short", day: "numeric", month: "short",
+                      hour: "2-digit", minute: "2-digit",
+                    })}
+                  </span>
+                  {badge && (
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                      badge === "TRIPLE"
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}>
+                      {badge}
+                    </span>
+                  )}
                 </div>
-                <span className="text-gray-400 text-xs mx-3 font-bold">VS</span>
-                <div className="flex items-center gap-2 flex-1">
-                  <LogoEquipo equipo={partido.equipoVisita} size={28} />
-                  <span className="font-semibold text-gray-800 text-sm">{partido.equipoVisita}</span>
+
+                {/* Equipos */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2 flex-1 justify-end">
+                    <span className="font-semibold text-gray-800 text-sm text-right">{partido.equipoLocal}</span>
+                    <LogoEquipo equipo={partido.equipoLocal} size={28} />
+                  </div>
+                  <span className="text-gray-400 text-xs mx-3 font-bold">VS</span>
+                  <div className="flex items-center gap-2 flex-1">
+                    <LogoEquipo equipo={partido.equipoVisita} size={28} />
+                    <span className="font-semibold text-gray-800 text-sm">{partido.equipoVisita}</span>
+                  </div>
+                </div>
+
+                {/* Botones toggle — se pueden seleccionar varios */}
+                <div className="flex gap-2">
+                  {(["1", "X", "2"] as const).map((opcion) => {
+                    const activo = sel.includes(opcion);
+                    return (
+                      <button
+                        key={opcion}
+                        type="button"
+                        onClick={() => togglePick(partido.id, opcion)}
+                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+                          activo
+                            ? "bg-green-600 text-white shadow ring-2 ring-green-400 ring-offset-1"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {opcion === "1" ? "L · Local" : opcion === "2" ? "V · Visita" : "E · Empate"}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-
-              <div className="flex gap-2">
-                {(["1", "X", "2"] as const).map((opcion) => (
-                  <button
-                    key={opcion}
-                    type="button"
-                    onClick={() => seleccionar(partido.id, opcion)}
-                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
-                      picks[partido.id] === opcion
-                        ? "bg-green-600 text-white shadow"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                  >
-                    {opcion === "1" ? "L · Local" : opcion === "2" ? "V · Visita" : "E · Empate"}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Método de pago */}
@@ -435,20 +481,59 @@ export default function QuinielaPage() {
             </div>
           ) : (
             <>
-              <div className="flex justify-between mb-3 text-sm">
-                <span>Pronósticos:</span>
-                <span>{Object.keys(picks).length}/{partidosOrdenados.length} seleccionados</span>
+              {/* Precio dinámico */}
+              <div className="bg-white/10 rounded-xl p-3 mb-4 space-y-1.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-amber-200">Precio base</span>
+                  <span>${BASE_PRICE} MXN</span>
+                </div>
+                {combinaciones > 1 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-amber-200">Combinaciones</span>
+                    <span className="font-semibold text-yellow-300">× {combinaciones}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm border-t border-white/20 pt-1.5">
+                  <span className="text-amber-200">Por juego</span>
+                  <span className="font-bold">${precioCombos} MXN</span>
+                </div>
               </div>
-              <div className="flex justify-between mb-4 text-sm">
-                <span>Costo:</span>
-                <span className="font-bold text-yellow-300">$20 MXN</span>
+
+              {/* Selector de cantidad */}
+              <div className="mb-4">
+                <p className="text-sm text-amber-200 mb-2">Cantidad de boletos</p>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 5, 10].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setCantidad(n)}
+                      className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
+                        cantidad === n
+                          ? "bg-yellow-400 text-amber-950"
+                          : "bg-white/15 text-white hover:bg-white/25"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* Total */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-amber-200 text-sm">Total a pagar</span>
+                <span className="text-yellow-300 font-black text-2xl">${totalPagar} MXN</span>
+              </div>
+
               <button
                 type="submit"
                 disabled={!picksCompletos || !nombre || enviando}
-                className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-gray-400 disabled:cursor-not-allowed text-amber-950 font-bold py-3 rounded-xl transition-colors"
+                className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-gray-500 disabled:cursor-not-allowed text-amber-950 font-bold py-3 rounded-xl transition-colors text-lg"
               >
-                {enviando ? "Registrando..." : "Registrar Quiniela ($20)"}
+                {enviando
+                  ? "Registrando..."
+                  : `Registrar ${cantidad > 1 ? `${cantidad} boletos` : "Quiniela"} · $${totalPagar}`}
               </button>
               {!picksCompletos && (
                 <p className="text-amber-400 text-xs text-center mt-2">

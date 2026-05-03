@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { LogoEquipo } from "@/components/LogoEquipo";
 import { getLogoUrl } from "@/lib/equipos";
 
@@ -33,7 +33,9 @@ function norm(s: string): string {
 
 export default function TicketPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const folio = params.folio as string;
+  const totalBoletos = Number(searchParams.get("total") ?? 1);
   const [quiniela, setQuiniela] = useState<Quiniela | null>(null);
   const [error, setError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
@@ -381,9 +383,27 @@ export default function TicketPage() {
         {/* Mensaje de éxito */}
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center print:hidden">
           <div className="text-3xl mb-2">🎉</div>
-          <h2 className="text-green-800 font-bold text-lg">¡Quiniela registrada!</h2>
-          <p className="text-green-600 text-sm">Guarda tu folio para consultar resultados</p>
+          <h2 className="text-green-800 font-bold text-lg">
+            {totalBoletos > 1 ? `¡${totalBoletos} boletos registrados!` : "¡Quiniela registrada!"}
+          </h2>
+          <p className="text-green-600 text-sm">
+            {totalBoletos > 1
+              ? `Mostrando boleto 1 de ${totalBoletos} — todos tienen diferente folio`
+              : "Guarda tu folio para consultar resultados"}
+          </p>
         </div>
+
+        {/* Banner múltiples boletos */}
+        {totalBoletos > 1 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 print:hidden">
+            <p className="text-blue-800 text-sm font-semibold mb-1">
+              📋 {totalBoletos} boletos registrados
+            </p>
+            <p className="text-blue-600 text-xs">
+              Cada combinación tiene su propio folio. Consulta todos tus boletos con tu teléfono en la sección &quot;Consultar&quot;.
+            </p>
+          </div>
+        )}
 
         {/* Instrucciones de pago */}
         {(quiniela.canal === "transferencia" || quiniela.canal === "oxxo") && (

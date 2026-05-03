@@ -2,14 +2,35 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generarFolio } from "@/lib/folio";
 
-// POST /api/quinielas - registrar quiniela
+// Genera el producto cartesiano de picks con múltiples opciones (reventado)
+function generarCombinaciones(
+  picks: { partidoId: string; predicciones: string[] }[]
+): { partidoId: string; prediccion: string }[][] {
+  return picks.reduce<{ partidoId: string; prediccion: string }[][]>(
+    (combos, { partidoId, predicciones }) =>
+      combos.flatMap((combo) =>
+        predicciones.map((pred) => [...combo, { partidoId, prediccion: pred }])
+      ),
+    [[]]
+  );
+}
+
+// POST /api/quinielas - registrar quiniela (sencilla, reventado o múltiples boletos)
 export async function POST(req: Request) {
   const body = await req.json();
-  const { jornadaId, picks, nombre, telefono, canal = "online", usuarioId } = body;
+  const { jornadaId, picks, nombre, telefono, canal = "online", usuarioId, cantidad = 1 } = body;
 
   if (!jornadaId || !picks || picks.length === 0) {
     return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
   }
+
+  // Normalizar picks: aceptar formato viejo {partidoId, prediccion} y nuevo {partidoId, predicciones}
+  const picksNorm: { partidoId: string; predicciones: string[] }[] = picks.map(
+    (p: { partidoId: string; prediccion?: string; predicciones?: string[] }) => ({
+      partidoId: p.partidoId,
+      predicciones: p.predicciones ?? (p.prediccion ? [p.prediccion] : []),
+    })
+  );
 
   try {
     const jornada = await prisma.jornada.findUnique({
@@ -66,37 +87,54 @@ export async function POST(req: Request) {
       }
     }
 
-    // estadoPago: tienda = confirmado (paga en efectivo al momento), online = pendiente
     const estadoPago = canal === "tienda" ? "confirmado" : "pendiente";
+    const BASE_PRICE = 20;
 
-    // Crear quiniela sin picks anidados (NeonHTTP no soporta transacciones)
-    const quiniela = await prisma.quiniela.create({
-      data: {
-        folio,
-        jornadaId,
-        usuarioId: usuarioId || null,
-        clienteId,
-        nombreCliente: nombre || null,
-        telefonoCliente: telefono || null,
-        canal,
-        estadoPago,
-      },
-      select: { id: true, folio: true },
-    });
+    // Generar todas las combinaciones (reventado)
+    const combos = generarCombinaciones(picksNorm);
+    const cantidadValida = Math.max(1, Math.min(Number(cantidad) || 1, 50));
+    const monto = combos.length * BASE_PRICE;
 
-    // Crear picks uno a uno
-    for (const p of picks as { partidoId: string; prediccion: string }[]) {
-      await prisma.pick.create({
-        data: {
-          quinielaId: quiniela.id,
-          partidoId: p.partidoId,
-          prediccion: p.prediccion,
-        },
-        select: { id: true },
-      });
+    const folios: string[] = [];
+
+    // Crear (combos × cantidad) quinielas
+    for (let b = 0; b < cantidadValida; b++) {
+      for (const combo of combos) {
+        const folioQ = generarFolio(jornada.numero);
+        const quiniela = await prisma.quiniela.create({
+          data: {
+            folio: folioQ,
+            jornadaId,
+            usuarioId: usuarioId || null,
+            clienteId,
+            nombreCliente: nombre || null,
+            telefonoCliente: telefono || null,
+            canal,
+            estadoPago,
+            monto,
+          },
+          select: { id: true, folio: true },
+        });
+
+        for (const pick of combo) {
+          await prisma.pick.create({
+            data: {
+              quinielaId: quiniela.id,
+              partidoId: pick.partidoId,
+              prediccion: pick.prediccion,
+            },
+            select: { id: true },
+          });
+        }
+
+        folios.push(quiniela.folio);
+      }
     }
 
-    return NextResponse.json({ folio: quiniela.folio }, { status: 201 });
+    return NextResponse.json(
+      { folio: folios[0], folios, total: folios.length },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("[QUINIELAS POST] error:", err);
     return NextResponse.json({ error: "Error al registrar: " + String(err) }, { status: 500 });
