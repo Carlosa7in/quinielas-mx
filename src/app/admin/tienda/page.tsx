@@ -23,18 +23,49 @@ type Jornada = {
   partidos: Partido[];
 };
 
+// picks por forma: partidoId → opciones seleccionadas []
+type FormaPicks = Record<string, string[]>;
+
+const OPCIONES = ["1", "X", "2"] as const;
+const LABELS: Record<string, string> = { "1": "L", X: "E", "2": "V" };
+
+function rellenarAzar(partidos: Partido[], picks: FormaPicks): FormaPicks {
+  const next = { ...picks };
+  for (const p of partidos) {
+    // Solo rellena los que están vacíos — respeta lo que ya marcó el usuario
+    if (!next[p.id] || next[p.id].length === 0) {
+      next[p.id] = [OPCIONES[Math.floor(Math.random() * 3)]];
+    }
+  }
+  return next;
+}
+
+function combosDeForma(partidos: Partido[], picks: FormaPicks): number {
+  return partidos.reduce((prod, p) => prod * (picks[p.id]?.length || 1), 1);
+}
+
+function formaCompleta(partidos: Partido[], picks: FormaPicks): boolean {
+  return partidos.every((p) => (picks[p.id]?.length ?? 0) > 0);
+}
+
 export default function TiendaPage() {
   const [modo, setModo] = useState<"selector" | "seleccion" | "manual">("selector");
   const router = useRouter();
   const { data: session } = useSession();
   const usuarioId = (session?.user as { id?: string })?.id ?? null;
+
   const [jornada, setJornada] = useState<Jornada | null>(null);
-  const [picks, setPicks] = useState<Record<string, string>>({});
+
+  // Múltiples formas — cada una es un Record independiente
+  const [formas, setFormas] = useState<FormaPicks[]>([{}]);
+  const [formaActiva, setFormaActiva] = useState(0);
+
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
+  /* ── Jornada selector ─────────────────────────────────────────── */
   const seleccionarJornada = async (j: JornadaResumen) => {
     const res = await fetch(`/api/jornadas?id=${j.id}`);
     const data = await res.json();
@@ -48,60 +79,7 @@ export default function TiendaPage() {
     return <JornadaSelector onSelect={seleccionarJornada} titulo="Registro en Tienda" soloActivas />;
   }
 
-  const seleccionar = (partidoId: string, valor: string) => {
-    setPicks((prev) => ({ ...prev, [partidoId]: valor }));
-  };
-
-  const picksCompletos = jornada
-    ? jornada.partidos.every((p) => picks[p.id])
-    : false;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!picksCompletos || !nombre) return;
-    setEnviando(true);
-    setError("");
-
-    const res = await fetch("/api/quinielas", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jornadaId: jornada!.id,
-        picks: Object.entries(picks).map(([partidoId, prediccion]) => ({
-          partidoId,
-          prediccion,
-        })),
-        nombre,
-        telefono,
-        canal: "tienda",
-        usuarioId,
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error || "Error al registrar");
-      setEnviando(false);
-      return;
-    }
-
-    router.push(`/ticket/${data.folio}?imprimir=1`);
-  };
-
-  if (!jornada && error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600">{error}</p>
-          <a href="/admin" className="text-amber-700 underline mt-4 inline-block">
-            Volver al admin
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  // Pantalla de selección de modo
+  /* ── Modo selección (manual vs escanear) ─────────────────────── */
   if (modo === "seleccion") {
     return (
       <div className="min-h-screen bg-gray-100">
@@ -122,7 +100,6 @@ export default function TiendaPage() {
             ¿Cómo deseas registrar la quiniela del cliente?
           </p>
 
-          {/* Opción A — Manual */}
           <button
             onClick={() => setModo("manual")}
             className="w-full bg-white border-2 border-amber-600 hover:bg-amber-50 rounded-2xl p-6 flex items-center gap-4 transition-colors text-left"
@@ -136,7 +113,6 @@ export default function TiendaPage() {
             </div>
           </button>
 
-          {/* Opción B — Cámara */}
           <Link
             href={jornada ? `/admin/escanear?jornadaId=${jornada.id}` : "/admin/escanear"}
             className="w-full bg-white border-2 border-blue-600 hover:bg-blue-50 rounded-2xl p-6 flex items-center gap-4 transition-colors text-left block"
@@ -151,13 +127,9 @@ export default function TiendaPage() {
           </Link>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700 text-center">
-            Para la opción b) el cliente debe haber llenado una forma impresa de la jornada.{" "}
+            Para la opción b) el cliente debe haber llenado una forma impresa.{" "}
             {jornada && (
-              <a
-                href={`/admin/forma/${jornada.id}`}
-                target="_blank"
-                className="font-bold underline"
-              >
+              <a href={`/admin/forma/${jornada.id}`} target="_blank" className="font-bold underline">
                 Imprimir formas →
               </a>
             )}
@@ -167,30 +139,303 @@ export default function TiendaPage() {
     );
   }
 
+  /* ── Helpers sobre formas ────────────────────────────────────── */
+  const partidos = jornada?.partidos ?? [];
+
+  const agregarForma = () => {
+    if (formas.length >= 20) return;
+    setFormas((prev) => [...prev, {}]);
+    setFormaActiva(formas.length); // nueva pestaña activa
+  };
+
+  const quitarForma = () => {
+    if (formas.length <= 1) return;
+    setFormas((prev) => prev.slice(0, -1));
+    setFormaActiva((prev) => Math.min(prev, formas.length - 2));
+  };
+
+  const togglePick = (formaIdx: number, partidoId: string, opcion: string) => {
+    setFormas((prev) => {
+      const next = [...prev];
+      const current = next[formaIdx][partidoId] ?? [];
+      const newSel = current.includes(opcion)
+        ? current.filter((o) => o !== opcion)
+        : [...current, opcion];
+      if (newSel.length === 0) {
+        const { [partidoId]: _, ...rest } = next[formaIdx];
+        next[formaIdx] = rest;
+      } else {
+        next[formaIdx] = { ...next[formaIdx], [partidoId]: newSel };
+      }
+      return next;
+    });
+  };
+
+  const rellenarForma = (idx: number) => {
+    if (!jornada) return;
+    setFormas((prev) => {
+      const next = [...prev];
+      next[idx] = rellenarAzar(partidos, next[idx]);
+      return next;
+    });
+  };
+
+  const rellenarTodas = () => {
+    if (!jornada) return;
+    setFormas((prev) => prev.map((f) => rellenarAzar(partidos, f)));
+  };
+
+  const limpiarForma = (idx: number) => {
+    setFormas((prev) => {
+      const next = [...prev];
+      next[idx] = {};
+      return next;
+    });
+  };
+
+  // Totales
+  const combosTotal = formas.reduce((sum, f) => sum + combosDeForma(partidos, f), 0);
+  const totalPagar = combosTotal * 20;
+  const todasCompletas = formas.every((f) => formaCompleta(partidos, f));
+
+  const picks = formas[formaActiva] ?? {};
+  const completaActiva = formaCompleta(partidos, picks);
+  const combosActiva = combosDeForma(partidos, picks);
+
+  /* ── Submit ──────────────────────────────────────────────────── */
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!todasCompletas || !nombre) return;
+    setEnviando(true);
+    setError("");
+
+    const foliosTodos: string[] = [];
+
+    for (const formaPicks of formas) {
+      const picksArr = Object.entries(formaPicks).map(([partidoId, predicciones]) => ({
+        partidoId,
+        predicciones,
+      }));
+
+      const res = await fetch("/api/quinielas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jornadaId: jornada!.id,
+          picks: picksArr,
+          nombre,
+          telefono,
+          canal: "tienda",
+          usuarioId,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Error al registrar");
+        setEnviando(false);
+        return;
+      }
+      foliosTodos.push(...(data.folios ?? [data.folio]));
+    }
+
+    router.push(`/ticket/${foliosTodos[0]}?imprimir=1&total=${foliosTodos.length}`);
+  };
+
+  /* ── Render manual ───────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Header */}
       <div className="bg-brand text-white py-4 px-4">
-        <div className="max-w-xl mx-auto flex items-center justify-between">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div>
-            <a href="/admin" className="text-amber-400 text-sm">
-              ← Admin
-            </a>
-            <h1 className="text-xl font-bold">Registro en Tienda</h1>
+            <button onClick={() => setModo("seleccion")} className="text-amber-400 text-sm">
+              ← Formas
+            </button>
+            <h1 className="text-xl font-bold">
+              {jornada?.nombre ?? (jornada ? `Jornada ${jornada.numero}` : "Tienda")}
+            </h1>
             {jornada && (
-              <p className="text-amber-400 text-xs">
-                {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
-              </p>
+              <p className="text-amber-400 text-xs">{jornada.liga} · {jornada.temporada}</p>
             )}
           </div>
           <div className="text-right">
-            <p className="text-yellow-300 font-bold">$20 MXN</p>
-            <p className="text-amber-400 text-xs">por quiniela</p>
+            <p className="text-yellow-300 font-bold text-xl">${totalPagar}</p>
+            <p className="text-amber-400 text-xs">
+              {combosTotal} boleto{combosTotal !== 1 ? "s" : ""}
+            </p>
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-xl mx-auto px-4 py-4 space-y-4">
-        {/* Datos del cliente */}
+      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto px-4 py-4 space-y-4">
+
+        {/* ── Barra de control de formas ── */}
+        <div className="bg-white rounded-xl p-3 space-y-3">
+          {/* Contador + botón rellenar todas */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-sm font-medium text-gray-600">Formas:</span>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={quitarForma}
+                disabled={formas.length <= 1}
+                className="w-8 h-8 rounded-full bg-red-100 text-red-700 font-bold text-lg disabled:opacity-30 hover:bg-red-200 transition-colors"
+              >
+                −
+              </button>
+              <span className="w-7 text-center font-bold text-gray-800 text-lg">
+                {formas.length}
+              </span>
+              <button
+                type="button"
+                onClick={agregarForma}
+                disabled={formas.length >= 20}
+                className="w-8 h-8 rounded-full bg-green-100 text-green-700 font-bold text-lg disabled:opacity-30 hover:bg-green-200 transition-colors"
+              >
+                +
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={rellenarTodas}
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
+            >
+              🎲 Rellenar todas al azar
+            </button>
+          </div>
+
+          {/* Pestañas cuando hay más de una forma */}
+          {formas.length > 1 && (
+            <div className="flex gap-1.5 flex-wrap">
+              {formas.map((f, i) => {
+                const completa = formaCompleta(partidos, f);
+                const combos = combosDeForma(partidos, f);
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setFormaActiva(i)}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${
+                      formaActiva === i
+                        ? "bg-amber-700 text-white"
+                        : completa
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    Forma {i + 1}
+                    {completa && formaActiva !== i && (
+                      <span className="ml-1 opacity-70">
+                        {combos > 1 ? `×${combos}` : "✓"}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Picks de la forma activa ── */}
+        <div className="bg-white rounded-xl p-4">
+          {/* Título forma + acciones */}
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-gray-700">
+              {formas.length > 1 ? `Forma ${formaActiva + 1}` : "Pronósticos"}
+              <span className="ml-2 text-amber-600 font-normal text-sm">
+                {Object.keys(picks).filter((k) => (picks[k]?.length ?? 0) > 0).length}/
+                {partidos.length}
+              </span>
+              {combosActiva > 1 && (
+                <span className="ml-2 text-xs font-bold text-orange-600">
+                  {combosActiva} combos
+                </span>
+              )}
+            </h2>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => rellenarForma(formaActiva)}
+                className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg hover:bg-blue-100 transition-colors font-medium"
+              >
+                🎲 Azar
+              </button>
+              <button
+                type="button"
+                onClick={() => limpiarForma(formaActiva)}
+                className="text-xs bg-gray-50 text-gray-500 px-2.5 py-1 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+              >
+                Limpiar
+              </button>
+            </div>
+          </div>
+
+          {/* Lista de partidos */}
+          <div className="space-y-1.5">
+            {partidos.map((partido) => {
+              const sel = picks[partido.id] ?? [];
+              const esDoble = sel.length === 2;
+              const esTriple = sel.length === 3;
+
+              return (
+                <div
+                  key={partido.id}
+                  className="flex items-center gap-2 py-2 border-b border-gray-100 last:border-0"
+                >
+                  {/* Equipos */}
+                  <div className="flex items-center gap-1.5 flex-1 text-xs min-w-0">
+                    <LogoEquipo equipo={partido.equipoLocal} size={22} />
+                    <span className="font-medium truncate">{partido.equipoLocal}</span>
+                    <span className="text-gray-400 shrink-0 text-[10px]">vs</span>
+                    <LogoEquipo equipo={partido.equipoVisita} size={22} />
+                    <span className="font-medium truncate">{partido.equipoVisita}</span>
+                    {esDoble && (
+                      <span className="shrink-0 text-[9px] font-bold bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
+                        DOBLE
+                      </span>
+                    )}
+                    {esTriple && (
+                      <span className="shrink-0 text-[9px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">
+                        TRIPLE
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Botones L/E/V */}
+                  <div className="flex gap-1 shrink-0">
+                    {OPCIONES.map((op) => (
+                      <button
+                        key={op}
+                        type="button"
+                        onClick={() => togglePick(formaActiva, partido.id, op)}
+                        className={`w-9 h-9 rounded-lg text-xs font-bold transition-colors ${
+                          sel.includes(op)
+                            ? "bg-amber-700 text-white shadow-sm"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {LABELS[op]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Precio de esta forma si tiene combos */}
+          {combosActiva > 1 && (
+            <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
+              <span className="text-xs text-gray-400">{combosActiva} combinaciones × $20</span>
+              <span className="text-sm font-bold text-amber-700">${combosActiva * 20}</span>
+            </div>
+          )}
+        </div>
+
+        {/* ── Datos del cliente ── */}
         <div className="bg-white rounded-xl p-4 space-y-3">
           <h2 className="font-semibold text-gray-700">Datos del cliente</h2>
           <input
@@ -210,61 +455,21 @@ export default function TiendaPage() {
           />
         </div>
 
-        {/* Partidos - vista compacta para uso en tienda */}
-        <div className="bg-white rounded-xl p-4">
-          <h2 className="font-semibold text-gray-700 mb-3">
-            Pronósticos{" "}
-            <span className="text-amber-600 font-normal text-sm">
-              ({Object.keys(picks).length}/{jornada?.partidos.length ?? 0})
-            </span>
-          </h2>
-
-          <div className="space-y-2">
-            {jornada?.partidos.map((partido) => (
-              <div
-                key={partido.id}
-                className="flex items-center gap-2 py-2 border-b border-gray-100 last:border-0"
-              >
-                <div className="flex items-center gap-1.5 flex-1 text-xs min-w-0">
-                  <LogoEquipo equipo={partido.equipoLocal} size={20} />
-                  <span className="font-medium truncate">{partido.equipoLocal}</span>
-                  <span className="text-gray-400 shrink-0">vs</span>
-                  <LogoEquipo equipo={partido.equipoVisita} size={20} />
-                  <span className="font-medium truncate">{partido.equipoVisita}</span>
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  {(["1", "X", "2"] as const).map((op, i) => (
-                    <button
-                      key={op}
-                      type="button"
-                      onClick={() => seleccionar(partido.id, op)}
-                      className={`w-9 h-8 rounded text-xs font-bold transition-colors ${
-                        picks[partido.id] === op
-                          ? "bg-amber-700 text-white"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
-                    >
-                      {["L", "E", "V"][i]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {error && (
           <p className="text-red-600 text-sm bg-red-50 rounded-lg p-3">{error}</p>
         )}
 
+        {/* ── Botón registrar ── */}
         <button
           type="submit"
-          disabled={!picksCompletos || !nombre || enviando}
-          className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-colors text-lg"
+          disabled={!todasCompletas || !nombre || enviando}
+          className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-colors text-lg"
         >
           {enviando
             ? "Registrando..."
-            : `Registrar y Ver Ticket ($20)`}
+            : todasCompletas
+            ? `Registrar ${combosTotal} boleto${combosTotal !== 1 ? "s" : ""} · $${totalPagar}`
+            : `Faltan picks en ${formas.filter((f) => !formaCompleta(partidos, f)).length} forma${formas.filter((f) => !formaCompleta(partidos, f)).length !== 1 ? "s" : ""}`}
         </button>
       </form>
     </div>
