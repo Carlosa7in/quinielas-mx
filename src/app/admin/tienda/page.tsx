@@ -239,6 +239,10 @@ export default function TiendaPage() {
       foliosTodos.push(...(data.folios ?? [data.folio]));
     }
 
+    sessionStorage.setItem("lastRegistro", JSON.stringify({
+      folios: foliosTodos,
+      formas: formas.length,
+    }));
     router.push(`/ticket/${foliosTodos[0]}?imprimir=1&total=${foliosTodos.length}&formas=${formas.length}`);
   };
 

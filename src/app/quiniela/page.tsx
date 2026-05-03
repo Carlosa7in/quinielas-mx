@@ -26,6 +26,9 @@ type Jornada = {
   primerPartidoFecha?: string | null;
 };
 
+// picks por forma: partidoId → opciones seleccionadas
+type FormaPicks = Record<string, string[]>;
+
 const LIGA_ICON: Record<string, string> = {
   "Liga MX": "🇲🇽",
   "Champions League": "⭐",
@@ -33,6 +36,28 @@ const LIGA_ICON: Record<string, string> = {
   "La Liga": "🇪🇸",
   "Mixta": "⚽",
 };
+
+const OPCIONES = ["1", "X", "2"] as const;
+const LABELS: Record<string, string> = { "1": "L", X: "E", "2": "V" };
+
+// Rellena picks vacíos con UN resultado aleatorio (el usuario puede agregar más manualmente)
+function rellenarAzar(partidos: Partido[], picks: FormaPicks): FormaPicks {
+  const next = { ...picks };
+  for (const p of partidos) {
+    if (!next[p.id] || next[p.id].length === 0) {
+      next[p.id] = [OPCIONES[Math.floor(Math.random() * 3)]];
+    }
+  }
+  return next;
+}
+
+function combosDeForma(partidos: Partido[], picks: FormaPicks): number {
+  return partidos.reduce((prod, p) => prod * (picks[p.id]?.length || 1), 1);
+}
+
+function formaCompleta(partidos: Partido[], picks: FormaPicks): boolean {
+  return partidos.every((p) => (picks[p.id]?.length ?? 0) > 0);
+}
 
 /* ─── Pantalla de selección de jornada ─── */
 function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
@@ -50,12 +75,11 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
           const ligas = [...new Set(activas.map((j) => j.liga))];
           setLigaActiva(ligas[0]);
         }
-        // Si solo hay una jornada, saltar directo
         if (activas.length === 1) {
           cargarJornada(activas[0], onSelect);
         }
       })
-      .catch(() => {/* sin jornadas — el estado vacío se muestra abajo */})
+      .catch(() => {})
       .finally(() => setCargando(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -99,7 +123,6 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-brand text-white py-6 px-4">
         <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
           <div>
@@ -113,7 +136,6 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
-        {/* Selector de liga */}
         {ligas.length > 1 && (
           <div className="flex bg-white rounded-xl shadow-sm overflow-hidden">
             {ligas.map((liga) => (
@@ -130,13 +152,11 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
           </div>
         )}
 
-        {/* Tarjetas de jornadas */}
         <div className="space-y-3">
           {filtradas.map((j) => {
             const cerrada = j.primerPartidoFecha
               ? new Date() >= new Date(j.primerPartidoFecha)
               : false;
-
             return (
               <button
                 key={j.id}
@@ -190,15 +210,12 @@ function useCuentaRegresiva(fechaISO: string | null) {
     const s = Math.floor((diff % 60_000) / 1_000);
     return { h, m, s, diff };
   };
-
   const [restante, setRestante] = useState(calcular);
-
   useEffect(() => {
     const t = setInterval(() => setRestante(calcular()), 1000);
     return () => clearInterval(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fechaISO]);
-
   return restante;
 }
 
@@ -206,121 +223,164 @@ function useCuentaRegresiva(fechaISO: string | null) {
 export default function QuinielaPage() {
   const router = useRouter();
   const [jornada, setJornada] = useState<Jornada | null>(null);
-  // picks: múltiples opciones por partido (reventado)
-  const [picks, setPicks] = useState<Record<string, string[]>>({});
-  const [cantidad, setCantidad] = useState(1);
+
+  // Múltiples formas — cada una con picks independientes
+  const [formas, setFormas] = useState<FormaPicks[]>([{}]);
+  const [formaActiva, setFormaActiva] = useState(0);
+
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [metodoPago, setMetodoPago] = useState<"transferencia" | "oxxo">("transferencia");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
-  const BASE_PRICE = 20;
-
-  // Partido más próximo = fecha límite
   const primerPartidoISO = jornada
-    ? jornada.partidos.reduce((min, p) =>
-        !min || p.fechaHora < min ? p.fechaHora : min, "")
+    ? jornada.partidos.reduce((min, p) => !min || p.fechaHora < min ? p.fechaHora : min, "")
     : null;
-
   const cuentaRegresiva = useCuentaRegresiva(primerPartidoISO);
-  const registroCerrado = primerPartidoISO
-    ? new Date() >= new Date(primerPartidoISO)
-    : false;
+  const registroCerrado = primerPartidoISO ? new Date() >= new Date(primerPartidoISO) : false;
 
-  // Toggle: seleccionar o deseleccionar una opción por partido
-  const togglePick = (partidoId: string, opcion: string) => {
+  if (!jornada) return <SelectorJornada onSelect={setJornada} />;
+
+  const partidos = [...jornada.partidos].sort((a, b) => a.orden - b.orden);
+
+  /* ── Formas helpers ── */
+  const agregarForma = () => {
+    if (formas.length >= 10) return;
+    setFormas((prev) => [...prev, {}]);
+    setFormaActiva(formas.length);
+  };
+
+  const quitarForma = () => {
+    if (formas.length <= 1) return;
+    setFormas((prev) => prev.slice(0, -1));
+    setFormaActiva((prev) => Math.min(prev, formas.length - 2));
+  };
+
+  const togglePick = (formaIdx: number, partidoId: string, opcion: string) => {
     if (registroCerrado) return;
-    setPicks((prev) => {
-      const current = prev[partidoId] ?? [];
-      if (current.includes(opcion)) {
-        const next = current.filter((o) => o !== opcion);
-        if (next.length === 0) {
-          const { [partidoId]: _, ...rest } = prev;
-          return rest;
-        }
-        return { ...prev, [partidoId]: next };
+    setFormas((prev) => {
+      const next = [...prev];
+      const current = next[formaIdx][partidoId] ?? [];
+      const newSel = current.includes(opcion)
+        ? current.filter((o) => o !== opcion)
+        : [...current, opcion];
+      if (newSel.length === 0) {
+        const { [partidoId]: _, ...rest } = next[formaIdx];
+        next[formaIdx] = rest;
+      } else {
+        next[formaIdx] = { ...next[formaIdx], [partidoId]: newSel };
       }
-      return { ...prev, [partidoId]: [...current, opcion] };
+      return next;
     });
   };
 
-  const picksCompletos = jornada
-    ? jornada.partidos.every((p) => (picks[p.id]?.length ?? 0) > 0)
-    : false;
+  const rellenarForma = (idx: number) => {
+    setFormas((prev) => {
+      const next = [...prev];
+      next[idx] = rellenarAzar(partidos, next[idx]);
+      return next;
+    });
+  };
 
-  // Número de combinaciones = producto de selecciones por partido
-  const combinaciones = jornada && picksCompletos
-    ? jornada.partidos.reduce((prod, p) => prod * (picks[p.id]?.length ?? 1), 1)
-    : picksCompletos ? 1 : 0;
+  const rellenarTodas = () => {
+    setFormas((prev) => prev.map((f) => rellenarAzar(partidos, f)));
+  };
 
-  const precioCombos  = combinaciones * BASE_PRICE;   // por un juego
-  const totalPagar    = precioCombos * cantidad;       // con cantidad
+  const limpiarForma = (idx: number) => {
+    setFormas((prev) => { const next = [...prev]; next[idx] = {}; return next; });
+  };
 
+  /* ── Totales ── */
+  const combosTotal = formas.reduce((sum, f) => sum + combosDeForma(partidos, f), 0);
+  const totalPagar = combosTotal * 20;
+  const todasCompletas = formas.every((f) => formaCompleta(partidos, f));
+
+  const picks = formas[formaActiva] ?? {};
+  const combosActiva = combosDeForma(partidos, picks);
+
+  /* ── Submit ── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!picksCompletos) return;
+    if (!todasCompletas || !nombre || registroCerrado) return;
     setEnviando(true);
     setError("");
 
-    const res = await fetch("/api/quinielas", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jornadaId: jornada!.id,
-        picks: Object.entries(picks).map(([partidoId, predicciones]) => ({
-          partidoId,
-          predicciones,
-        })),
-        cantidad,
-        nombre,
-        telefono,
-        canal: metodoPago,
-      }),
-    });
+    const foliosTodos: string[] = [];
 
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error || "Error al registrar");
-      setEnviando(false);
-      return;
+    for (const formaPicks of formas) {
+      const picksArr = Object.entries(formaPicks).map(([partidoId, predicciones]) => ({
+        partidoId,
+        predicciones,
+      }));
+
+      const res = await fetch("/api/quinielas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jornadaId: jornada.id,
+          picks: picksArr,
+          nombre,
+          telefono,
+          canal: metodoPago,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Error al registrar");
+        setEnviando(false);
+        return;
+      }
+      foliosTodos.push(...(data.folios ?? [data.folio]));
     }
 
-    const total = data.folios?.length ?? 1;
-    const primerFolio = data.folios?.[0] ?? data.folio;
+    // Guardar todos los folios para generación multi-imagen en el ticket
+    sessionStorage.setItem("lastRegistro", JSON.stringify({
+      folios: foliosTodos,
+      formas: formas.length,
+    }));
+
+    const total = foliosTodos.length;
     const params = new URLSearchParams();
-    if (total > 1) { params.set("total", String(total)); params.set("formas", String(cantidad)); }
+    if (total > 1) { params.set("total", String(total)); params.set("formas", String(formas.length)); }
     const qs = params.toString();
-    router.push(`/ticket/${primerFolio}${qs ? `?${qs}` : ""}`);
+    router.push(`/ticket/${foliosTodos[0]}${qs ? `?${qs}` : ""}`);
   };
 
-  // Mostrar selector si no hay jornada elegida
-  if (!jornada) {
-    return <SelectorJornada onSelect={setJornada} />;
-  }
-
-  const partidosOrdenados = [...jornada.partidos].sort((a, b) => a.orden - b.orden);
-
+  /* ── Render ── */
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-brand text-white py-6 px-4">
+      <div className="bg-brand text-white py-5 px-4">
         <div className="max-w-lg mx-auto">
           <button
-            onClick={() => { setJornada(null); setPicks({}); setCantidad(1); }}
-            className="text-amber-400 text-sm mb-2 inline-block"
+            onClick={() => { setJornada(null); setFormas([{}]); setFormaActiva(0); }}
+            className="text-amber-400 text-sm mb-1 inline-block"
           >
             ← Cambiar jornada
           </button>
-          <h1 className="text-2xl font-bold">Registrar Quiniela</h1>
-          <p className="text-amber-300/70 text-sm">
-            {LIGA_ICON[jornada.liga] ?? "⚽"} {jornada.liga} · {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold">
+                {jornada.nombre ?? `Jornada ${jornada.numero}`}
+              </h1>
+              <p className="text-amber-300/70 text-sm">
+                {LIGA_ICON[jornada.liga] ?? "⚽"} {jornada.liga} · {jornada.temporada}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-yellow-300 font-bold text-xl">${totalPagar}</p>
+              <p className="text-amber-400 text-xs">
+                {combosTotal} boleto{combosTotal !== 1 ? "s" : ""}
+              </p>
+            </div>
+          </div>
 
-          {/* Cuenta regresiva / cierre */}
+          {/* Cuenta regresiva */}
           {registroCerrado ? (
             <div className="mt-3 bg-red-900/60 border border-red-500/40 rounded-xl px-4 py-2 flex items-center gap-2">
-              <span className="text-lg">🔒</span>
+              <span>🔒</span>
               <p className="text-sm font-semibold text-red-200">Registro cerrado — el primer partido ya comenzó</p>
             </div>
           ) : cuentaRegresiva && cuentaRegresiva.diff < 24 * 3_600_000 ? (
@@ -336,8 +396,9 @@ export default function QuinielaPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* Datos del jugador */}
+      <form onSubmit={handleSubmit} className="max-w-lg mx-auto px-4 py-4 space-y-4">
+
+        {/* ── Datos del jugador ── */}
         <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
           <h2 className="font-semibold text-gray-700">Tus datos</h2>
           <input
@@ -350,40 +411,91 @@ export default function QuinielaPage() {
           />
           <input
             type="tel"
-            placeholder="Teléfono (opcional, para consultar después)"
+            placeholder="Teléfono (para consultar tus boletos después)"
             value={telefono}
             onChange={(e) => setTelefono(e.target.value)}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
-          <p className="text-xs text-gray-400">
-            Con tu teléfono podrás consultar tus quinielas fácilmente
-          </p>
         </div>
 
-        {/* Partidos */}
+        {/* ── Barra de formas ── */}
+        {!registroCerrado && (
+          <div className="bg-white rounded-xl shadow-sm p-3 space-y-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm font-medium text-gray-600">Boletos:</span>
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={quitarForma} disabled={formas.length <= 1}
+                  className="w-8 h-8 rounded-full bg-red-100 text-red-700 font-bold text-lg disabled:opacity-30 hover:bg-red-200 transition-colors">−</button>
+                <span className="w-7 text-center font-bold text-gray-800 text-lg">{formas.length}</span>
+                <button type="button" onClick={agregarForma} disabled={formas.length >= 10}
+                  className="w-8 h-8 rounded-full bg-green-100 text-green-700 font-bold text-lg disabled:opacity-30 hover:bg-green-200 transition-colors">+</button>
+              </div>
+              <button type="button" onClick={rellenarTodas}
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+                🎲 Rellenar todas al azar
+              </button>
+            </div>
+
+            {/* Tabs cuando hay más de uno */}
+            {formas.length > 1 && (
+              <div className="flex gap-1.5 flex-wrap">
+                {formas.map((f, i) => {
+                  const completa = formaCompleta(partidos, f);
+                  const combos   = combosDeForma(partidos, f);
+                  return (
+                    <button key={i} type="button" onClick={() => setFormaActiva(i)}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${
+                        formaActiva === i
+                          ? "bg-amber-700 text-white"
+                          : completa ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                      }`}>
+                      Boleto {i + 1}
+                      {completa && formaActiva !== i && (
+                        <span className="ml-1 opacity-70">{combos > 1 ? `×${combos}` : "✓"}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Picks de la forma activa ── */}
         <div className="bg-white rounded-xl shadow-sm">
-          {/* Encabezado */}
+          {/* Cabecera */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <h2 className="font-semibold text-gray-700">
-              Pronósticos{" "}
+              {formas.length > 1 ? `Boleto ${formaActiva + 1}` : "Pronósticos"}{" "}
               <span className="text-amber-600 font-normal text-sm">
-                ({Object.keys(picks).filter(k => (picks[k]?.length ?? 0) > 0).length}/{partidosOrdenados.length})
+                ({Object.keys(picks).filter(k => (picks[k]?.length ?? 0) > 0).length}/{partidos.length})
               </span>
+              {combosActiva > 1 && (
+                <span className="ml-2 text-xs font-bold text-orange-600">{combosActiva} combos</span>
+              )}
             </h2>
-            <p className="text-xs text-gray-400">Puedes marcar 1, 2 ó 3</p>
+            {!registroCerrado && (
+              <div className="flex gap-2">
+                <button type="button" onClick={() => rellenarForma(formaActiva)}
+                  className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg hover:bg-blue-100 transition-colors font-medium">
+                  🎲 Azar
+                </button>
+                <button type="button" onClick={() => limpiarForma(formaActiva)}
+                  className="text-xs bg-gray-50 text-gray-500 px-2.5 py-1 rounded-lg hover:bg-gray-100 transition-colors font-medium">
+                  Limpiar
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Lista compacta */}
-          {partidosOrdenados.map((partido) => {
-            const sel = picks[partido.id] ?? [];
+          {partidos.map((partido) => {
+            const sel      = picks[partido.id] ?? [];
             const esDoble  = sel.length === 2;
             const esTriple = sel.length === 3;
             return (
-              <div
-                key={partido.id}
-                className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 last:border-0"
-              >
-                {/* Equipos + badge */}
+              <div key={partido.id}
+                className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 last:border-0">
                 <div className="flex items-center gap-1.5 flex-1 text-sm min-w-0">
                   <LogoEquipo equipo={partido.equipoLocal} size={24} />
                   <span className="font-medium truncate">{partido.equipoLocal}</span>
@@ -391,73 +503,63 @@ export default function QuinielaPage() {
                   <LogoEquipo equipo={partido.equipoVisita} size={24} />
                   <span className="font-medium truncate">{partido.equipoVisita}</span>
                   {esDoble && (
-                    <span className="shrink-0 text-[10px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
-                      DOBLE
-                    </span>
+                    <span className="shrink-0 text-[10px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">DOBLE</span>
                   )}
                   {esTriple && (
-                    <span className="shrink-0 text-[10px] font-bold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
-                      TRIPLE
-                    </span>
+                    <span className="shrink-0 text-[10px] font-bold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">TRIPLE</span>
                   )}
                 </div>
-
-                {/* Botones L / E / V */}
                 <div className="flex gap-1 shrink-0">
-                  {(["1", "X", "2"] as const).map((opcion) => (
-                    <button
-                      key={opcion}
-                      type="button"
-                      onClick={() => togglePick(partido.id, opcion)}
+                  {OPCIONES.map((op) => (
+                    <button key={op} type="button"
+                      onClick={() => togglePick(formaActiva, partido.id, op)}
+                      disabled={registroCerrado}
                       className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
-                        sel.includes(opcion)
+                        sel.includes(op)
                           ? "bg-amber-700 text-white shadow-sm"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
-                    >
-                      {opcion === "1" ? "L" : opcion === "2" ? "V" : "E"}
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:cursor-not-allowed"
+                      }`}>
+                      {LABELS[op]}
                     </button>
                   ))}
                 </div>
               </div>
             );
           })}
+
+          {/* Precio de esta forma si tiene combos */}
+          {combosActiva > 1 && (
+            <div className="px-4 py-2.5 flex justify-between items-center border-t border-gray-100">
+              <span className="text-xs text-gray-400">{combosActiva} combinaciones × $20</span>
+              <span className="text-sm font-bold text-amber-700">${combosActiva * 20}</span>
+            </div>
+          )}
         </div>
 
-        {/* Método de pago */}
+        {/* ── Método de pago ── */}
         {!registroCerrado && (
           <div className="bg-white rounded-xl shadow-sm p-4">
             <h2 className="font-semibold text-gray-700 mb-3">¿Cómo vas a pagar?</h2>
             <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setMetodoPago("transferencia")}
+              <button type="button" onClick={() => setMetodoPago("transferencia")}
                 className={`rounded-xl p-3 text-center border-2 transition-colors ${
-                  metodoPago === "transferencia"
-                    ? "border-amber-500 bg-amber-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
+                  metodoPago === "transferencia" ? "border-amber-500 bg-amber-50" : "border-gray-200 hover:border-gray-300"
+                }`}>
                 <p className="text-2xl mb-1">🏦</p>
                 <p className="text-sm font-semibold text-gray-800">Transferencia</p>
                 <p className="text-xs text-gray-400">SPEI / Banca en línea</p>
               </button>
-              <button
-                type="button"
-                onClick={() => setMetodoPago("oxxo")}
+              <button type="button" onClick={() => setMetodoPago("oxxo")}
                 className={`rounded-xl p-3 text-center border-2 transition-colors ${
-                  metodoPago === "oxxo"
-                    ? "border-amber-500 bg-amber-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
+                  metodoPago === "oxxo" ? "border-amber-500 bg-amber-50" : "border-gray-200 hover:border-gray-300"
+                }`}>
                 <p className="text-2xl mb-1">🏪</p>
                 <p className="text-sm font-semibold text-gray-800">Depósito OXXO</p>
                 <p className="text-xs text-gray-400">Efectivo en cualquier OXXO</p>
               </button>
             </div>
             <p className="text-xs text-gray-400 mt-2 text-center">
-              Ambos usan la misma CLABE — recibirás los datos en el ticket
+              Recibirás los datos bancarios en el ticket
             </p>
           </div>
         )}
@@ -466,77 +568,25 @@ export default function QuinielaPage() {
           <p className="text-red-600 text-sm text-center bg-red-50 rounded-lg p-3">{error}</p>
         )}
 
-        {/* Resumen y envío */}
-        <div className="bg-brand text-white rounded-xl p-4">
-          {registroCerrado ? (
-            <div className="text-center py-2">
-              <p className="text-red-300 font-semibold text-sm">🔒 Registro cerrado</p>
-              <p className="text-amber-300/60 text-xs mt-1">El primer partido ya comenzó. No se aceptan más quinielas.</p>
-            </div>
-          ) : (
-            <>
-              {/* Precio dinámico */}
-              <div className="bg-white/10 rounded-xl p-3 mb-4 space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="text-amber-200">Precio base</span>
-                  <span>${BASE_PRICE} MXN</span>
-                </div>
-                {combinaciones > 1 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-amber-200">Combinaciones</span>
-                    <span className="font-semibold text-yellow-300">× {combinaciones}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm border-t border-white/20 pt-1.5">
-                  <span className="text-amber-200">Por juego</span>
-                  <span className="font-bold">${precioCombos} MXN</span>
-                </div>
-              </div>
-
-              {/* Selector de cantidad */}
-              <div className="mb-4">
-                <p className="text-sm text-amber-200 mb-2">Cantidad de boletos</p>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 5, 10].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setCantidad(n)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
-                        cantidad === n
-                          ? "bg-yellow-400 text-amber-950"
-                          : "bg-white/15 text-white hover:bg-white/25"
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Total */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-amber-200 text-sm">Total a pagar</span>
-                <span className="text-yellow-300 font-black text-2xl">${totalPagar} MXN</span>
-              </div>
-
-              <button
-                type="submit"
-                disabled={!picksCompletos || !nombre || enviando}
-                className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-gray-500 disabled:cursor-not-allowed text-amber-950 font-bold py-3 rounded-xl transition-colors text-lg"
-              >
-                {enviando
-                  ? "Registrando..."
-                  : `Registrar ${cantidad > 1 ? `${cantidad} boletos` : "Quiniela"} · $${totalPagar}`}
-              </button>
-              {!picksCompletos && (
-                <p className="text-amber-400 text-xs text-center mt-2">
-                  Selecciona todos los partidos para continuar
-                </p>
-              )}
-            </>
-          )}
-        </div>
+        {/* ── Botón de registro ── */}
+        {registroCerrado ? (
+          <div className="bg-brand text-white rounded-xl p-4 text-center">
+            <p className="text-red-300 font-semibold">🔒 Registro cerrado</p>
+            <p className="text-amber-300/60 text-xs mt-1">El primer partido ya comenzó.</p>
+          </div>
+        ) : (
+          <button type="submit"
+            disabled={!todasCompletas || !nombre || enviando}
+            className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-colors text-lg">
+            {enviando
+              ? "Registrando..."
+              : todasCompletas && nombre
+              ? `Registrar ${combosTotal} boleto${combosTotal !== 1 ? "s" : ""} · $${totalPagar}`
+              : !nombre
+              ? "Ingresa tu nombre para continuar"
+              : `Faltan picks en ${formas.filter(f => !formaCompleta(partidos, f)).length} boleto${formas.filter(f => !formaCompleta(partidos, f)).length !== 1 ? "s" : ""}`}
+          </button>
+        )}
 
         <div className="pb-6" />
       </form>
