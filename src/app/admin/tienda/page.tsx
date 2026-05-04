@@ -266,7 +266,10 @@ export default function TiendaPage() {
           <div className="text-right">
             <p className="text-yellow-300 font-bold text-xl">${totalPagar}</p>
             <p className="text-amber-400 text-xs">
-              {combosTotal} boleto{combosTotal !== 1 ? "s" : ""}
+              {formas.length} quiniela{formas.length !== 1 ? "s" : ""}
+              {combosTotal > formas.length && (
+                <span className="ml-1 opacity-70">· {combosTotal} combos</span>
+              )}
             </p>
           </div>
         </div>
@@ -472,7 +475,7 @@ export default function TiendaPage() {
           {enviando
             ? "Registrando..."
             : todasCompletas
-            ? `Registrar ${combosTotal} boleto${combosTotal !== 1 ? "s" : ""} · $${totalPagar}`
+            ? `Registrar ${formas.length} quiniela${formas.length !== 1 ? "s" : ""} · $${totalPagar}`
             : `Faltan picks en ${formas.filter((f) => !formaCompleta(partidos, f)).length} forma${formas.filter((f) => !formaCompleta(partidos, f)).length !== 1 ? "s" : ""}`}
         </button>
       </form>

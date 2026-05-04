@@ -406,7 +406,10 @@ export default function QuinielaPage() {
             <div className="text-right">
               <p className="text-yellow-300 font-bold text-xl">${totalPagar}</p>
               <p className="text-amber-400 text-xs">
-                {combosTotal} boleto{combosTotal !== 1 ? "s" : ""}
+                {formas.length} quiniela{formas.length !== 1 ? "s" : ""}
+                {combosTotal > formas.length && (
+                  <span className="ml-1 opacity-70">· {combosTotal} combos</span>
+                )}
               </p>
             </div>
           </div>
@@ -643,7 +646,7 @@ export default function QuinielaPage() {
             {enviando
               ? "Registrando..."
               : todasCompletas && nombre
-              ? `Registrar ${combosTotal} boleto${combosTotal !== 1 ? "s" : ""} · $${totalPagar}`
+              ? `Registrar ${formas.length} quiniela${formas.length !== 1 ? "s" : ""} · $${totalPagar}`
               : !nombre
               ? "Ingresa tu nombre para continuar"
               : `Faltan picks en ${formas.filter(f => !formaCompleta(partidos, f)).length} boleto${formas.filter(f => !formaCompleta(partidos, f)).length !== 1 ? "s" : ""}`}
