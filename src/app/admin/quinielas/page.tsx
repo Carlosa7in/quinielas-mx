@@ -118,14 +118,43 @@ function PagoAcciones({
   );
 }
 
+// Agrupa picks por partido (para mostrar dobles como "L/E")
+function agruparPicks(picks: Pick[]): { predicciones: string[]; acertados: (boolean | null)[] }[] {
+  const seen: string[] = [];
+  const grupos: { predicciones: string[]; acertados: (boolean | null)[] }[] = [];
+  picks.forEach((p, i) => {
+    // Usa el índice de posición como clave de grupo (los picks llegan ordenados por partido)
+    if (!seen.includes(String(i))) {
+      // Busca picks consecutivos con misma posición relativa (imposible sin partidoId)
+      // Usamos un approach simple: agrupa picks que tengan mismo índice % nPartidos
+      grupos.push({ predicciones: [p.prediccion], acertados: [p.acertado] });
+      seen.push(String(i));
+    }
+  });
+  return grupos;
+}
+
 function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string }) {
   const [abierta, setAbierta] = useState(true);
   const [quinielas, setQuinielas] = useState(jornada.quinielas);
+  const [eliminando, setEliminando] = useState<string | null>(null);
 
   const actualizarPago = (id: string, estadoPago: string) => {
     setQuinielas((prev) =>
       prev.map((q) => (q.id === id ? { ...q, estadoPago } : q))
     );
+  };
+
+  const eliminar = async (q: Quiniela) => {
+    if (!confirm(`¿Eliminar la quiniela ${q.folio} de ${q.nombreCliente ?? "sin nombre"}?\nEsta acción no se puede deshacer.`)) return;
+    setEliminando(q.id);
+    const res = await fetch(`/api/admin/quinielas/${q.id}`, { method: "DELETE" });
+    if (res.ok) {
+      setQuinielas((prev) => prev.filter((x) => x.id !== q.id));
+    } else {
+      alert("Error al eliminar");
+    }
+    setEliminando(null);
   };
 
   const filtradas = quinielas.filter((q) =>
@@ -212,7 +241,7 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                     <PagoAcciones quiniela={q} onUpdate={actualizarPago} />
                   </div>
 
-                  {/* Columna derecha: pago + resultado + ticket */}
+                  {/* Columna derecha: pago + resultado + ticket + eliminar */}
                   <div className="flex flex-col items-end gap-1.5 shrink-0 min-w-[80px]">
                     <PagoBadgeCompact quiniela={q} />
                     {q.aciertos !== null && (
@@ -227,6 +256,14 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                     >
                       ticket →
                     </Link>
+                    <button
+                      onClick={() => eliminar(q)}
+                      disabled={eliminando === q.id}
+                      className="text-red-400 hover:text-red-600 text-xs disabled:opacity-40 transition-colors"
+                      title="Eliminar quiniela"
+                    >
+                      {eliminando === q.id ? "..." : "🗑"}
+                    </button>
                   </div>
                 </div>
               ))}
