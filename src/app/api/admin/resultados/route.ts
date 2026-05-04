@@ -38,15 +38,20 @@ export async function POST(req: Request) {
     }
 
     // 4. Recalcular aciertos de cada quiniela afectada
+    // Acierto = partido donde AL MENOS UNA opción (doble/triple) fue correcta
     for (const quinielaId of quinielaIds) {
       const todosLosPicks = await prisma.pick.findMany({
         where: { quinielaId },
-        select: { acertado: true },
+        select: { acertado: true, partidoId: true },
       });
-      const aciertos = todosLosPicks.filter((p) => p.acertado === true).length;
+      // Contar partidos únicos con al menos un pick acertado
+      const partidosAcertados = new Set<string>();
+      for (const p of todosLosPicks) {
+        if (p.acertado === true) partidosAcertados.add(p.partidoId);
+      }
       await prisma.quiniela.update({
         where: { id: quinielaId },
-        data: { aciertos },
+        data: { aciertos: partidosAcertados.size },
         select: { id: true },
       });
     }

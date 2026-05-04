@@ -3,17 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { generarFolio } from "@/lib/folio";
 import { calcularFechaCierre } from "@/lib/fechas";
 
-// Genera el producto cartesiano de picks con múltiples opciones (reventado)
-function generarCombinaciones(
-  picks: { partidoId: string; predicciones: string[] }[]
-): { partidoId: string; prediccion: string }[][] {
-  return picks.reduce<{ partidoId: string; prediccion: string }[][]>(
-    (combos, { partidoId, predicciones }) =>
-      combos.flatMap((combo) =>
-        predicciones.map((pred) => [...combo, { partidoId, prediccion: pred }])
-      ),
-    [[]]
-  );
+// Calcula cuántas combinaciones hay (producto cartesiano de opciones) — para el monto
+function numeroCombinaciones(picks: { predicciones: string[] }[]): number {
+  return picks.reduce((prod, p) => prod * Math.max(1, p.predicciones.length), 1);
 }
 
 // POST /api/quinielas - registrar quiniela (sencilla, reventado o múltiples boletos)
@@ -94,49 +86,43 @@ export async function POST(req: Request) {
     const estadoPago = canal === "tienda" ? "confirmado" : "pendiente";
     const BASE_PRICE = 20;
 
-    // Generar todas las combinaciones (reventado)
-    const combos = generarCombinaciones(picksNorm);
-    const cantidadValida = Math.max(1, Math.min(Number(cantidad) || 1, 50));
-    const monto = combos.length * BASE_PRICE;
+    // Monto = número de combinaciones × precio (doble = 2 combos = $40)
+    const numCombos = numeroCombinaciones(picksNorm);
+    const monto = numCombos * BASE_PRICE;
 
-    const folios: string[] = [];
+    // Una sola quiniela con múltiples picks por partido (doble/triple)
+    const folioQ = generarFolio(jornada.numero);
+    const quiniela = await prisma.quiniela.create({
+      data: {
+        folio: folioQ,
+        jornadaId,
+        usuarioId: usuarioId || null,
+        clienteId,
+        nombreCliente: nombre || null,
+        telefonoCliente: telefono || null,
+        canal,
+        estadoPago,
+        monto,
+      },
+      select: { id: true, folio: true },
+    });
 
-    // Crear (combos × cantidad) quinielas
-    for (let b = 0; b < cantidadValida; b++) {
-      for (const combo of combos) {
-        const folioQ = generarFolio(jornada.numero);
-        const quiniela = await prisma.quiniela.create({
+    // Un Pick por cada opción seleccionada en cada partido
+    for (const pick of picksNorm) {
+      for (const prediccion of pick.predicciones) {
+        await prisma.pick.create({
           data: {
-            folio: folioQ,
-            jornadaId,
-            usuarioId: usuarioId || null,
-            clienteId,
-            nombreCliente: nombre || null,
-            telefonoCliente: telefono || null,
-            canal,
-            estadoPago,
-            monto,
+            quinielaId: quiniela.id,
+            partidoId: pick.partidoId,
+            prediccion,
           },
-          select: { id: true, folio: true },
+          select: { id: true },
         });
-
-        for (const pick of combo) {
-          await prisma.pick.create({
-            data: {
-              quinielaId: quiniela.id,
-              partidoId: pick.partidoId,
-              prediccion: pick.prediccion,
-            },
-            select: { id: true },
-          });
-        }
-
-        folios.push(quiniela.folio);
       }
     }
 
     return NextResponse.json(
-      { folio: folios[0], folios, total: folios.length },
+      { folio: folioQ, folios: [folioQ], total: 1 },
       { status: 201 }
     );
   } catch (err) {
@@ -167,6 +153,7 @@ export async function GET(req: Request) {
           picks: {
             select: {
               id: true,
+              partidoId: true,
               prediccion: true,
               acertado: true,
               partido: {

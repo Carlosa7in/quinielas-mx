@@ -7,12 +7,15 @@ import { ADMIN_WHATSAPP, CLABE, BANCO, TITULAR } from "@/lib/config";
 
 type Pick = {
   id: string;
+  partidoId?: string;
   prediccion: string;
+  acertado?: boolean | null;
   partido: {
     equipoLocal: string;
     equipoVisita: string;
     fechaHora: string;
     orden: number;
+    resultado?: string | null;
   };
 };
 
@@ -27,6 +30,36 @@ type Quiniela = {
   jornada: { numero: number; nombre: string | null; temporada: string; liga: string };
   picks: Pick[];
 };
+
+// Grupo de picks del mismo partido (sencillo, doble o triple)
+type PartidoGroup = {
+  orden: number;
+  equipoLocal: string;
+  equipoVisita: string;
+  predicciones: string[];
+  acertados: (boolean | null | undefined)[];
+};
+
+function agruparPicksPorPartido(picks: Pick[]): PartidoGroup[] {
+  const sorted = [...picks].sort((a, b) => a.partido.orden - b.partido.orden);
+  const grupos: PartidoGroup[] = [];
+  for (const pick of sorted) {
+    const g = grupos.find((x) => x.orden === pick.partido.orden);
+    if (g) {
+      if (!g.predicciones.includes(pick.prediccion)) g.predicciones.push(pick.prediccion);
+      g.acertados.push(pick.acertado);
+    } else {
+      grupos.push({
+        orden: pick.partido.orden,
+        equipoLocal: pick.partido.equipoLocal,
+        equipoVisita: pick.partido.equipoVisita,
+        predicciones: [pick.prediccion],
+        acertados: [pick.acertado],
+      });
+    }
+  }
+  return grupos;
+}
 
 // Normalizar caracteres especiales para impresoras térmicas (no soportan UTF-8 completo)
 function norm(s: string): string {
@@ -67,6 +100,7 @@ export default function TicketPage() {
   // ── Función que genera el PNG de UNA quiniela ────────────────
   const buildPNG = async (q: Quiniela, qrUrl: string): Promise<File> => {
     const picks   = [...q.picks].sort((a, b) => a.partido.orden - b.partido.orden);
+    const grupos  = agruparPicksPorPartido(picks); // agrupados por partido (doble/triple)
     // CLABE, BANCO, TITULAR vienen del import de @/lib/config
     const scale   = 2;
     const W       = 480;
@@ -121,7 +155,7 @@ export default function TicketPage() {
       ? Math.round(LOGO_W * logoTablitas.naturalHeight / logoTablitas.naturalWidth)
       : 70;
     const ROW_H  = 48;
-    const PICK_H = picks.length * ROW_H;
+    const PICK_H = grupos.length * ROW_H; // usar nº de partidos únicos, no picks totales
     const QR_SZ  = 160;
     const BAR_W  = W - pad * 2;
     const BAR_H  = hasPago ? barcodeCanvas.height / scale : 0;
@@ -181,11 +215,11 @@ export default function TicketPage() {
     y += 16;
 
     const logoSz   = 30;
-    const PRED_W   = 36;
+    const PRED_W   = 54; // más ancho para dobles ("L/E") y triples ("L/E/V")
     const PRED_COL = W - pad - PRED_W;
 
-    for (let i = 0; i < picks.length; i++) {
-      const p    = picks[i];
+    for (let i = 0; i < grupos.length; i++) {
+      const g    = grupos[i];
       const rowY = y + i * ROW_H;
       const midY = rowY + ROW_H / 2;
 
@@ -198,40 +232,51 @@ export default function TicketPage() {
       ctx.fillText(`${i + 1}`, pad, midY + 5);
 
       let x = pad + 20;
-      const lImg = logoMap[p.partido.equipoLocal];
+      const lImg = logoMap[g.equipoLocal];
       if (lImg) ctx.drawImage(lImg, x, midY - logoSz / 2, logoSz, logoSz);
       x += logoSz + 6;
 
       ctx.font = sans(13, "bold"); ctx.fillStyle = "#1f2937"; ctx.textAlign = "left";
-      const maxLocal = 95;
-      let ln = p.partido.equipoLocal;
+      const maxLocal = 85;
+      let ln = g.equipoLocal;
       while (ctx.measureText(ln).width > maxLocal && ln.length > 3) ln = ln.slice(0, -1);
-      if (ln !== p.partido.equipoLocal) ln += "…";
+      if (ln !== g.equipoLocal) ln += "…";
       ctx.fillText(ln, x, midY + 5); x += maxLocal + 6;
 
       ctx.font = sans(11); ctx.fillStyle = "#9ca3af"; ctx.textAlign = "center";
       ctx.fillText("vs", x + 10, midY + 5); x += 22;
 
-      const vImg = logoMap[p.partido.equipoVisita];
+      const vImg = logoMap[g.equipoVisita];
       if (vImg) ctx.drawImage(vImg, x, midY - logoSz / 2, logoSz, logoSz);
       x += logoSz + 6;
 
       ctx.textAlign = "left"; ctx.font = sans(13, "bold"); ctx.fillStyle = "#1f2937";
       const maxVisit = PRED_COL - x - 6;
-      let vn = p.partido.equipoVisita;
+      let vn = g.equipoVisita;
       while (ctx.measureText(vn).width > maxVisit && vn.length > 3) vn = vn.slice(0, -1);
-      if (vn !== p.partido.equipoVisita) vn += "…";
+      if (vn !== g.equipoVisita) vn += "…";
       ctx.fillText(vn, x, midY + 5);
 
-      const pred = p.prediccion;
-      const pTxt = pred === "1" ? "L" : pred === "2" ? "V" : "E";
-      const pBg  = pred === "1" ? "#dcfce7" : pred === "2" ? "#dbeafe" : "#fef9c3";
-      const pCol = pred === "1" ? "#15803d" : pred === "2" ? "#1d4ed8" : "#854d0e";
+      // Badge de predicción(es) — doble/triple aparece como "L/E" o "L/E/V"
+      const preds = g.predicciones;
+      const pTxt = preds.map(p => p === "1" ? "L" : p === "2" ? "V" : "E").join("/");
+      const anyAcertado = g.acertados.some(a => a === true);
+      const anyFailed   = g.acertados.some(a => a === false);
+      // Color del badge según resultado
+      const pBg  = anyAcertado ? "#dcfce7" : anyFailed ? "#fee2e2" : "#fef9c3";
+      const pCol = anyAcertado ? "#15803d" : anyFailed ? "#dc2626" : "#854d0e";
       const pH = 24;
       roundRect(ctx, PRED_COL, midY - pH / 2, PRED_W, pH, 6);
       ctx.fillStyle = pBg; ctx.fill();
-      ctx.textAlign = "center"; ctx.font = sans(13, "bold"); ctx.fillStyle = pCol;
-      ctx.fillText(pTxt, PRED_COL + PRED_W / 2, midY + 5);
+      ctx.textAlign = "center";
+      ctx.font = sans(preds.length > 1 ? 11 : 13, "bold"); // fuente más pequeña para dobles
+      ctx.fillStyle = pCol;
+      ctx.fillText(pTxt, PRED_COL + PRED_W / 2, midY + 4);
+      // Etiqueta DOBLE/TRIPLE debajo del badge
+      if (preds.length >= 2) {
+        ctx.font = sans(9); ctx.fillStyle = "#9ca3af";
+        ctx.fillText(preds.length >= 3 ? "TRIPLE" : "DOBLE", PRED_COL + PRED_W / 2, midY + pH / 2 + 9);
+      }
     }
     y += PICK_H + 16;
 
@@ -670,40 +715,45 @@ export default function TicketPage() {
               {/* Pronósticos */}
               <p style={{ fontWeight: "bold", marginBottom: "6px", fontSize: "11px" }}>PRONÓSTICOS:</p>
               <div style={{ marginBottom: "4px" }}>
-                {[...quiniela.picks]
-                  .sort((a, b) => a.partido.orden - b.partido.orden)
-                  .map((pick, i) => {
-                    const label = pick.prediccion === "1" ? "L" : pick.prediccion === "2" ? "V" : "E";
-                    const acertado = (pick as { acertado?: boolean | null }).acertado;
-                    const colorLabel =
-                      acertado === true ? "#16a34a" :
-                      acertado === false ? "#ef4444" : "#111827";
+                {agruparPicksPorPartido([...quiniela.picks])
+                  .map((g, i) => {
+                    const label = g.predicciones.map(p => p === "1" ? "L" : p === "2" ? "V" : "E").join("/");
+                    const anyAcertado = g.acertados.some(a => a === true);
+                    const allFailed = g.acertados.length > 0 && g.acertados.every(a => a === false);
+                    const colorLabel = anyAcertado ? "#16a34a" : allFailed ? "#ef4444" : "#111827";
+                    const esMulti = g.predicciones.length > 1;
                     return (
-                      <div key={pick.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "3px" }}>
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "3px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "5px", flex: 1, minWidth: 0 }}>
                           <span style={{ color: "#9ca3af", minWidth: "14px" }}>{i + 1}.</span>
-                          <LogoEquipo equipo={pick.partido.equipoLocal} size={14} />
+                          <LogoEquipo equipo={g.equipoLocal} size={14} />
                           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80px" }}>
-                            {pick.partido.equipoLocal}
+                            {g.equipoLocal}
                           </span>
                           <span style={{ color: "#9ca3af", flexShrink: 0 }}>vs</span>
-                          <LogoEquipo equipo={pick.partido.equipoVisita} size={14} />
+                          <LogoEquipo equipo={g.equipoVisita} size={14} />
                           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80px" }}>
-                            {pick.partido.equipoVisita}
+                            {g.equipoVisita}
                           </span>
                         </div>
-                        <span style={{
-                          fontWeight: "bold",
-                          color: colorLabel,
-                          border: `1px solid ${colorLabel}`,
-                          borderRadius: "3px",
-                          padding: "0 5px",
-                          marginLeft: "6px",
-                          flexShrink: 0,
-                          fontSize: "11px",
-                        }}>
-                          {label}
-                        </span>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, marginLeft: "6px" }}>
+                          <span style={{
+                            fontWeight: "bold",
+                            color: colorLabel,
+                            border: `1px solid ${colorLabel}`,
+                            borderRadius: "3px",
+                            padding: "0 5px",
+                            fontSize: "11px",
+                            lineHeight: "18px",
+                          }}>
+                            {label}
+                          </span>
+                          {esMulti && (
+                            <span style={{ fontSize: "8px", color: "#d97706", fontWeight: "bold", lineHeight: "10px" }}>
+                              {g.predicciones.length >= 3 ? "TRIPLE" : "DOBLE"}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -762,16 +812,16 @@ export default function TicketPage() {
           <p><strong>TOTAL:</strong> ${quiniela.monto.toFixed(2)} MXN</p>
           <div style={{ borderTop: "1px solid #000", margin: "4px 0" }} />
           <p style={{ fontWeight: "bold" }}>PRONOSTICOS:</p>
-          {[...quiniela.picks]
-            .sort((a, b) => a.partido.orden - b.partido.orden)
-            .map((pick, i) => {
-              const label =
-                pick.prediccion === "1" ? "LOCAL" :
-                pick.prediccion === "2" ? "VISITA" : "EMPATE";
+          {agruparPicksPorPartido([...quiniela.picks])
+            .map((g, i) => {
+              const labels = g.predicciones.map(p =>
+                p === "1" ? "LOCAL" : p === "2" ? "VISITA" : "EMPATE"
+              ).join(" / ");
+              const badge = g.predicciones.length === 2 ? " [DOBLE]" : g.predicciones.length >= 3 ? " [TRIPLE]" : "";
               return (
-                <div key={pick.id} style={{ marginBottom: "3px" }}>
-                  <p>{i + 1}. {norm(pick.partido.equipoLocal)} vs {norm(pick.partido.equipoVisita)}</p>
-                  <p style={{ paddingLeft: "6mm" }}>[{label}]</p>
+                <div key={i} style={{ marginBottom: "3px" }}>
+                  <p>{i + 1}. {norm(g.equipoLocal)} vs {norm(g.equipoVisita)}</p>
+                  <p style={{ paddingLeft: "6mm" }}>[{labels}]{badge}</p>
                 </div>
               );
             })}

@@ -6,6 +6,7 @@ import { Suspense } from "react";
 
 type Pick = {
   id: string;
+  partidoId: string;
   prediccion: string;
   acertado: boolean | null;
   partido: {
@@ -17,6 +18,42 @@ type Pick = {
     golesVisita: number | null;
   };
 };
+
+// Grupo de picks del mismo partido (sencillo, doble o triple)
+type PartidoGroup = {
+  orden: number;
+  equipoLocal: string;
+  equipoVisita: string;
+  resultado: string | null;
+  golesLocal: number | null;
+  golesVisita: number | null;
+  predicciones: string[];
+  acertados: (boolean | null)[];
+};
+
+function agruparPicks(picks: Pick[]): PartidoGroup[] {
+  const sorted = [...picks].sort((a, b) => a.partido.orden - b.partido.orden);
+  const grupos: PartidoGroup[] = [];
+  for (const pick of sorted) {
+    const g = grupos.find((x) => x.orden === pick.partido.orden);
+    if (g) {
+      if (!g.predicciones.includes(pick.prediccion)) g.predicciones.push(pick.prediccion);
+      g.acertados.push(pick.acertado);
+    } else {
+      grupos.push({
+        orden: pick.partido.orden,
+        equipoLocal: pick.partido.equipoLocal,
+        equipoVisita: pick.partido.equipoVisita,
+        resultado: pick.partido.resultado,
+        golesLocal: pick.partido.golesLocal,
+        golesVisita: pick.partido.golesVisita,
+        predicciones: [pick.prediccion],
+        acertados: [pick.acertado],
+      });
+    }
+  }
+  return grupos;
+}
 
 type Quiniela = {
   folio: string;
@@ -60,10 +97,17 @@ function pickBadge(acertado: boolean | null) {
   return "bg-gray-100 text-gray-700";
 }
 
+// Devuelve clases CSS según si el grupo de picks está acertado/fallido/pendiente
+function groupBadge(acertados: (boolean | null)[]) {
+  if (acertados.some((a) => a === true)) return "bg-green-500 text-white";
+  if (acertados.every((a) => a === false)) return "bg-red-400 text-white";
+  return "bg-gray-100 text-gray-700";
+}
+
 /* ─── Detalle de una quiniela ─── */
 function DetalleQuiniela({ q, onBack }: { q: Quiniela; onBack?: () => void }) {
-  const picks = [...q.picks].sort((a, b) => a.partido.orden - b.partido.orden);
-  const hayResultados = picks.some((p) => p.partido.resultado);
+  const grupos = agruparPicks(q.picks);
+  const hayResultados = grupos.some((g) => g.resultado !== null);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -90,27 +134,27 @@ function DetalleQuiniela({ q, onBack }: { q: Quiniela; onBack?: () => void }) {
         {q.aciertos !== null && (
           <div className="mt-3 bg-white/10 rounded-xl py-2 text-center">
             <span className="text-3xl font-black text-yellow-300">{q.aciertos}</span>
-            <span className="text-amber-300/70 text-sm"> / {picks.length} aciertos</span>
+            <span className="text-amber-300/70 text-sm"> / {grupos.length} aciertos</span>
           </div>
         )}
       </div>
 
-      {/* Picks */}
+      {/* Picks agrupados por partido */}
       <div className="divide-y divide-gray-50">
-        {picks.map((pick, i) => {
-          const resultado = pick.partido.resultado;
-          const gl = pick.partido.golesLocal;
-          const gv = pick.partido.golesVisita;
-          const marcador = gl !== null && gv !== null ? `${gl}-${gv}` : null;
+        {grupos.map((g, i) => {
+          const marcador = g.golesLocal !== null && g.golesVisita !== null ? `${g.golesLocal}-${g.golesVisita}` : null;
+          const label = g.predicciones.map((p) => LABEL[p]).join("/");
+          const esDoble = g.predicciones.length === 2;
+          const esTriple = g.predicciones.length >= 3;
 
           return (
-            <div key={pick.id} className="px-4 py-2.5 flex items-center gap-2">
+            <div key={i} className="px-4 py-2.5 flex items-center gap-2">
               <span className="text-gray-300 text-xs w-5 text-right shrink-0">{i + 1}</span>
 
               {/* Equipo local */}
               <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
-                <span className="text-xs text-gray-700 truncate text-right">{pick.partido.equipoLocal}</span>
-                <LogoEquipo equipo={pick.partido.equipoLocal} size={22} />
+                <span className="text-xs text-gray-700 truncate text-right">{g.equipoLocal}</span>
+                <LogoEquipo equipo={g.equipoLocal} size={22} />
               </div>
 
               {/* Marcador central */}
@@ -124,19 +168,26 @@ function DetalleQuiniela({ q, onBack }: { q: Quiniela; onBack?: () => void }) {
 
               {/* Equipo visita */}
               <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                <LogoEquipo equipo={pick.partido.equipoVisita} size={22} />
-                <span className="text-xs text-gray-700 truncate">{pick.partido.equipoVisita}</span>
+                <LogoEquipo equipo={g.equipoVisita} size={22} />
+                <span className="text-xs text-gray-700 truncate">{g.equipoVisita}</span>
               </div>
 
-              {/* Pick del usuario */}
-              <span className={`text-xs font-bold w-7 h-7 flex items-center justify-center rounded-lg shrink-0 ${pickBadge(pick.acertado)}`}>
-                {LABEL[pick.prediccion]}
-              </span>
+              {/* Pick(s) del usuario — doble/triple en un solo badge */}
+              <div className="flex flex-col items-center gap-0.5 shrink-0">
+                <span className={`text-xs font-bold px-2 h-7 flex items-center justify-center rounded-lg ${groupBadge(g.acertados)}`}>
+                  {label}
+                </span>
+                {(esDoble || esTriple) && (
+                  <span className="text-amber-600 text-[9px] font-bold leading-none">
+                    {esTriple ? "TRIPLE" : "DOBLE"}
+                  </span>
+                )}
+              </div>
 
               {/* Resultado real */}
-              {resultado && (
+              {g.resultado && (
                 <span className="text-xs font-bold w-7 h-7 flex items-center justify-center rounded-lg shrink-0 bg-gray-100 text-gray-500">
-                  {LABEL[resultado]}
+                  {LABEL[g.resultado]}
                 </span>
               )}
             </div>
@@ -161,7 +212,7 @@ function DetalleQuiniela({ q, onBack }: { q: Quiniela; onBack?: () => void }) {
 
 /* ─── Tarjeta resumen en lista ─── */
 function TarjetaQuiniela({ q, onClick }: { q: Quiniela; onClick: () => void }) {
-  const picks = [...q.picks].sort((a, b) => a.partido.orden - b.partido.orden);
+  const grupos = agruparPicks(q.picks);
   return (
     <button
       onClick={onClick}
@@ -180,15 +231,15 @@ function TarjetaQuiniela({ q, onClick }: { q: Quiniela; onClick: () => void }) {
             {q.estado}
           </span>
           {q.aciertos !== null && (
-            <span className="text-xs text-gray-500">{q.aciertos}/{picks.length} ✓</span>
+            <span className="text-xs text-gray-500">{q.aciertos}/{grupos.length} ✓</span>
           )}
         </div>
       </div>
-      {/* Mini picks */}
+      {/* Mini picks agrupados por partido (doble = "L/E", triple = "L/E/V") */}
       <div className="flex gap-1 flex-wrap mt-1">
-        {picks.map((p) => (
-          <span key={p.id} className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded ${pickBadge(p.acertado)}`}>
-            {LABEL[p.prediccion]}
+        {grupos.map((g, i) => (
+          <span key={i} className={`text-xs font-bold px-1.5 h-6 flex items-center justify-center rounded ${groupBadge(g.acertados)}`}>
+            {g.predicciones.map((p) => LABEL[p]).join("/")}
           </span>
         ))}
       </div>
