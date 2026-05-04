@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 import { PORCENTAJE_DUENOS, COMISION_TIENDA } from "@/lib/config";
+import { calcularFechaCierre } from "@/lib/fechas";
 
 // GET /api/bolsa — pública, sin auth
 export async function GET() {
@@ -61,11 +62,14 @@ export async function GET() {
   const cutTienda       = quinielasTienda * COMISION_TIENDA;
   const bolsa           = Math.max(totalRecaudado - cutDuenos - cutTienda, 0);
 
+  // La fecha de cierre es el día anterior al primer partido a las 23:00 CDMX
+  const fechaCierre = primerPartidoFecha ? calcularFechaCierre(primerPartidoFecha) : null;
+
   return NextResponse.json({
     bolsa,
     totalRecaudado,
     totalQuinielas: quinielas.length,
     jornadas,
-    primerPartidoFecha,
+    primerPartidoFecha: fechaCierre, // mantiene el nombre para no romper el frontend
   });
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generarFolio } from "@/lib/folio";
+import { calcularFechaCierre } from "@/lib/fechas";
 
 // Genera el producto cartesiano de picks con múltiples opciones (reventado)
 function generarCombinaciones(
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Jornada no disponible" }, { status: 400 });
     }
 
-    // Verificar que no haya comenzado ningún partido (raw SQL para evitar crash con fechaHora = {})
+    // Verificar que no haya pasado la fecha de cierre (día anterior al primer partido a las 23:00 CDMX)
     try {
       const rows = await prisma.$queryRaw<{ minFecha: Date | null }[]>`
         SELECT MIN("fechaHora") AS "minFecha"
@@ -51,11 +52,14 @@ export async function POST(req: Request) {
           AND "fechaHora" IS NOT NULL
       `;
       const primerPartido = rows[0]?.minFecha;
-      if (primerPartido && new Date() >= new Date(primerPartido)) {
-        return NextResponse.json(
-          { error: "El registro ya cerró — el primer partido ya comenzó." },
-          { status: 400 }
-        );
+      if (primerPartido) {
+        const fechaCierre = calcularFechaCierre(new Date(primerPartido));
+        if (new Date() >= fechaCierre) {
+          return NextResponse.json(
+            { error: "El registro ya cerró — las quinielas cierran a las 11pm del día anterior al primer partido." },
+            { status: 400 }
+          );
+        }
       }
     } catch (e) {
       console.error("[QUINIELAS POST] fechaHora check failed:", e);

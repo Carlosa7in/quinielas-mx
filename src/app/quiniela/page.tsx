@@ -250,8 +250,26 @@ export default function QuinielaPage() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
-  const primerPartidoISO = jornada
+  // Fecha del primer partido (la más próxima)
+  const primerPartidoRaw = jornada
     ? jornada.partidos.reduce((min, p) => !min || p.fechaHora < min ? p.fechaHora : min, "")
+    : null;
+  // Fecha de cierre real: día anterior al primer partido a las 23:00 CDMX
+  const primerPartidoISO = primerPartidoRaw
+    ? (() => {
+        try {
+          const pr = new Date(primerPartidoRaw);
+          const TZ = "America/Mexico_City";
+          const fmt = new Intl.DateTimeFormat("en-US", { timeZone: TZ, year: "numeric", month: "numeric", day: "numeric" });
+          const parts = Object.fromEntries(fmt.formatToParts(pr).map(p => [p.type, p.value]));
+          const year = parseInt(parts.year), month = parseInt(parts.month), day = parseInt(parts.day);
+          const month0 = month - 1;
+          const isDST = month0 >= 2 && month0 <= 9;
+          const offsetMs = (isDST ? -5 : -6) * 60 * 60 * 1000;
+          const base = new Date(Date.UTC(year, month - 1, day - 1, 23, 0, 0, 0));
+          return new Date(base.getTime() - offsetMs).toISOString();
+        } catch { return primerPartidoRaw; }
+      })()
     : null;
   const cuentaRegresiva = useCuentaRegresiva(primerPartidoISO);
   const registroCerrado = primerPartidoISO ? new Date() >= new Date(primerPartidoISO) : false;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { calcularFechaCierre } from "@/lib/fechas";
 
 // GET /api/jornadas/todas — todas las jornadas con stats básicas
 export async function GET() {
@@ -78,7 +79,8 @@ export async function GET() {
         totalPartidos: pCountMap.get(j.id) ?? 0,
         recaudado: qs.reduce((s, q) => s + q.monto, 0),
         ganadoras: qs.filter((q) => q.estado === "ganadora").length,
-        primerPartidoFecha: pMap.get(j.id) ?? null,
+        // Fecha de cierre = día anterior al primer partido a las 23:00 CDMX
+        primerPartidoFecha: pMap.has(j.id) ? calcularFechaCierre(pMap.get(j.id)!) : null,
       };
     });
 
