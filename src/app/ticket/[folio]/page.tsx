@@ -22,6 +22,7 @@ type Quiniela = {
   canal: string;
   monto: number;
   estado: string;
+  estadoPago: string;
   jornada: { numero: number; nombre: string | null; temporada: string; liga: string };
   picks: Pick[];
 };
@@ -356,6 +357,110 @@ export default function TicketPage() {
     );
   }
 
+  // ── Gate de pago: si es online y aún no se confirmó, mostrar pantalla de espera ──
+  const pagoPendiente =
+    quiniela.estadoPago === "pendiente" &&
+    (quiniela.canal === "transferencia" || quiniela.canal === "oxxo");
+
+  if (pagoPendiente) {
+    const isOxxo = quiniela.canal === "oxxo";
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-brand text-white py-6 px-4">
+          <div className="max-w-lg mx-auto">
+            <h1 className="text-2xl font-bold">Registro recibido</h1>
+            <p className="text-amber-300/70 text-sm mt-1">
+              {quiniela.jornada.liga} · {quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`} · {quiniela.jornada.temporada}
+            </p>
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
+          {/* Estado pendiente */}
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-5 text-center">
+            <div className="text-4xl mb-3">⏳</div>
+            <h2 className="text-amber-900 font-bold text-lg mb-1">Pendiente de confirmación de pago</h2>
+            <p className="text-amber-700 text-sm">
+              Tu registro está guardado. Tu ticket con pronósticos estará disponible
+              en cuanto confirmemos tu pago.
+            </p>
+          </div>
+
+          {/* Folio */}
+          <div className="bg-white rounded-xl p-4 text-center shadow-sm">
+            <p className="text-xs text-gray-400 mb-1 uppercase tracking-wide">Tu folio</p>
+            <p className="text-2xl font-black tracking-widest text-gray-800">{quiniela.folio}</p>
+            <p className="text-xs text-gray-400 mt-1">Guárdalo para consultar tu ticket después</p>
+          </div>
+
+          {/* Instrucciones de pago */}
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">{isOxxo ? "🏪" : "🏦"}</span>
+              <div>
+                <p className="font-bold text-gray-800">
+                  {isOxxo ? "Deposita en OXXO" : "Realiza tu transferencia"}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {isOxxo ? "Muestra esta pantalla en caja" : "Desde cualquier banco o app"}
+                </p>
+              </div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Banco</span>
+                <span className="font-semibold">BBVA</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">CLABE</span>
+                <span className="font-bold font-mono tracking-wider">012180015525085351</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Titular</span>
+                <span className="font-semibold">Juan Carlos Arias Ariza</span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="text-gray-500">Monto</span>
+                <span className="font-bold text-green-700 text-base">${quiniela.monto.toFixed(2)} MXN</span>
+              </div>
+              {!isOxxo && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Concepto</span>
+                  <span className="font-semibold text-amber-700">Tu nombre completo</span>
+                </div>
+              )}
+            </div>
+            {isOxxo && (
+              <p className="text-xs text-gray-400 mt-2 text-center">
+                Di &quot;quiero depositar a CLABE&quot; — no hay campo de concepto
+              </p>
+            )}
+          </div>
+
+          {/* Aviso */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 text-center">
+            Una vez que realices el pago, regresa a esta página con tu folio o espera la confirmación.
+            <br />
+            <a href={`/consultar?folio=${quiniela.folio}`} className="font-bold underline mt-2 inline-block">
+              Consultar estado del ticket →
+            </a>
+          </div>
+
+          <a
+            href="/"
+            className="block w-full text-center text-amber-700 font-semibold py-3 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            Volver al inicio
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Indicador de reventado (disponible justo después del registro vía URL params) ──
+  const esReventado = totalFormas <= 1 && totalBoletos > 1;
+
   return (
     <>
     <style>{`
@@ -524,6 +629,13 @@ export default function TicketPage() {
                   <p><span style={{ color: "#6b7280" }}>TEL: </span>{quiniela.telefonoCliente}</p>
                 )}
                 <p><span style={{ color: "#6b7280" }}>FOLIO: </span><strong style={{ letterSpacing: "1px" }}>{quiniela.folio}</strong></p>
+                {esReventado && (
+                  <p style={{ marginTop: "4px" }}>
+                    <span style={{ background: "#fef3c7", color: "#92400e", fontSize: "10px", fontWeight: "bold", padding: "2px 6px", borderRadius: "4px" }}>
+                      REVENTADO · boleto 1 de {totalBoletos}
+                    </span>
+                  </p>
+                )}
               </div>
 
               {/* Separador */}

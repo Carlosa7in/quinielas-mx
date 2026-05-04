@@ -201,6 +201,7 @@ export async function GET(req: Request) {
         canal: true,
         monto: true,
         estado: true,
+        estadoPago: true,
         puntos: true,
         aciertos: true,
         jornada: { select: { numero: true, nombre: true, temporada: true, liga: true } },
