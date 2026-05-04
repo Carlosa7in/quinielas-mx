@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const PORCENTAJE_DUENOS = 0.15;   // 15% para los dueños
-const COMISION_TIENDA   = 2;      // $2 por quiniela vendida en tienda
+import { PORCENTAJE_DUENOS, COMISION_TIENDA } from "@/lib/config";
 
 // GET /api/bolsa — pública, sin auth
 export async function GET() {
@@ -22,8 +21,9 @@ export async function GET() {
     console.error("[/api/bolsa] raw fechaHora query failed:", e);
   }
 
+  // Solo quinielas con pago confirmado cuentan para la bolsa
   const quinielas = await prisma.quiniela.findMany({
-    where: { jornada: { estado: "abierta" } },
+    where: { jornada: { estado: "abierta" }, estadoPago: "confirmado" },
     select: {
       monto: true,
       canal: true,

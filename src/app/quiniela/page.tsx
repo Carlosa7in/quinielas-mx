@@ -157,6 +157,15 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
             const cerrada = j.primerPartidoFecha
               ? new Date() >= new Date(j.primerPartidoFecha)
               : false;
+
+            // Fecha de cierre formateada
+            const fechaCierre = j.primerPartidoFecha
+              ? new Date(j.primerPartidoFecha).toLocaleDateString("es-MX", {
+                  weekday: "short", day: "numeric", month: "short",
+                  hour: "2-digit", minute: "2-digit",
+                })
+              : null;
+
             return (
               <button
                 key={j.id}
@@ -184,11 +193,18 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
                   }
                 </div>
                 <div className="flex items-center justify-between mt-3">
-                  <div className="flex gap-3 text-xs text-gray-400">
-                    <span>⚽ {j.totalPartidos ?? "?"} partidos</span>
-                    <span>🎯 {j.totalQuinielas ?? 0} inscritos</span>
+                  <div className="flex flex-col gap-1 text-xs text-gray-400">
+                    <div className="flex gap-3">
+                      <span>⚽ {j.totalPartidos ?? "?"} partidos</span>
+                      <span>🎯 {j.totalQuinielas ?? 0} inscritos</span>
+                    </div>
+                    {fechaCierre && (
+                      <span className={cerrada ? "text-red-400" : "text-amber-600 font-medium"}>
+                        🕐 {cerrada ? "Cerró" : "Cierra"} el {fechaCierre}
+                      </span>
+                    )}
                   </div>
-                  {!cerrada && <span className="text-yellow-600 font-bold text-sm">$20 MXN</span>}
+                  {!cerrada && <span className="text-yellow-600 font-bold text-sm shrink-0">$20 MXN</span>}
                 </div>
               </button>
             );
@@ -377,20 +393,35 @@ export default function QuinielaPage() {
             </div>
           </div>
 
-          {/* Cuenta regresiva */}
+          {/* Fecha de cierre + cuenta regresiva */}
           {registroCerrado ? (
             <div className="mt-3 bg-red-900/60 border border-red-500/40 rounded-xl px-4 py-2 flex items-center gap-2">
               <span>🔒</span>
               <p className="text-sm font-semibold text-red-200">Registro cerrado — el primer partido ya comenzó</p>
             </div>
-          ) : cuentaRegresiva && cuentaRegresiva.diff < 24 * 3_600_000 ? (
-            <div className="mt-3 bg-amber-900/50 border border-amber-400/30 rounded-xl px-4 py-2 flex items-center justify-between">
-              <span className="text-xs text-amber-300/80 font-semibold uppercase tracking-wide">⏱ Cierra en</span>
-              <span className="font-black text-yellow-300 tabular-nums text-lg">
-                {String(cuentaRegresiva.h).padStart(2, "0")}:
-                {String(cuentaRegresiva.m).padStart(2, "0")}:
-                {String(cuentaRegresiva.s).padStart(2, "0")}
-              </span>
+          ) : primerPartidoISO ? (
+            <div className="mt-3 bg-amber-900/50 border border-amber-400/30 rounded-xl px-4 py-2 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-amber-300/80 font-semibold uppercase tracking-wide">
+                  🕐 Se cierra el
+                </span>
+                <span className="text-xs text-amber-200 font-medium">
+                  {new Date(primerPartidoISO).toLocaleDateString("es-MX", {
+                    weekday: "long", day: "numeric", month: "long",
+                    hour: "2-digit", minute: "2-digit",
+                  })}
+                </span>
+              </div>
+              {cuentaRegresiva && cuentaRegresiva.diff < 24 * 3_600_000 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-amber-300/80 font-semibold uppercase tracking-wide">⚡ Faltan</span>
+                  <span className="font-black text-yellow-300 tabular-nums text-lg">
+                    {String(cuentaRegresiva.h).padStart(2, "0")}:
+                    {String(cuentaRegresiva.m).padStart(2, "0")}:
+                    {String(cuentaRegresiva.s).padStart(2, "0")}
+                  </span>
+                </div>
+              )}
             </div>
           ) : null}
         </div>
