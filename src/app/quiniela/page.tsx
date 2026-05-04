@@ -467,6 +467,19 @@ export default function QuinielaPage() {
               </button>
             </div>
 
+            {/* Fecha de cierre debajo del contador */}
+            {primerPartidoISO && (
+              <p className="text-xs text-center text-gray-400">
+                🕐 Se cierra el{" "}
+                <span className="font-semibold text-amber-600">
+                  {new Date(primerPartidoISO).toLocaleDateString("es-MX", {
+                    weekday: "long", day: "numeric", month: "long",
+                    hour: "2-digit", minute: "2-digit",
+                  })}
+                </span>
+              </p>
+            )}
+
             {/* Tabs cuando hay más de uno */}
             {formas.length > 1 && (
               <div className="flex gap-1.5 flex-wrap">

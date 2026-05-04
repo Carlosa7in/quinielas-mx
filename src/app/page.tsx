@@ -78,19 +78,32 @@ function BolsaWidget() {
         )}
       </div>
 
-      {/* Cuenta regresiva */}
+      {/* Fecha de cierre + cuenta regresiva */}
       {primerPartidoFecha && (
-        <div className="mt-3 pt-3 border-t border-white/10">
+        <div className="mt-3 pt-3 border-t border-white/10 space-y-1">
           {cerrado ? (
             <p className="text-red-400/80 text-xs font-semibold">🔒 Registro cerrado</p>
-          ) : cuenta ? (
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-amber-300/50 text-xs">⏱ Cierra en</span>
-              <span className="font-black tabular-nums text-amber-200" style={{ fontSize: "1.1rem", letterSpacing: "0.05em" }}>
-                {pad(cuenta.h)}:{pad(cuenta.m)}:{pad(cuenta.s)}
-              </span>
-            </div>
-          ) : null}
+          ) : (
+            <>
+              <p className="text-amber-300/60 text-xs">
+                🕐 Se cierra el{" "}
+                <span className="text-amber-200 font-semibold">
+                  {new Date(primerPartidoFecha).toLocaleDateString("es-MX", {
+                    weekday: "short", day: "numeric", month: "short",
+                    hour: "2-digit", minute: "2-digit",
+                  })}
+                </span>
+              </p>
+              {cuenta && cuenta.diff < 24 * 3_600_000 && (
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-amber-300/50 text-xs">⚡ Faltan</span>
+                  <span className="font-black tabular-nums text-yellow-300" style={{ fontSize: "1.1rem", letterSpacing: "0.05em" }}>
+                    {pad(cuenta.h)}:{pad(cuenta.m)}:{pad(cuenta.s)}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>
