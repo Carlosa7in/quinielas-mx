@@ -34,12 +34,12 @@ export async function GET() {
       select: { jornadaId: true },
     });
 
-    // Query 4: primer partido por jornada usando Prisma ORM (más confiable con NeonDB)
-    const primerosPorJornada = await prisma.partido.findMany({
+    // Query 4: todos los partidos con fechaHora — calculamos el mínimo por jornada en JS
+    // (evita el problema de DISTINCT ON + ORDER BY en NeonDB que lanza error 500)
+    const partidosFecha = await prisma.partido.findMany({
       where: { jornadaId: { in: ids } },
       orderBy: { fechaHora: "asc" },
       select: { jornadaId: true, fechaHora: true },
-      distinct: ["jornadaId"],
     });
 
     // Construir mapas
@@ -54,10 +54,13 @@ export async function GET() {
       pCountMap.set(p.jornadaId, (pCountMap.get(p.jornadaId) ?? 0) + 1);
     }
 
+    // Primer partido por jornada: como ya vienen ordenados asc, el primer registro de cada
+    // jornadaId es el más próximo en el tiempo.
     const pMap = new Map<string, Date>();
-    for (const row of primerosPorJornada) {
+    for (const row of partidosFecha) {
+      if (pMap.has(row.jornadaId)) continue; // ya tenemos el primero
       if (!row.fechaHora) continue;
-      const d = row.fechaHora instanceof Date ? row.fechaHora : new Date(row.fechaHora);
+      const d = row.fechaHora instanceof Date ? row.fechaHora : new Date(String(row.fechaHora));
       if (!isNaN(d.getTime())) pMap.set(row.jornadaId, d);
     }
 
