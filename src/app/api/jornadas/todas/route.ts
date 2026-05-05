@@ -63,7 +63,9 @@ export async function GET() {
 
     const pMap = new Map<string, Date>();
     for (const row of minFechas) {
-      pMap.set(row.jornadaId, row.minFecha);
+      // NeonDB HTTP driver puede devolver la fecha como string — forzamos a Date
+      const d = row.minFecha instanceof Date ? row.minFecha : new Date(row.minFecha);
+      if (!isNaN(d.getTime())) pMap.set(row.jornadaId, d);
     }
 
     const resultado = jornadas.map((j) => {

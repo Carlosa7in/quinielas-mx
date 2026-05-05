@@ -17,7 +17,12 @@ export async function GET() {
       WHERE j.estado = 'abierta'
         AND p."fechaHora" IS NOT NULL
     `;
-    primerPartidoFecha = rows[0]?.minFecha ?? null;
+    // NeonDB HTTP driver puede devolver la fecha como string — forzamos a Date
+    const raw = rows[0]?.minFecha;
+    if (raw) {
+      const d = raw instanceof Date ? raw : new Date(raw);
+      primerPartidoFecha = isNaN(d.getTime()) ? null : d;
+    }
   } catch (e) {
     console.error("[/api/bolsa] raw fechaHora query failed:", e);
   }
