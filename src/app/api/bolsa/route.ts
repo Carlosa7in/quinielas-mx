@@ -6,25 +6,22 @@ import { calcularFechaCierre } from "@/lib/fechas";
 
 // GET /api/bolsa — pública, sin auth
 export async function GET() {
-  // Primer partido de cualquier jornada abierta → fecha límite de registro
-  // Usamos raw SQL para evitar crash si alguna fila tiene fechaHora = {} (dato corrupto)
+  // Primer partido de la jornada abierta — usando Prisma ORM (más confiable con NeonDB)
   let primerPartidoFecha: Date | null = null;
   try {
-    const rows = await prisma.$queryRaw<{ minFecha: Date }[]>`
-      SELECT MIN(p."fechaHora") AS "minFecha"
-      FROM "Partido" p
-      INNER JOIN "Jornada" j ON j.id = p."jornadaId"
-      WHERE j.estado = 'abierta'
-        AND p."fechaHora" IS NOT NULL
-    `;
-    // NeonDB HTTP driver puede devolver la fecha como string — forzamos a Date
-    const raw = rows[0]?.minFecha;
-    if (raw) {
-      const d = raw instanceof Date ? raw : new Date(raw);
+    const primerPartido = await prisma.partido.findFirst({
+      where: { jornada: { estado: "abierta" } },
+      orderBy: { fechaHora: "asc" },
+      select: { fechaHora: true },
+    });
+    if (primerPartido?.fechaHora) {
+      const d = primerPartido.fechaHora instanceof Date
+        ? primerPartido.fechaHora
+        : new Date(primerPartido.fechaHora);
       primerPartidoFecha = isNaN(d.getTime()) ? null : d;
     }
   } catch (e) {
-    console.error("[/api/bolsa] raw fechaHora query failed:", e);
+    console.error("[/api/bolsa] fechaHora query failed:", e);
   }
 
   // Solo quinielas con pago confirmado cuentan para la bolsa

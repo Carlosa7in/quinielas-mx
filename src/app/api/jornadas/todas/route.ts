@@ -34,20 +34,13 @@ export async function GET() {
       select: { jornadaId: true },
     });
 
-    // Query 4: min fechaHora per jornada via raw SQL (bypasses Prisma type coercion)
-    let minFechas: { jornadaId: string; minFecha: Date }[] = [];
-    try {
-      minFechas = await prisma.$queryRaw<{ jornadaId: string; minFecha: Date }[]>`
-        SELECT "jornadaId", MIN("fechaHora") AS "minFecha"
-        FROM "Partido"
-        WHERE "jornadaId" = ANY(${ids}::text[])
-          AND "fechaHora" IS NOT NULL
-        GROUP BY "jornadaId"
-      `;
-    } catch (e) {
-      console.error("[/api/jornadas/todas] raw fechaHora query failed:", e);
-      // Non-fatal: primerPartidoFecha will be null for all jornadas
-    }
+    // Query 4: primer partido por jornada usando Prisma ORM (más confiable con NeonDB)
+    const primerosPorJornada = await prisma.partido.findMany({
+      where: { jornadaId: { in: ids } },
+      orderBy: { fechaHora: "asc" },
+      select: { jornadaId: true, fechaHora: true },
+      distinct: ["jornadaId"],
+    });
 
     // Construir mapas
     const qMap = new Map<string, { monto: number; estado: string }[]>();
@@ -62,9 +55,9 @@ export async function GET() {
     }
 
     const pMap = new Map<string, Date>();
-    for (const row of minFechas) {
-      // NeonDB HTTP driver puede devolver la fecha como string — forzamos a Date
-      const d = row.minFecha instanceof Date ? row.minFecha : new Date(row.minFecha);
+    for (const row of primerosPorJornada) {
+      if (!row.fechaHora) continue;
+      const d = row.fechaHora instanceof Date ? row.fechaHora : new Date(row.fechaHora);
       if (!isNaN(d.getTime())) pMap.set(row.jornadaId, d);
     }
 
