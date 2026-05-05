@@ -4,9 +4,9 @@ import { prisma } from "@/lib/prisma";
 // DELETE /api/admin/quinielas/[id] — eliminar quiniela y sus picks
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
   if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
 
   try {
