@@ -27,10 +27,12 @@ const LIGA_ICONO: Record<string, string> = {
   "La Liga": "🇪🇸",
 };
 
-// Formatear Date → YYYYMMDD
+// Formatear Date → YYYYMMDD usando métodos UTC (input type=date siempre manda YYYY-MM-DD
+// que new Date() interpreta como UTC midnight, así que usamos getUTCxxx para evitar
+// que el offset de México adelante o atrase el día).
 function toYYYYMMDD(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
 }
 // Formatear Date → YYYY-MM-DD (para input type=date)
 function toInputDate(d: Date): string {
@@ -279,6 +281,10 @@ export default function NuevaJornadaPage() {
       setError(data.error || "Error al crear");
       setEnviando(false);
     } else {
+      if (data.omitidos?.length) {
+        console.warn("[nueva-jornada] Partidos omitidos:", data.omitidos);
+        // Aun así redirige, pero el admin verá 0 partidos y podrá investigar
+      }
       router.push("/admin");
     }
   };

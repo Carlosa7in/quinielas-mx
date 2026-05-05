@@ -73,13 +73,40 @@ export async function POST(req: Request) {
 
     // Crear partidos uno a uno
     const partidosCreados = [];
+    const partidosOmitidos: string[] = [];
+
     for (let i = 0; i < partidos.length; i++) {
       const p = partidos[i];
-      const fechaHora = new Date(p.fechaHora);
-      if (!p.fechaHora || isNaN(fechaHora.getTime())) {
-        console.error(`[JORNADAS] Partido ${i + 1} tiene fechaHora inválida:`, p.fechaHora);
-        continue; // saltar partido con fecha inválida
+
+      // Normalizar fechaHora: si llega como datetime-local sin timezone (ej. "2026-05-08T19:30"
+      // o "2026-05-08T19:30:00"), añadirle "-06:00" para que new Date() nunca falle en el servidor.
+      let fhStr: string = String(p.fechaHora ?? "").trim();
+
+      if (!fhStr) {
+        console.warn(`[JORNADAS] Partido ${i + 1} sin fechaHora — omitido`);
+        partidosOmitidos.push(`Partido ${i + 1}: sin fecha`);
+        continue;
       }
+
+      // Si la cadena YA trae offset o 'Z', usarla directamente.
+      // Si no, agregarle el offset de México City (CST -06:00) para evitar ambigüedad UTC.
+      if (!fhStr.endsWith("Z") && !/[+-]\d{2}:\d{2}$/.test(fhStr)) {
+        // "2026-05-08T19:30"  → "2026-05-08T19:30:00-06:00"
+        // "2026-05-08T19:30:00" → "2026-05-08T19:30:00-06:00"
+        if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(fhStr)) {
+          fhStr += ":00-06:00";
+        } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(fhStr)) {
+          fhStr += "-06:00";
+        }
+      }
+
+      const fechaHora = new Date(fhStr);
+      if (isNaN(fechaHora.getTime())) {
+        console.error(`[JORNADAS] Partido ${i + 1} fechaHora inválida: "${p.fechaHora}" (normalizada: "${fhStr}")`);
+        partidosOmitidos.push(`Partido ${i + 1}: fecha inválida (${p.fechaHora})`);
+        continue;
+      }
+
       const partido = await prisma.partido.create({
         data: {
           jornadaId: jornada.id,
@@ -94,7 +121,14 @@ export async function POST(req: Request) {
       partidosCreados.push(partido);
     }
 
-    return NextResponse.json({ ...jornada, partidos: partidosCreados }, { status: 201 });
+    if (partidosOmitidos.length > 0) {
+      console.warn(`[JORNADAS] ${partidosOmitidos.length} partido(s) omitido(s):`, partidosOmitidos);
+    }
+
+    return NextResponse.json(
+      { ...jornada, partidos: partidosCreados, omitidos: partidosOmitidos },
+      { status: 201 },
+    );
   } catch (err) {
     console.error("[JORNADAS] error:", err);
     return NextResponse.json({ error: "Error al crear jornada: " + String(err) }, { status: 500 });
