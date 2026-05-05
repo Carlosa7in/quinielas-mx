@@ -42,24 +42,20 @@ function normalizarNombre(nombre: string): string {
   return NOMBRE_MAP[nombre] ?? nombre;
 }
 
-// Formatear fecha UTC → datetime-local (YYYY-MM-DDTHH:MM) en hora de México
-// Usa -06:00 (horario de invierno); en verano (CDT) México usa -05:00, pero para el
-// input type=datetime-local basta con mostrar la hora aproximada. La cadena retornada
-// incluye segundos y offset explícito para que new Date() nunca falle en el servidor.
+// Formatear fecha UTC → datetime-local (YYYY-MM-DDTHH:MM) en hora de México.
+// IMPORTANTE: input type=datetime-local no acepta timezone en el value, así que
+// retornamos solo "YYYY-MM-DDTHH:MM". El servidor normaliza agregando "-06:00" al parsear.
 function toLocalMX(isoDate: string): string {
   const d = new Date(isoDate);
   if (isNaN(d.getTime())) return "";
-  // Detectar DST de México: horario de verano abarca aprox. de marzo a octubre
+  // Detectar DST de México: horario de verano abarca aprox. de marzo a octubre (CDT = UTC-5)
   const monthUTC = d.getUTCMonth(); // 0=ene … 11=dic
-  const offsetHours = (monthUTC >= 3 && monthUTC <= 9) ? -5 : -6; // CDT=-5, CST=-6
-  const local = new Date(d.getTime() + offsetHours * 3600 * 1000);
+  const offsetHours = (monthUTC >= 3 && monthUTC <= 9) ? -5 : -6;
+  const local = new Date(d.getTime() + offsetHours * 3_600_000);
   const pad = (n: number) => String(n).padStart(2, "0");
-  const sign = offsetHours < 0 ? "-" : "+";
-  const absH  = Math.abs(offsetHours);
-  // Retorna formato: YYYY-MM-DDTHH:MM:SS±HH:00  (ISO 8601 completo, sin ambigüedad)
   return (
     `${local.getUTCFullYear()}-${pad(local.getUTCMonth() + 1)}-${pad(local.getUTCDate())}` +
-    `T${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())}:00${sign}${pad(absH)}:00`
+    `T${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())}`
   );
 }
 
