@@ -205,17 +205,6 @@ export default function AdminPage() {
           </Link>
 
           <Link
-            href="/admin/jornada"
-            className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
-          >
-            <span className="text-2xl">🕐</span>
-            <div>
-              <p className="font-bold">Fechas de Partidos</p>
-              <p className="text-gray-500 text-sm">Editar hora de inicio de cada partido (controla fecha de cierre)</p>
-            </div>
-          </Link>
-
-          <Link
             href="/admin/nueva-jornada"
             className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
           >
