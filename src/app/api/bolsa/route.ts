@@ -24,6 +24,30 @@ export async function GET() {
     console.error("[/api/bolsa] fechaHora query failed:", e);
   }
 
+  // Fallback: si ESPN aún no tiene horarios, usar fechaInicio de la jornada.
+  // Solo necesitamos el DÍA para calcular el cierre (11pm del día anterior).
+  // Le sumamos 18 h para que siempre caiga en la tarde UTC y no se desfase el día
+  // al convertir a hora de México.
+  if (!primerPartidoFecha) {
+    try {
+      const jornadaAbierta = await prisma.jornada.findFirst({
+        where: { estado: "abierta" },
+        select: { fechaInicio: true },
+        orderBy: { numero: "desc" },
+      });
+      if (jornadaAbierta?.fechaInicio) {
+        const d = jornadaAbierta.fechaInicio instanceof Date
+          ? jornadaAbierta.fechaInicio
+          : new Date(jornadaAbierta.fechaInicio);
+        if (!isNaN(d.getTime())) {
+          primerPartidoFecha = new Date(d.getTime() + 18 * 3_600_000);
+        }
+      }
+    } catch (e) {
+      console.error("[/api/bolsa] fechaInicio fallback failed:", e);
+    }
+  }
+
   // Solo quinielas con pago confirmado cuentan para la bolsa
   const quinielas = await prisma.quiniela.findMany({
     where: { jornada: { estado: "abierta" }, estadoPago: "confirmado" },

@@ -5,7 +5,7 @@ import { calcularFechaCierre } from "@/lib/fechas";
 // GET /api/jornadas/todas — todas las jornadas con stats básicas
 export async function GET() {
   try {
-    // Query 1: datos básicos de jornadas
+    // Query 1: datos básicos de jornadas (incluye fechaInicio para fallback de cierre)
     const jornadas = await prisma.jornada.findMany({
       select: {
         id: true,
@@ -14,6 +14,7 @@ export async function GET() {
         temporada: true,
         liga: true,
         estado: true,
+        fechaInicio: true,
       },
       orderBy: [{ liga: "desc" }, { numero: "desc" }],
     });
@@ -66,6 +67,15 @@ export async function GET() {
 
     const resultado = jornadas.map((j) => {
       const qs = qMap.get(j.id) ?? [];
+
+      // Base para calcular cierre: primer partido si tiene fecha, si no fechaInicio + 18h
+      // (18 h sobre UTC-midnight garantiza que calcularFechaCierre vea el día correcto en CDMX)
+      let baseParaCierre: Date | null = pMap.get(j.id) ?? null;
+      if (!baseParaCierre && j.fechaInicio) {
+        const fi = j.fechaInicio instanceof Date ? j.fechaInicio : new Date(j.fechaInicio);
+        if (!isNaN(fi.getTime())) baseParaCierre = new Date(fi.getTime() + 18 * 3_600_000);
+      }
+
       return {
         id: j.id,
         numero: j.numero,
@@ -77,8 +87,8 @@ export async function GET() {
         totalPartidos: pCountMap.get(j.id) ?? 0,
         recaudado: qs.reduce((s, q) => s + q.monto, 0),
         ganadoras: qs.filter((q) => q.estado === "ganadora").length,
-        // Fecha de cierre = día anterior al primer partido a las 23:00 CDMX
-        primerPartidoFecha: pMap.has(j.id) ? calcularFechaCierre(pMap.get(j.id)!) : null,
+        // Fecha de cierre = 11pm CDMX del día anterior al primer partido (o fechaInicio)
+        primerPartidoFecha: baseParaCierre ? calcularFechaCierre(baseParaCierre) : null,
       };
     });
 
