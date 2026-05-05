@@ -164,8 +164,18 @@ export default function NuevaJornadaPage() {
 
       // Auto-rellenar nombre y fechas solo si están vacíos
       if (data.nombreSugerido && !nombre.trim()) setNombre(data.nombreSugerido);
-      if (!fechaInicio) setFechaInicio(espnDesde);
-      if (!fechaFin)   setFechaFin(espnHasta);
+
+      // fechaInicio = fecha del primer partido real (no el inicio del rango de búsqueda)
+      // fechaFin    = fecha del último partido real
+      const fechasPartidos = fetchedPartidos
+        .map((p) => p.fechaHora)
+        .filter(Boolean)
+        .sort();
+      const primeraFecha = fechasPartidos[0]?.slice(0, 10); // "YYYY-MM-DD"
+      const ultimaFecha  = fechasPartidos[fechasPartidos.length - 1]?.slice(0, 10);
+
+      if (!fechaInicio) setFechaInicio(primeraFecha ?? espnDesde);
+      if (!fechaFin)    setFechaFin(ultimaFecha ?? espnHasta);
 
       const recortado = totalEncontrados > slotsLibres
         ? ` (solo cabían ${slotsLibres} de ${totalEncontrados} encontrados)`
