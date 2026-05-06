@@ -5,7 +5,7 @@ import { calcularFechaCierre } from "@/lib/fechas";
 // GET /api/jornadas/todas — todas las jornadas con stats básicas
 export async function GET() {
   try {
-    // Query 1: datos básicos sin campos DateTime (NeonDB devuelve {} para DateTime en findMany)
+    // Query 1: datos básicos sin campos DateTime (NeonDB devuelve {} para DateTime en ORM)
     const jornadas = await prisma.jornada.findMany({
       select: {
         id: true,
@@ -34,36 +34,45 @@ export async function GET() {
       select: { jornadaId: true },
     });
 
-    // Query 4: primer partido por jornada usando findFirst por jornada
-    // (findFirst con DateTime funciona en NeonDB; findMany con DateTime crashea devolviendo {})
+    // Query 4: primer partido por jornada via $queryRaw (único modo confiable con NeonDB)
+    // ORM findFirst/findMany con DateTime devuelven {} en lugar de fecha
     const pMap = new Map<string, Date>();
     for (const id of ids) {
       try {
-        const p = await prisma.partido.findFirst({
-          where: { jornadaId: id },
-          orderBy: { fechaHora: "asc" },
-          select: { fechaHora: true },
-        });
-        if (p?.fechaHora) {
-          const d = p.fechaHora instanceof Date ? p.fechaHora : new Date(String(p.fechaHora));
+        const rows = await prisma.$queryRaw<{ fechaHora: unknown }[]>`
+          SELECT "fechaHora" FROM "Partido"
+          WHERE "jornadaId" = ${id}
+            AND "fechaHora" IS NOT NULL
+          ORDER BY "fechaHora" ASC
+          LIMIT 1
+        `;
+        if (rows[0]?.fechaHora) {
+          const d = rows[0].fechaHora instanceof Date
+            ? rows[0].fechaHora
+            : new Date(String(rows[0].fechaHora));
           if (!isNaN(d.getTime())) pMap.set(id, d);
         }
-      } catch { /* silencioso por jornada */ }
+      } catch (e) {
+        console.error(`[/api/jornadas/todas] fechaHora query failed for ${id}:`, e);
+      }
     }
 
-    // Query 5: fechaInicio de cada jornada como fallback (también con findFirst)
+    // Query 5: fechaInicio via $queryRaw como fallback (cuando partidos no tienen fechaHora)
     const fiMap = new Map<string, Date>();
     for (const id of ids) {
       try {
-        const j = await prisma.jornada.findUnique({
-          where: { id },
-          select: { fechaInicio: true },
-        });
-        if (j?.fechaInicio) {
-          const d = j.fechaInicio instanceof Date ? j.fechaInicio : new Date(String(j.fechaInicio));
+        const rows = await prisma.$queryRaw<{ fechaInicio: unknown }[]>`
+          SELECT "fechaInicio" FROM "Jornada" WHERE id = ${id}
+        `;
+        if (rows[0]?.fechaInicio) {
+          const d = rows[0].fechaInicio instanceof Date
+            ? rows[0].fechaInicio
+            : new Date(String(rows[0].fechaInicio));
           if (!isNaN(d.getTime())) fiMap.set(id, d);
         }
-      } catch { /* silencioso por jornada */ }
+      } catch (e) {
+        console.error(`[/api/jornadas/todas] fechaInicio query failed for ${id}:`, e);
+      }
     }
 
     // Construir mapas

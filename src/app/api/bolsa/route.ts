@@ -4,42 +4,61 @@ import { prisma } from "@/lib/prisma";
 import { PORCENTAJE_DUENOS, COMISION_TIENDA } from "@/lib/config";
 import { calcularFechaCierre } from "@/lib/fechas";
 
+// Leer un campo DateTime de NeonDB via $queryRaw (el ORM devuelve {} para DateTime)
+async function leerFechaRaw(sql: TemplateStringsArray, ...values: unknown[]): Promise<Date | null> {
+  try {
+    const rows = await (prisma.$queryRaw as (...args: unknown[]) => Promise<Record<string, unknown>[]>)(
+      Object.assign(sql, { raw: sql }),
+      ...values
+    );
+    const val = rows[0] ? Object.values(rows[0])[0] : null;
+    if (!val) return null;
+    const d = val instanceof Date ? val : new Date(String(val));
+    return isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
+  }
+}
+
 // GET /api/bolsa — pública, sin auth
 export async function GET() {
-  // Primer partido de la jornada abierta — usando Prisma ORM (más confiable con NeonDB)
+  // Primer partido de la jornada abierta via $queryRaw (único modo confiable con NeonDB)
   let primerPartidoFecha: Date | null = null;
   try {
-    const primerPartido = await prisma.partido.findFirst({
-      where: { jornada: { estado: "abierta" } },
-      orderBy: { fechaHora: "asc" },
-      select: { fechaHora: true },
-    });
-    if (primerPartido?.fechaHora) {
-      const d = primerPartido.fechaHora instanceof Date
-        ? primerPartido.fechaHora
-        : new Date(primerPartido.fechaHora);
+    const rows = await prisma.$queryRaw<{ fechaHora: unknown }[]>`
+      SELECT p."fechaHora"
+      FROM "Partido" p
+      JOIN "Jornada" j ON p."jornadaId" = j.id
+      WHERE j.estado = 'abierta'
+        AND p."fechaHora" IS NOT NULL
+      ORDER BY p."fechaHora" ASC
+      LIMIT 1
+    `;
+    if (rows[0]?.fechaHora) {
+      const d = rows[0].fechaHora instanceof Date
+        ? rows[0].fechaHora
+        : new Date(String(rows[0].fechaHora));
       primerPartidoFecha = isNaN(d.getTime()) ? null : d;
     }
   } catch (e) {
-    console.error("[/api/bolsa] fechaHora query failed:", e);
+    console.error("[/api/bolsa] fechaHora raw query failed:", e);
   }
 
-  // Fallback: si ESPN aún no tiene horarios, usar fechaInicio de la jornada.
-  // Solo necesitamos el DÍA para calcular el cierre (11pm del día anterior).
-  // Le sumamos 18 h para que siempre caiga en la tarde UTC y no se desfase el día
-  // al convertir a hora de México.
+  // Fallback: fechaInicio de la jornada abierta (cuando ESPN aún no tiene horarios)
   if (!primerPartidoFecha) {
     try {
-      const jornadaAbierta = await prisma.jornada.findFirst({
-        where: { estado: "abierta" },
-        select: { fechaInicio: true },
-        orderBy: { numero: "desc" },
-      });
-      if (jornadaAbierta?.fechaInicio) {
-        const d = jornadaAbierta.fechaInicio instanceof Date
-          ? jornadaAbierta.fechaInicio
-          : new Date(jornadaAbierta.fechaInicio);
+      const rows = await prisma.$queryRaw<{ fechaInicio: unknown }[]>`
+        SELECT "fechaInicio" FROM "Jornada"
+        WHERE estado = 'abierta'
+        ORDER BY numero DESC
+        LIMIT 1
+      `;
+      if (rows[0]?.fechaInicio) {
+        const d = rows[0].fechaInicio instanceof Date
+          ? rows[0].fechaInicio
+          : new Date(String(rows[0].fechaInicio));
         if (!isNaN(d.getTime())) {
+          // +18h sobre UTC-midnight para que calcularFechaCierre vea el día correcto en CDMX
           primerPartidoFecha = new Date(d.getTime() + 18 * 3_600_000);
         }
       }
@@ -96,6 +115,6 @@ export async function GET() {
     totalRecaudado,
     totalQuinielas: quinielas.length,
     jornadas,
-    primerPartidoFecha: fechaCierre, // mantiene el nombre para no romper el frontend
+    primerPartidoFecha: fechaCierre,
   });
 }
