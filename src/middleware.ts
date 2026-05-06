@@ -22,12 +22,13 @@ export async function middleware(req: NextRequest) {
     if ((rol === "tienda" || rol === "vendedor") && !pathname.startsWith("/admin/tienda")) {
       return NextResponse.redirect(new URL("/admin/tienda", req.url));
     }
-    // Solo superadmin puede acceder a gestión de usuarios y comisiones
+    // Solo superadmin puede gestionar usuarios
     if (pathname.startsWith("/admin/usuarios") && rol !== "superadmin") {
       return NextResponse.redirect(new URL("/admin", req.url));
     }
-    if (pathname.startsWith("/admin/comisiones") && rol !== "superadmin") {
-      return NextResponse.redirect(new URL("/admin", req.url));
+    // Comisiones: superadmin ve todo, admin ve todo, vendedor/tienda solo sus ventas (via /admin/tienda)
+    if (pathname.startsWith("/admin/comisiones") && !["superadmin", "admin"].includes(rol)) {
+      return NextResponse.redirect(new URL("/admin/tienda", req.url));
     }
   }
 
