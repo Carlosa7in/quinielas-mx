@@ -7,6 +7,7 @@ type JornadaBolsaItem = {
   nombre: string | null;
   numero: number;
   liga: string;
+  ligasDetalle: string[];
   totalQuinielas: number;
   recaudado: number;
   bolsa: number;
@@ -50,6 +51,14 @@ function JornadaCard({ jornada }: { jornada: JornadaBolsaItem }) {
   const ligaIcon = LIGA_ICON[jornada.liga] ?? "⚽";
   const titulo = jornada.nombre ?? `Jornada ${jornada.numero}`;
 
+  // Para jornadas Mixta, mostrar las ligas reales de los partidos al final
+  // Ejemplo: "⚽ Mixta · Clausura Cuartos de Final · Liga MX"
+  // Para jornadas normales: "🇲🇽 Liga MX · Jornada 17"
+  const sufijo =
+    jornada.liga === "Mixta" && jornada.ligasDetalle.length > 0
+      ? " · " + jornada.ligasDetalle.join(" · ")
+      : "";
+
   return (
     <div
       className="rounded-2xl py-5 px-4 text-center space-y-3"
@@ -57,7 +66,7 @@ function JornadaCard({ jornada }: { jornada: JornadaBolsaItem }) {
     >
       {/* Liga + nombre */}
       <p className="text-amber-300/70 text-xs font-bold tracking-widest uppercase">
-        {ligaIcon} {jornada.liga} · {titulo}
+        {ligaIcon} {jornada.liga} · {titulo}{sufijo}
       </p>
 
       {/* Bolsa */}

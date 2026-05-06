@@ -13,8 +13,22 @@ export async function GET() {
     orderBy: { numero: "desc" },
   });
 
-  // 2. Quinielas confirmadas de esas jornadas
+  // 2. Ligas de los partidos por jornada (para Mixta — sin DateTime, Prisma funciona ok)
   const ids = jornadasAbiertas.map((j) => j.id);
+  const partidosLigaRows = ids.length > 0
+    ? await prisma.partido.findMany({
+        where: { jornadaId: { in: ids } },
+        select: { jornadaId: true, liga: true },
+      })
+    : [];
+  const ligasDetalleMap = new Map<string, string[]>();
+  for (const p of partidosLigaRows) {
+    if (!ligasDetalleMap.has(p.jornadaId)) ligasDetalleMap.set(p.jornadaId, []);
+    const arr = ligasDetalleMap.get(p.jornadaId)!;
+    if (!arr.includes(p.liga)) arr.push(p.liga);
+  }
+
+  // 4. Quinielas confirmadas de esas jornadas
   const quinielas = ids.length > 0
     ? await prisma.quiniela.findMany({
         where: { jornadaId: { in: ids }, estadoPago: "confirmado" },
@@ -22,7 +36,7 @@ export async function GET() {
       })
     : [];
 
-  // 3. Primer partido por jornada via neon() directo (PrismaNeonHTTP devuelve {} para DateTime)
+  // 5. Primer partido por jornada via neon() directo (PrismaNeonHTTP devuelve {} para DateTime)
   const primerPartidoPorJornada = new Map<string, Date>();
   for (const jornada of jornadasAbiertas) {
     try {
@@ -57,9 +71,10 @@ export async function GET() {
     }
   }
 
-  // 4. Calcular bolsa por jornada
+  // 6. Calcular bolsa por jornada
   type JornadaBolsa = {
     id: string; nombre: string | null; numero: number; liga: string;
+    ligasDetalle: string[];
     totalQuinielas: number; recaudado: number;
     bolsa: number;
     primerPartidoFecha: string | null;
@@ -81,6 +96,7 @@ export async function GET() {
       nombre: j.nombre,
       numero: j.numero,
       liga: j.liga,
+      ligasDetalle: ligasDetalleMap.get(j.id) ?? [],
       totalQuinielas: qs.length,
       recaudado,
       bolsa,

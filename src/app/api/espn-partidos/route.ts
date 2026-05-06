@@ -61,6 +61,28 @@ function toLocalMX(isoDate: string): string {
   );
 }
 
+// Traduce términos en inglés que ESPN usa en los slugs de temporada
+const TRADUCCION_ESPN: [RegExp, string][] = [
+  [/\bQuarterfinals\b/gi,    "Cuartos de Final"],
+  [/\bQuarterfinal\b/gi,     "Cuarto de Final"],
+  [/\bSemifinals\b/gi,       "Semifinales"],
+  [/\bSemifinal\b/gi,        "Semifinal"],
+  [/\bRound Of 16\b/gi,      "Octavos de Final"],
+  [/\bRound Of 32\b/gi,      "Dieciseisavos de Final"],
+  [/\bRegular Season\b/gi,   "Temporada Regular"],
+  [/\bPlayoffs\b/gi,         "Playoffs"],
+  [/\bPlayoff\b/gi,          "Playoff"],
+  [/\bFinal\b/gi,            "Final"],
+];
+
+function traducirNombreEspn(nombre: string): string {
+  let r = nombre;
+  for (const [patron, reemplazo] of TRADUCCION_ESPN) {
+    r = r.replace(patron, reemplazo);
+  }
+  return r;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const liga = searchParams.get("liga") ?? "Liga MX";
@@ -113,12 +135,14 @@ export async function GET(req: NextRequest) {
         };
       });
 
-    // Detectar nombre de la jornada desde ESPN
+    // Detectar nombre de la jornada desde ESPN y traducir al español
     const primeraTemporada = (events[0] as Record<string, unknown>)?.season as Record<string, unknown>;
     const nombreJornada = primeraTemporada?.slug
-      ? String(primeraTemporada.slug)
-          .replace(/-/g, " ")
-          .replace(/\b\w/g, (c) => c.toUpperCase())
+      ? traducirNombreEspn(
+          String(primeraTemporada.slug)
+            .replace(/-/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase())
+        )
       : null;
 
     return NextResponse.json({
