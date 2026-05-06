@@ -14,12 +14,12 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(url);
     }
     const rol = token.role as string;
-    const rolesPermitidos = ["admin", "superadmin", "tienda"];
+    const rolesPermitidos = ["admin", "superadmin", "tienda", "vendedor"];
     if (!rolesPermitidos.includes(rol)) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
-    // Rol tienda: solo puede entrar a /admin/tienda
-    if (rol === "tienda" && !pathname.startsWith("/admin/tienda")) {
+    // Rol tienda/vendedor: solo puede entrar a /admin/tienda
+    if ((rol === "tienda" || rol === "vendedor") && !pathname.startsWith("/admin/tienda")) {
       return NextResponse.redirect(new URL("/admin/tienda", req.url));
     }
     // Solo superadmin puede acceder a gestión de usuarios y comisiones
