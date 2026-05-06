@@ -88,25 +88,15 @@ function PagoAcciones({
   onUpdate: (id: string, ep: string) => void;
 }) {
   const { cambiar, cargando } = usePagoCambio(quiniela, onUpdate);
+  const [enviando, setEnviando] = useState(false); // true = mostrar selector WA
 
   // Tienda = efectivo al momento, no necesita acción
   if (quiniela.canal === "tienda") return null;
-  // Ya confirmado — solo opción de deshacer discreta
+
+  // Ya confirmado
   if (quiniela.estadoPago === "confirmado") {
-    return (
-      <button onClick={() => cambiar("pendiente")} disabled={cargando}
-        className="text-xs text-gray-400 hover:text-gray-600 hover:underline mt-1 disabled:opacity-50">
-        {cargando ? "..." : "Deshacer confirmación"}
-      </button>
-    );
-  }
-
-  const metodo = quiniela.canal === "oxxo" ? "OXXO" : "transferencia";
-
-  const confirmarYEnviar = async () => {
-    await cambiar("confirmado");
-    // Abrir WhatsApp al cliente con el link del ticket
-    if (quiniela.telefonoCliente) {
+    // Si acabamos de confirmar, mostrar selector de WhatsApp
+    if (enviando && quiniela.telefonoCliente) {
       const tel = quiniela.telefonoCliente.replace(/\D/g, "");
       const telWA = tel.length === 10 ? `52${tel}` : tel;
       const ticketUrl = `${window.location.origin}/ticket/${quiniela.folio}`;
@@ -120,8 +110,46 @@ function PagoAcciones({
         `*Folio:* ${quiniela.folio}`,
         `¡Buena suerte! 🍀`,
       ].join("\n");
-      window.open(`https://wa.me/${telWA}?text=${encodeURIComponent(msg)}`, "_blank");
+      const waUrl       = `https://wa.me/${telWA}?text=${encodeURIComponent(msg)}`;
+      // WhatsApp Business en Android usa package com.whatsapp.w4b
+      const waBizUrl    = `intent://send?phone=${telWA}&text=${encodeURIComponent(msg)}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
+
+      return (
+        <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5">
+          <p className="text-xs text-green-700 font-semibold">✅ Confirmado — ¿con qué app envías?</p>
+          <div className="flex gap-2">
+            <a href={waUrl} target="_blank" rel="noopener noreferrer"
+              onClick={() => setEnviando(false)}
+              className="flex-1 text-center text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2 py-1.5 rounded-lg transition-colors">
+              WhatsApp
+            </a>
+            <a href={waBizUrl} target="_blank" rel="noopener noreferrer"
+              onClick={() => setEnviando(false)}
+              className="flex-1 text-center text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2 py-1.5 rounded-lg transition-colors border border-white/40">
+              WA Business 💼
+            </a>
+          </div>
+          <button onClick={() => setEnviando(false)}
+            className="text-xs text-gray-400 hover:text-gray-600 hover:underline w-full text-center">
+            Omitir
+          </button>
+        </div>
+      );
     }
+
+    return (
+      <button onClick={() => cambiar("pendiente")} disabled={cargando}
+        className="text-xs text-gray-400 hover:text-gray-600 hover:underline mt-1 disabled:opacity-50">
+        {cargando ? "..." : "Deshacer confirmación"}
+      </button>
+    );
+  }
+
+  const metodo = quiniela.canal === "oxxo" ? "OXXO" : "transferencia";
+
+  const confirmar = async () => {
+    await cambiar("confirmado");
+    if (quiniela.telefonoCliente) setEnviando(true);
   };
 
   return (
@@ -133,13 +161,10 @@ function PagoAcciones({
         )}
       </div>
       <div className="flex gap-2">
-        <button onClick={confirmarYEnviar} disabled={cargando}
+        <button onClick={confirmar} disabled={cargando}
           className="flex-1 text-xs bg-green-100 hover:bg-green-200 text-green-800 font-semibold px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1">
           {cargando ? "..." : (
-            <>
-              ✓ Confirmar
-              {quiniela.telefonoCliente && <span className="text-green-600">· enviar ticket 📲</span>}
-            </>
+            <>✓ Confirmar {quiniela.telefonoCliente && <span className="text-green-600">· enviar ticket 📲</span>}</>
           )}
         </button>
         <button onClick={() => cambiar("no_realizado")} disabled={cargando}
