@@ -28,9 +28,10 @@ interface Props {
   backHref?: string;
   soloActivas?: boolean;
   onSignOut?: () => void;
+  perfilHref?: string;   // si se pasa, muestra botón "Mi Panel" en el header
 }
 
-export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", backHref = "/admin", soloActivas = false, onSignOut }: Props) {
+export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", backHref = "/admin", soloActivas = false, onSignOut, perfilHref }: Props) {
   const [jornadas, setJornadas] = useState<JornadaResumen[]>([]);
   const [ligaActiva, setLigaActiva] = useState<string>("");
   const [cargando, setCargando] = useState(true);
@@ -64,14 +65,24 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
             <a href={backHref} className="text-amber-400 text-sm">← Admin</a>
             <h1 className="text-xl font-bold mt-1">{titulo}</h1>
           </div>
-          {onSignOut && (
-            <button
-              onClick={onSignOut}
-              className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              Salir
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {perfilHref && (
+              <a
+                href={perfilHref}
+                className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+              >
+                👤 Mi Panel
+              </a>
+            )}
+            {onSignOut && (
+              <button
+                onClick={onSignOut}
+                className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                Salir
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

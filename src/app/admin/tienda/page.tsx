@@ -78,7 +78,7 @@ export default function TiendaPage() {
   };
 
   if (modo === "selector") {
-    return <JornadaSelector onSelect={seleccionarJornada} titulo="Registro en Tienda" soloActivas onSignOut={() => signOut({ callbackUrl: "/login" })} />;
+    return <JornadaSelector onSelect={seleccionarJornada} titulo="Registro en Tienda" soloActivas onSignOut={() => signOut({ callbackUrl: "/login" })} perfilHref="/admin/perfil" />;
   }
 
   // Bloquear si el registro está cerrado

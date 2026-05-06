@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 type Usuario = {
   id: string;
@@ -107,6 +108,10 @@ const fmtFecha = (iso: string) =>
 type Tab = "resumen" | "apostadores" | "ganancias" | "perfil";
 
 export default function PerfilPage() {
+  const { data: session } = useSession();
+  const rolSession = (session?.user as { role?: string })?.role ?? "";
+  const esAdminNav = rolSession === "admin" || rolSession === "superadmin";
+
   const [data, setData] = useState<PerfilData | null>(null);
   const [cargando, setCargando] = useState(true);
   const [tab, setTab] = useState<Tab>("resumen");
@@ -219,8 +224,8 @@ export default function PerfilPage() {
       <div className="bg-brand text-white py-4 px-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
           <div>
-            <Link href="/admin/tienda" className="text-amber-400 text-sm">
-              ← Inicio
+            <Link href={esAdminNav ? "/admin" : "/admin/tienda"} className="text-amber-400 text-sm">
+              ← {esAdminNav ? "Admin" : "Inicio"}
             </Link>
             <h1 className="text-xl font-bold mt-1">Mi Panel</h1>
           </div>
@@ -470,11 +475,13 @@ export default function PerfilPage() {
         {/* ── Tab: Ganancias ───────────────────────────────────────────── */}
         {tab === "ganancias" && (
           <>
-            {/* Comisión tienda (vendedores/tienda) */}
+            {/* Ventas personales por jornada */}
             {porJornada.length > 0 && (
               <>
                 <p className="text-xs text-gray-400 font-medium px-1 uppercase tracking-wider">
-                  Comisión por ventas en tienda ($2/quiniela)
+                  {porJornada.some((j) => j.tienda > 0)
+                    ? "Comisión por ventas en tienda ($2/quiniela)"
+                    : "Ventas por jornada"}
                 </p>
                 <div className="space-y-3">
                   {porJornada.map((j) => (
@@ -598,7 +605,8 @@ export default function PerfilPage() {
             {porJornada.length === 0 && comisionesAdmin.length === 0 && (
               <div className="text-center py-12 text-gray-400">
                 <p className="text-3xl mb-2">💰</p>
-                <p>Sin comisiones registradas todavia</p>
+                <p>Sin registros todavía</p>
+                <p className="text-sm mt-1">Las ganancias aparecen aquí conforme registres quinielas</p>
               </div>
             )}
           </>
