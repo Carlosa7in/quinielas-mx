@@ -102,19 +102,51 @@ function PagoAcciones({
   }
 
   const metodo = quiniela.canal === "oxxo" ? "OXXO" : "transferencia";
+
+  const confirmarYEnviar = async () => {
+    await cambiar("confirmado");
+    // Abrir WhatsApp al cliente con el link del ticket
+    if (quiniela.telefonoCliente) {
+      const tel = quiniela.telefonoCliente.replace(/\D/g, "");
+      const telWA = tel.length === 10 ? `52${tel}` : tel;
+      const ticketUrl = `${window.location.origin}/ticket/${quiniela.folio}`;
+      const msg = [
+        `¡Hola${quiniela.nombreCliente ? ` ${quiniela.nombreCliente.split(" ")[0]}` : ""}! 🎉`,
+        ``,
+        `Tu pago ha sido *confirmado*. Ya puedes ver tu quiniela:`,
+        ``,
+        `👉 ${ticketUrl}`,
+        ``,
+        `*Folio:* ${quiniela.folio}`,
+        `¡Buena suerte! 🍀`,
+      ].join("\n");
+      window.open(`https://wa.me/${telWA}?text=${encodeURIComponent(msg)}`, "_blank");
+    }
+  };
+
   return (
-    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
-      <span className="text-xs text-gray-400 flex-1">
+    <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5">
+      <div className="flex items-center gap-1 text-xs text-gray-400">
         ⏳ {metodo} pendiente
-      </span>
-      <button onClick={() => cambiar("confirmado")} disabled={cargando}
-        className="text-xs bg-green-100 hover:bg-green-200 text-green-800 font-semibold px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50">
-        {cargando ? "..." : "✓ Confirmar pago"}
-      </button>
-      <button onClick={() => cambiar("no_realizado")} disabled={cargando}
-        className="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-semibold px-2 py-1 rounded-lg transition-colors disabled:opacity-50">
-        {cargando ? "..." : "✗ No pagó"}
-      </button>
+        {quiniela.referenciaPago && (
+          <span className="ml-1 text-blue-500 font-medium">· Ref: {quiniela.referenciaPago}</span>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <button onClick={confirmarYEnviar} disabled={cargando}
+          className="flex-1 text-xs bg-green-100 hover:bg-green-200 text-green-800 font-semibold px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1">
+          {cargando ? "..." : (
+            <>
+              ✓ Confirmar
+              {quiniela.telefonoCliente && <span className="text-green-600">· enviar ticket 📲</span>}
+            </>
+          )}
+        </button>
+        <button onClick={() => cambiar("no_realizado")} disabled={cargando}
+          className="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-semibold px-2 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+          {cargando ? "..." : "✗ No pagó"}
+        </button>
+      </div>
     </div>
   );
 }
