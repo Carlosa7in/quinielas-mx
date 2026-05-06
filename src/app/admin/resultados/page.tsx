@@ -6,9 +6,11 @@ type Partido = {
   id: string;
   equipoLocal: string;
   equipoVisita: string;
+  liga: string;
   resultado: string | null;
   golesLocal: number | null;
   golesVisita: number | null;
+  fechaHora: string | null;
 };
 
 type Jornada = {
@@ -16,9 +18,41 @@ type Jornada = {
   numero: number;
   nombre: string | null;
   temporada: string;
+  liga: string;
   estado: string;
   partidos: Partido[];
 };
+
+type EspnResultado = {
+  equipoLocal: string;
+  equipoVisita: string;
+  golesLocal: number;
+  golesVisita: number;
+  resultado: "1" | "X" | "2";
+  liga: string;
+};
+
+function normEspn(s: string): string {
+  return (s ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim();
+}
+
+function matchPartido(local: string, visita: string, lista: EspnResultado[]): EspnResultado | null {
+  const nl = normEspn(local);
+  const nv = normEspn(visita);
+  for (const r of lista) {
+    const rl = normEspn(r.equipoLocal);
+    const rv = normEspn(r.equipoVisita);
+    const localOk  = rl === nl || rl.includes(nl) || nl.includes(rl);
+    const visitaOk = rv === nv || rv.includes(nv) || nv.includes(rv);
+    if (localOk && visitaOk) return r;
+  }
+  return null;
+}
 
 type EstadoPartido = {
   resultado: string;
@@ -34,6 +68,8 @@ export default function ResultadosPage() {
   const [estados, setEstados] = useState<Record<string, EstadoPartido>>({});
   const [finalizada, setFinalizada] = useState(false);
   const [ganadoras, setGanadoras] = useState<{ folio: string; nombreCliente: string | null; aciertos: number | null }[]>([]);
+  const [importando, setImportando] = useState(false);
+  const [importMsg, setImportMsg] = useState<{ texto: string; tipo: "ok" | "error" | "info" } | null>(null);
 
   const cargarJornada = async (j: JornadaResumen) => {
     const res = await fetch(`/api/jornadas?id=${j.id}`);
@@ -93,6 +129,71 @@ export default function ResultadosPage() {
       }
     }
     set(partidoId, "guardando", false);
+  };
+
+  const importarEspn = async () => {
+    if (!jornada) return;
+    setImportando(true);
+    setImportMsg(null);
+    try {
+      // Determinar ligas únicas de los partidos (para jornadas Mixta)
+      const ligasUnicas = [...new Set(jornada.partidos.map((p) => p.liga).filter(Boolean))];
+      const ligasParam = ligasUnicas.join(",");
+
+      // Rango de fechas basado en la jornada (± 2 días del primer y último partido)
+      const fechas = jornada.partidos
+        .map((p) => p.fechaHora ? new Date(p.fechaHora).getTime() : null)
+        .filter((t): t is number => t !== null);
+
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const fmtDate = (d: Date) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+
+      let desdeStr = "", hastaStr = "";
+      if (fechas.length > 0) {
+        const minT = new Date(Math.min(...fechas)); minT.setDate(minT.getDate() - 1);
+        const maxT = new Date(Math.max(...fechas)); maxT.setDate(maxT.getDate() + 2);
+        desdeStr = `&desde=${fmtDate(minT)}&hasta=${fmtDate(maxT)}`;
+      }
+
+      const res = await fetch(`/api/espn-resultados?ligas=${encodeURIComponent(ligasParam)}${desdeStr}`);
+      const data = await res.json();
+      const espnLista: EspnResultado[] = data.resultados ?? [];
+
+      if (espnLista.length === 0) {
+        setImportMsg({ texto: "ESPN no devolvió resultados para este rango de fechas.", tipo: "info" });
+        return;
+      }
+
+      let matched = 0;
+      setEstados((prev) => {
+        const next = { ...prev };
+        for (const partido of jornada.partidos) {
+          const r = matchPartido(partido.equipoLocal, partido.equipoVisita, espnLista);
+          if (r) {
+            matched++;
+            next[partido.id] = {
+              ...next[partido.id],
+              resultado: r.resultado,
+              golesLocal: String(r.golesLocal),
+              golesVisita: String(r.golesVisita),
+              guardado: false,
+              error: "",
+            };
+          }
+        }
+        return next;
+      });
+
+      const noMatch = jornada.partidos.length - matched;
+      setImportMsg({
+        texto: `✅ ${matched} partido${matched !== 1 ? "s" : ""} importado${matched !== 1 ? "s" : ""}${noMatch > 0 ? ` · ${noMatch} sin match (revisa los nombres)` : ""}. Revisa y guarda cada uno.`,
+        tipo: matched > 0 ? "ok" : "error",
+      });
+    } catch (err) {
+      setImportMsg({ texto: "Error al conectar con ESPN: " + String(err), tipo: "error" });
+    } finally {
+      setImportando(false);
+    }
   };
 
   const resueltos = Object.values(estados).filter((e) => e.guardado).length;
@@ -184,6 +285,30 @@ export default function ResultadosPage() {
             )}
           </div>
         )}
+
+        {/* Botón importar ESPN */}
+        <div className="space-y-2">
+          <button
+            onClick={importarEspn}
+            disabled={importando}
+            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white font-bold py-3 rounded-xl transition-colors text-sm"
+          >
+            {importando ? (
+              <>⏳ Consultando ESPN...</>
+            ) : (
+              <>📡 Importar resultados de ESPN</>
+            )}
+          </button>
+          {importMsg && (
+            <div className={`rounded-xl px-4 py-2.5 text-sm font-medium ${
+              importMsg.tipo === "ok"    ? "bg-green-50 text-green-700 border border-green-200" :
+              importMsg.tipo === "error" ? "bg-red-50 text-red-700 border border-red-200" :
+                                          "bg-blue-50 text-blue-700 border border-blue-200"
+            }`}>
+              {importMsg.texto}
+            </div>
+          )}
+        </div>
 
         {/* Partidos */}
         {jornada?.partidos.map((partido) => {
