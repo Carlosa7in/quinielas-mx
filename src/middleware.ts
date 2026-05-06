@@ -18,11 +18,12 @@ export async function middleware(req: NextRequest) {
     if (!rolesPermitidos.includes(rol)) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
-    // Rol tienda/vendedor: solo puede entrar a /admin/tienda y /admin/perfil
+    // Rol tienda/vendedor: acceso limitado a su panel y funciones permitidas
     if (
       (rol === "tienda" || rol === "vendedor") &&
       !pathname.startsWith("/admin/tienda") &&
-      !pathname.startsWith("/admin/perfil")
+      !pathname.startsWith("/admin/perfil") &&
+      !pathname.startsWith("/admin/forma")
     ) {
       return NextResponse.redirect(new URL("/admin/tienda", req.url));
     }

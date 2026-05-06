@@ -70,69 +70,91 @@ export default function TiendaPage() {
 
   /* ── Pantalla de inicio ──────────────────────────────────────── */
   if (modo === "home") {
+    const rol = (session?.user as { role?: string })?.role ?? "";
+    const rolLabel: Record<string, string> = { tienda: "Tienda", vendedor: "Vendedor", admin: "Admin", superadmin: "Superadmin" };
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
+        {/* Header igual al admin panel */}
         <div className="bg-brand text-white py-6 px-4">
-          <div className="max-w-md mx-auto flex items-center justify-between">
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "40px", objectFit: "contain" }} />
-              <div>
-                <h1 className="text-xl font-bold">Mi Panel</h1>
-                {nombreUsuario && (
-                  <p className="text-amber-300 text-xs">Hola, {nombreUsuario}</p>
-                )}
-              </div>
+              <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "40px", objectFit: "contain" }} />
+              <h1 className="text-2xl font-bold">Mi Panel</h1>
             </div>
-            <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              Salir
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <p className="text-white text-sm font-medium">{nombreUsuario}</p>
+                <p className="text-amber-400 text-xs capitalize">{rolLabel[rol] ?? rol}</p>
+              </div>
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                Salir
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="max-w-md mx-auto px-4 py-6 space-y-3">
-          {/* Registrar */}
-          <button
-            onClick={() => setModo("selector")}
-            className="w-full bg-amber-700 hover:bg-amber-600 text-white rounded-2xl p-5 flex items-center gap-4 transition-colors text-left"
-          >
-            <span className="text-4xl">✏️</span>
-            <div>
-              <p className="font-bold text-lg">Registrar en Tienda</p>
-              <p className="text-amber-200 text-sm">Capturar quiniela de un cliente</p>
-            </div>
-            <span className="ml-auto text-2xl opacity-60">→</span>
-          </button>
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+          {/* Acciones */}
+          <div className="grid grid-cols-1 gap-3">
+            <button
+              onClick={() => setModo("selector")}
+              className="bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left"
+            >
+              <span className="text-2xl">🏪</span>
+              <div>
+                <p className="font-bold">Registro en Tienda</p>
+                <p className="text-amber-300/70 text-sm">Registrar quiniela presencial e imprimir ticket</p>
+              </div>
+            </button>
 
-          {/* Mis ganancias */}
-          <a
-            href="/admin/perfil?tab=ganancias"
-            className="w-full bg-white border border-gray-200 hover:bg-gray-50 rounded-2xl p-5 flex items-center gap-4 transition-colors text-left block"
-          >
-            <span className="text-4xl">💰</span>
-            <div>
-              <p className="font-bold text-gray-800 text-lg">Mis Ganancias</p>
-              <p className="text-gray-500 text-sm">Comisiones y ventas por jornada</p>
-            </div>
-            <span className="ml-auto text-2xl text-gray-300">→</span>
-          </a>
+            <a
+              href="/admin/forma"
+              className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
+            >
+              <span className="text-2xl">🖨️</span>
+              <div>
+                <p className="font-bold">Imprimir Formas</p>
+                <p className="text-gray-500 text-sm">Formas en blanco o con picks aleatorios</p>
+              </div>
+            </a>
 
-          {/* Mi perfil */}
-          <a
-            href="/admin/perfil?tab=perfil"
-            className="w-full bg-white border border-gray-200 hover:bg-gray-50 rounded-2xl p-5 flex items-center gap-4 transition-colors text-left block"
-          >
-            <span className="text-4xl">👤</span>
-            <div>
-              <p className="font-bold text-gray-800 text-lg">Mi Perfil</p>
-              <p className="text-gray-500 text-sm">Editar datos y cambiar contraseña</p>
-            </div>
-            <span className="ml-auto text-2xl text-gray-300">→</span>
-          </a>
+            <a
+              href="/admin/perfil?tab=ganancias"
+              className="bg-green-700 hover:bg-green-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+            >
+              <span className="text-2xl">💰</span>
+              <div>
+                <p className="font-bold">Mis Ganancias</p>
+                <p className="text-green-200 text-sm">Comisiones y ventas por jornada</p>
+              </div>
+            </a>
+
+            <a
+              href="/admin/perfil?tab=apostadores"
+              className="bg-teal-700 hover:bg-teal-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+            >
+              <span className="text-2xl">📱</span>
+              <div>
+                <p className="font-bold">Mis Apostadores</p>
+                <p className="text-teal-200 text-sm">Historial de clientes registrados</p>
+              </div>
+            </a>
+
+            <a
+              href="/admin/perfil?tab=perfil"
+              className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
+            >
+              <span className="text-2xl">👤</span>
+              <div>
+                <p className="font-bold">Mi Perfil</p>
+                <p className="text-gray-500 text-sm">Editar datos y cambiar contraseña</p>
+              </div>
+            </a>
+          </div>
         </div>
       </div>
     );
