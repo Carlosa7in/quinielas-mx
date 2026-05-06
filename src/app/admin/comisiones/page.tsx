@@ -15,7 +15,7 @@ type QuinielaItem = {
 type JornadaDesglose = {
   jornadaId: string; jornadaNombre: string; liga: string; temporada: string;
   total: number; tienda: number; online: number;
-  recaudado: number; comision: number;
+  recaudado: number; comision: number; comisionAdmin: number; comisionTotal: number;
   pagado: boolean; pagadoEn: string | null; montoPagado: number | null;
   quinielas: QuinielaItem[];
 };
@@ -23,7 +23,7 @@ type JornadaDesglose = {
 type VendedorReporte = {
   id: string; nombre: string; rol: string; puntoVenta: string | null;
   total: number; tienda: number; online: number;
-  recaudado: number; ganadoras: number; comisionTotal: number; pendientePago: number;
+  recaudado: number; ganadoras: number; comisionTotal: number; comisionAdminTotal: number; pendientePago: number;
   porJornada: JornadaDesglose[];
 };
 
@@ -54,6 +54,7 @@ export default function ComisionesPage() {
 
   const [reporte, setReporte] = useState<VendedorReporte[]>([]);
   const [sinAsignar, setSinAsignar] = useState(0);
+  const [numAdmins, setNumAdmins] = useState(0);
   const [jornadas, setJornadas] = useState<JornadaOpcion[]>([]);
   const [jornadaId, setJornadaId] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -71,7 +72,7 @@ export default function ComisionesPage() {
     const url = jornadaId ? `/api/admin/comisiones?jornadaId=${jornadaId}` : "/api/admin/comisiones";
     fetch(url)
       .then((r) => r.json())
-      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); })
+      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); setNumAdmins(data.numAdmins ?? 0); })
       .finally(() => setCargando(false));
   }, [jornadaId]);
 
@@ -162,8 +163,15 @@ export default function ComisionesPage() {
                 <span className="text-stone-300">Total recaudado</span>
                 <span className="font-bold">${fmt(recaudadoGeneral)}</span>
               </div>
-              <div className="flex justify-between text-red-400">
-                <span>− 15% dueños</span>
+              <div className="flex justify-between text-blue-400">
+                <span>
+                  − 15% fondo admin
+                  {numAdmins > 0 && (
+                    <span className="text-blue-500 text-xs ml-2">
+                      (${fmt(cutDuenos / numAdmins)} × {numAdmins} admins)
+                    </span>
+                  )}
+                </span>
                 <span className="font-bold">−${fmt(cutDuenos)}</span>
               </div>
               <div className="flex justify-between text-orange-400">
@@ -210,10 +218,15 @@ export default function ComisionesPage() {
                       <span className="text-gray-400 text-sm ml-2">{expandido ? "▲" : "▼"}</span>
                     </div>
                     {/* Mini resumen */}
-                    <div className="flex gap-4 mt-2 text-sm">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm">
                       <span className="text-green-700 font-semibold">{v.total} quinielas</span>
                       <span className="text-yellow-600 font-semibold">${fmt(v.recaudado)}</span>
-                      {v.comisionTotal > 0 && (
+                      {v.comisionAdminTotal > 0 && (
+                        <span className="text-blue-600 font-semibold text-xs">
+                          💼 ${fmt(v.comisionAdminTotal)} fondo admin
+                        </span>
+                      )}
+                      {(v.comisionTotal > 0 || v.comisionAdminTotal > 0) && (
                         <span className={v.pendientePago > 0 ? "text-orange-500 font-semibold" : "text-gray-400"}>
                           {v.pendientePago > 0 ? `⏳ $${fmt(v.pendientePago)} pendiente` : "✅ Todo pagado"}
                         </span>
@@ -238,7 +251,7 @@ export default function ComisionesPage() {
                                 <p className="text-xs text-gray-400">{j.temporada}</p>
                               </div>
                               {/* Estado de pago de comisión */}
-                              {j.comision > 0 && (
+                              {j.comisionTotal > 0 && (
                                 <div className="text-right">
                                   {j.pagado ? (
                                     <div>
@@ -248,7 +261,7 @@ export default function ComisionesPage() {
                                       )}
                                       {esSuperadmin && (
                                         <button
-                                          onClick={() => marcarPago(v.id, j.jornadaId, j.comision, true)}
+                                          onClick={() => marcarPago(v.id, j.jornadaId, j.comisionTotal, true)}
                                           disabled={!!estaPagando}
                                           className="text-[10px] text-red-400 hover:text-red-600 mt-0.5"
                                         >
@@ -259,11 +272,11 @@ export default function ComisionesPage() {
                                   ) : (
                                     <div className="text-right">
                                       <p className="text-xs text-orange-500 font-bold">
-                                        ⏳ ${fmt(j.comision)} pendiente
+                                        ⏳ ${fmt(j.comisionTotal)} pendiente
                                       </p>
                                       {esSuperadmin && (
                                         <button
-                                          onClick={() => marcarPago(v.id, j.jornadaId, j.comision)}
+                                          onClick={() => marcarPago(v.id, j.jornadaId, j.comisionTotal)}
                                           disabled={!!estaPagando}
                                           className="mt-1 text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg transition-colors disabled:opacity-50"
                                         >
@@ -277,25 +290,47 @@ export default function ComisionesPage() {
                             </div>
 
                             {/* Stats de la jornada */}
-                            <div className="grid grid-cols-3 gap-2">
-                              <div className="bg-green-50 rounded-lg p-2 text-center">
-                                <p className="font-bold text-green-700">{j.total}</p>
-                                <p className="text-[10px] text-gray-500">Quinielas</p>
-                                {(j.tienda > 0 || j.online > 0) && (
-                                  <p className="text-[9px] text-gray-400">
-                                    {j.tienda > 0 && `${j.tienda}T`}{j.tienda > 0 && j.online > 0 && "·"}{j.online > 0 && `${j.online}O`}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="bg-yellow-50 rounded-lg p-2 text-center">
-                                <p className="font-bold text-yellow-600">${fmt(j.recaudado)}</p>
-                                <p className="text-[10px] text-gray-500">Recaudado</p>
-                              </div>
-                              <div className="bg-orange-50 rounded-lg p-2 text-center">
-                                <p className="font-bold text-orange-600">${fmt(j.comision)}</p>
-                                <p className="text-[10px] text-gray-500">Comisión</p>
-                                <p className="text-[9px] text-gray-400">$2 × {j.tienda}</p>
-                              </div>
+                            <div className={`grid gap-2 ${j.comisionAdmin > 0 ? "grid-cols-2" : "grid-cols-3"}`}>
+                              {j.total > 0 && (
+                                <div className="bg-green-50 rounded-lg p-2 text-center">
+                                  <p className="font-bold text-green-700">{j.total}</p>
+                                  <p className="text-[10px] text-gray-500">Quinielas</p>
+                                  {(j.tienda > 0 || j.online > 0) && (
+                                    <p className="text-[9px] text-gray-400">
+                                      {j.tienda > 0 && `${j.tienda}T`}{j.tienda > 0 && j.online > 0 && "·"}{j.online > 0 && `${j.online}O`}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                              {j.recaudado > 0 && (
+                                <div className="bg-yellow-50 rounded-lg p-2 text-center">
+                                  <p className="font-bold text-yellow-600">${fmt(j.recaudado)}</p>
+                                  <p className="text-[10px] text-gray-500">Recaudado</p>
+                                </div>
+                              )}
+                              {j.comision > 0 && (
+                                <div className="bg-orange-50 rounded-lg p-2 text-center">
+                                  <p className="font-bold text-orange-600">${fmt(j.comision)}</p>
+                                  <p className="text-[10px] text-gray-500">Com. tienda</p>
+                                  <p className="text-[9px] text-gray-400">$2 × {j.tienda}</p>
+                                </div>
+                              )}
+                              {j.comisionAdmin > 0 && (
+                                <div className="bg-blue-50 rounded-lg p-2 text-center col-span-full">
+                                  <div className="flex items-center justify-between px-1">
+                                    <div className="text-left">
+                                      <p className="font-bold text-blue-700">${fmt(j.comisionAdmin)}</p>
+                                      <p className="text-[10px] text-gray-500">Fondo admin (15%)</p>
+                                    </div>
+                                    {j.comision > 0 && (
+                                      <div className="text-right border-l border-blue-200 pl-3">
+                                        <p className="font-bold text-indigo-700">${fmt(j.comisionTotal)}</p>
+                                        <p className="text-[10px] text-gray-500">Total a pagar</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
                             {/* Lista de quinielas individuales */}

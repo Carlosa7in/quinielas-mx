@@ -17,6 +17,8 @@ type Stats = {
   totalRecaudado: number;
   comisionGanada: number;
   comisionPendiente: number;
+  comisionAdmin: number;
+  comisionAdminPendiente: number;
 };
 
 type JornadaRow = {
@@ -28,6 +30,18 @@ type JornadaRow = {
   online: number;
   recaudado: number;
   comision: number;
+  pagado: boolean;
+  pagadoEn: string | null;
+};
+
+type ComisionAdminRow = {
+  jornadaId: string;
+  jornadaNombre: string;
+  liga: string;
+  temporada: string;
+  recaudadoTotal: number;
+  numAdmins: number;
+  miParte: number;
   pagado: boolean;
   pagadoEn: string | null;
 };
@@ -51,6 +65,7 @@ type PerfilData = {
   usuario: Usuario;
   stats: Stats;
   porJornada: JornadaRow[];
+  comisionesAdmin: ComisionAdminRow[];
   apostadores: Apostador[];
   recientes: Reciente[];
 };
@@ -183,7 +198,8 @@ export default function PerfilPage() {
     );
   }
 
-  const { usuario, stats, porJornada, apostadores, recientes } = data;
+  const { usuario, stats, porJornada, comisionesAdmin, apostadores, recientes } = data;
+  const esAdminRole = usuario.rol === "admin" || usuario.rol === "superadmin";
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "resumen", label: "Resumen" },
@@ -192,8 +208,10 @@ export default function PerfilPage() {
     { id: "perfil", label: "Mi Perfil" },
   ];
 
-  const totalComision = porJornada.reduce((s, j) => s + j.comision, 0);
-  const totalPagado = porJornada.filter((j) => j.pagado).reduce((s, j) => s + j.comision, 0);
+  const totalComisionTienda = porJornada.reduce((s, j) => s + j.comision, 0);
+  const totalPagadoTienda = porJornada.filter((j) => j.pagado).reduce((s, j) => s + j.comision, 0);
+  const totalComisionAdmin = comisionesAdmin.reduce((s, j) => s + j.miParte, 0);
+  const totalPagadoAdmin = comisionesAdmin.filter((j) => j.pagado).reduce((s, j) => s + j.miParte, 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -265,18 +283,32 @@ export default function PerfilPage() {
               </div>
               <div className="bg-white rounded-xl shadow-sm p-4 text-center">
                 <p className="text-2xl font-bold text-yellow-600">${fmt(stats.totalRecaudado)}</p>
-                <p className="text-xs text-gray-500">Recaudado</p>
+                <p className="text-xs text-gray-500">Recaudado personal</p>
               </div>
-              <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                <p className="text-2xl font-bold text-amber-600">${fmt(stats.comisionGanada)}</p>
-                <p className="text-xs text-gray-500">Comisión ganada</p>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                <p className={`text-2xl font-bold ${stats.comisionPendiente > 0 ? "text-orange-500" : "text-gray-400"}`}>
-                  ${fmt(stats.comisionPendiente)}
-                </p>
-                <p className="text-xs text-gray-500">Pendiente de cobrar</p>
-              </div>
+              {stats.comisionGanada > 0 && (
+                <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                  <p className="text-2xl font-bold text-amber-600">${fmt(stats.comisionGanada)}</p>
+                  <p className="text-xs text-gray-500">Comisión tienda</p>
+                </div>
+              )}
+              {esAdminRole && stats.comisionAdmin > 0 && (
+                <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                  <p className="text-2xl font-bold text-blue-600">${fmt(stats.comisionAdmin)}</p>
+                  <p className="text-xs text-gray-500">Fondo admin (15%)</p>
+                </div>
+              )}
+              {stats.comisionPendiente > 0 && (
+                <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                  <p className="text-2xl font-bold text-orange-500">${fmt(stats.comisionPendiente)}</p>
+                  <p className="text-xs text-gray-500">Pendiente tienda</p>
+                </div>
+              )}
+              {esAdminRole && stats.comisionAdminPendiente > 0 && (
+                <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                  <p className="text-2xl font-bold text-orange-400">${fmt(stats.comisionAdminPendiente)}</p>
+                  <p className="text-xs text-gray-500">Pendiente admin</p>
+                </div>
+              )}
             </div>
 
             {/* Ventas por jornada */}
@@ -366,7 +398,7 @@ export default function PerfilPage() {
                           <td className="px-3 py-2 text-gray-500 truncate max-w-[80px]">
                             {q.nombreCliente ?? "—"}
                           </td>
-                          <td className="px-2 py-2 text-center">
+                          <td className="px2 py-2 text-center">
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${CANAL_COLOR[q.canal] ?? "bg-gray-100 text-gray-600"}`}>
                               {q.canal === "tienda" ? "Tienda" : "Online"}
                             </span>
@@ -385,7 +417,7 @@ export default function PerfilPage() {
               </div>
             )}
 
-            {stats.totalQuinielas === 0 && (
+            {stats.totalQuinielas === 0 && !esAdminRole && (
               <div className="text-center py-10 text-gray-400">
                 <p className="text-3xl mb-2">📋</p>
                 <p>Todavia no tienes quinielas registradas</p>
@@ -438,13 +470,12 @@ export default function PerfilPage() {
         {/* ── Tab: Ganancias ───────────────────────────────────────────── */}
         {tab === "ganancias" && (
           <>
-            {porJornada.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
-                <p className="text-3xl mb-2">💰</p>
-                <p>Sin comisiones registradas todavia</p>
-              </div>
-            ) : (
+            {/* Comisión tienda (vendedores/tienda) */}
+            {porJornada.length > 0 && (
               <>
+                <p className="text-xs text-gray-400 font-medium px-1 uppercase tracking-wider">
+                  Comisión por ventas en tienda ($2/quiniela)
+                </p>
                 <div className="space-y-3">
                   {porJornada.map((j) => (
                     <div key={j.jornadaId} className="bg-white rounded-xl shadow-sm p-4">
@@ -478,25 +509,97 @@ export default function PerfilPage() {
                   ))}
                 </div>
 
-                {/* Total */}
-                <div className="bg-amber-900 text-white rounded-2xl p-4">
-                  <p className="text-xs font-bold tracking-widest text-amber-400 uppercase mb-3">Total</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white/10 rounded-lg p-3 text-center">
-                      <p className="text-xl font-bold text-amber-300">${fmt(totalComision)}</p>
-                      <p className="text-xs text-amber-400">Comision total</p>
+                {/* Subtotal tienda */}
+                {totalComisionTienda > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-amber-800">Subtotal tienda</p>
+                      <p className="text-xs text-amber-600">${fmt(totalPagadoTienda)} pagado</p>
                     </div>
-                    <div className="bg-white/10 rounded-lg p-3 text-center">
-                      <p className={`text-xl font-bold ${stats.comisionPendiente > 0 ? "text-orange-300" : "text-green-300"}`}>
-                        ${fmt(totalPagado)}
-                      </p>
-                      <p className="text-xs text-amber-400">
-                        {stats.comisionPendiente > 0 ? `$${fmt(stats.comisionPendiente)} pendiente` : "Todo pagado"}
-                      </p>
-                    </div>
+                    <p className="text-xl font-bold text-amber-700">${fmt(totalComisionTienda)}</p>
                   </div>
+                )}
+              </>
+            )}
+
+            {/* Fondo de administración (15%) — solo admin/superadmin */}
+            {esAdminRole && comisionesAdmin.length > 0 && (
+              <>
+                <p className="text-xs text-gray-400 font-medium px-1 uppercase tracking-wider mt-2">
+                  Fondo de administración · 15% del total repartido entre {comisionesAdmin[0]?.numAdmins ?? "—"} administradores
+                </p>
+                <div className="space-y-3">
+                  {comisionesAdmin.map((j) => (
+                    <div key={j.jornadaId} className="bg-white rounded-xl shadow-sm p-4">
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div>
+                          <p className="font-semibold text-gray-800">{j.jornadaNombre}</p>
+                          <p className="text-xs text-gray-400">{j.liga} · {j.temporada}</p>
+                        </div>
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 ${j.pagado ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
+                          {j.pagado ? "Pagado" : "Pendiente"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-gray-50 rounded-lg p-2 text-center">
+                          <p className="font-bold text-gray-700">${fmt(j.recaudadoTotal)}</p>
+                          <p className="text-[10px] text-gray-500">Total jornada</p>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-2 text-center">
+                          <p className="font-bold text-blue-600">${fmt(j.recaudadoTotal * 0.15)}</p>
+                          <p className="text-[10px] text-gray-500">15% fondo</p>
+                        </div>
+                        <div className="bg-indigo-50 rounded-lg p-2 text-center">
+                          <p className="font-bold text-indigo-600">${fmt(j.miParte)}</p>
+                          <p className="text-[10px] text-gray-500">Tu parte</p>
+                        </div>
+                      </div>
+                      {j.pagado && j.pagadoEn && (
+                        <p className="text-xs text-green-600 mt-2">Pagado el {fmtFecha(j.pagadoEn)}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Subtotal fondo admin */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-blue-800">Subtotal fondo admin</p>
+                    <p className="text-xs text-blue-600">${fmt(totalPagadoAdmin)} pagado</p>
+                  </div>
+                  <p className="text-xl font-bold text-blue-700">${fmt(totalComisionAdmin)}</p>
                 </div>
               </>
+            )}
+
+            {/* Gran total */}
+            {(totalComisionTienda > 0 || totalComisionAdmin > 0) && (
+              <div className="bg-amber-900 text-white rounded-2xl p-4">
+                <p className="text-xs font-bold tracking-widest text-amber-400 uppercase mb-3">Total acumulado</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/10 rounded-lg p-3 text-center">
+                    <p className="text-xl font-bold text-amber-300">
+                      ${fmt(totalComisionTienda + totalComisionAdmin)}
+                    </p>
+                    <p className="text-xs text-amber-400">Ganancias totales</p>
+                  </div>
+                  <div className="bg-white/10 rounded-lg p-3 text-center">
+                    <p className={`text-xl font-bold ${(stats.comisionPendiente + stats.comisionAdminPendiente) > 0 ? "text-orange-300" : "text-green-300"}`}>
+                      ${fmt(stats.comisionPendiente + stats.comisionAdminPendiente)}
+                    </p>
+                    <p className="text-xs text-amber-400">
+                      {(stats.comisionPendiente + stats.comisionAdminPendiente) > 0 ? "Pendiente de cobrar" : "Todo pagado"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {porJornada.length === 0 && comisionesAdmin.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <p className="text-3xl mb-2">💰</p>
+                <p>Sin comisiones registradas todavia</p>
+              </div>
             )}
           </>
         )}

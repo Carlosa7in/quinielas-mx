@@ -3,7 +3,6 @@ import { getToken } from "next-auth/jwt";
 import { prisma, sql } from "@/lib/prisma";
 
 // GET /api/admin/comisiones?jornadaId=xxx
-// superadmin → todos | admin/vendedor/tienda → solo sus propias ventas
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 403 });
@@ -18,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   const jornadaId = req.nextUrl.searchParams.get("jornadaId") || undefined;
 
-  // Usuarios vendedores
+  // Usuarios del reporte
   const usuarios = await prisma.usuario.findMany({
     where: esSuperadmin
       ? { rol: { in: ["superadmin", "admin", "vendedor", "tienda"] } }
@@ -27,7 +26,12 @@ export async function GET(req: NextRequest) {
     orderBy: { nombre: "asc" },
   });
 
-  // Quinielas con usuarioId (ambos canales)
+  // Cuántos admins/superadmins hay (para repartir el 15%)
+  const numAdmins = await prisma.usuario.count({
+    where: { rol: { in: ["admin", "superadmin"] } },
+  });
+
+  // Quinielas del reporte (ventas por usuario)
   const quinielas = await prisma.quiniela.findMany({
     where: {
       usuarioId: esSuperadmin ? { not: null } : userId,
@@ -48,6 +52,36 @@ export async function GET(req: NextRequest) {
     orderBy: { folio: "desc" },
   });
 
+  // Recaudado TOTAL por jornada (TODAS las quinielas, de todos los usuarios)
+  // Necesario para calcular el 15% de admins
+  const todasLasQ = await prisma.quiniela.findMany({
+    where: jornadaId ? { jornadaId } : {},
+    select: {
+      jornadaId: true,
+      monto: true,
+      jornada: { select: { id: true, nombre: true, numero: true, liga: true, temporada: true } },
+    },
+  });
+
+  const recaudadoGlobalPorJornada = new Map<string, {
+    recaudado: number;
+    jornadaNombre: string;
+    liga: string;
+    temporada: string;
+  }>();
+  for (const q of todasLasQ) {
+    const jId = q.jornadaId;
+    if (!recaudadoGlobalPorJornada.has(jId)) {
+      recaudadoGlobalPorJornada.set(jId, {
+        recaudado: 0,
+        jornadaNombre: q.jornada.nombre ?? `Jornada ${q.jornada.numero}`,
+        liga: q.jornada.liga,
+        temporada: q.jornada.temporada,
+      });
+    }
+    recaudadoGlobalPorJornada.get(jId)!.recaudado += q.monto;
+  }
+
   // Pagos de comisión registrados
   let pagos: { usuarioId: string; jornadaId: string; monto: number; pagadoEn: string | Date }[] = [];
   try {
@@ -61,25 +95,54 @@ export async function GET(req: NextRequest) {
   } catch { /* tabla aún no existe — ignorar */ }
 
   const COMISION_TIENDA = 2;
+  const esRolAdmin = (r: string) => r === "admin" || r === "superadmin";
+
+  type QItem = {
+    id: string; folio: string; monto: number; canal: string;
+    estado: string; estadoPago: string; nombreCliente: string | null;
+  };
 
   const reporte = usuarios.map((u) => {
     const misQ = quinielas.filter((q) => q.usuarioId === u.id);
 
-    // Agrupar por jornada
+    // Jornadas donde el usuario vendió personalmente
     const jornadasMap = new Map<string, typeof misQ>();
     for (const q of misQ) {
       if (!jornadasMap.has(q.jornadaId)) jornadasMap.set(q.jornadaId, []);
       jornadasMap.get(q.jornadaId)!.push(q);
     }
 
-    const porJornada = [...jornadasMap.entries()].map(([jId, qs]) => {
+    // Construir porJornada con ventas personales
+    const porJornada: Array<{
+      jornadaId: string;
+      jornadaNombre: string;
+      liga: string;
+      temporada: string;
+      total: number;
+      tienda: number;
+      online: number;
+      recaudado: number;
+      comision: number;        // comisión tienda ($2/quiniela)
+      comisionAdmin: number;   // parte del 15% (solo para admin/superadmin)
+      comisionTotal: number;   // suma de ambas
+      pagado: boolean;
+      pagadoEn: string | null;
+      montoPagado: number | null;
+      quinielas: QItem[];
+    }> = [];
+
+    for (const [jId, qs] of jornadasMap.entries()) {
       const jornada = qs[0].jornada;
       const tienda = qs.filter((q) => q.canal === "tienda").length;
       const online = qs.filter((q) => q.canal === "online").length;
       const recaudado = qs.reduce((s, q) => s + q.monto, 0);
       const comision = tienda * COMISION_TIENDA;
+      const globalJ = recaudadoGlobalPorJornada.get(jId);
+      const comisionAdmin = esRolAdmin(u.rol) && numAdmins > 0 && globalJ
+        ? (globalJ.recaudado * 0.15) / numAdmins
+        : 0;
       const pago = pagos.find((p) => p.usuarioId === u.id && p.jornadaId === jId);
-      return {
+      porJornada.push({
         jornadaId: jId,
         jornadaNombre: jornada.nombre ?? `Jornada ${jornada.numero}`,
         liga: jornada.liga,
@@ -89,6 +152,8 @@ export async function GET(req: NextRequest) {
         online,
         recaudado,
         comision,
+        comisionAdmin,
+        comisionTotal: comision + comisionAdmin,
         pagado: !!pago,
         pagadoEn: pago ? (pago.pagadoEn instanceof Date ? pago.pagadoEn.toISOString() : String(pago.pagadoEn)) : null,
         montoPagado: pago?.monto ?? null,
@@ -101,16 +166,47 @@ export async function GET(req: NextRequest) {
           estadoPago: q.estadoPago,
           nombreCliente: q.nombreCliente,
         })),
-      };
-    });
+      });
+    }
 
+    // Para admin/superadmin: agregar jornadas donde NO vendieron pero tienen parte del 15%
+    if (esRolAdmin(u.rol) && numAdmins > 0) {
+      for (const [jId, globalJ] of recaudadoGlobalPorJornada.entries()) {
+        if (!jornadasMap.has(jId)) {
+          const comisionAdmin = (globalJ.recaudado * 0.15) / numAdmins;
+          const pago = pagos.find((p) => p.usuarioId === u.id && p.jornadaId === jId);
+          porJornada.push({
+            jornadaId: jId,
+            jornadaNombre: globalJ.jornadaNombre,
+            liga: globalJ.liga,
+            temporada: globalJ.temporada,
+            total: 0,
+            tienda: 0,
+            online: 0,
+            recaudado: 0,
+            comision: 0,
+            comisionAdmin,
+            comisionTotal: comisionAdmin,
+            pagado: !!pago,
+            pagadoEn: pago ? (pago.pagadoEn instanceof Date ? pago.pagadoEn.toISOString() : String(pago.pagadoEn)) : null,
+            montoPagado: pago?.monto ?? null,
+            quinielas: [],
+          });
+        }
+      }
+    }
+
+    // Totales del usuario
     const total = misQ.length;
     const tienda = misQ.filter((q) => q.canal === "tienda").length;
     const online = misQ.filter((q) => q.canal === "online").length;
     const recaudado = misQ.reduce((s, q) => s + q.monto, 0);
-    const comisionTotal = tienda * COMISION_TIENDA;
+    const comisionTiendaTotal = tienda * COMISION_TIENDA;
+    const comisionAdminTotal = porJornada.reduce((s, j) => s + j.comisionAdmin, 0);
     const ganadoras = misQ.filter((q) => q.estado === "ganadora").length;
-    const pendientePago = porJornada.filter((j) => !j.pagado && j.comision > 0).reduce((s, j) => s + j.comision, 0);
+    const pendientePago = porJornada
+      .filter((j) => !j.pagado && j.comisionTotal > 0)
+      .reduce((s, j) => s + j.comisionTotal, 0);
 
     return {
       ...u,
@@ -119,7 +215,8 @@ export async function GET(req: NextRequest) {
       online,
       recaudado,
       ganadoras,
-      comisionTotal,
+      comisionTotal: comisionTiendaTotal,
+      comisionAdminTotal,
       pendientePago,
       porJornada: porJornada.sort((a, b) => b.jornadaNombre.localeCompare(a.jornadaNombre)),
     };
@@ -133,7 +230,12 @@ export async function GET(req: NextRequest) {
       })
     : [];
 
-  return NextResponse.json({ reporte, sinAsignar: sinAsignarQuinielas.length, esSuperadmin });
+  return NextResponse.json({
+    reporte,
+    sinAsignar: sinAsignarQuinielas.length,
+    esSuperadmin,
+    numAdmins,
+  });
 }
 
 // POST /api/admin/comisiones — marcar comisión como pagada

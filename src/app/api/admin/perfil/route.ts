@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  // Stats
+  // Stats personales
   const totalQuinielas = quinielas.length;
   const totalRecaudado = quinielas.reduce((s, q) => s + q.monto, 0);
   const tiendaQuinielas = quinielas.filter((q) => q.canal === "tienda");
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
     pagosPorJornada.set(p.jornadaId, { monto: p.monto, pagadoEn: p.pagadoEn });
   }
 
-  // Group quinielas by jornada
+  // Group quinielas by jornada (ventas personales)
   const porJornadaMap = new Map<string, {
     jornadaId: string;
     jornadaNombre: string;
@@ -125,10 +125,90 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  // comisionPendiente: sum of comision in jornadas not yet paid
+  // comisionPendiente (ventas tienda, $2 c/u)
   const comisionPendiente = porJornada
     .filter((j) => !j.pagado)
     .reduce((s, j) => s + j.comision, 0);
+
+  // ── Fondo de administración (15%) ──────────────────────────────────────
+  // Solo para admins y superadmins
+  type ComisionAdminRow = {
+    jornadaId: string;
+    jornadaNombre: string;
+    liga: string;
+    temporada: string;
+    recaudadoTotal: number;
+    numAdmins: number;
+    miParte: number;
+    pagado: boolean;
+    pagadoEn: string | null;
+  };
+
+  let comisionesAdmin: ComisionAdminRow[] = [];
+  let totalComisionAdmin = 0;
+  let comisionAdminPendiente = 0;
+
+  const esAdminRole = ["admin", "superadmin"].includes(usuario.rol);
+
+  if (esAdminRole) {
+    // Cuántos admins/superadmins hay en total
+    const numAdmins = await prisma.usuario.count({
+      where: { rol: { in: ["admin", "superadmin"] } },
+    });
+
+    // Recaudado total de TODAS las quinielas, agrupado por jornada
+    const todasLasQ = await prisma.quiniela.findMany({
+      select: {
+        jornadaId: true,
+        monto: true,
+        jornada: {
+          select: { id: true, nombre: true, numero: true, liga: true, temporada: true },
+        },
+      },
+    });
+
+    const recaudadoMap = new Map<string, {
+      recaudado: number;
+      jornadaNombre: string;
+      liga: string;
+      temporada: string;
+    }>();
+
+    for (const q of todasLasQ) {
+      const jId = q.jornadaId;
+      if (!recaudadoMap.has(jId)) {
+        recaudadoMap.set(jId, {
+          recaudado: 0,
+          jornadaNombre: q.jornada.nombre ?? `Jornada ${q.jornada.numero}`,
+          liga: q.jornada.liga,
+          temporada: q.jornada.temporada,
+        });
+      }
+      recaudadoMap.get(jId)!.recaudado += q.monto;
+    }
+
+    for (const [jId, data] of recaudadoMap) {
+      const miParte = numAdmins > 0 ? (data.recaudado * 0.15) / numAdmins : 0;
+      const pago = pagosPorJornada.get(jId);
+      const row: ComisionAdminRow = {
+        jornadaId: jId,
+        jornadaNombre: data.jornadaNombre,
+        liga: data.liga,
+        temporada: data.temporada,
+        recaudadoTotal: data.recaudado,
+        numAdmins,
+        miParte,
+        pagado: !!pago,
+        pagadoEn: pago?.pagadoEn ?? null,
+      };
+      comisionesAdmin.push(row);
+      totalComisionAdmin += miParte;
+      if (!pago) comisionAdminPendiente += miParte;
+    }
+
+    // Ordenar por nombre de jornada desc
+    comisionesAdmin.sort((a, b) => b.jornadaNombre.localeCompare(a.jornadaNombre));
+  }
 
   // Apostadores: group by clienteId or nombreCliente
   const apostadoresMap = new Map<string, { nombre: string; telefono: string | null; totalQuinielas: number }>();
@@ -163,8 +243,11 @@ export async function GET(req: NextRequest) {
       totalRecaudado,
       comisionGanada,
       comisionPendiente,
+      comisionAdmin: totalComisionAdmin,
+      comisionAdminPendiente,
     },
     porJornada,
+    comisionesAdmin,
     apostadores,
     recientes,
   });
