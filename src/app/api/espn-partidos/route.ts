@@ -19,6 +19,8 @@ const NOMBRE_MAP: Record<string, string> = {
   "Leicester City":           "Leicester City",
   "Ipswich Town":             "Ipswich Town",
   "Leeds United":             "Leeds United",
+  "AFC Bournemouth":          "Bournemouth",
+  "Sunderland AFC":           "Sunderland",
   // Champions
   "Paris Saint-Germain":      "PSG",
   "Bayern Munich":            "Bayern Munich",

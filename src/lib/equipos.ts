@@ -49,6 +49,7 @@ const LOGOS: Record<string, string> = {
   "Ipswich Town":          "https://a.espncdn.com/i/teamlogos/soccer/500/373.png",
   "Southampton":           "https://a.espncdn.com/i/teamlogos/soccer/500/376.png",
   "Bournemouth":           "https://a.espncdn.com/i/teamlogos/soccer/500/349.png",
+  "Sunderland":            "https://a.espncdn.com/i/teamlogos/soccer/500/379.png",
 
   // ── La Liga ───────────────────────────────────────────────────────
   "Real Madrid":           "https://a.espncdn.com/i/teamlogos/soccer/500/86.png",
@@ -123,11 +124,12 @@ export const EQUIPOS_POR_LIGA: Record<string, string[]> = {
     "Lille", "Sporting CP", "Celtic", "Brest",
   ],
   "Premier League": [
-    // Temporada 2024-25
+    // Temporada 2025-26
     "Arsenal", "Liverpool", "Manchester City", "Chelsea", "Aston Villa",
     "Tottenham", "Manchester United", "Newcastle", "West Ham", "Brighton",
     "Wolverhampton", "Fulham", "Bournemouth", "Crystal Palace", "Brentford",
     "Nottingham Forest", "Everton", "Leicester City", "Ipswich Town", "Southampton",
+    "Sunderland",
   ],
   "La Liga": [
     // Temporada 2024-25
