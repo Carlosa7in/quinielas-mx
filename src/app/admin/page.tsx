@@ -30,6 +30,34 @@ export default function AdminPage() {
   const [jornadas, setJornadas] = useState<JornadaResumen[]>([]);
   const [cargando, setCargando] = useState(true);
   const [seedStatus, setSeedStatus] = useState("");
+  // Edición inline de nombre
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [guardando, setGuardando] = useState(false);
+
+  const iniciarEdicion = (j: JornadaResumen) => {
+    setEditandoId(j.id);
+    setEditNombre(j.nombre ?? `Jornada ${j.numero}`);
+  };
+
+  const guardarNombre = async (id: string) => {
+    setGuardando(true);
+    try {
+      const res = await fetch(`/api/admin/jornadas/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: editNombre }),
+      });
+      if (res.ok) {
+        setJornadas((prev) =>
+          prev.map((j) => j.id === id ? { ...j, nombre: editNombre.trim() || null } : j)
+        );
+        setEditandoId(null);
+      }
+    } finally {
+      setGuardando(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/jornadas/todas")
@@ -123,16 +151,50 @@ export default function AdminPage() {
                 <div key={j.id} className="bg-white rounded-xl shadow-sm p-4">
                   {/* Título */}
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{LIGA_ICON[j.liga] ?? "⚽"}</span>
-                      <div>
-                        <p className="font-bold text-gray-800">
-                          {j.liga} · {j.nombre ?? `Jornada ${j.numero}`}
-                        </p>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-lg shrink-0">{LIGA_ICON[j.liga] ?? "⚽"}</span>
+                      <div className="flex-1 min-w-0">
+                        {editandoId === j.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              className="border border-blue-400 rounded px-2 py-0.5 text-sm font-bold text-gray-800 w-full"
+                              value={editNombre}
+                              onChange={(e) => setEditNombre(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === "Enter") guardarNombre(j.id); if (e.key === "Escape") setEditandoId(null); }}
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => guardarNombre(j.id)}
+                              disabled={guardando}
+                              className="text-xs bg-blue-600 text-white px-2 py-1 rounded shrink-0"
+                            >
+                              {guardando ? "…" : "✓"}
+                            </button>
+                            <button
+                              onClick={() => setEditandoId(null)}
+                              className="text-xs text-gray-400 px-1 py-1 shrink-0"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <p className="font-bold text-gray-800 truncate">
+                              {j.liga} · {j.nombre ?? `Jornada ${j.numero}`}
+                            </p>
+                            <button
+                              onClick={() => iniciarEdicion(j)}
+                              className="text-gray-300 hover:text-blue-500 text-xs shrink-0"
+                              title="Editar nombre"
+                            >
+                              ✏️
+                            </button>
+                          </div>
+                        )}
                         <p className="text-xs text-gray-400">{j.temporada}</p>
                       </div>
                     </div>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700">
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700 shrink-0 ml-2">
                       abierta
                     </span>
                   </div>
