@@ -170,6 +170,70 @@ function BolsaSection() {
   );
 }
 
+type PendienteItem = { folio: string; nombre: string; monto: number; jornada: string; ts: number };
+
+function BannerPagosPendientes() {
+  const [pendientes, setPendientes] = useState<PendienteItem[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("quinielasPendientes");
+      if (!raw) return;
+      const items: PendienteItem[] = JSON.parse(raw);
+      // Verificar cuáles siguen pendientes (últimas 72 horas)
+      const recientes = items.filter((i) => Date.now() - i.ts < 72 * 3_600_000);
+      if (recientes.length === 0) { localStorage.removeItem("quinielasPendientes"); return; }
+      // Verificar estado real en el servidor
+      Promise.all(
+        recientes.map((i) =>
+          fetch(`/api/quinielas?folio=${i.folio}`)
+            .then((r) => r.json())
+            .then((d) => ({ folio: i.folio, estadoPago: d.estadoPago ?? "pendiente", item: i }))
+            .catch(() => ({ folio: i.folio, estadoPago: "pendiente", item: i }))
+        )
+      ).then((resultados) => {
+        const aun_pendientes = resultados.filter((r) => r.estadoPago === "pendiente").map((r) => r.item);
+        if (aun_pendientes.length < recientes.length) {
+          // Limpiar los ya confirmados
+          localStorage.setItem("quinielasPendientes", JSON.stringify(aun_pendientes));
+        }
+        setPendientes(aun_pendientes);
+      });
+    } catch { /* sin localStorage */ }
+  }, []);
+
+  if (pendientes.length === 0) return null;
+
+  return (
+    <div className="bg-amber-400/20 border border-amber-400/50 rounded-2xl p-4 text-left space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="text-xl">⏳</span>
+        <p className="font-bold text-amber-200 text-sm">
+          {pendientes.length === 1 ? "Tienes un pago pendiente" : `Tienes ${pendientes.length} pagos pendientes`}
+        </p>
+      </div>
+      <div className="space-y-2">
+        {pendientes.map((p) => (
+          <a
+            key={p.folio}
+            href={`/ticket/${p.folio}`}
+            className="flex items-center justify-between bg-white/10 hover:bg-white/20 rounded-xl px-3 py-2.5 transition-colors"
+          >
+            <div>
+              <p className="text-white font-semibold text-sm font-mono">{p.folio}</p>
+              <p className="text-amber-300/70 text-xs">{p.jornada}</p>
+            </div>
+            <span className="text-amber-300 text-sm font-bold">Ver instrucciones →</span>
+          </a>
+        ))}
+      </div>
+      <p className="text-amber-300/50 text-xs">
+        Completa tu pago para confirmar tu registro. Cuando lo hagamos, desaparecerá este aviso.
+      </p>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-brand text-white px-4">
@@ -179,6 +243,8 @@ export default function Home() {
           <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-4" style={{ height: "130px", objectFit: "contain" }} />
           <p className="mt-2 text-amber-300/80 text-lg font-medium">Registra tus Quinielas</p>
         </div>
+
+        <BannerPagosPendientes />
 
         <BolsaSection />
 

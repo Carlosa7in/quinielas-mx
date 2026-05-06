@@ -523,6 +523,7 @@ function ConsultarInner() {
 
   const [modo, setModo] = useState<"telefono" | "folio" | "qr">("telefono");
   const [telefono, setTelefono] = useState("");
+  const [nombreBusqueda, setNombreBusqueda] = useState("");
   const [folio, setFolio] = useState(folioParam ?? "");
   const [quinielas, setQuinielas] = useState<Quiniela[]>([]);
   const [detalle, setDetalle] = useState<Quiniela | null>(null);
@@ -546,10 +547,12 @@ function ConsultarInner() {
   const buscarTelefono = async (e: React.FormEvent) => {
     e.preventDefault();
     const num = telefono.replace(/\D/g, "");
-    if (num.length < 10) return;
+    if (num.length < 10 || !nombreBusqueda.trim()) return;
     setCargando(true); limpiar();
 
-    const res = await fetch(`/api/quinielas?telefono=${num}`);
+    const res = await fetch(
+      `/api/quinielas?telefono=${num}&nombre=${encodeURIComponent(nombreBusqueda.trim())}`
+    );
     const data = await res.json();
     setCargando(false); setBuscado(true);
 
@@ -620,10 +623,20 @@ function ConsultarInner() {
           </button>
         </div>
 
-        {/* Búsqueda por teléfono */}
+        {/* Búsqueda por teléfono + nombre */}
         {modo === "telefono" && (
           <form onSubmit={buscarTelefono} className="bg-white rounded-xl shadow-sm p-4 space-y-3">
-            <p className="text-sm text-gray-500">Ingresa el número con el que te registraste</p>
+            <p className="text-sm text-gray-500">
+              Ingresa el nombre y teléfono con los que te registraste
+            </p>
+            <input
+              type="text"
+              placeholder="Tu nombre (como te registraste)"
+              value={nombreBusqueda}
+              onChange={(e) => setNombreBusqueda(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              autoFocus
+            />
             <div className="flex gap-2">
               <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 text-sm text-gray-500 font-medium shrink-0">
                 🇲🇽 +52
@@ -634,16 +647,18 @@ function ConsultarInner() {
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
                 className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                autoFocus
               />
             </div>
             <button
               type="submit"
-              disabled={cargando || telefono.replace(/\D/g, "").length < 10}
+              disabled={cargando || telefono.replace(/\D/g, "").length < 10 || !nombreBusqueda.trim()}
               className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl text-sm transition-colors"
             >
               {cargando ? "Buscando..." : "Buscar mis quinielas"}
             </button>
+            <p className="text-xs text-gray-400 text-center">
+              🔒 Tu nombre es requerido para proteger tu privacidad
+            </p>
           </form>
         )}
 

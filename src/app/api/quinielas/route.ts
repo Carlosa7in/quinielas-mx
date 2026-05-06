@@ -156,18 +156,28 @@ export async function GET(req: Request) {
   const folio = searchParams.get("folio");
   const telefono = searchParams.get("telefono");
 
-  // Buscar por teléfono — devuelve lista de quinielas
+  // Buscar por teléfono — requiere nombre para verificar identidad
   if (telefono) {
+    const nombre = searchParams.get("nombre") ?? "";
+    if (!nombre.trim()) {
+      return NextResponse.json(
+        { error: "Se requiere tu nombre además del teléfono para buscar tus quinielas." },
+        { status: 400 }
+      );
+    }
     const telefonoLimpio = telefono.replace(/\D/g, "");
     try {
-      const quinielas = await prisma.quiniela.findMany({
+      // Buscar quinielas que coincidan con el teléfono
+      const candidatas = await prisma.quiniela.findMany({
         where: { telefonoCliente: telefonoLimpio },
         select: {
           folio: true,
           nombreCliente: true,
           estado: true,
+          estadoPago: true,
           aciertos: true,
           monto: true,
+          canal: true,
           jornada: { select: { numero: true, nombre: true, temporada: true, liga: true } },
           picks: {
             select: {
@@ -190,7 +200,28 @@ export async function GET(req: Request) {
         },
         orderBy: { folio: "desc" },
       });
-      return NextResponse.json({ quinielas });
+
+      if (candidatas.length === 0) {
+        return NextResponse.json({ error: "No se encontraron quinielas con ese teléfono." }, { status: 404 });
+      }
+
+      // Verificar que al menos una quiniela tiene un nombre que coincida
+      const nombreBusqueda = nombre.trim().toLowerCase();
+      const verificadas = candidatas.filter((q) => {
+        if (!q.nombreCliente) return false;
+        const nombreGuardado = q.nombreCliente.toLowerCase();
+        // Coincidencia parcial: el nombre buscado aparece en el guardado o viceversa
+        return nombreGuardado.includes(nombreBusqueda) || nombreBusqueda.includes(nombreGuardado.split(" ")[0]);
+      });
+
+      if (verificadas.length === 0) {
+        return NextResponse.json(
+          { error: "El nombre no coincide con el registrado. Verifica cómo te registraste." },
+          { status: 403 }
+        );
+      }
+
+      return NextResponse.json({ quinielas: verificadas });
     } catch (err) {
       console.error("[QUINIELAS GET telefono] error:", err);
       return NextResponse.json({ error: "Error al buscar: " + String(err) }, { status: 500 });
