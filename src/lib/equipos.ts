@@ -143,7 +143,23 @@ export const EQUIPOS_POR_LIGA: Record<string, string[]> = {
 export const LIGAS = Object.keys(EQUIPOS_POR_LIGA);
 
 export function getLogoUrl(equipo: string): string {
-  return LOGOS[equipo] ?? "";
+  if (!equipo) return "";
+  // 1. Exacto
+  if (LOGOS[equipo]) return LOGOS[equipo];
+  // 2. Case-insensitive exacto
+  const lower = equipo.toLowerCase();
+  for (const [key, url] of Object.entries(LOGOS)) {
+    if (key.toLowerCase() === lower) return url;
+  }
+  // 3. Partial match (uno contiene al otro, normalizado)
+  const norm = (s: string) =>
+    s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+  const ne = norm(equipo);
+  for (const [key, url] of Object.entries(LOGOS)) {
+    const nk = norm(key);
+    if (nk.includes(ne) || ne.includes(nk)) return url;
+  }
+  return "";
 }
 
 // Mantener compatibilidad async

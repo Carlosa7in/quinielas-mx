@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { JornadaSelector, type JornadaResumen } from "@/components/JornadaSelector";
+import { LogoEquipo } from "@/components/LogoEquipo";
 
 type Partido = {
   id: string;
@@ -322,29 +323,37 @@ export default function ResultadosPage() {
                 e.guardado ? "border-amber-200" : "border-transparent"
               }`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className="font-semibold text-sm text-gray-800">
-                    {partido.equipoLocal}{" "}
-                    <span className="text-gray-400 font-normal">vs</span>{" "}
-                    {partido.equipoVisita}
-                  </p>
-                  {partido.fechaHora && (
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      🕐{" "}
-                      {new Date(partido.fechaHora).toLocaleDateString("es-MX", {
-                        weekday: "short", day: "numeric", month: "short", timeZone: "America/Mexico_City",
-                      })}{" "}
-                      {new Date(partido.fechaHora).toLocaleTimeString("es-MX", {
-                        hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City",
-                      })}
-                    </p>
-                  )}
+              {/* Encabezado con logos centrados */}
+              <div className="flex flex-col items-center mb-3 gap-1">
+                <div className="flex items-center justify-center gap-3 w-full">
+                  {/* Local */}
+                  <div className="flex flex-col items-center gap-1 flex-1">
+                    <LogoEquipo equipo={partido.equipoLocal} size={40} />
+                    <span className="text-xs font-semibold text-gray-700 text-center leading-tight">{partido.equipoLocal}</span>
+                  </div>
+                  {/* VS */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <span className="text-gray-400 text-xs font-bold">VS</span>
+                    {e.guardado && (
+                      <span className="text-green-600 text-[10px] font-bold bg-green-50 px-1.5 py-0.5 rounded-full mt-1">✓</span>
+                    )}
+                  </div>
+                  {/* Visita */}
+                  <div className="flex flex-col items-center gap-1 flex-1">
+                    <LogoEquipo equipo={partido.equipoVisita} size={40} />
+                    <span className="text-xs font-semibold text-gray-700 text-center leading-tight">{partido.equipoVisita}</span>
+                  </div>
                 </div>
-                {e.guardado && (
-                  <span className="text-green-600 text-xs font-bold bg-green-50 px-2 py-0.5 rounded-full">
-                    ✓ Guardado
-                  </span>
+                {partido.fechaHora && (
+                  <p className="text-xs text-gray-400">
+                    🕐{" "}
+                    {new Date(partido.fechaHora).toLocaleDateString("es-MX", {
+                      weekday: "short", day: "numeric", month: "short", timeZone: "America/Mexico_City",
+                    })}{" "}
+                    {new Date(partido.fechaHora).toLocaleTimeString("es-MX", {
+                      hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City",
+                    })}
+                  </p>
                 )}
               </div>
 
@@ -374,25 +383,23 @@ export default function ResultadosPage() {
               </div>
 
               {/* Marcador */}
-              <div className="flex items-center gap-2 text-sm mb-3">
+              <div className="flex items-center justify-center gap-3 mb-3">
                 <input
                   type="number"
                   min="0"
                   placeholder="0"
                   value={e.golesLocal}
                   onChange={(ev) => { set(partido.id, "golesLocal", ev.target.value); set(partido.id, "guardado", false); }}
-                  className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-16 h-12 border border-gray-200 rounded-xl text-2xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
-                <span className="text-gray-400 text-xs flex-1 text-center">
-                  {partido.equipoLocal} — {partido.equipoVisita}
-                </span>
+                <span className="text-gray-300 font-bold text-xl">–</span>
                 <input
                   type="number"
                   min="0"
                   placeholder="0"
                   value={e.golesVisita}
                   onChange={(ev) => { set(partido.id, "golesVisita", ev.target.value); set(partido.id, "guardado", false); }}
-                  className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-16 h-12 border border-gray-200 rounded-xl text-2xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
 
