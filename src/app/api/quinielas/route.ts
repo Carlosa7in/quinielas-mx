@@ -150,6 +150,33 @@ export async function POST(req: Request) {
   }
 }
 
+// PATCH /api/quinielas?folio=xxx - guardar referencia de pago
+export async function PATCH(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const folio = searchParams.get("folio");
+  if (!folio) return NextResponse.json({ error: "Folio requerido" }, { status: 400 });
+
+  const body = await req.json();
+  const { referenciaPago } = body;
+  if (!referenciaPago || !String(referenciaPago).trim()) {
+    return NextResponse.json({ error: "Referencia requerida" }, { status: 400 });
+  }
+
+  try {
+    const ref = String(referenciaPago).trim().slice(0, 60);
+    await sql`
+      UPDATE "Quiniela"
+      SET "referenciaPago" = ${ref}
+      WHERE "folio" = ${folio}
+        AND "estadoPago" = 'pendiente'
+    `;
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[QUINIELAS PATCH] error:", err);
+    return NextResponse.json({ error: "Error al guardar: " + String(err) }, { status: 500 });
+  }
+}
+
 // GET /api/quinielas?folio=xxx - buscar por folio (para ticket)
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);

@@ -22,6 +22,7 @@ export async function GET() {
           estado: true,
           estadoPago: true,
           aciertos: true,
+          referenciaPago: true,
           picks: { select: { prediccion: true, acertado: true } },
         },
         orderBy: { folio: "desc" },

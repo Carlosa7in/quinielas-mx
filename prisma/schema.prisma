@@ -73,6 +73,7 @@ model Quiniela {
   monto           Float    @default(20.0)
   estado          String   @default("pendiente")
   estadoPago      String   @default("pendiente") // "pendiente" | "confirmado" | "no_realizado"
+  referenciaPago  String?
   puntos          Int?
   aciertos        Int?
   createdAt       DateTime @default(now())

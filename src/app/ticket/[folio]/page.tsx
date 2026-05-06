@@ -77,6 +77,9 @@ export default function TicketPage() {
   const [error, setError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [cargandoPNG, setCargandoPNG] = useState(false);
+  const [referenciaPago, setReferenciaPago] = useState("");
+  const [guardandoRef, setGuardandoRef] = useState(false);
+  const [refGuardada, setRefGuardada] = useState(false);
 
   // Generar QR cuando carga la quiniela
   useEffect(() => {
@@ -484,8 +487,57 @@ export default function TicketPage() {
             )}
           </div>
 
+          {/* Referencia de pago */}
+          <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+            <div>
+              <p className="font-semibold text-gray-700 text-sm mb-1">
+                {isOxxo ? "🧾 Número de recibo OXXO (opcional)" : "🔑 Número de referencia / folio de transferencia (opcional)"}
+              </p>
+              <p className="text-xs text-gray-400 mb-2">
+                {isOxxo
+                  ? "Escríbelo aquí para que podamos ubicar tu pago más rápido."
+                  : "Encuéntralo en tu app bancaria: suele llamarse «Número de operación», «Folio» o «Referencia»."}
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder={isOxxo ? "Ej. 12345678" : "Ej. 202405061234"}
+                  value={referenciaPago}
+                  onChange={(e) => { setReferenciaPago(e.target.value); setRefGuardada(false); }}
+                  maxLength={60}
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+                <button
+                  disabled={!referenciaPago.trim() || guardandoRef || refGuardada}
+                  onClick={async () => {
+                    setGuardandoRef(true);
+                    try {
+                      await fetch(`/api/quinielas?folio=${quiniela.folio}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ referenciaPago: referenciaPago.trim() }),
+                      });
+                      setRefGuardada(true);
+                    } finally {
+                      setGuardandoRef(false);
+                    }
+                  }}
+                  className="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors"
+                >
+                  {guardandoRef ? "..." : refGuardada ? "✓" : "Guardar"}
+                </button>
+              </div>
+              {refGuardada && (
+                <p className="text-xs text-green-600 mt-1">✅ Referencia guardada — veremos tu pago más rápido.</p>
+              )}
+            </div>
+          </div>
+
           {/* Botón: avisar al cobrador por WhatsApp */}
           {(() => {
+            const refLine = referenciaPago.trim()
+              ? `*Referencia:* ${referenciaPago.trim()}\n`
+              : "";
             const msg = [
               `¡Hola! Ya realicé mi pago 💰`,
               ``,
@@ -493,9 +545,11 @@ export default function TicketPage() {
               `*Folio:* ${quiniela.folio}`,
               `*Monto:* $${quiniela.monto.toFixed(2)} MXN`,
               `*Método:* ${isOxxo ? "Depósito OXXO" : "Transferencia SPEI"}`,
+              refLine,
+              `📎 Te adjunto mi comprobante de pago.`,
               ``,
               `Por favor confirma mi registro. ¡Gracias!`,
-            ].join("\n");
+            ].filter((l) => l !== undefined).join("\n");
             return (
               <a
                 href={`https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(msg)}`}
@@ -511,11 +565,14 @@ export default function TicketPage() {
             );
           })()}
 
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700 text-center">
-            Tu ticket con pronósticos estará disponible en cuanto confirmemos tu pago.{" "}
-            <a href={`/consultar?folio=${quiniela.folio}`} className="font-bold underline">
-              Ver estado →
-            </a>
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700 text-center space-y-1">
+            <p>📸 <span className="font-semibold">Adjunta tu comprobante</span> al mensaje de WhatsApp para agilizar la confirmación.</p>
+            <p>
+              Tu ticket con pronósticos estará disponible en cuanto confirmemos tu pago.{" "}
+              <a href={`/consultar?folio=${quiniela.folio}`} className="font-bold underline">
+                Ver estado →
+              </a>
+            </p>
           </div>
 
           <a

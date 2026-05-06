@@ -30,5 +30,15 @@ export async function POST(req: NextRequest) {
     results.push("❌ PagoComision: " + String(e));
   }
 
+  try {
+    await sql`
+      ALTER TABLE "Quiniela"
+      ADD COLUMN IF NOT EXISTS "referenciaPago" TEXT
+    `;
+    results.push("✅ Columna referenciaPago añadida a Quiniela (o ya existía)");
+  } catch (e) {
+    results.push("❌ referenciaPago: " + String(e));
+  }
+
   return NextResponse.json({ ok: true, results });
 }

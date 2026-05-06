@@ -14,6 +14,7 @@ type Quiniela = {
   estadoPago: string;
   monto: number;
   aciertos: number | null;
+  referenciaPago: string | null;
   picks: Pick[];
 };
 
@@ -229,6 +230,11 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                       )}
                     </div>
                     <p className="font-mono text-xs text-gray-400 mt-0.5">{q.folio}</p>
+                    {q.referenciaPago && (
+                      <p className="text-xs text-blue-600 font-semibold mt-0.5">
+                        🔑 Ref: {q.referenciaPago}
+                      </p>
+                    )}
                     {/* Picks */}
                     <div className="flex gap-1 mt-2 flex-wrap">
                       {q.picks.map((p, i) => (
