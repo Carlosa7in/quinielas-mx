@@ -80,6 +80,14 @@ export default function TicketPage() {
   const [referenciaPago, setReferenciaPago] = useState("");
   const [guardandoRef, setGuardandoRef] = useState(false);
   const [refGuardada, setRefGuardada] = useState(false);
+  const [copiado, setCopiado] = useState<string | null>(null);
+
+  const copiar = (texto: string, clave: string) => {
+    navigator.clipboard.writeText(texto).then(() => {
+      setCopiado(clave);
+      setTimeout(() => setCopiado(null), 2000);
+    });
+  };
 
   // Generar QR cuando carga la quiniela
   useEffect(() => {
@@ -457,19 +465,45 @@ export default function TicketPage() {
               </div>
             </div>
             <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-500">Banco</span>
                 <span className="font-semibold">{BANCO}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500">CLABE</span>
-                <span className="font-bold font-mono tracking-wider">{CLABE}</span>
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-gray-500 shrink-0">CLABE</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold font-mono tracking-wider">{CLABE}</span>
+                  <button
+                    onClick={() => copiar(CLABE, "clabe")}
+                    title="Copiar CLABE"
+                    className="text-gray-400 hover:text-amber-600 transition-colors p-1 rounded"
+                  >
+                    {copiado === "clabe" ? (
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 text-green-500 fill-none stroke-current stroke-2"><polyline points="20 6 9 17 4 12"/></svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    )}
+                  </button>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Titular</span>
-                <span className="font-semibold">{TITULAR}</span>
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-gray-500 shrink-0">Titular</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold">{TITULAR}</span>
+                  <button
+                    onClick={() => copiar(TITULAR, "titular")}
+                    title="Copiar titular"
+                    className="text-gray-400 hover:text-amber-600 transition-colors p-1 rounded"
+                  >
+                    {copiado === "titular" ? (
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 text-green-500 fill-none stroke-current stroke-2"><polyline points="20 6 9 17 4 12"/></svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    )}
+                  </button>
+                </div>
               </div>
-              <div className="flex justify-between border-t pt-2">
+              <div className="flex justify-between items-center border-t pt-2">
                 <span className="text-gray-500">Monto</span>
                 <span className="font-bold text-green-700 text-base">${quiniela.monto.toFixed(2)} MXN</span>
               </div>
