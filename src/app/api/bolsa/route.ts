@@ -1,31 +1,17 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, sql } from "@/lib/prisma";
 
 import { PORCENTAJE_DUENOS, COMISION_TIENDA } from "@/lib/config";
 import { calcularFechaCierre } from "@/lib/fechas";
 
-// Leer un campo DateTime de NeonDB via $queryRaw (el ORM devuelve {} para DateTime)
-async function leerFechaRaw(sql: TemplateStringsArray, ...values: unknown[]): Promise<Date | null> {
-  try {
-    const rows = await (prisma.$queryRaw as (...args: unknown[]) => Promise<Record<string, unknown>[]>)(
-      Object.assign(sql, { raw: sql }),
-      ...values
-    );
-    const val = rows[0] ? Object.values(rows[0])[0] : null;
-    if (!val) return null;
-    const d = val instanceof Date ? val : new Date(String(val));
-    return isNaN(d.getTime()) ? null : d;
-  } catch {
-    return null;
-  }
-}
-
 // GET /api/bolsa — pública, sin auth
 export async function GET() {
-  // Primer partido de la jornada abierta via $queryRaw (único modo confiable con NeonDB)
+  // Primer partido de la jornada abierta via neon() directo.
+  // PrismaNeonHTTP devuelve {} para DateTime en ORM y $queryRaw.
+  // neon() retorna el valor como string ISO, que new Date() parsea correctamente.
   let primerPartidoFecha: Date | null = null;
   try {
-    const rows = await prisma.$queryRaw<{ fechaHora: unknown }[]>`
+    const rows = await sql`
       SELECT p."fechaHora"
       FROM "Partido" p
       JOIN "Jornada" j ON p."jornadaId" = j.id
@@ -34,31 +20,28 @@ export async function GET() {
       ORDER BY p."fechaHora" ASC
       LIMIT 1
     `;
-    if (rows[0]?.fechaHora) {
-      const d = rows[0].fechaHora instanceof Date
-        ? rows[0].fechaHora
-        : new Date(String(rows[0].fechaHora));
+    const val = rows[0]?.fechaHora;
+    if (val) {
+      const d = val instanceof Date ? val : new Date(String(val));
       primerPartidoFecha = isNaN(d.getTime()) ? null : d;
     }
   } catch (e) {
-    console.error("[/api/bolsa] fechaHora raw query failed:", e);
+    console.error("[/api/bolsa] fechaHora query failed:", e);
   }
 
-  // Fallback: fechaInicio de la jornada abierta (cuando ESPN aún no tiene horarios)
+  // Fallback: fechaInicio de la jornada (cuando ESPN aún no tiene horarios)
   if (!primerPartidoFecha) {
     try {
-      const rows = await prisma.$queryRaw<{ fechaInicio: unknown }[]>`
+      const rows = await sql`
         SELECT "fechaInicio" FROM "Jornada"
         WHERE estado = 'abierta'
         ORDER BY numero DESC
         LIMIT 1
       `;
-      if (rows[0]?.fechaInicio) {
-        const d = rows[0].fechaInicio instanceof Date
-          ? rows[0].fechaInicio
-          : new Date(String(rows[0].fechaInicio));
+      const val = rows[0]?.fechaInicio;
+      if (val) {
+        const d = val instanceof Date ? val : new Date(String(val));
         if (!isNaN(d.getTime())) {
-          // +18h sobre UTC-midnight para que calcularFechaCierre vea el día correcto en CDMX
           primerPartidoFecha = new Date(d.getTime() + 18 * 3_600_000);
         }
       }
@@ -107,7 +90,6 @@ export async function GET() {
   const cutTienda       = quinielasTienda * COMISION_TIENDA;
   const bolsa           = Math.max(totalRecaudado - cutDuenos - cutTienda, 0);
 
-  // La fecha de cierre es el día anterior al primer partido a las 23:00 CDMX
   const fechaCierre = primerPartidoFecha ? calcularFechaCierre(primerPartidoFecha) : null;
 
   return NextResponse.json({

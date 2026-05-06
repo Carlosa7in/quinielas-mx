@@ -2,9 +2,14 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaNeonHTTP } from "@prisma/adapter-neon";
 import { neon } from "@neondatabase/serverless";
 
+const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL!;
+
+// sql: función de consulta directa a NeonDB vía HTTP.
+// Úsala para campos DateTime — el adaptador PrismaNeonHTTP devuelve {} para
+// DateTime en queries ORM ($queryRaw incluido). neon() retorna strings ISO correctos.
+export const sql = neon(connectionString);
+
 function createPrismaClient() {
-  const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL!;
-  const sql = neon(connectionString);
   const adapter = new PrismaNeonHTTP(sql);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return new PrismaClient({ adapter } as any);

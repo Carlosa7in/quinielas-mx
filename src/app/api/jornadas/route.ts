@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, sql } from "@/lib/prisma";
 
 const JORNADA_SELECT = {
   id: true,
@@ -29,19 +29,20 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Jornada no encontrada" }, { status: 404 });
   }
 
-  // Leer fechaHora via raw SQL para evitar crash si algún partido tiene dato corrupto
+  // Leer fechaHora via neon() directo — PrismaNeonHTTP devuelve {} para DateTime
   let fechaHorasMap: Record<string, string> = {};
   try {
-    const rows = await prisma.$queryRaw<{ id: string; fechaHora: Date }[]>`
+    const rows = await sql`
       SELECT id, "fechaHora" FROM "Partido"
       WHERE "jornadaId" = ${jornada.id}
         AND "fechaHora" IS NOT NULL
     `;
     for (const r of rows) {
-      fechaHorasMap[r.id] = r.fechaHora instanceof Date ? r.fechaHora.toISOString() : String(r.fechaHora);
+      const val = r.fechaHora;
+      if (val) fechaHorasMap[r.id] = val instanceof Date ? val.toISOString() : String(val);
     }
   } catch (e) {
-    console.error("[/api/jornadas] raw fechaHora query failed:", e);
+    console.error("[/api/jornadas] fechaHora query failed:", e);
   }
 
   const partidosConFecha = jornada.partidos.map((p) => ({
