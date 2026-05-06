@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 
@@ -112,9 +113,12 @@ export default function PerfilPage() {
   const rolSession = (session?.user as { role?: string })?.role ?? "";
   const esAdminNav = rolSession === "admin" || rolSession === "superadmin";
 
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") as Tab | null;
+
   const [data, setData] = useState<PerfilData | null>(null);
   const [cargando, setCargando] = useState(true);
-  const [tab, setTab] = useState<Tab>("resumen");
+  const [tab, setTab] = useState<Tab>(tabParam ?? "resumen");
   const [jornadasExpandidas, setJornadasExpandidas] = useState<Set<string>>(new Set());
 
   // Edit form state
@@ -225,7 +229,7 @@ export default function PerfilPage() {
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
           <div>
             <Link href={esAdminNav ? "/admin" : "/admin/tienda"} className="text-amber-400 text-sm">
-              ← {esAdminNav ? "Admin" : "Inicio"}
+              ← {esAdminNav ? "Admin" : "Mi Panel"}
             </Link>
             <h1 className="text-xl font-bold mt-1">Mi Panel</h1>
           </div>

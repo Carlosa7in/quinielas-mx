@@ -51,10 +51,11 @@ function formaCompleta(partidos: Partido[], picks: FormaPicks): boolean {
 }
 
 export default function TiendaPage() {
-  const [modo, setModo] = useState<"selector" | "seleccion" | "manual">("selector");
+  const [modo, setModo] = useState<"home" | "selector" | "seleccion" | "manual">("home");
   const router = useRouter();
   const { data: session } = useSession();
   const usuarioId = (session?.user as { id?: string })?.id ?? null;
+  const nombreUsuario = session?.user?.name ?? "";
 
   const [jornada, setJornada] = useState<Jornada | null>(null);
 
@@ -67,6 +68,76 @@ export default function TiendaPage() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
+  /* ── Pantalla de inicio ──────────────────────────────────────── */
+  if (modo === "home") {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-brand text-white py-6 px-4">
+          <div className="max-w-md mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "40px", objectFit: "contain" }} />
+              <div>
+                <h1 className="text-xl font-bold">Mi Panel</h1>
+                {nombreUsuario && (
+                  <p className="text-amber-300 text-xs">Hola, {nombreUsuario}</p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Salir
+            </button>
+          </div>
+        </div>
+
+        <div className="max-w-md mx-auto px-4 py-6 space-y-3">
+          {/* Registrar */}
+          <button
+            onClick={() => setModo("selector")}
+            className="w-full bg-amber-700 hover:bg-amber-600 text-white rounded-2xl p-5 flex items-center gap-4 transition-colors text-left"
+          >
+            <span className="text-4xl">✏️</span>
+            <div>
+              <p className="font-bold text-lg">Registrar en Tienda</p>
+              <p className="text-amber-200 text-sm">Capturar quiniela de un cliente</p>
+            </div>
+            <span className="ml-auto text-2xl opacity-60">→</span>
+          </button>
+
+          {/* Mis ganancias */}
+          <a
+            href="/admin/perfil?tab=ganancias"
+            className="w-full bg-white border border-gray-200 hover:bg-gray-50 rounded-2xl p-5 flex items-center gap-4 transition-colors text-left block"
+          >
+            <span className="text-4xl">💰</span>
+            <div>
+              <p className="font-bold text-gray-800 text-lg">Mis Ganancias</p>
+              <p className="text-gray-500 text-sm">Comisiones y ventas por jornada</p>
+            </div>
+            <span className="ml-auto text-2xl text-gray-300">→</span>
+          </a>
+
+          {/* Mi perfil */}
+          <a
+            href="/admin/perfil?tab=perfil"
+            className="w-full bg-white border border-gray-200 hover:bg-gray-50 rounded-2xl p-5 flex items-center gap-4 transition-colors text-left block"
+          >
+            <span className="text-4xl">👤</span>
+            <div>
+              <p className="font-bold text-gray-800 text-lg">Mi Perfil</p>
+              <p className="text-gray-500 text-sm">Editar datos y cambiar contraseña</p>
+            </div>
+            <span className="ml-auto text-2xl text-gray-300">→</span>
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   /* ── Jornada selector ─────────────────────────────────────────── */
   const seleccionarJornada = async (j: JornadaResumen) => {
     const res = await fetch(`/api/jornadas?id=${j.id}`);
@@ -78,7 +149,16 @@ export default function TiendaPage() {
   };
 
   if (modo === "selector") {
-    return <JornadaSelector onSelect={seleccionarJornada} titulo="Registro en Tienda" soloActivas onSignOut={() => signOut({ callbackUrl: "/login" })} perfilHref="/admin/perfil" />;
+    return (
+      <JornadaSelector
+        onSelect={seleccionarJornada}
+        titulo="Registrar Quiniela"
+        backLabel="Inicio"
+        onBack={() => setModo("home")}
+        soloActivas
+        onSignOut={() => signOut({ callbackUrl: "/login" })}
+      />
+    );
   }
 
   // Bloquear si el registro está cerrado
@@ -99,7 +179,7 @@ export default function TiendaPage() {
       <RegistroCerrado
         jornada={jornada}
         fechaCierre={fechaCierreObj}
-        onBack={() => { setJornada(null); setModo("selector"); setFormas([{}]); }}
+        onBack={() => { setJornada(null); setModo("home"); setFormas([{}]); }}
         onReabrir={(jornadaActualizada) => { setJornada(jornadaActualizada as unknown as Jornada); setModo("seleccion"); }}
       />
     );
@@ -112,8 +192,8 @@ export default function TiendaPage() {
         <div className="bg-brand text-white py-4 px-4">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             <div>
-              <a href="/admin" className="text-amber-400 text-sm">← Admin</a>
-              <h1 className="text-xl font-bold mt-1">Registro en Tienda</h1>
+              <button onClick={() => { setJornada(null); setModo("home"); }} className="text-amber-400 text-sm">← Inicio</button>
+              <h1 className="text-xl font-bold mt-1">Registrar Quiniela</h1>
               {jornada && (
                 <p className="text-amber-400 text-xs">
                   {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
@@ -168,28 +248,6 @@ export default function TiendaPage() {
               </a>
             )}
           </div>
-
-          <a
-            href="/admin/comisiones"
-            className="w-full bg-white border border-gray-200 hover:bg-gray-50 rounded-xl p-4 flex items-center gap-3 transition-colors text-left block"
-          >
-            <span className="text-2xl">💰</span>
-            <div>
-              <p className="font-bold text-gray-800">Mis ventas</p>
-              <p className="text-gray-500 text-sm">Ver mis quinielas registradas y comisiones</p>
-            </div>
-          </a>
-
-          <a
-            href="/admin/perfil"
-            className="w-full bg-white border border-gray-200 hover:bg-gray-50 rounded-xl p-4 flex items-center gap-3 transition-colors text-left block"
-          >
-            <span className="text-2xl">👤</span>
-            <div>
-              <p className="font-bold text-gray-800">Mi Panel</p>
-              <p className="text-gray-500 text-sm">Ver mis estadisticas, apostadores y perfil</p>
-            </div>
-          </a>
         </div>
       </div>
     );
