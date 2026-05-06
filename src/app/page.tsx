@@ -2,8 +2,23 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-type JornadaBolsa = {
-  id: string; nombre: string | null; numero: number; liga: string; bolsa: number;
+type JornadaBolsaItem = {
+  id: string;
+  nombre: string | null;
+  numero: number;
+  liga: string;
+  totalQuinielas: number;
+  recaudado: number;
+  bolsa: number;
+  primerPartidoFecha: string | null;
+};
+
+const LIGA_ICON: Record<string, string> = {
+  "Liga MX": "🇲🇽",
+  "Champions League": "⭐",
+  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "La Liga": "🇪🇸",
+  "Mixta": "⚽",
 };
 
 function useCuentaRegresiva(fechaISO: string | null) {
@@ -25,76 +40,59 @@ function useCuentaRegresiva(fechaISO: string | null) {
   return restante;
 }
 
-function BolsaWidget() {
-  const [bolsa, setBolsa]       = useState<number | null>(null);
-  const [jornadas, setJornadas] = useState<JornadaBolsa[]>([]);
-  const [primerPartidoFecha, setPrimerPartidoFecha] = useState<string | null>(null);
+const pad = (n: number) => String(n).padStart(2, "0");
+const fmt = (n: number) =>
+  n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  useEffect(() => {
-    fetch("/api/bolsa")
-      .then((r) => r.json())
-      .then((d) => {
-        setBolsa(d.bolsa ?? 0);
-        setJornadas(d.jornadas ?? []);
-        setPrimerPartidoFecha(d.primerPartidoFecha ?? null);
-      })
-      .catch(() => setBolsa(null));
-  }, []);
-
-  const fmt = (n: number) =>
-    n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-  const cuenta = useCuentaRegresiva(primerPartidoFecha);
+function JornadaCard({ jornada }: { jornada: JornadaBolsaItem }) {
+  const cuenta = useCuentaRegresiva(jornada.primerPartidoFecha);
   const cerrado = cuenta !== null && cuenta.diff === 0;
-
-  const pad = (n: number) => String(n).padStart(2, "0");
+  const ligaIcon = LIGA_ICON[jornada.liga] ?? "⚽";
+  const titulo = jornada.nombre ?? `Jornada ${jornada.numero}`;
 
   return (
-    <div className="rounded-2xl py-4 px-4 text-center" style={{ background: "rgba(0,0,0,0.2)" }}>
-      <p className="text-amber-300/60 text-xs font-bold tracking-widest uppercase mb-2">💰 Bolsa acumulada 💰</p>
+    <div
+      className="rounded-2xl py-5 px-4 text-center space-y-3"
+      style={{ background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)" }}
+    >
+      {/* Liga + nombre */}
+      <p className="text-amber-300/70 text-xs font-bold tracking-widest uppercase">
+        {ligaIcon} {jornada.liga} · {titulo}
+      </p>
 
+      {/* Bolsa */}
       <div>
-        {bolsa === null ? (
-          <p className="text-amber-200/30 text-2xl font-bold tracking-widest animate-pulse">$—</p>
-        ) : (
-          <span
-            className="bolsa-numero font-black"
-            style={{ fontSize: "clamp(1.8rem, 9vw, 2.6rem)", color: "#FFD166", letterSpacing: "0.04em" }}
-          >
-            ${fmt(bolsa)}
-          </span>
-        )}
-
-        {/* Desglose si hay más de una jornada activa */}
-        {jornadas.length > 1 && (
-          <div className="mt-2 space-y-0.5">
-            {jornadas.map((j) => (
-              <p key={j.id} className="text-xs text-amber-200/50">
-                {j.liga} · {j.nombre ?? `Jornada ${j.numero}`}
-                <span className="text-amber-300/70 font-semibold ml-1">${fmt(j.bolsa)}</span>
-              </p>
-            ))}
-          </div>
-        )}
+        <p className="text-amber-300/50 text-[10px] font-bold tracking-widest uppercase mb-0.5">
+          💰 Bolsa acumulada
+        </p>
+        <span
+          className="font-black"
+          style={{ fontSize: "clamp(2rem, 10vw, 2.8rem)", color: "#FFD166", letterSpacing: "0.04em" }}
+        >
+          ${fmt(jornada.bolsa)}
+        </span>
+        <p className="text-amber-200/30 text-xs mt-0.5">
+          {jornada.totalQuinielas} quiniela{jornada.totalQuinielas !== 1 ? "s" : ""} registrada{jornada.totalQuinielas !== 1 ? "s" : ""}
+        </p>
       </div>
 
       {/* Fecha de cierre */}
-      {primerPartidoFecha && (
-        <div className="mt-3 pt-3 border-t border-white/10">
+      {jornada.primerPartidoFecha && (
+        <div className="pt-2 border-t border-white/10">
           {cerrado ? (
-            <p className="text-red-400 text-sm font-bold text-center">🔒 Registro cerrado</p>
+            <p className="text-red-400 text-sm font-bold">🔒 Registro cerrado</p>
           ) : (
-            <div className="text-center space-y-1">
+            <div className="space-y-1">
               <p className="text-amber-200 font-bold text-sm tracking-wide">
                 📅 Cierre{" "}
-                {new Date(primerPartidoFecha).toLocaleDateString("es-MX", {
+                {new Date(jornada.primerPartidoFecha).toLocaleDateString("es-MX", {
                   weekday: "long", timeZone: "America/Mexico_City",
                 }).toUpperCase()}{" "}
-                {new Date(primerPartidoFecha).toLocaleTimeString("es-MX", {
+                {new Date(jornada.primerPartidoFecha).toLocaleTimeString("es-MX", {
                   hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City",
                 })}
               </p>
-              {cuenta && cuenta.diff < 24 * 3_600_000 && (
+              {cuenta && cuenta.diff > 0 && cuenta.diff < 24 * 3_600_000 && (
                 <div className="flex items-center justify-center gap-2">
                   <span className="text-amber-300/60 text-xs">⚡ Faltan</span>
                   <span className="font-black tabular-nums text-yellow-300" style={{ fontSize: "1.1rem", letterSpacing: "0.05em" }}>
@@ -106,6 +104,59 @@ function BolsaWidget() {
           )}
         </div>
       )}
+
+      {/* Botón registrar */}
+      {!cerrado && (
+        <Link
+          href="/quiniela"
+          className="block w-full bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold text-base py-3 px-6 rounded-xl transition-colors shadow-lg shadow-amber-900/40 mt-1"
+        >
+          Registrar mi Quiniela →
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function BolsaSection() {
+  const [jornadas, setJornadas] = useState<JornadaBolsaItem[] | null>(null);
+
+  useEffect(() => {
+    fetch("/api/bolsa")
+      .then((r) => r.json())
+      .then((d) => setJornadas(d.jornadas ?? []))
+      .catch(() => setJornadas([]));
+  }, []);
+
+  if (jornadas === null) {
+    // Skeleton
+    return (
+      <div
+        className="rounded-2xl py-8 px-4 text-center animate-pulse"
+        style={{ background: "rgba(0,0,0,0.2)" }}
+      >
+        <p className="text-amber-300/30 text-2xl font-bold tracking-widest">$—</p>
+      </div>
+    );
+  }
+
+  if (jornadas.length === 0) {
+    return (
+      <div
+        className="rounded-2xl py-6 px-4 text-center"
+        style={{ background: "rgba(0,0,0,0.2)" }}
+      >
+        <p className="text-amber-200/40 text-sm">No hay jornadas activas en este momento.</p>
+        <p className="text-amber-200/25 text-xs mt-1">Vuelve pronto</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {jornadas.map((j) => (
+        <JornadaCard key={j.id} jornada={j} />
+      ))}
     </div>
   );
 }
@@ -120,15 +171,9 @@ export default function Home() {
           <p className="mt-2 text-amber-300/80 text-lg font-medium">Registra tus Quinielas</p>
         </div>
 
-        <BolsaWidget />
+        <BolsaSection />
 
-        <div className="space-y-4">
-          <Link
-            href="/quiniela"
-            className="block w-full bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold text-lg py-4 px-6 rounded-xl transition-colors shadow-lg shadow-amber-900/40"
-          >
-            Registrar mi Quiniela
-          </Link>
+        <div className="space-y-3">
           <Link
             href="/consultar"
             className="block w-full bg-white/8 hover:bg-white/15 text-stone-100 font-semibold text-lg py-4 px-6 rounded-xl transition-colors"
