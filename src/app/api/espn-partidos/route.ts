@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
   const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${config.url}/scoreboard?dates=${fechaDesde}-${fechaHasta}`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 300 } });
+    const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
 
     const events: Record<string, unknown>[] = data?.events ?? [];
@@ -140,7 +140,9 @@ export async function GET(req: NextRequest) {
     const nombreJornada = primeraTemporada?.slug
       ? traducirNombreEspn(
           String(primeraTemporada.slug)
-            .replace(/-/g, " ")
+            .replace(/-+/g, " ")           // uno o más guiones → un espacio
+            .trim()
+            .replace(/  +/g, " ")          // espacios múltiples → uno
             .replace(/\b\w/g, (c) => c.toUpperCase())
         )
       : null;
