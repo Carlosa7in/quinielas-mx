@@ -209,6 +209,8 @@ function PerfilInner() {
 
   const { usuario, stats, porJornada, comisionesAdmin, apostadores, recientes } = data;
   const esAdminRole = usuario.rol === "admin" || usuario.rol === "superadmin";
+  // Para tienda/vendedor no se muestran tabs — cada sección se abre directo desde su panel home
+  const mostrarTabs = esAdminRole;
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "resumen", label: "Resumen" },
@@ -216,6 +218,13 @@ function PerfilInner() {
     { id: "ganancias", label: "Ganancias" },
     { id: "perfil", label: "Mi Perfil" },
   ];
+
+  const TAB_TITULO: Record<Tab, string> = {
+    resumen: "Resumen",
+    apostadores: "Mis Apostadores",
+    ganancias: "Mis Ganancias",
+    perfil: "Mi Perfil",
+  };
 
   const totalComisionTienda = porJornada.reduce((s, j) => s + j.comision, 0);
   const totalPagadoTienda = porJornada.filter((j) => j.pagado).reduce((s, j) => s + j.comision, 0);
@@ -231,7 +240,9 @@ function PerfilInner() {
             <Link href={esAdminNav ? "/admin" : "/admin/tienda"} className="text-amber-400 text-sm">
               ← {esAdminNav ? "Admin" : "Mi Panel"}
             </Link>
-            <h1 className="text-xl font-bold mt-1">Mi Panel</h1>
+            <h1 className="text-xl font-bold mt-1">
+              {mostrarTabs ? "Mi Panel" : TAB_TITULO[tab]}
+            </h1>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -242,26 +253,28 @@ function PerfilInner() {
         </div>
       </div>
 
-      {/* Tab bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4">
-          <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  tab === t.id
-                    ? "bg-amber-700 text-white"
-                    : "text-gray-500 hover:bg-gray-100"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+      {/* Tab bar — solo para admin/superadmin */}
+      {mostrarTabs && (
+        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="max-w-2xl mx-auto px-4">
+            <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
+              {tabs.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                    tab === t.id
+                      ? "bg-amber-700 text-white"
+                      : "text-gray-500 hover:bg-gray-100"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
 
