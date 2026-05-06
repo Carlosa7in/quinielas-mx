@@ -179,6 +179,17 @@ export default function TiendaPage() {
               <p className="text-gray-500 text-sm">Ver mis quinielas registradas y comisiones</p>
             </div>
           </a>
+
+          <a
+            href="/admin/perfil"
+            className="w-full bg-white border border-gray-200 hover:bg-gray-50 rounded-xl p-4 flex items-center gap-3 transition-colors text-left block"
+          >
+            <span className="text-2xl">👤</span>
+            <div>
+              <p className="font-bold text-gray-800">Mi Panel</p>
+              <p className="text-gray-500 text-sm">Ver mis estadisticas, apostadores y perfil</p>
+            </div>
+          </a>
         </div>
       </div>
     );
