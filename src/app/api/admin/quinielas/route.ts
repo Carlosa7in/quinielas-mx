@@ -23,7 +23,10 @@ export async function GET() {
           estadoPago: true,
           aciertos: true,
           referenciaPago: true,
-          picks: { select: { prediccion: true, acertado: true } },
+          picks: {
+            select: { prediccion: true, acertado: true, partidoId: true, partido: { select: { orden: true } } },
+            orderBy: { partido: { orden: "asc" } },
+          },
         },
         orderBy: { folio: "desc" },
       },

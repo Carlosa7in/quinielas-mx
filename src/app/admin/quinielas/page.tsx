@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-type Pick = { prediccion: string; acertado: boolean | null };
+type Pick = { prediccion: string; acertado: boolean | null; partidoId: string; partido: { orden: number } };
 
 type Quiniela = {
   id: string;
@@ -121,18 +121,18 @@ function PagoAcciones({
 
 // Agrupa picks por partido (para mostrar dobles como "L/E")
 function agruparPicks(picks: Pick[]): { predicciones: string[]; acertados: (boolean | null)[] }[] {
-  const seen: string[] = [];
-  const grupos: { predicciones: string[]; acertados: (boolean | null)[] }[] = [];
-  picks.forEach((p, i) => {
-    // Usa el índice de posición como clave de grupo (los picks llegan ordenados por partido)
-    if (!seen.includes(String(i))) {
-      // Busca picks consecutivos con misma posición relativa (imposible sin partidoId)
-      // Usamos un approach simple: agrupa picks que tengan mismo índice % nPartidos
-      grupos.push({ predicciones: [p.prediccion], acertados: [p.acertado] });
-      seen.push(String(i));
+  const sorted = [...picks].sort((a, b) => a.partido.orden - b.partido.orden);
+  const map = new Map<string, { predicciones: string[]; acertados: (boolean | null)[] }>();
+  const order: string[] = [];
+  for (const p of sorted) {
+    if (!map.has(p.partidoId)) {
+      map.set(p.partidoId, { predicciones: [], acertados: [] });
+      order.push(p.partidoId);
     }
-  });
-  return grupos;
+    map.get(p.partidoId)!.predicciones.push(p.prediccion);
+    map.get(p.partidoId)!.acertados.push(p.acertado);
+  }
+  return order.map((id) => map.get(id)!);
 }
 
 function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string }) {
@@ -235,13 +235,22 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                         🔑 Ref: {q.referenciaPago}
                       </p>
                     )}
-                    {/* Picks */}
+                    {/* Picks agrupados por partido */}
                     <div className="flex gap-1 mt-2 flex-wrap">
-                      {q.picks.map((p, i) => (
-                        <span key={i} className={`text-xs font-bold px-1.5 py-0.5 rounded ${pickColor(p)}`}>
-                          {LABEL[p.prediccion] ?? p.prediccion}
-                        </span>
-                      ))}
+                      {agruparPicks(q.picks).map((g, i) => {
+                        const allTrue = g.acertados.every((a) => a === true);
+                        const anyFalse = g.acertados.some((a) => a === false);
+                        const cls = allTrue
+                          ? "bg-green-500 text-white"
+                          : anyFalse
+                          ? "bg-red-400 text-white"
+                          : "bg-gray-100 text-gray-600";
+                        return (
+                          <span key={i} className={`text-xs font-bold px-1.5 py-0.5 rounded ${cls}`}>
+                            {g.predicciones.map((p) => LABEL[p] ?? p).join("/")}
+                          </span>
+                        );
+                      })}
                     </div>
                     {/* Acciones de pago — solo cuando hay algo que hacer */}
                     <PagoAcciones quiniela={q} onUpdate={actualizarPago} />
