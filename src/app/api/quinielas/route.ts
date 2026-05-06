@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, sql } from "@/lib/prisma";
 import { generarFolio } from "@/lib/folio";
 import { calcularFechaCierre } from "@/lib/fechas";
 
@@ -35,27 +35,46 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Jornada no disponible" }, { status: 400 });
     }
 
-    // Verificar que no haya pasado la fecha de cierre (día anterior al primer partido a las 23:00 CDMX)
-    try {
-      const rows = await prisma.$queryRaw<{ minFecha: Date | null }[]>`
-        SELECT MIN("fechaHora") AS "minFecha"
-        FROM "Partido"
-        WHERE "jornadaId" = ${jornadaId}
-          AND "fechaHora" IS NOT NULL
-      `;
-      const primerPartido = rows[0]?.minFecha;
-      if (primerPartido) {
-        const fechaCierre = calcularFechaCierre(new Date(primerPartido));
+    // Verificar fecha de cierre usando sql directo (prisma.$queryRaw devuelve {} para DateTime en NeonDB)
+    // Modo estricto: si no se puede verificar, SE BLOQUEA el registro.
+    {
+      let primerPartidoFecha: Date | null = null;
+      let errorVerificacion = false;
+      try {
+        const rows = await sql`
+          SELECT "fechaHora" FROM "Partido"
+          WHERE "jornadaId" = ${jornadaId}
+            AND "fechaHora" IS NOT NULL
+          ORDER BY "fechaHora" ASC
+          LIMIT 1
+        `;
+        const val = rows[0]?.fechaHora;
+        if (val) {
+          const d = val instanceof Date ? val : new Date(String(val));
+          if (!isNaN(d.getTime())) primerPartidoFecha = d;
+        }
+      } catch (e) {
+        console.error("[QUINIELAS POST] fechaHora check failed:", e);
+        errorVerificacion = true;
+      }
+
+      if (errorVerificacion) {
+        return NextResponse.json(
+          { error: "No se pudo verificar la fecha de cierre. Intenta de nuevo." },
+          { status: 503 }
+        );
+      }
+
+      if (primerPartidoFecha) {
+        const fechaCierre = calcularFechaCierre(primerPartidoFecha);
         if (new Date() >= fechaCierre) {
           return NextResponse.json(
-            { error: "El registro ya cerró — las quinielas cierran a las 11pm del día anterior al primer partido." },
+            { error: "El registro ya cerró. Las quinielas cierran a las 11:00 pm del día anterior al primer partido." },
             { status: 400 }
           );
         }
       }
-    } catch (e) {
-      console.error("[QUINIELAS POST] fechaHora check failed:", e);
-      // Si no podemos verificar la fecha, dejamos pasar (la jornada está abierta según el estado)
+      // Si no hay partidos con fecha aún, se permite el registro (jornada recién creada)
     }
 
     const folio = generarFolio(jornada.numero);
