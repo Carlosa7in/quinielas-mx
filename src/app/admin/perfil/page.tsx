@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -108,7 +108,7 @@ const fmtFecha = (iso: string) =>
 
 type Tab = "resumen" | "apostadores" | "ganancias" | "perfil";
 
-export default function PerfilPage() {
+function PerfilInner() {
   const { data: session } = useSession();
   const rolSession = (session?.user as { role?: string })?.role ?? "";
   const esAdminNav = rolSession === "admin" || rolSession === "superadmin";
@@ -718,5 +718,17 @@ export default function PerfilPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PerfilPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-400">Cargando...</p>
+      </div>
+    }>
+      <PerfilInner />
+    </Suspense>
   );
 }
