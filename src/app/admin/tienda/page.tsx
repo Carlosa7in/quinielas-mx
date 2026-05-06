@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { LogoEquipo } from "@/components/LogoEquipo";
 import { JornadaSelector, type JornadaResumen } from "@/components/JornadaSelector";
 
@@ -76,7 +76,7 @@ export default function TiendaPage() {
   };
 
   if (modo === "selector") {
-    return <JornadaSelector onSelect={seleccionarJornada} titulo="Registro en Tienda" soloActivas />;
+    return <JornadaSelector onSelect={seleccionarJornada} titulo="Registro en Tienda" soloActivas onSignOut={() => signOut({ callbackUrl: "/login" })} />;
   }
 
   /* ── Modo selección (manual vs escanear) ─────────────────────── */
@@ -84,14 +84,22 @@ export default function TiendaPage() {
     return (
       <div className="min-h-screen bg-gray-100">
         <div className="bg-brand text-white py-4 px-4">
-          <div className="max-w-xl mx-auto">
-            <a href="/admin" className="text-amber-400 text-sm">← Admin</a>
-            <h1 className="text-xl font-bold mt-1">Registro en Tienda</h1>
-            {jornada && (
-              <p className="text-amber-400 text-xs">
-                {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
-              </p>
-            )}
+          <div className="max-w-xl mx-auto flex items-center justify-between">
+            <div>
+              <a href="/admin" className="text-amber-400 text-sm">← Admin</a>
+              <h1 className="text-xl font-bold mt-1">Registro en Tienda</h1>
+              {jornada && (
+                <p className="text-amber-400 text-xs">
+                  {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Salir
+            </button>
           </div>
         </div>
 
@@ -263,14 +271,22 @@ export default function TiendaPage() {
               <p className="text-amber-400 text-xs">{jornada.liga} · {jornada.temporada}</p>
             )}
           </div>
-          <div className="text-right">
-            <p className="text-yellow-300 font-bold text-xl">${totalPagar}</p>
-            <p className="text-amber-400 text-xs">
-              {formas.length} quiniela{formas.length !== 1 ? "s" : ""}
-              {combosTotal > formas.length && (
-                <span className="ml-1 opacity-70">· {combosTotal} combos</span>
-              )}
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-yellow-300 font-bold text-xl">${totalPagar}</p>
+              <p className="text-amber-400 text-xs">
+                {formas.length} quiniela{formas.length !== 1 ? "s" : ""}
+                {combosTotal > formas.length && (
+                  <span className="ml-1 opacity-70">· {combosTotal} combos</span>
+                )}
+              </p>
+            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Salir
+            </button>
           </div>
         </div>
       </div>

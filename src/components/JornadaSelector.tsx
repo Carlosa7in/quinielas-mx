@@ -27,9 +27,10 @@ interface Props {
   titulo?: string;
   backHref?: string;
   soloActivas?: boolean;
+  onSignOut?: () => void;
 }
 
-export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", backHref = "/admin", soloActivas = false }: Props) {
+export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", backHref = "/admin", soloActivas = false, onSignOut }: Props) {
   const [jornadas, setJornadas] = useState<JornadaResumen[]>([]);
   const [ligaActiva, setLigaActiva] = useState<string>("");
   const [cargando, setCargando] = useState(true);
@@ -58,9 +59,19 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-brand text-white py-4 px-4">
-        <div className="max-w-xl mx-auto">
-          <a href={backHref} className="text-amber-400 text-sm">← Admin</a>
-          <h1 className="text-xl font-bold mt-1">{titulo}</h1>
+        <div className="max-w-xl mx-auto flex items-center justify-between">
+          <div>
+            <a href={backHref} className="text-amber-400 text-sm">← Admin</a>
+            <h1 className="text-xl font-bold mt-1">{titulo}</h1>
+          </div>
+          {onSignOut && (
+            <button
+              onClick={onSignOut}
+              className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Salir
+            </button>
+          )}
         </div>
       </div>
 
