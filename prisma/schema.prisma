@@ -97,3 +97,15 @@ model Equipo {
 
   @@unique([nombre, liga])
 }
+
+model PagoComision {
+  id          String   @id @default(cuid())
+  usuarioId   String
+  jornadaId   String
+  monto       Float    @default(0)
+  pagadoEn    DateTime @default(now())
+  pagadoPor   String?  // id del superadmin que registró el pago
+  createdAt   DateTime @default(now())
+
+  @@unique([usuarioId, jornadaId])
+}

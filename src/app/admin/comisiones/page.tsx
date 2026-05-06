@@ -1,27 +1,51 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 
 type JornadaOpcion = {
-  id: string;
-  numero: number;
-  nombre: string | null;
-  temporada: string;
-  liga: string;
+  id: string; numero: number; nombre: string | null; temporada: string; liga: string;
+};
+
+type QuinielaItem = {
+  id: string; folio: string; monto: number; canal: string;
+  estado: string; estadoPago: string; nombreCliente: string | null;
+};
+
+type JornadaDesglose = {
+  jornadaId: string; jornadaNombre: string; liga: string; temporada: string;
+  total: number; tienda: number; online: number;
+  recaudado: number; comision: number;
+  pagado: boolean; pagadoEn: string | null; montoPagado: number | null;
+  quinielas: QuinielaItem[];
 };
 
 type VendedorReporte = {
-  id: string;
-  nombre: string;
-  rol: string;
-  puntoVenta: string | null;
-  total: number;
-  tienda: number;
-  online: number;
-  recaudado: number;
-  ganadoras: number;
+  id: string; nombre: string; rol: string; puntoVenta: string | null;
+  total: number; tienda: number; online: number;
+  recaudado: number; ganadoras: number; comisionTotal: number; pendientePago: number;
+  porJornada: JornadaDesglose[];
 };
+
+const COMISION_TIENDA = 2;
+const PCT_DUENOS = 0.15;
+
+const ROL_LABEL: Record<string, string> = {
+  superadmin: "Superadmin", admin: "Admin", vendedor: "Vendedor", tienda: "Tienda",
+};
+const ROL_COLOR: Record<string, string> = {
+  superadmin: "bg-purple-100 text-purple-700", admin: "bg-blue-100 text-blue-700",
+  vendedor: "bg-green-100 text-green-700", tienda: "bg-amber-100 text-amber-700",
+};
+const CANAL_LABEL: Record<string, string> = { tienda: "Tienda", online: "Online" };
+const ESTADO_COLOR: Record<string, string> = {
+  pendiente: "text-yellow-600", confirmado: "text-green-600",
+  ganadora: "text-amber-600 font-bold", perdedora: "text-gray-400",
+};
+const fmt = (n: number) =>
+  n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtFecha = (iso: string) =>
+  new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric", timeZone: "America/Mexico_City" });
 
 export default function ComisionesPage() {
   const { data: session } = useSession();
@@ -33,56 +57,54 @@ export default function ComisionesPage() {
   const [jornadas, setJornadas] = useState<JornadaOpcion[]>([]);
   const [jornadaId, setJornadaId] = useState("");
   const [cargando, setCargando] = useState(false);
+  const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
+  const [pagando, setPagando] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/jornadas/todas")
       .then((r) => r.json())
-      .then((data) => setJornadas(data));
+      .then((data) => Array.isArray(data) && setJornadas(data));
   }, []);
 
-  useEffect(() => {
+  const cargar = useCallback(() => {
     setCargando(true);
-    const url = jornadaId
-      ? `/api/admin/comisiones?jornadaId=${jornadaId}`
-      : "/api/admin/comisiones";
+    const url = jornadaId ? `/api/admin/comisiones?jornadaId=${jornadaId}` : "/api/admin/comisiones";
     fetch(url)
       .then((r) => r.json())
-      .then((data) => {
-        setReporte(data.reporte ?? []);
-        setSinAsignar(data.sinAsignar ?? 0);
-      })
+      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); })
       .finally(() => setCargando(false));
   }, [jornadaId]);
 
-  const COMISION_TIENDA = 2;   // $2 por quiniela vendida en tienda
-  const PCT_DUENOS      = 0.15; // 15%
+  useEffect(() => { cargar(); }, [cargar]);
 
-  const totalGeneral     = reporte.reduce((s, v) => s + v.total, 0);
+  const toggleExpandir = (id: string) =>
+    setExpandidos((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+
+  const marcarPago = async (usuarioId: string, jornadaId: string, monto: number, desmarcar = false) => {
+    const key = `${usuarioId}_${jornadaId}`;
+    setPagando(key);
+    try {
+      await fetch("/api/admin/comisiones", {
+        method: desmarcar ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuarioId, jornadaId, monto }),
+      });
+      await cargar();
+    } finally {
+      setPagando(null);
+    }
+  };
+
+  const totalGeneral = reporte.reduce((s, v) => s + v.total, 0);
   const recaudadoGeneral = reporte.reduce((s, v) => s + v.recaudado, 0);
-  const totalTiendaAll   = reporte.reduce((s, v) => s + v.tienda, 0);
-  const cutDuenos        = recaudadoGeneral * PCT_DUENOS;
-  const cutTienda        = totalTiendaAll * COMISION_TIENDA;
-  const bolsaNeta        = Math.max(recaudadoGeneral - cutDuenos - cutTienda, 0);
-  const totalComisiones  = reporte.reduce((s, v) => s + v.tienda * COMISION_TIENDA, 0);
+  const totalTiendaAll = reporte.reduce((s, v) => s + v.tienda, 0);
+  const cutDuenos = recaudadoGeneral * PCT_DUENOS;
+  const cutTienda = totalTiendaAll * COMISION_TIENDA;
+  const bolsaNeta = Math.max(recaudadoGeneral - cutDuenos - cutTienda, 0);
+  const totalComisiones = reporte.reduce((s, v) => s + v.comisionTotal, 0);
+  const totalPendiente = reporte.reduce((s, v) => s + v.pendientePago, 0);
 
-  const ROL_LABEL: Record<string, string> = {
-    superadmin: "Superadmin",
-    admin: "Admin",
-    vendedor: "Vendedor",
-    tienda: "Tienda",
-  };
-
-  const ROL_COLOR: Record<string, string> = {
-    superadmin: "bg-purple-100 text-purple-700",
-    admin: "bg-blue-100 text-blue-700",
-    vendedor: "bg-green-100 text-green-700",
-    tienda: "bg-amber-100 text-amber-700",
-  };
-
-  const fmt = (n: number) =>
-    n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-  const reporteConVentas = reporte.filter((v) => v.total > 0);
+  const reporteConVentas = reporte.filter((v) => v.total > 0).sort((a, b) => b.total - a.total);
   const reporteSinVentas = reporte.filter((v) => v.total === 0);
 
   return (
@@ -96,7 +118,7 @@ export default function ComisionesPage() {
             </h1>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "44px", objectFit: "contain", flexShrink: 0 }} />
+          <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "44px", objectFit: "contain", flexShrink: 0 }} />
         </div>
       </div>
 
@@ -156,7 +178,7 @@ export default function ComisionesPage() {
           </div>
         )}
 
-        {/* Tabla de vendedores */}
+        {/* Lista de vendedores */}
         {cargando ? (
           <div className="text-center py-8 text-gray-400">Cargando...</div>
         ) : reporte.length === 0 ? (
@@ -166,74 +188,192 @@ export default function ComisionesPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {/* Vendedores con ventas */}
-            {reporteConVentas
-              .sort((a, b) => b.total - a.total)
-              .map((v) => (
-                <div key={v.id} className="bg-white rounded-xl shadow-sm p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
+            {reporteConVentas.map((v) => {
+              const expandido = expandidos.has(v.id);
+              return (
+                <div key={v.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                  {/* Cabecera vendedor */}
+                  <button
+                    onClick={() => toggleExpandir(v.id)}
+                    className="w-full text-left p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-bold text-gray-800">{v.nombre}</p>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROL_COLOR[v.rol] ?? "bg-gray-100 text-gray-500"}`}>
                           {ROL_LABEL[v.rol] ?? v.rol}
                         </span>
+                        {v.puntoVenta && (
+                          <span className="text-xs text-gray-400">📍 {v.puntoVenta}</span>
+                        )}
                       </div>
-                      {v.puntoVenta && (
-                        <p className="text-sm text-gray-500 mt-0.5">📍 {v.puntoVenta}</p>
+                      <span className="text-gray-400 text-sm ml-2">{expandido ? "▲" : "▼"}</span>
+                    </div>
+                    {/* Mini resumen */}
+                    <div className="flex gap-4 mt-2 text-sm">
+                      <span className="text-green-700 font-semibold">{v.total} quinielas</span>
+                      <span className="text-yellow-600 font-semibold">${fmt(v.recaudado)}</span>
+                      {v.comisionTotal > 0 && (
+                        <span className={v.pendientePago > 0 ? "text-orange-500 font-semibold" : "text-gray-400"}>
+                          {v.pendientePago > 0 ? `⏳ $${fmt(v.pendientePago)} pendiente` : "✅ Todo pagado"}
+                        </span>
                       )}
                     </div>
-                  </div>
+                  </button>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-green-50 rounded-lg p-2.5 text-center">
-                      <p className="text-xl font-bold text-green-700">{v.total}</p>
-                      <p className="text-xs text-gray-500">Quinielas</p>
-                      {(v.tienda > 0 || v.online > 0) && (
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          {v.tienda > 0 && `${v.tienda} tienda`}
-                          {v.tienda > 0 && v.online > 0 && " · "}
-                          {v.online > 0 && `${v.online} online`}
-                        </p>
-                      )}
+                  {/* Desglose expandido */}
+                  {expandido && (
+                    <div className="border-t border-gray-100 divide-y divide-gray-50">
+                      {v.porJornada.map((j) => {
+                        const key = `${v.id}_${j.jornadaId}`;
+                        const estaPagando = pagando === key;
+                        return (
+                          <div key={j.jornadaId} className="p-4 space-y-3">
+                            {/* Encabezado jornada */}
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-semibold text-gray-700 text-sm">
+                                  {j.liga} · {j.jornadaNombre}
+                                </p>
+                                <p className="text-xs text-gray-400">{j.temporada}</p>
+                              </div>
+                              {/* Estado de pago de comisión */}
+                              {j.comision > 0 && (
+                                <div className="text-right">
+                                  {j.pagado ? (
+                                    <div>
+                                      <p className="text-xs text-green-600 font-bold">✅ Pagado</p>
+                                      {j.pagadoEn && (
+                                        <p className="text-[10px] text-gray-400">{fmtFecha(j.pagadoEn)}</p>
+                                      )}
+                                      {esSuperadmin && (
+                                        <button
+                                          onClick={() => marcarPago(v.id, j.jornadaId, j.comision, true)}
+                                          disabled={!!estaPagando}
+                                          className="text-[10px] text-red-400 hover:text-red-600 mt-0.5"
+                                        >
+                                          Deshacer
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="text-right">
+                                      <p className="text-xs text-orange-500 font-bold">
+                                        ⏳ ${fmt(j.comision)} pendiente
+                                      </p>
+                                      {esSuperadmin && (
+                                        <button
+                                          onClick={() => marcarPago(v.id, j.jornadaId, j.comision)}
+                                          disabled={!!estaPagando}
+                                          className="mt-1 text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg transition-colors disabled:opacity-50"
+                                        >
+                                          {estaPagando ? "..." : "Marcar pagado"}
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Stats de la jornada */}
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-green-50 rounded-lg p-2 text-center">
+                                <p className="font-bold text-green-700">{j.total}</p>
+                                <p className="text-[10px] text-gray-500">Quinielas</p>
+                                {(j.tienda > 0 || j.online > 0) && (
+                                  <p className="text-[9px] text-gray-400">
+                                    {j.tienda > 0 && `${j.tienda}T`}{j.tienda > 0 && j.online > 0 && "·"}{j.online > 0 && `${j.online}O`}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="bg-yellow-50 rounded-lg p-2 text-center">
+                                <p className="font-bold text-yellow-600">${fmt(j.recaudado)}</p>
+                                <p className="text-[10px] text-gray-500">Recaudado</p>
+                              </div>
+                              <div className="bg-orange-50 rounded-lg p-2 text-center">
+                                <p className="font-bold text-orange-600">${fmt(j.comision)}</p>
+                                <p className="text-[10px] text-gray-500">Comisión</p>
+                                <p className="text-[9px] text-gray-400">$2 × {j.tienda}</p>
+                              </div>
+                            </div>
+
+                            {/* Lista de quinielas individuales */}
+                            <div className="rounded-lg border border-gray-100 overflow-hidden">
+                              <table className="w-full text-xs">
+                                <thead className="bg-gray-50">
+                                  <tr>
+                                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Folio</th>
+                                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Cliente</th>
+                                    <th className="text-center px-2 py-2 text-gray-500 font-medium">Canal</th>
+                                    <th className="text-right px-3 py-2 text-gray-500 font-medium">Monto</th>
+                                    <th className="text-right px-3 py-2 text-gray-500 font-medium">Estado</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                  {j.quinielas.map((q) => (
+                                    <tr key={q.id} className="hover:bg-gray-50">
+                                      <td className="px-3 py-2 font-mono text-gray-600">{q.folio}</td>
+                                      <td className="px-3 py-2 text-gray-500 truncate max-w-[80px]">
+                                        {q.nombreCliente ?? "—"}
+                                      </td>
+                                      <td className="px-2 py-2 text-center">
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${q.canal === "tienda" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
+                                          {CANAL_LABEL[q.canal] ?? q.canal}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-2 text-right font-semibold text-gray-700">
+                                        ${fmt(q.monto)}
+                                      </td>
+                                      <td className={`px-3 py-2 text-right capitalize ${ESTADO_COLOR[q.estado] ?? "text-gray-500"}`}>
+                                        {q.estado}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="bg-yellow-50 rounded-lg p-2.5 text-center">
-                      <p className="text-xl font-bold text-yellow-600">${fmt(v.recaudado)}</p>
-                      <p className="text-xs text-gray-500">Recaudado</p>
-                    </div>
-                    <div className="bg-orange-50 rounded-lg p-2.5 text-center">
-                      <p className="text-xl font-bold text-orange-600">${fmt(v.tienda * COMISION_TIENDA)}</p>
-                      <p className="text-xs text-gray-500">Comisión</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">$2 × {v.tienda}</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
-              ))}
+              );
+            })}
 
-            {/* Gran total — solo cuando hay más de un vendedor */}
+            {/* Gran total */}
             {esSuperadmin && reporteConVentas.length > 1 && (
               <div className="bg-amber-900 text-white rounded-2xl p-4">
-                <p className="text-xs font-bold tracking-widest text-amber-400 uppercase mb-3">
-                  Gran Total
-                </p>
-                <div className="grid grid-cols-3 gap-2">
+                <p className="text-xs font-bold tracking-widest text-amber-400 uppercase mb-3">Gran Total</p>
+                <div className="grid grid-cols-2 gap-2 mb-3">
                   <div className="bg-white/10 rounded-lg p-2.5 text-center">
-                    <p className="text-xl font-bold text-white">{totalGeneral}</p>
+                    <p className="text-xl font-bold">{totalGeneral}</p>
                     <p className="text-xs text-amber-300">Quinielas</p>
                   </div>
                   <div className="bg-white/10 rounded-lg p-2.5 text-center">
                     <p className="text-xl font-bold text-yellow-300">${fmt(recaudadoGeneral)}</p>
                     <p className="text-xs text-amber-300">Recaudado</p>
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
                   <div className="bg-white/10 rounded-lg p-2.5 text-center">
                     <p className="text-xl font-bold text-orange-300">${fmt(totalComisiones)}</p>
                     <p className="text-xs text-amber-300">Total comisiones</p>
+                  </div>
+                  <div className="bg-white/10 rounded-lg p-2.5 text-center">
+                    <p className={`text-xl font-bold ${totalPendiente > 0 ? "text-red-300" : "text-green-300"}`}>
+                      ${fmt(totalPendiente)}
+                    </p>
+                    <p className="text-xs text-amber-300">
+                      {totalPendiente > 0 ? "⏳ Pendiente pagar" : "✅ Todo pagado"}
+                    </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Sin ventas aún */}
+            {/* Sin ventas — colapsado */}
             {esSuperadmin && reporteSinVentas.length > 0 && (
               <details className="bg-white rounded-xl shadow-sm">
                 <summary className="p-4 text-sm text-gray-400 cursor-pointer select-none">
