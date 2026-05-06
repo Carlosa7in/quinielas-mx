@@ -323,11 +323,24 @@ export default function ResultadosPage() {
               }`}
             >
               <div className="flex items-center justify-between mb-3">
-                <p className="font-semibold text-sm text-gray-800">
-                  {partido.equipoLocal}{" "}
-                  <span className="text-gray-400 font-normal">vs</span>{" "}
-                  {partido.equipoVisita}
-                </p>
+                <div>
+                  <p className="font-semibold text-sm text-gray-800">
+                    {partido.equipoLocal}{" "}
+                    <span className="text-gray-400 font-normal">vs</span>{" "}
+                    {partido.equipoVisita}
+                  </p>
+                  {partido.fechaHora && (
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      🕐{" "}
+                      {new Date(partido.fechaHora).toLocaleDateString("es-MX", {
+                        weekday: "short", day: "numeric", month: "short", timeZone: "America/Mexico_City",
+                      })}{" "}
+                      {new Date(partido.fechaHora).toLocaleTimeString("es-MX", {
+                        hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City",
+                      })}
+                    </p>
+                  )}
+                </div>
                 {e.guardado && (
                   <span className="text-green-600 text-xs font-bold bg-green-50 px-2 py-0.5 rounded-full">
                     ✓ Guardado
