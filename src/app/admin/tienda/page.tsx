@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { LogoEquipo } from "@/components/LogoEquipo";
 import { JornadaSelector, type JornadaResumen } from "@/components/JornadaSelector";
+import { RegistroCerrado } from "@/components/RegistroCerrado";
+import { calcularFechaCierre } from "@/lib/fechas";
 
 type Partido = {
   id: string;
@@ -77,6 +79,30 @@ export default function TiendaPage() {
 
   if (modo === "selector") {
     return <JornadaSelector onSelect={seleccionarJornada} titulo="Registro en Tienda" soloActivas onSignOut={() => signOut({ callbackUrl: "/login" })} />;
+  }
+
+  // Bloquear si el registro está cerrado
+  const fechaCierreObj = jornada
+    ? (() => {
+        const fechas = jornada.partidos
+          .map((p) => p.fechaHora ? new Date(p.fechaHora) : null)
+          .filter((d): d is Date => d !== null && !isNaN(d.getTime()));
+        if (fechas.length === 0) return null;
+        const primera = new Date(Math.min(...fechas.map((d) => d.getTime())));
+        return calcularFechaCierre(primera);
+      })()
+    : null;
+  const registroCerrado = fechaCierreObj ? new Date() >= fechaCierreObj : false;
+
+  if (registroCerrado && fechaCierreObj && jornada) {
+    return (
+      <RegistroCerrado
+        jornada={jornada}
+        fechaCierre={fechaCierreObj}
+        onBack={() => { setJornada(null); setModo("selector"); setFormas([{}]); }}
+        onReabrir={(jornadaActualizada) => { setJornada(jornadaActualizada as unknown as Jornada); setModo("seleccion"); }}
+      />
+    );
   }
 
   /* ── Modo selección (manual vs escanear) ─────────────────────── */

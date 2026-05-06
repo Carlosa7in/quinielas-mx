@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LogoEquipo } from "@/components/LogoEquipo";
+import { RegistroCerrado } from "@/components/RegistroCerrado";
+import { calcularFechaCierre } from "@/lib/fechas";
 
 type Partido = {
   id: string;
@@ -75,8 +77,13 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
           const ligas = [...new Set(activas.map((j) => j.liga))];
           setLigaActiva(ligas[0]);
         }
+        // Auto-seleccionar solo si hay una jornada Y su registro NO está cerrado
         if (activas.length === 1) {
-          cargarJornada(activas[0], onSelect);
+          const j = activas[0];
+          const cerrada = j.primerPartidoFecha
+            ? new Date() >= new Date(j.primerPartidoFecha)
+            : false;
+          if (!cerrada) cargarJornada(j, onSelect);
         }
       })
       .catch(() => {})
@@ -250,31 +257,34 @@ export default function QuinielaPage() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
-  // Fecha del primer partido (la más próxima)
-  const primerPartidoRaw = jornada
-    ? jornada.partidos.reduce((min, p) => !min || p.fechaHora < min ? p.fechaHora : min, "")
-    : null;
-  // Fecha de cierre real: día anterior al primer partido a las 23:00 CDMX
-  const primerPartidoISO = primerPartidoRaw
+  // Fecha de cierre usando la función canónica
+  const fechaCierreObj = jornada
     ? (() => {
-        try {
-          const pr = new Date(primerPartidoRaw);
-          const TZ = "America/Mexico_City";
-          const fmt = new Intl.DateTimeFormat("en-US", { timeZone: TZ, year: "numeric", month: "numeric", day: "numeric" });
-          const parts = Object.fromEntries(fmt.formatToParts(pr).map(p => [p.type, p.value]));
-          const year = parseInt(parts.year), month = parseInt(parts.month), day = parseInt(parts.day);
-          const month0 = month - 1;
-          const isDST = month0 >= 2 && month0 <= 9;
-          const offsetMs = (isDST ? -5 : -6) * 60 * 60 * 1000;
-          const base = new Date(Date.UTC(year, month - 1, day - 1, 23, 0, 0, 0));
-          return new Date(base.getTime() - offsetMs).toISOString();
-        } catch { return primerPartidoRaw; }
+        const fechas = jornada.partidos
+          .map((p) => p.fechaHora ? new Date(p.fechaHora) : null)
+          .filter((d): d is Date => d !== null && !isNaN(d.getTime()));
+        if (fechas.length === 0) return null;
+        const primera = new Date(Math.min(...fechas.map((d) => d.getTime())));
+        return calcularFechaCierre(primera);
       })()
     : null;
+  const primerPartidoISO = fechaCierreObj ? fechaCierreObj.toISOString() : null;
   const cuentaRegresiva = useCuentaRegresiva(primerPartidoISO);
-  const registroCerrado = primerPartidoISO ? new Date() >= new Date(primerPartidoISO) : false;
+  const registroCerrado = fechaCierreObj ? new Date() >= fechaCierreObj : false;
 
   if (!jornada) return <SelectorJornada onSelect={setJornada} />;
+
+  // Bloquear ANTES de mostrar el formulario
+  if (registroCerrado && fechaCierreObj) {
+    return (
+      <RegistroCerrado
+        jornada={jornada}
+        fechaCierre={fechaCierreObj}
+        onBack={() => { setJornada(null); setFormas([{}]); setFormaActiva(0); }}
+        onReabrir={(jornadaActualizada) => { setJornada(jornadaActualizada as unknown as Jornada); setFormas([{}]); setFormaActiva(0); }}
+      />
+    );
+  }
 
   const partidos = [...jornada.partidos].sort((a, b) => a.orden - b.orden);
 
