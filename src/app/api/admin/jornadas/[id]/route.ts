@@ -28,8 +28,9 @@ export async function DELETE(
       await prisma.pick.deleteMany({ where: { partidoId: { in: partidoIds } } });
     }
 
-    await prisma.partido.deleteMany({ where: { jornadaId: id } });
-    await prisma.jornada.delete({ where: { id } });
+    // Usar raw SQL para evitar el bug de NeonDB con campos DateTime en Prisma ORM
+    await prisma.$executeRaw`DELETE FROM "Partido" WHERE "jornadaId" = ${id}`;
+    await prisma.$executeRaw`DELETE FROM "Jornada" WHERE id = ${id}`;
 
     return NextResponse.json({ ok: true, partidosBorrados: partidoIds.length });
   } catch (err) {
