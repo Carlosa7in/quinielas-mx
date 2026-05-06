@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
 import { calcularFechaCierre } from "@/lib/fechas";
 
 // GET /api/jornadas/todas — todas las jornadas con stats básicas
@@ -22,7 +21,6 @@ export async function GET() {
     if (jornadas.length === 0) return NextResponse.json([]);
 
     const ids = jornadas.map((j) => j.id);
-    const idList = Prisma.join(ids);
 
     // Query 2: quinielas de esas jornadas
     const quinielas = await prisma.quiniela.findMany({
@@ -36,41 +34,36 @@ export async function GET() {
       select: { jornadaId: true },
     });
 
-    // Query 4: primer partido por jornada via raw SQL con DISTINCT ON
-    // (Prisma findMany con DateTime en select crashea en NeonDB devolviendo {})
+    // Query 4: primer partido por jornada usando findFirst por jornada
+    // (findFirst con DateTime funciona en NeonDB; findMany con DateTime crashea devolviendo {})
     const pMap = new Map<string, Date>();
-    try {
-      const rows = await prisma.$queryRaw<{ jornadaId: string; fechaHora: unknown }[]>`
-        SELECT DISTINCT ON ("jornadaId") "jornadaId", "fechaHora"
-        FROM "Partido"
-        WHERE "jornadaId" IN (${idList})
-          AND "fechaHora" IS NOT NULL
-        ORDER BY "jornadaId", "fechaHora" ASC
-      `;
-      for (const r of rows) {
-        if (!r.fechaHora) continue;
-        const d = r.fechaHora instanceof Date ? r.fechaHora : new Date(String(r.fechaHora));
-        if (!isNaN(d.getTime())) pMap.set(r.jornadaId, d);
-      }
-    } catch (e) {
-      console.error("[/api/jornadas/todas] fechaHora raw query failed:", e);
+    for (const id of ids) {
+      try {
+        const p = await prisma.partido.findFirst({
+          where: { jornadaId: id },
+          orderBy: { fechaHora: "asc" },
+          select: { fechaHora: true },
+        });
+        if (p?.fechaHora) {
+          const d = p.fechaHora instanceof Date ? p.fechaHora : new Date(String(p.fechaHora));
+          if (!isNaN(d.getTime())) pMap.set(id, d);
+        }
+      } catch { /* silencioso por jornada */ }
     }
 
-    // Query 5: fechaInicio via raw SQL (fallback cuando no hay fechaHora en partidos)
+    // Query 5: fechaInicio de cada jornada como fallback (también con findFirst)
     const fiMap = new Map<string, Date>();
-    try {
-      const rows = await prisma.$queryRaw<{ id: string; fechaInicio: unknown }[]>`
-        SELECT id, "fechaInicio" FROM "Jornada"
-        WHERE id IN (${idList})
-          AND "fechaInicio" IS NOT NULL
-      `;
-      for (const r of rows) {
-        if (!r.fechaInicio) continue;
-        const d = r.fechaInicio instanceof Date ? r.fechaInicio : new Date(String(r.fechaInicio));
-        if (!isNaN(d.getTime())) fiMap.set(r.id, d);
-      }
-    } catch (e) {
-      console.error("[/api/jornadas/todas] fechaInicio raw query failed:", e);
+    for (const id of ids) {
+      try {
+        const j = await prisma.jornada.findUnique({
+          where: { id },
+          select: { fechaInicio: true },
+        });
+        if (j?.fechaInicio) {
+          const d = j.fechaInicio instanceof Date ? j.fechaInicio : new Date(String(j.fechaInicio));
+          if (!isNaN(d.getTime())) fiMap.set(id, d);
+        }
+      } catch { /* silencioso por jornada */ }
     }
 
     // Construir mapas
@@ -89,7 +82,7 @@ export async function GET() {
       const qs = qMap.get(j.id) ?? [];
 
       // Base para cierre: primer partido si tiene fecha, si no fechaInicio + 18h
-      // (+18h sobre UTC-midnight para que calcularFechaCierre vea el día correcto en CDMX)
+      // (+18h sobre UTC-midnight garantiza que calcularFechaCierre vea el día correcto en CDMX)
       let baseParaCierre: Date | null = pMap.get(j.id) ?? null;
       if (!baseParaCierre) {
         const fi = fiMap.get(j.id);
