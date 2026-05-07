@@ -117,7 +117,7 @@ function JornadaCard({ jornada }: { jornada: JornadaBolsaItem }) {
       {/* Botón registrar */}
       {!cerrado && (
         <Link
-          href="/quiniela"
+          href={`/quiniela?jornada=${jornada.id}`}
           className="block w-full bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold text-base py-3 px-6 rounded-xl transition-colors shadow-lg shadow-amber-900/40 mt-1"
         >
           Registrar mi Quiniela →

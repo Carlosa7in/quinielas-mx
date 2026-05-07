@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { LogoEquipo } from "@/components/LogoEquipo";
 import { RegistroCerrado } from "@/components/RegistroCerrado";
 import { calcularFechaCierre } from "@/lib/fechas";
@@ -243,9 +243,20 @@ function useCuentaRegresiva(fechaISO: string | null) {
 }
 
 /* ─── Formulario de picks ─── */
-export default function QuinielaPage() {
+function QuinielaInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const jornadaParam = searchParams.get("jornada");
   const [jornada, setJornada] = useState<Jornada | null>(null);
+
+  // Auto-cargar jornada si viene por URL param
+  useEffect(() => {
+    if (!jornadaParam || jornada) return;
+    fetch(`/api/jornadas?id=${jornadaParam}`)
+      .then((r) => r.json())
+      .then((data) => { if (!data.error) setJornada(data); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jornadaParam]);
 
   // Múltiples formas — cada una con picks independientes
   const [formas, setFormas] = useState<FormaPicks[]>([{}]);
@@ -683,5 +694,13 @@ export default function QuinielaPage() {
         <div className="pb-6" />
       </form>
     </div>
+  );
+}
+
+export default function QuinielaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-400">Cargando...</p></div>}>
+      <QuinielaInner />
+    </Suspense>
   );
 }
