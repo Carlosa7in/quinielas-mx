@@ -192,40 +192,84 @@ function agruparPicks(picks: Pick[]): { predicciones: string[]; acertados: (bool
   return order.map((id) => map.get(id)!);
 }
 
+type NotifItem = { tel: string; nombre: string; folios: string[] };
+
 function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string }) {
   const [abierta, setAbierta] = useState(true);
   const [quinielas, setQuinielas] = useState(jornada.quinielas);
   const [eliminando, setEliminando] = useState<string | null>(null);
+  const [seleccionadas, setSeleccionadas] = useState<Set<string>>(new Set());
+  const [confirmando, setConfirmando] = useState(false);
+  const [notifs, setNotifs] = useState<NotifItem[]>([]); // para enviar WA tras confirmar
 
   const actualizarPago = (id: string, estadoPago: string) => {
-    setQuinielas((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, estadoPago } : q))
-    );
+    setQuinielas((prev) => prev.map((q) => (q.id === id ? { ...q, estadoPago } : q)));
   };
 
   const eliminar = async (q: Quiniela) => {
     if (!confirm(`¿Eliminar la quiniela ${q.folio} de ${q.nombreCliente ?? "sin nombre"}?\nEsta acción no se puede deshacer.`)) return;
     setEliminando(q.id);
     const res = await fetch(`/api/admin/quinielas/${q.id}`, { method: "DELETE" });
-    if (res.ok) {
-      setQuinielas((prev) => prev.filter((x) => x.id !== q.id));
-    } else {
-      alert("Error al eliminar");
-    }
+    if (res.ok) setQuinielas((prev) => prev.filter((x) => x.id !== q.id));
+    else alert("Error al eliminar");
     setEliminando(null);
   };
 
-  const filtradas = quinielas.filter((q) =>
-    (q.folio + (q.nombreCliente ?? "") + (q.telefonoCliente ?? ""))
-      .toLowerCase()
-      .includes(busqueda.toLowerCase())
-  );
+  const filtradas = quinielas
+    .filter((q) =>
+      (q.folio + (q.nombreCliente ?? "") + (q.telefonoCliente ?? ""))
+        .toLowerCase()
+        .includes(busqueda.toLowerCase())
+    )
+    // Pendientes primero, luego el resto
+    .sort((a, b) => {
+      const peso = (q: Quiniela) => (q.canal !== "tienda" && q.estadoPago === "pendiente" ? 0 : 1);
+      return peso(a) - peso(b);
+    });
 
+  const pendientes = filtradas.filter((q) => q.canal !== "tienda" && q.estadoPago === "pendiente");
   const total = filtradas.length;
   const recaudado = filtradas.reduce((s, q) => s + q.monto, 0);
   const ganadoras = filtradas.filter((q) => q.estado === "ganadora").length;
-  const pendientesPago = filtradas.filter((q) => q.canal !== "tienda" && q.estadoPago === "pendiente").length;
   const totalPicks = filtradas[0]?.picks.length ?? 0;
+
+  const toggleSel = (id: string) =>
+    setSeleccionadas((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+
+  const selAll = () =>
+    setSeleccionadas(new Set(pendientes.map((q) => q.id)));
+
+  const selNone = () => setSeleccionadas(new Set());
+
+  const confirmarSeleccionadas = async () => {
+    if (seleccionadas.size === 0) return;
+    setConfirmando(true);
+    const ids = [...seleccionadas];
+    await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/admin/quinielas/${id}/pago`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estadoPago: "confirmado" }),
+        })
+      )
+    );
+    // Actualizar estado local
+    setQuinielas((prev) => prev.map((q) => ids.includes(q.id) ? { ...q, estadoPago: "confirmado" } : q));
+    // Agrupar por teléfono para notificaciones
+    const porTel = new Map<string, NotifItem>();
+    for (const id of ids) {
+      const q = quinielas.find((x) => x.id === id);
+      if (!q?.telefonoCliente) continue;
+      const tel = q.telefonoCliente.replace(/\D/g, "");
+      const telWA = tel.length === 10 ? `52${tel}` : tel;
+      if (!porTel.has(telWA)) porTel.set(telWA, { tel: telWA, nombre: q.nombreCliente ?? "", folios: [] });
+      porTel.get(telWA)!.folios.push(q.folio);
+    }
+    setNotifs([...porTel.values()]);
+    setSeleccionadas(new Set());
+    setConfirmando(false);
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -240,9 +284,7 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
               {jornada.nombre ?? `Jornada ${jornada.numero}`} · {jornada.temporada}
             </span>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              jornada.estado === "abierta"
-                ? "bg-green-100 text-green-700"
-                : "bg-gray-100 text-gray-500"
+              jornada.estado === "abierta" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
             }`}>
               {jornada.estado}
             </span>
@@ -250,8 +292,8 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
           <div className="flex gap-4 mt-1 text-xs text-gray-500 flex-wrap">
             <span>🎯 {total} quinielas</span>
             <span>💵 ${recaudado}</span>
-            {pendientesPago > 0 && (
-              <span className="text-yellow-600 font-semibold">⏳ {pendientesPago} sin confirmar</span>
+            {pendientes.length > 0 && (
+              <span className="text-yellow-600 font-semibold">⏳ {pendientes.length} sin confirmar</span>
             )}
             {ganadoras > 0 && <span className="text-yellow-600 font-bold">🏆 {ganadoras} ganadoras</span>}
           </div>
@@ -266,80 +308,147 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
               {busqueda ? "Sin resultados" : "No hay quinielas en esta jornada"}
             </p>
           ) : (
-            <div className="divide-y divide-gray-50">
-              {filtradas.map((q) => (
-                <div key={q.id} className="px-4 py-3 flex items-start gap-3">
-                  {/* Info principal */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-sm">{CANAL_ICON[q.canal] ?? "💻"}</span>
-                      <span className="font-semibold text-sm text-gray-800 truncate">
-                        {q.nombreCliente ?? "Sin nombre"}
-                      </span>
-                      {q.telefonoCliente && (
-                        <span className="text-gray-400 text-xs">{q.telefonoCliente}</span>
-                      )}
-                      {q.canal === "transferencia" && (
-                        <span className="text-xs text-blue-500 font-medium">Transferencia</span>
-                      )}
-                      {q.canal === "oxxo" && (
-                        <span className="text-xs text-orange-500 font-medium">OXXO</span>
-                      )}
-                    </div>
-                    <p className="font-mono text-xs text-gray-400 mt-0.5">{q.folio}</p>
-                    {q.referenciaPago && (
-                      <p className="text-xs text-blue-600 font-semibold mt-0.5">
-                        🔑 Ref: {q.referenciaPago}
-                      </p>
-                    )}
-                    {/* Picks agrupados por partido */}
-                    <div className="flex gap-1 mt-2 flex-wrap">
-                      {agruparPicks(q.picks).map((g, i) => {
-                        const allTrue = g.acertados.every((a) => a === true);
-                        const anyFalse = g.acertados.some((a) => a === false);
-                        const cls = allTrue
-                          ? "bg-green-500 text-white"
-                          : anyFalse
-                          ? "bg-red-400 text-white"
-                          : "bg-gray-100 text-gray-600";
-                        return (
-                          <span key={i} className={`text-xs font-bold px-1.5 py-0.5 rounded ${cls}`}>
-                            {g.predicciones.map((p) => LABEL[p] ?? p).join("/")}
-                          </span>
-                        );
-                      })}
-                    </div>
-                    {/* Acciones de pago — solo cuando hay algo que hacer */}
-                    <PagoAcciones quiniela={q} onUpdate={actualizarPago} />
-                  </div>
-
-                  {/* Columna derecha: pago + resultado + ticket + eliminar */}
-                  <div className="flex flex-col items-end gap-1.5 shrink-0 min-w-[80px]">
-                    <PagoBadgeCompact quiniela={q} />
-                    {q.aciertos !== null && (
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${estadoColor(q.estado)}`}>
-                        {q.aciertos}/{totalPicks} {q.estado === "ganadora" ? "🏆" : ""}
-                      </span>
-                    )}
-                    <Link
-                      href={`/ticket/${q.folio}`}
-                      className="text-green-700 text-xs font-medium hover:underline"
-                      target="_blank"
-                    >
-                      ticket →
-                    </Link>
+            <>
+              {/* Barra de confirmación masiva — solo si hay pendientes */}
+              {pendientes.length > 0 && (
+                <div className="px-4 py-2.5 bg-yellow-50 border-b border-yellow-100 flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={seleccionadas.size === pendientes.length ? selNone : selAll}
+                    className="text-xs text-yellow-700 font-semibold hover:underline"
+                  >
+                    {seleccionadas.size === pendientes.length ? "Deseleccionar" : `Seleccionar ${pendientes.length} pendientes`}
+                  </button>
+                  {seleccionadas.size > 0 && (
                     <button
-                      onClick={() => eliminar(q)}
-                      disabled={eliminando === q.id}
-                      className="text-red-400 hover:text-red-600 text-xs disabled:opacity-40 transition-colors"
-                      title="Eliminar quiniela"
+                      onClick={confirmarSeleccionadas}
+                      disabled={confirmando}
+                      className="ml-auto text-xs bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
                     >
-                      {eliminando === q.id ? "..." : "🗑"}
+                      {confirmando ? "Confirmando..." : `✓ Confirmar ${seleccionadas.size} seleccionada${seleccionadas.size !== 1 ? "s" : ""}`}
                     </button>
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              )}
+
+              {/* Panel de notificaciones tras confirmación masiva */}
+              {notifs.length > 0 && (
+                <div className="px-4 py-3 bg-green-50 border-b border-green-100 space-y-2">
+                  <p className="text-xs font-bold text-green-800">✅ Confirmadas — ¿a quién notificas?</p>
+                  {notifs.map((n) => {
+                    const origin = typeof window !== "undefined" ? window.location.origin : "";
+                    const links = n.folios.map((f) => `👉 ${origin}/ticket/${f}`).join("\n");
+                    const msg = [
+                      `¡Hola${n.nombre ? ` ${n.nombre.split(" ")[0]}` : ""}! 🎉`,
+                      ``,
+                      `Tu${n.folios.length > 1 ? "s" : ""} pago${n.folios.length > 1 ? "s han" : " ha"} sido *confirmado${n.folios.length > 1 ? "s" : ""}*. Ya puedes ver tu${n.folios.length > 1 ? "s" : ""} quiniela${n.folios.length > 1 ? "s" : ""}:`,
+                      ``,
+                      links,
+                      ``,
+                      `¡Buena suerte! 🍀`,
+                    ].join("\n");
+                    const waUrl    = `https://wa.me/${n.tel}?text=${encodeURIComponent(msg)}`;
+                    const waBizUrl = `intent://send?phone=${n.tel}&text=${encodeURIComponent(msg)}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
+                    return (
+                      <div key={n.tel} className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-green-700 font-semibold">
+                          {n.nombre || n.tel}
+                          {n.folios.length > 1 && <span className="ml-1 text-green-500">· {n.folios.length} tickets</span>}
+                        </span>
+                        <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                          onClick={() => setNotifs((prev) => prev.filter((x) => x.tel !== n.tel))}
+                          className="text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2.5 py-1 rounded-lg transition-colors">
+                          WhatsApp
+                        </a>
+                        <a href={waBizUrl} target="_blank" rel="noopener noreferrer"
+                          onClick={() => setNotifs((prev) => prev.filter((x) => x.tel !== n.tel))}
+                          className="text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2.5 py-1 rounded-lg border border-white/40 transition-colors">
+                          WA Business 💼
+                        </a>
+                        <button onClick={() => setNotifs((prev) => prev.filter((x) => x.tel !== n.tel))}
+                          className="text-xs text-gray-400 hover:text-gray-600 hover:underline">Omitir</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="divide-y divide-gray-50">
+                {filtradas.map((q) => {
+                  const esPendiente = q.canal !== "tienda" && q.estadoPago === "pendiente";
+                  return (
+                    <div key={q.id} className={`px-4 py-3 flex items-start gap-3 ${esPendiente && seleccionadas.has(q.id) ? "bg-yellow-50" : ""}`}>
+                      {/* Checkbox de selección */}
+                      {esPendiente && (
+                        <input
+                          type="checkbox"
+                          checked={seleccionadas.has(q.id)}
+                          onChange={() => toggleSel(q.id)}
+                          className="mt-1 accent-amber-500 w-4 h-4 shrink-0 cursor-pointer"
+                        />
+                      )}
+                      {/* Info principal */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-sm">{CANAL_ICON[q.canal] ?? "💻"}</span>
+                          <span className="font-semibold text-sm text-gray-800 truncate">
+                            {q.nombreCliente ?? "Sin nombre"}
+                          </span>
+                          {q.telefonoCliente && (
+                            <span className="text-gray-400 text-xs">{q.telefonoCliente}</span>
+                          )}
+                          {q.canal === "transferencia" && (
+                            <span className="text-xs text-blue-500 font-medium">Transferencia</span>
+                          )}
+                          {q.canal === "oxxo" && (
+                            <span className="text-xs text-orange-500 font-medium">OXXO</span>
+                          )}
+                        </div>
+                        <p className="font-mono text-xs text-gray-400 mt-0.5">{q.folio}</p>
+                        {q.referenciaPago && (
+                          <p className="text-xs text-blue-600 font-semibold mt-0.5">
+                            🔑 Ref: {q.referenciaPago}
+                          </p>
+                        )}
+                        <div className="flex gap-1 mt-2 flex-wrap">
+                          {agruparPicks(q.picks).map((g, i) => {
+                            const allTrue = g.acertados.every((a) => a === true);
+                            const anyFalse = g.acertados.some((a) => a === false);
+                            const cls = allTrue ? "bg-green-500 text-white" : anyFalse ? "bg-red-400 text-white" : "bg-gray-100 text-gray-600";
+                            return (
+                              <span key={i} className={`text-xs font-bold px-1.5 py-0.5 rounded ${cls}`}>
+                                {g.predicciones.map((p) => LABEL[p] ?? p).join("/")}
+                              </span>
+                            );
+                          })}
+                        </div>
+                        <PagoAcciones quiniela={q} onUpdate={actualizarPago} />
+                      </div>
+
+                      {/* Columna derecha */}
+                      <div className="flex flex-col items-end gap-1.5 shrink-0 min-w-[80px]">
+                        <PagoBadgeCompact quiniela={q} />
+                        {q.aciertos !== null && (
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${estadoColor(q.estado)}`}>
+                            {q.aciertos}/{totalPicks} {q.estado === "ganadora" ? "🏆" : ""}
+                          </span>
+                        )}
+                        <Link href={`/ticket/${q.folio}`} className="text-green-700 text-xs font-medium hover:underline" target="_blank">
+                          ticket →
+                        </Link>
+                        <button
+                          onClick={() => eliminar(q)}
+                          disabled={eliminando === q.id}
+                          className="text-red-400 hover:text-red-600 text-xs disabled:opacity-40 transition-colors"
+                          title="Eliminar quiniela"
+                        >
+                          {eliminando === q.id ? "..." : "🗑"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       )}
