@@ -73,6 +73,8 @@ export default function TicketPage() {
   const totalBoletos = Number(searchParams.get("total") ?? 1);
   // formas = cuántos formularios distintos se enviaron (vs combinaciones de reventado)
   const totalFormas  = Number(searchParams.get("formas") ?? totalBoletos);
+  // montoTotal = monto de todos los boletos juntos (un solo pago)
+  const montoTotalParam = searchParams.get("montoTotal");
   // esRegistro = llegamos desde el flujo de registro (admin/tienda), NO desde el link del cliente
   const esRegistro   = searchParams.get("total") !== null;
   const [quiniela, setQuiniela] = useState<Quiniela | null>(null);
@@ -433,6 +435,9 @@ export default function TicketPage() {
     quiniela.estadoPago === "pendiente" &&
     (quiniela.canal === "transferencia" || quiniela.canal === "oxxo");
 
+  // Monto real a pagar: si vinieron múltiples boletos, usar montoTotal del param
+  const montoAPagar = montoTotalParam ? Number(montoTotalParam) : quiniela.monto;
+
   if (pagoPendiente) {
     const isOxxo = quiniela.canal === "oxxo";
     return (
@@ -464,6 +469,20 @@ export default function TicketPage() {
             <p className="text-2xl font-black tracking-widest text-gray-800">{quiniela.folio}</p>
             <p className="text-xs text-gray-400 mt-1">Guárdalo para consultar tu ticket después</p>
           </div>
+
+          {/* Banner multi-boletos: UN SOLO pago cubre todos */}
+          {totalBoletos > 1 && (
+            <div className="bg-green-50 border-2 border-green-300 rounded-xl p-4 text-center space-y-1">
+              <p className="text-green-800 font-bold text-base">
+                🎟️ {totalBoletos} boletos registrados
+              </p>
+              <p className="text-green-700 text-sm">
+                Realiza <span className="font-bold">un solo pago</span> por el monto total y cubre todos tus boletos de una vez.
+              </p>
+              <p className="text-3xl font-black text-green-700 mt-1">${montoAPagar.toFixed(2)} MXN</p>
+              <p className="text-green-600/70 text-xs">${quiniela.monto.toFixed(2)} × {totalBoletos} boletos</p>
+            </div>
+          )}
 
           {/* Instrucciones de pago */}
           <div className="bg-white rounded-xl p-4 shadow-sm">
@@ -502,7 +521,7 @@ export default function TicketPage() {
                 </div>
                 <div className="flex justify-between items-center text-sm border-t pt-2">
                   <span className="text-gray-500">Monto a depositar</span>
-                  <span className="font-bold text-green-700 text-base">${quiniela.monto.toFixed(2)} MXN</span>
+                  <span className="font-bold text-green-700 text-base">${montoAPagar.toFixed(2)} MXN</span>
                 </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 text-xs text-yellow-800">
                   ⚠️ OXXO cobra una comisión adicional por el depósito. Ese cargo no corre por nuestra cuenta.
@@ -551,7 +570,7 @@ export default function TicketPage() {
                 </div>
                 <div className="flex justify-between items-center border-t pt-2">
                   <span className="text-gray-500">Monto</span>
-                  <span className="font-bold text-green-700 text-base">${quiniela.monto.toFixed(2)} MXN</span>
+                  <span className="font-bold text-green-700 text-base">${montoAPagar.toFixed(2)} MXN</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Concepto</span>
@@ -612,12 +631,15 @@ export default function TicketPage() {
             const refLine = referenciaPago.trim()
               ? `*Referencia:* ${referenciaPago.trim()}\n`
               : "";
+            const boletosLine = totalBoletos > 1
+              ? `*Boletos:* ${totalBoletos} (folio principal: ${quiniela.folio})\n`
+              : `*Folio:* ${quiniela.folio}\n`;
             const msg = [
               `¡Hola! Ya realicé mi pago 💰`,
               ``,
               `*Nombre:* ${quiniela.nombreCliente ?? "—"}`,
-              `*Folio:* ${quiniela.folio}`,
-              `*Monto:* $${quiniela.monto.toFixed(2)} MXN`,
+              boletosLine.trimEnd(),
+              `*Monto:* $${montoAPagar.toFixed(2)} MXN`,
               `*Método:* ${isOxxo ? "Depósito OXXO" : "Transferencia SPEI"}`,
               refLine,
               `📎 Te adjunto mi comprobante de pago.`,

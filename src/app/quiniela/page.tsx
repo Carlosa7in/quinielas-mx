@@ -414,10 +414,12 @@ function QuinielaInner() {
     }
 
     const total = foliosTodos.length;
+    const montoTotal = total * 20; // $20 por boleto
     const params = new URLSearchParams();
-    if (total > 1) { params.set("total", String(total)); params.set("formas", String(formas.length)); }
-    const qs = params.toString();
-    router.push(`/ticket/${foliosTodos[0]}${qs ? `?${qs}` : ""}`);
+    params.set("total", String(total));
+    params.set("formas", String(formas.length));
+    params.set("montoTotal", String(montoTotal));
+    router.push(`/ticket/${foliosTodos[0]}?${params.toString()}`);
   };
 
   /* ── Render ── */
