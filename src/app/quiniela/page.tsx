@@ -405,21 +405,20 @@ function QuinielaInner() {
       pendientes.push({
         folio: foliosTodos[0],
         nombre,
-        monto: foliosTodos.length * 20,
+        monto: totalPagar,
         jornada: jornada.nombre ?? `Jornada ${jornada.numero}`,
         ts: Date.now(),
         totalBoletos: foliosTodos.length,
-        montoTotal: foliosTodos.length * 20,
+        montoTotal: totalPagar,
       });
       localStorage.setItem("quinielasPendientes", JSON.stringify(pendientes));
     }
 
     const total = foliosTodos.length;
-    const montoTotal = total * 20; // $20 por boleto
     const params = new URLSearchParams();
     params.set("total", String(total));
     params.set("formas", String(formas.length));
-    params.set("montoTotal", String(montoTotal));
+    params.set("montoTotal", String(totalPagar)); // total real: incluye dobles/triples
     router.push(`/ticket/${foliosTodos[0]}?${params.toString()}`);
   };
 

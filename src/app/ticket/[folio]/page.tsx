@@ -480,7 +480,7 @@ export default function TicketPage() {
                 Realiza <span className="font-bold">un solo pago</span> por el monto total y cubre todos tus boletos de una vez.
               </p>
               <p className="text-3xl font-black text-green-700 mt-1">${montoAPagar.toFixed(2)} MXN</p>
-              <p className="text-green-600/70 text-xs">${quiniela.monto.toFixed(2)} × {totalBoletos} boletos</p>
+              <p className="text-green-600/70 text-xs">{totalBoletos} quiniela{totalBoletos !== 1 ? "s" : ""} · pago único</p>
             </div>
           )}
 
