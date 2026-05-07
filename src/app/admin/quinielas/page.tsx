@@ -116,17 +116,12 @@ function PagoAcciones({
 
       return (
         <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5">
-          <p className="text-xs text-green-700 font-semibold">✅ Confirmado — ¿con qué app envías?</p>
+          <p className="text-xs text-green-700 font-semibold">✅ Confirmado — envía el ticket</p>
           <div className="flex gap-2">
-            <a href={waUrl} target="_blank" rel="noopener noreferrer"
-              onClick={() => setEnviando(false)}
-              className="flex-1 text-center text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2 py-1.5 rounded-lg transition-colors">
-              WhatsApp
-            </a>
             <a href={waBizUrl} target="_blank" rel="noopener noreferrer"
               onClick={() => setEnviando(false)}
-              className="flex-1 text-center text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2 py-1.5 rounded-lg transition-colors border border-white/40">
-              WA Business 💼
+              className="flex-1 text-center text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2 py-1.5 rounded-lg transition-colors">
+              Enviar ticket 📲 WA Business
             </a>
           </div>
           <button onClick={() => setEnviando(false)}
@@ -346,7 +341,6 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                       ``,
                       `¡Buena suerte! 🍀`,
                     ].join("\n");
-                    const waUrl    = `https://wa.me/${n.tel}?text=${encodeURIComponent(msg)}`;
                     const waBizUrl = `intent://send?phone=${n.tel}&text=${encodeURIComponent(msg)}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
                     return (
                       <div key={n.tel} className="flex items-center gap-2 flex-wrap">
@@ -354,15 +348,10 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                           {n.nombre || n.tel}
                           {n.folios.length > 1 && <span className="ml-1 text-green-500">· {n.folios.length} tickets</span>}
                         </span>
-                        <a href={waUrl} target="_blank" rel="noopener noreferrer"
-                          onClick={() => setNotifs((prev) => prev.filter((x) => x.tel !== n.tel))}
-                          className="text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2.5 py-1 rounded-lg transition-colors">
-                          WhatsApp
-                        </a>
                         <a href={waBizUrl} target="_blank" rel="noopener noreferrer"
                           onClick={() => setNotifs((prev) => prev.filter((x) => x.tel !== n.tel))}
-                          className="text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2.5 py-1 rounded-lg border border-white/40 transition-colors">
-                          WA Business 💼
+                          className="text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2.5 py-1 rounded-lg transition-colors">
+                          Enviar ticket 📲
                         </a>
                         <button onClick={() => setNotifs((prev) => prev.filter((x) => x.tel !== n.tel))}
                           className="text-xs text-gray-400 hover:text-gray-600 hover:underline">Omitir</button>
@@ -379,12 +368,20 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                     <div key={q.id} className={`px-4 py-3 flex items-start gap-3 ${esPendiente && seleccionadas.has(q.id) ? "bg-yellow-50" : ""}`}>
                       {/* Checkbox de selección */}
                       {esPendiente && (
-                        <input
-                          type="checkbox"
-                          checked={seleccionadas.has(q.id)}
-                          onChange={() => toggleSel(q.id)}
-                          className="mt-1 accent-amber-500 w-4 h-4 shrink-0 cursor-pointer"
-                        />
+                        <button
+                          onClick={() => toggleSel(q.id)}
+                          className={`mt-0.5 w-6 h-6 shrink-0 rounded-md border-2 flex items-center justify-center transition-colors ${
+                            seleccionadas.has(q.id)
+                              ? "bg-amber-500 border-amber-500 text-white"
+                              : "border-gray-300 bg-white hover:border-amber-400"
+                          }`}
+                        >
+                          {seleccionadas.has(q.id) && (
+                            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current stroke-[3]">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                          )}
+                        </button>
                       )}
                       {/* Info principal */}
                       <div className="flex-1 min-w-0">
