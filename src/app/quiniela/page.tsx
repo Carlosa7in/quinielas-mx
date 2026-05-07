@@ -398,19 +398,30 @@ function QuinielaInner() {
 
     // Guardar en localStorage para recuperar pago si se cierra el navegador
     // Solo aplica para pagos online (transferencia/OXXO), no para tienda
-    // Guardamos UNA sola entrada (folio principal) con el monto total de todos los boletos
+    // Si ya hay una entrada para la misma jornada, acumulamos (no creamos otro entry)
     if (metodoPago === "transferencia" || metodoPago === "oxxo") {
-      const pendientes: { folio: string; nombre: string; monto: number; jornada: string; ts: number; totalBoletos?: number; montoTotal?: number }[] =
-        JSON.parse(localStorage.getItem("quinielasPendientes") ?? "[]");
-      pendientes.push({
-        folio: foliosTodos[0],
-        nombre,
-        monto: totalPagar,
-        jornada: jornada.nombre ?? `Jornada ${jornada.numero}`,
-        ts: Date.now(),
-        totalBoletos: foliosTodos.length,
-        montoTotal: totalPagar,
-      });
+      type PendienteItem = { folio: string; jornadaId?: string; nombre: string; monto: number; jornada: string; ts: number; totalBoletos?: number; montoTotal?: number };
+      const pendientes: PendienteItem[] = JSON.parse(localStorage.getItem("quinielasPendientes") ?? "[]");
+      const jornadaLabel = jornada.nombre ?? `Jornada ${jornada.numero}`;
+      const idx = pendientes.findIndex((p) => p.jornadaId === jornada.id);
+      if (idx >= 0) {
+        // Ya existe pago pendiente para esta jornada → acumular
+        pendientes[idx].montoTotal = (pendientes[idx].montoTotal ?? pendientes[idx].monto) + totalPagar;
+        pendientes[idx].monto = pendientes[idx].montoTotal!;
+        pendientes[idx].totalBoletos = (pendientes[idx].totalBoletos ?? 1) + foliosTodos.length;
+        pendientes[idx].ts = Date.now();
+      } else {
+        pendientes.push({
+          folio: foliosTodos[0],
+          jornadaId: jornada.id,
+          nombre,
+          monto: totalPagar,
+          jornada: jornadaLabel,
+          ts: Date.now(),
+          totalBoletos: foliosTodos.length,
+          montoTotal: totalPagar,
+        });
+      }
       localStorage.setItem("quinielasPendientes", JSON.stringify(pendientes));
     }
 

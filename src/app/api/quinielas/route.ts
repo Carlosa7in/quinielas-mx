@@ -272,7 +272,7 @@ export async function GET(req: Request) {
         estadoPago: true,
         puntos: true,
         aciertos: true,
-        jornada: { select: { numero: true, nombre: true, temporada: true, liga: true } },
+        jornada: { select: { id: true, numero: true, nombre: true, temporada: true, liga: true } },
         picks: {
           select: {
             id: true,

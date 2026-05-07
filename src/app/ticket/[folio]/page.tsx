@@ -27,7 +27,7 @@ type Quiniela = {
   monto: number;
   estado: string;
   estadoPago: string;
-  jornada: { numero: number; nombre: string | null; temporada: string; liga: string };
+  jornada: { id: string; numero: number; nombre: string | null; temporada: string; liga: string };
   picks: Pick[];
 };
 
@@ -670,6 +670,14 @@ export default function TicketPage() {
               </a>
             </p>
           </div>
+
+          {/* Seguir comprando: vuelve a la misma jornada */}
+          <a
+            href={`/quiniela?jornada=${quiniela.jornada.id}`}
+            className="block w-full text-center text-white font-bold py-3 rounded-xl bg-amber-500 hover:bg-amber-400 transition-colors"
+          >
+            🎟️ Registrar otra quiniela
+          </a>
 
           <a
             href="/"

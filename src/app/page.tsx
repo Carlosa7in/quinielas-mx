@@ -170,7 +170,7 @@ function BolsaSection() {
   );
 }
 
-type PendienteItem = { folio: string; nombre: string; monto: number; jornada: string; ts: number; totalBoletos?: number; montoTotal?: number };
+type PendienteItem = { folio: string; jornadaId?: string; nombre: string; monto: number; jornada: string; ts: number; totalBoletos?: number; montoTotal?: number };
 
 function BannerPagosPendientes() {
   const [pendientes, setPendientes] = useState<PendienteItem[]>([]);
