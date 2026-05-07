@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { LogoEquipo } from "@/components/LogoEquipo";
 import { getLogoUrl } from "@/lib/equipos";
-import { ADMIN_WHATSAPP, CLABE, BANCO, TITULAR } from "@/lib/config";
+import { ADMIN_WHATSAPP, CLABE, BANCO, TITULAR, TARJETA_OXXO } from "@/lib/config";
 
 type Pick = {
   id: string;
@@ -466,19 +466,20 @@ export default function TicketPage() {
                 </p>
               </div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500">Banco</span>
-                <span className="font-semibold">{BANCO}</span>
-              </div>
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-gray-500 shrink-0">CLABE</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold font-mono tracking-wider">{CLABE}</span>
+            {isOxxo ? (
+              /* ── Instrucciones OXXO ── */
+              <div className="space-y-3">
+                <ol className="space-y-2 text-sm text-gray-700">
+                  <li className="flex gap-2"><span className="font-bold text-amber-700 shrink-0">1.</span> Dirígete al OXXO más cercano.</li>
+                  <li className="flex gap-2"><span className="font-bold text-amber-700 shrink-0">2.</span> Dile al cajero que vas a hacer un depósito a una cuenta BBVA.</li>
+                  <li className="flex gap-2"><span className="font-bold text-amber-700 shrink-0">3.</span> Proporciona el número de tarjeta:</li>
+                </ol>
+                <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between gap-2">
+                  <span className="font-black font-mono tracking-widest text-gray-800 text-base">{TARJETA_OXXO}</span>
                   <button
-                    onClick={() => copiar(CLABE, "clabe")}
-                    title="Copiar CLABE"
-                    className="text-gray-400 hover:text-amber-600 transition-colors p-1 rounded"
+                    onClick={() => copiar(TARJETA_OXXO.replace(/\s/g, ""), "clabe")}
+                    title="Copiar número"
+                    className="text-gray-400 hover:text-amber-600 transition-colors p-1 rounded shrink-0"
                   >
                     {copiado === "clabe" ? (
                       <svg viewBox="0 0 24 24" className="w-4 h-4 text-green-500 fill-none stroke-current stroke-2"><polyline points="20 6 9 17 4 12"/></svg>
@@ -487,39 +488,64 @@ export default function TicketPage() {
                     )}
                   </button>
                 </div>
-              </div>
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-gray-500 shrink-0">Titular</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-semibold">{TITULAR}</span>
-                  <button
-                    onClick={() => copiar(TITULAR, "titular")}
-                    title="Copiar titular"
-                    className="text-gray-400 hover:text-amber-600 transition-colors p-1 rounded"
-                  >
-                    {copiado === "titular" ? (
-                      <svg viewBox="0 0 24 24" className="w-4 h-4 text-green-500 fill-none stroke-current stroke-2"><polyline points="20 6 9 17 4 12"/></svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    )}
-                  </button>
+                <div className="flex justify-between items-center text-sm border-t pt-2">
+                  <span className="text-gray-500">Monto a depositar</span>
+                  <span className="font-bold text-green-700 text-base">${quiniela.monto.toFixed(2)} MXN</span>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 text-xs text-yellow-800">
+                  ⚠️ OXXO cobra una comisión adicional por el depósito. Ese cargo no corre por nuestra cuenta.
                 </div>
               </div>
-              <div className="flex justify-between items-center border-t pt-2">
-                <span className="text-gray-500">Monto</span>
-                <span className="font-bold text-green-700 text-base">${quiniela.monto.toFixed(2)} MXN</span>
-              </div>
-              {!isOxxo && (
+            ) : (
+              /* ── Instrucciones transferencia ── */
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Banco</span>
+                  <span className="font-semibold">{BANCO}</span>
+                </div>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-gray-500 shrink-0">CLABE</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold font-mono tracking-wider">{CLABE}</span>
+                    <button
+                      onClick={() => copiar(CLABE, "clabe")}
+                      title="Copiar CLABE"
+                      className="text-gray-400 hover:text-amber-600 transition-colors p-1 rounded"
+                    >
+                      {copiado === "clabe" ? (
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 text-green-500 fill-none stroke-current stroke-2"><polyline points="20 6 9 17 4 12"/></svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-gray-500 shrink-0">Titular</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold">{TITULAR}</span>
+                    <button
+                      onClick={() => copiar(TITULAR, "titular")}
+                      title="Copiar titular"
+                      className="text-gray-400 hover:text-amber-600 transition-colors p-1 rounded"
+                    >
+                      {copiado === "titular" ? (
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 text-green-500 fill-none stroke-current stroke-2"><polyline points="20 6 9 17 4 12"/></svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center border-t pt-2">
+                  <span className="text-gray-500">Monto</span>
+                  <span className="font-bold text-green-700 text-base">${quiniela.monto.toFixed(2)} MXN</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Concepto</span>
                   <span className="font-semibold text-amber-700">Tu nombre completo</span>
                 </div>
-              )}
-            </div>
-            {isOxxo && (
-              <p className="text-xs text-gray-400 mt-2 text-center">
-                Di &quot;quiero depositar a CLABE&quot; — no hay campo de concepto
-              </p>
+              </div>
             )}
           </div>
 
@@ -710,41 +736,59 @@ export default function TicketPage() {
                   {quiniela.canal === "oxxo" ? "Deposita en OXXO" : "Realiza tu transferencia"}
                 </p>
                 <p className="text-xs text-amber-700">
-                  {quiniela.canal === "oxxo"
-                    ? "Muestra esta pantalla en OXXO"
-                    : "Desde cualquier banco o app"}
+                  {quiniela.canal === "oxxo" ? "Muestra esta pantalla en caja" : "Desde cualquier banco o app"}
                 </p>
               </div>
             </div>
-            <div className="bg-white rounded-lg p-3 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Banco</span>
-                <span className="font-semibold text-gray-800">{BANCO}</span>
+
+            {quiniela.canal === "oxxo" ? (
+              <div className="space-y-3">
+                <ol className="space-y-2 text-sm text-gray-700">
+                  <li className="flex gap-2"><span className="font-bold text-amber-700 shrink-0">1.</span> Dirígete al OXXO más cercano.</li>
+                  <li className="flex gap-2"><span className="font-bold text-amber-700 shrink-0">2.</span> Dile al cajero que vas a hacer un depósito a una cuenta BBVA.</li>
+                  <li className="flex gap-2"><span className="font-bold text-amber-700 shrink-0">3.</span> Proporciona el número de tarjeta:</li>
+                </ol>
+                <div className="bg-white rounded-lg p-3 flex items-center justify-between gap-2">
+                  <span className="font-black font-mono tracking-widest text-gray-800 text-base">{TARJETA_OXXO}</span>
+                  <button onClick={() => copiar(TARJETA_OXXO.replace(/\s/g, ""), "clabe")}
+                    className="text-gray-400 hover:text-amber-600 transition-colors p-1 rounded shrink-0">
+                    {copiado === "clabe"
+                      ? <svg viewBox="0 0 24 24" className="w-4 h-4 text-green-500 fill-none stroke-current stroke-2"><polyline points="20 6 9 17 4 12"/></svg>
+                      : <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>}
+                  </button>
+                </div>
+                <div className="flex justify-between items-center text-sm border-t pt-2">
+                  <span className="text-gray-500">Monto a depositar</span>
+                  <span className="font-bold text-green-700">${quiniela.monto.toFixed(2)} MXN</span>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 text-xs text-yellow-800">
+                  ⚠️ OXXO cobra una comisión adicional por el depósito. Ese cargo no corre por nuestra cuenta.
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500">CLABE</span>
-                <span className="font-bold text-gray-900 tracking-wider text-sm font-mono">{CLABE}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Titular</span>
-                <span className="font-semibold text-gray-800">{TITULAR}</span>
-              </div>
-              <div className="flex justify-between border-t pt-2 mt-1">
-                <span className="text-gray-500">Monto</span>
-                <span className="font-bold text-green-700 text-base">${quiniela.monto.toFixed(2)} MXN</span>
-              </div>
-              {quiniela.canal === "transferencia" && (
+            ) : (
+              <div className="bg-white rounded-lg p-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Banco</span>
+                  <span className="font-semibold text-gray-800">{BANCO}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">CLABE</span>
+                  <span className="font-bold text-gray-900 tracking-wider text-sm font-mono">{CLABE}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Titular</span>
+                  <span className="font-semibold text-gray-800">{TITULAR}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2 mt-1">
+                  <span className="text-gray-500">Monto</span>
+                  <span className="font-bold text-green-700 text-base">${quiniela.monto.toFixed(2)} MXN</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Concepto</span>
                   <span className="font-semibold text-amber-700">Tu nombre completo</span>
                 </div>
-              )}
-            </div>
-            <p className="text-xs text-amber-700 mt-2 text-center">
-              {quiniela.canal === "oxxo"
-                ? 'Di "quiero hacer un depósito a CLABE" — no hay concepto'
-                : "Pon tu nombre como concepto para que podamos identificarte"}
-            </p>
+              </div>
+            )}
           </div>
         )}
 

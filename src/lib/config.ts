@@ -5,9 +5,10 @@
 export const ADMIN_WHATSAPP = "527551317837"; // WhatsApp Business Tablitas Quinielas
 
 /** Datos bancarios para recibir pagos */
-export const CLABE   = "012180015525085351";
-export const BANCO   = "BBVA";
-export const TITULAR = "Juan Carlos Arias Ariza";
+export const CLABE        = "012180015525085351";
+export const BANCO        = "BBVA";
+export const TITULAR      = "Juan Carlos Arias Ariza";
+export const TARJETA_OXXO = "4152 3114 5198 2124"; // Tarjeta BBVA para depósito en OXXO
 
 /** Comisiones */
 export const PORCENTAJE_DUENOS = 0.15; // 15% para los dueños
