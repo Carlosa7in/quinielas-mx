@@ -1,6 +1,20 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+
+// Detecta si estamos en móvil Android (para usar intent de WA Business)
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => { setMobile(/Android|iPhone|iPad/i.test(navigator.userAgent)); }, []);
+  return mobile;
+}
+
+// Genera el link/intent de WA Business según plataforma
+function waBizLink(tel: string, msg: string, isMobile: boolean) {
+  if (isMobile) return `intent://send?phone=${tel}&text=${encodeURIComponent(msg)}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
+  // En desktop: WA web estándar (no hay forma de forzar WA Business desde browser)
+  return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
+}
 
 type Pick = { prediccion: string; acertado: boolean | null; partidoId: string; partido: { orden: number } };
 
@@ -79,6 +93,29 @@ function PagoBadgeCompact({ quiniela }: { quiniela: Quiniela }) {
   return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cls}`}>{label}</span>;
 }
 
+// Botón WA Business: intent en móvil, wa.me + copiar mensaje en desktop
+function WaBizBoton({ tel, msg, label, onSent }: { tel: string; msg: string; label: string; onSent?: () => void }) {
+  const isMobile = useIsMobile();
+  const [copiado, setCopiado] = useState(false);
+  const link = waBizLink(tel, msg, isMobile);
+  return (
+    <div className="flex gap-1.5 flex-1">
+      <a href={link} target="_blank" rel="noopener noreferrer" onClick={onSent}
+        className="flex-1 text-center text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2 py-1.5 rounded-lg transition-colors">
+        {label}
+      </a>
+      {!isMobile && (
+        <button
+          onClick={() => { navigator.clipboard.writeText(msg); setCopiado(true); setTimeout(() => setCopiado(false), 2000); }}
+          title="Copiar mensaje para enviarlo desde tu teléfono"
+          className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1.5 rounded-lg transition-colors shrink-0">
+          {copiado ? "✓" : "📋"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // Barra de acción de pago — aparece debajo de los picks solo cuando hay algo que hacer
 function PagoAcciones({
   quiniela,
@@ -88,14 +125,11 @@ function PagoAcciones({
   onUpdate: (id: string, ep: string) => void;
 }) {
   const { cambiar, cargando } = usePagoCambio(quiniela, onUpdate);
-  const [enviando, setEnviando] = useState(false); // true = mostrar selector WA
+  const [enviando, setEnviando] = useState(false);
 
-  // Tienda = efectivo al momento, no necesita acción
   if (quiniela.canal === "tienda") return null;
 
-  // Ya confirmado
   if (quiniela.estadoPago === "confirmado") {
-    // Si acabamos de confirmar, mostrar selector de WhatsApp
     if (enviando && quiniela.telefonoCliente) {
       const tel = quiniela.telefonoCliente.replace(/\D/g, "");
       const telWA = tel.length === 10 ? `52${tel}` : tel;
@@ -110,19 +144,11 @@ function PagoAcciones({
         `*Folio:* ${quiniela.folio}`,
         `¡Buena suerte! 🍀`,
       ].join("\n");
-      const waUrl       = `https://wa.me/${telWA}?text=${encodeURIComponent(msg)}`;
-      // WhatsApp Business en Android usa package com.whatsapp.w4b
-      const waBizUrl    = `intent://send?phone=${telWA}&text=${encodeURIComponent(msg)}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
-
       return (
         <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5">
           <p className="text-xs text-green-700 font-semibold">✅ Confirmado — envía el ticket</p>
           <div className="flex gap-2">
-            <a href={waBizUrl} target="_blank" rel="noopener noreferrer"
-              onClick={() => setEnviando(false)}
-              className="flex-1 text-center text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2 py-1.5 rounded-lg transition-colors">
-              Enviar ticket 📲 WA Business
-            </a>
+            <WaBizBoton tel={telWA} msg={msg} label="Enviar ticket 📲" onSent={() => setEnviando(false)} />
           </div>
           <button onClick={() => setEnviando(false)}
             className="text-xs text-gray-400 hover:text-gray-600 hover:underline w-full text-center">
@@ -131,7 +157,6 @@ function PagoAcciones({
         </div>
       );
     }
-
     return (
       <button onClick={() => cambiar("pendiente")} disabled={cargando}
         className="text-xs text-gray-400 hover:text-gray-600 hover:underline mt-1 disabled:opacity-50">
@@ -141,7 +166,6 @@ function PagoAcciones({
   }
 
   const metodo = quiniela.canal === "oxxo" ? "OXXO" : "transferencia";
-
   const confirmar = async () => {
     await cambiar("confirmado");
     if (quiniela.telefonoCliente) setEnviando(true);
@@ -158,9 +182,7 @@ function PagoAcciones({
       <div className="flex gap-2">
         <button onClick={confirmar} disabled={cargando}
           className="flex-1 text-xs bg-green-100 hover:bg-green-200 text-green-800 font-semibold px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1">
-          {cargando ? "..." : (
-            <>✓ Confirmar {quiniela.telefonoCliente && <span className="text-green-600">· enviar ticket 📲</span>}</>
-          )}
+          {cargando ? "..." : (<>✓ Confirmar {quiniela.telefonoCliente && <span className="text-green-600">· enviar ticket 📲</span>}</>)}
         </button>
         <button onClick={() => cambiar("no_realizado")} disabled={cargando}
           className="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-semibold px-2 py-1.5 rounded-lg transition-colors disabled:opacity-50">
@@ -196,6 +218,7 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
   const [seleccionadas, setSeleccionadas] = useState<Set<string>>(new Set());
   const [confirmando, setConfirmando] = useState(false);
   const [notifs, setNotifs] = useState<NotifItem[]>([]); // para enviar WA tras confirmar
+  const [reenviarAbierto, setReenviarAbierto] = useState(false);
 
   const actualizarPago = (id: string, estadoPago: string) => {
     setQuinielas((prev) => prev.map((q) => (q.id === id ? { ...q, estadoPago } : q)));
@@ -293,8 +316,61 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
             {ganadoras > 0 && <span className="text-yellow-600 font-bold">🏆 {ganadoras} ganadoras</span>}
           </div>
         </div>
-        <span className="text-gray-400 text-lg">{abierta ? "▲" : "▼"}</span>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Botón re-enviar notificaciones */}
+          {filtradas.some((q) => q.estadoPago === "confirmado" && q.telefonoCliente) && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setReenviarAbierto((v) => !v); }}
+              title="Re-enviar notificaciones de tickets confirmados"
+              className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
+            >
+              📲 Re-enviar
+            </button>
+          )}
+          <span className="text-gray-400 text-lg">{abierta ? "▲" : "▼"}</span>
+        </div>
       </button>
+
+      {/* Panel de re-envío de notificaciones */}
+      {reenviarAbierto && (() => {
+        const confirmadas = filtradas.filter((q) => q.estadoPago === "confirmado" && q.telefonoCliente);
+        const porTel = new Map<string, NotifItem>();
+        for (const q of confirmadas) {
+          const tel = q.telefonoCliente!.replace(/\D/g, "");
+          const telWA = tel.length === 10 ? `52${tel}` : tel;
+          if (!porTel.has(telWA)) porTel.set(telWA, { tel: telWA, nombre: q.nombreCliente ?? "", folios: [] });
+          porTel.get(telWA)!.folios.push(q.folio);
+        }
+        const grupos = [...porTel.values()];
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        return (
+          <div className="border-t border-blue-100 bg-blue-50 px-4 py-3 space-y-2">
+            <p className="text-xs font-bold text-blue-800">📲 Re-enviar notificaciones — tickets confirmados</p>
+            {grupos.map((n) => {
+              const links = n.folios.map((f) => `👉 ${origin}/ticket/${f}`).join("\n");
+              const msg = [
+                `¡Hola${n.nombre ? ` ${n.nombre.split(" ")[0]}` : ""}! 🎉`,
+                ``,
+                `Tu${n.folios.length > 1 ? "s" : ""} pago${n.folios.length > 1 ? "s han" : " ha"} sido *confirmado${n.folios.length > 1 ? "s" : ""}*. Ya puedes ver tu${n.folios.length > 1 ? "s" : ""} quiniela${n.folios.length > 1 ? "s" : ""}:`,
+                ``,
+                links,
+                ``,
+                `¡Buena suerte! 🍀`,
+              ].join("\n");
+              return (
+                <div key={n.tel} className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-blue-700 font-semibold min-w-0 truncate">
+                    {n.nombre || n.tel}
+                    {n.folios.length > 1 && <span className="ml-1 text-blue-400">· {n.folios.length} tickets</span>}
+                  </span>
+                  <WaBizBoton tel={n.tel} msg={msg} label="Enviar 📲" />
+                </div>
+              );
+            })}
+            <button onClick={() => setReenviarAbierto(false)} className="text-xs text-blue-400 hover:text-blue-600 hover:underline">Cerrar</button>
+          </div>
+        );
+      })()}
 
       {abierta && (
         <div className="border-t border-gray-100">
@@ -341,18 +417,13 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                       ``,
                       `¡Buena suerte! 🍀`,
                     ].join("\n");
-                    const waBizUrl = `intent://send?phone=${n.tel}&text=${encodeURIComponent(msg)}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
                     return (
                       <div key={n.tel} className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs text-green-700 font-semibold">
                           {n.nombre || n.tel}
                           {n.folios.length > 1 && <span className="ml-1 text-green-500">· {n.folios.length} tickets</span>}
                         </span>
-                        <a href={waBizUrl} target="_blank" rel="noopener noreferrer"
-                          onClick={() => setNotifs((prev) => prev.filter((x) => x.tel !== n.tel))}
-                          className="text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2.5 py-1 rounded-lg transition-colors">
-                          Enviar ticket 📲
-                        </a>
+                        <WaBizBoton tel={n.tel} msg={msg} label="Enviar ticket 📲" onSent={() => setNotifs((prev) => prev.filter((x) => x.tel !== n.tel))} />
                         <button onClick={() => setNotifs((prev) => prev.filter((x) => x.tel !== n.tel))}
                           className="text-xs text-gray-400 hover:text-gray-600 hover:underline">Omitir</button>
                       </div>
