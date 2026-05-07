@@ -83,6 +83,18 @@ export default function TicketPage() {
   const [guardandoRef, setGuardandoRef] = useState(false);
   const [refGuardada, setRefGuardada] = useState(false);
   const [copiado, setCopiado] = useState<string | null>(null);
+  const [ticketImgUrl, setTicketImgUrl]     = useState("");
+  const [buildingImg,  setBuildingImg]      = useState(false);
+
+  // Auto-generar PNG del ticket en modo registro (tienda/admin)
+  useEffect(() => {
+    if (!esRegistro || !quiniela || !qrDataUrl || ticketImgUrl) return;
+    setBuildingImg(true);
+    buildPNG(quiniela, qrDataUrl)
+      .then((file) => setTicketImgUrl(URL.createObjectURL(file)))
+      .finally(() => setBuildingImg(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [esRegistro, quiniela, qrDataUrl]);
 
   const copiar = (texto: string, clave: string) => {
     navigator.clipboard.writeText(texto).then(() => {
@@ -792,8 +804,27 @@ export default function TicketPage() {
           </div>
         )}
 
-        {/* Ticket estilo boleta térmica */}
-        <div id="ticket-receipt" className="flex justify-center">
+        {/* Modo registro: mostrar PNG generado */}
+        {esRegistro && (
+          <div className="flex justify-center print:hidden">
+            {buildingImg || !ticketImgUrl ? (
+              <div className="w-full max-w-xs bg-white rounded-xl shadow-sm flex items-center justify-center py-16">
+                <p className="text-gray-400 text-sm animate-pulse">Generando ticket...</p>
+              </div>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={ticketImgUrl}
+                alt="Ticket"
+                className="w-full max-w-xs rounded-xl shadow-lg"
+                style={{ imageRendering: "crisp-edges" }}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Ticket HTML — siempre presente pero solo visible para cliente y para imprimir */}
+        <div id="ticket-receipt" className={`flex justify-center ${esRegistro ? "hidden print:flex" : ""}`}>
           <div
             className="w-full bg-white shadow-lg"
             style={{
@@ -991,95 +1022,35 @@ export default function TicketPage() {
             </button>
           )}
 
-          {/* ── Modo registro (admin/tienda) — WhatsApp: descarga imagen + abre chat al número ── */}
-          {esRegistro && quiniela.telefonoCliente ? (
-            <div className="space-y-1.5">
-              <button
-                onClick={async () => {
-                  if (!quiniela || !qrDataUrl || cargandoPNG) return;
-                  setCargandoPNG(true);
-                  try {
-                    // 1. Generar imagen(s)
-                    const stored = sessionStorage.getItem("lastRegistro");
-                    const { folios: allFolios = [folio], formas: nFormas = 1 } =
-                      stored ? (JSON.parse(stored) as { folios: string[]; formas: number }) : {};
-                    const multi = nFormas > 1 && allFolios.length === nFormas && nFormas <= 15;
-
-                    const files: File[] = [];
-                    if (!multi) {
-                      files.push(await buildPNG(quiniela, qrDataUrl));
-                    } else {
-                      for (const f of allFolios) {
-                        const q: Quiniela = f === folio
-                          ? quiniela
-                          : await fetch(`/api/quinielas?folio=${f}`).then((r) => r.json());
-                        const qr = f === folio ? qrDataUrl : await buildQR(f);
-                        files.push(await buildPNG(q, qr));
-                      }
-                    }
-
-                    // 2. Descargar imagen(s) al dispositivo
-                    for (const file of files) {
-                      const url = URL.createObjectURL(file);
-                      const a = document.createElement("a");
-                      a.href = url; a.download = file.name;
-                      document.body.appendChild(a); a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                      if (files.length > 1) await new Promise((r) => setTimeout(r, 400));
-                    }
-
-                    // 3. Abrir WhatsApp al número del cliente
-                    const digits  = quiniela.telefonoCliente!.replace(/\D/g, "");
-                    const waPhone = digits.startsWith("52") && digits.length === 12
-                      ? digits : `52${digits}`;
-                    const a = document.createElement("a");
-                    a.href = `https://wa.me/${waPhone}`;
-                    a.target = "_blank"; a.rel = "noopener noreferrer";
-                    document.body.appendChild(a); a.click();
-                    document.body.removeChild(a);
-                  } finally {
-                    setCargandoPNG(false);
-                  }
-                }}
-                disabled={cargandoPNG || !qrDataUrl}
-                className="w-full bg-[#25D366] hover:bg-[#20b858] disabled:bg-gray-300 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+          {/* ── Modo registro (tienda) — WhatsApp: mensaje de gracias + link ── */}
+          {esRegistro && quiniela.telefonoCliente && (() => {
+            const tel     = quiniela.telefonoCliente.replace(/\D/g, "");
+            const waPhone = tel.length === 10 ? `52${tel}` : tel;
+            const ticketUrl = `${window.location.origin}/ticket/${quiniela.folio}`;
+            const nombre1   = quiniela.nombreCliente?.split(" ")[0] ?? "";
+            const msg = [
+              `¡Gracias por tu registro${nombre1 ? `, ${nombre1}` : ""}! 🎉`,
+              ``,
+              `*Folio:* ${quiniela.folio}`,
+              `Consulta tu quiniela aquí:`,
+              `👉 ${ticketUrl}`,
+              ``,
+              `¡Buena suerte! 🍀`,
+              `— Tablitas Quinielas`,
+            ].join("\n");
+            return (
+              <a
+                href={`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`}
+                target="_blank" rel="noopener noreferrer"
+                className="w-full bg-[#25D366] hover:bg-[#20b858] text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
               >
-                {cargandoPNG ? (
-                  <span className="animate-spin inline-block">⟳</span>
-                ) : (
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                  </svg>
-                )}
-                {cargandoPNG
-                  ? "Generando imagen..."
-                  : `Enviar imagen a ${quiniela.telefonoCliente.replace(/\D/g, "").slice(-10).replace(/(\d{2})(\d{4})(\d{4})/, "$1 $2 $3")}`}
-              </button>
-              {/* Instrucción */}
-              <p className="text-xs text-gray-400 text-center px-2">
-                La imagen se guarda en tu galería — adjúntala en el chat que se abre
-              </p>
-            </div>
-          ) : (
-            /* Sin teléfono: compartir por selector del sistema */
-            esRegistro && (
-              <button
-                onClick={generarYCompartirPNG}
-                disabled={cargandoPNG || !qrDataUrl}
-                className="w-full bg-[#25D366] hover:bg-[#20b858] disabled:bg-gray-300 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                {cargandoPNG ? (
-                  <span className="animate-spin inline-block">⟳</span>
-                ) : (
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                  </svg>
-                )}
-                {cargandoPNG ? "Generando imagen..." : "Compartir ticket por WhatsApp"}
-              </button>
-            )
-          )}
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                Enviar gracias a {tel.slice(-10).replace(/(\d{2})(\d{4})(\d{4})/, "$1 $2 $3")}
+              </a>
+            );
+          })()}
 
           {/* Imprimir en térmica — solo en modo registro (admin/tienda) */}
           {esRegistro && (
