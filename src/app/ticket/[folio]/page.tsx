@@ -580,6 +580,14 @@ export default function TicketPage() {
             )}
           </div>
 
+          {/* Seguir comprando: vuelve a la misma jornada */}
+          <a
+            href={`/quiniela?jornada=${quiniela.jornada.id}`}
+            className="block w-full text-center text-white font-bold py-3 rounded-xl bg-amber-500 hover:bg-amber-400 transition-colors"
+          >
+            🎟️ Registrar otra quiniela
+          </a>
+
           {/* Referencia de pago */}
           <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
             <div>
@@ -670,14 +678,6 @@ export default function TicketPage() {
               </a>
             </p>
           </div>
-
-          {/* Seguir comprando: vuelve a la misma jornada */}
-          <a
-            href={`/quiniela?jornada=${quiniela.jornada.id}`}
-            className="block w-full text-center text-white font-bold py-3 rounded-xl bg-amber-500 hover:bg-amber-400 transition-colors"
-          >
-            🎟️ Registrar otra quiniela
-          </a>
 
           <a
             href="/"
