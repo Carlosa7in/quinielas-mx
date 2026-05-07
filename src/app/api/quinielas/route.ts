@@ -150,19 +150,35 @@ export async function POST(req: Request) {
   }
 }
 
-// PATCH /api/quinielas?folio=xxx - guardar referencia de pago
+// PATCH /api/quinielas?folio=xxx - actualizar referencia de pago o método de pago
 export async function PATCH(req: Request) {
   const { searchParams } = new URL(req.url);
   const folio = searchParams.get("folio");
   if (!folio) return NextResponse.json({ error: "Folio requerido" }, { status: 400 });
 
   const body = await req.json();
-  const { referenciaPago } = body;
-  if (!referenciaPago || !String(referenciaPago).trim()) {
-    return NextResponse.json({ error: "Referencia requerida" }, { status: 400 });
-  }
+  const { referenciaPago, canal } = body;
 
   try {
+    // Cambiar método de pago (transferencia ↔ oxxo)
+    if (canal !== undefined) {
+      const canalesValidos = ["transferencia", "oxxo"];
+      if (!canalesValidos.includes(canal)) {
+        return NextResponse.json({ error: "Canal inválido" }, { status: 400 });
+      }
+      await sql`
+        UPDATE "Quiniela"
+        SET "canal" = ${canal}
+        WHERE "folio" = ${folio}
+          AND "estadoPago" = 'pendiente'
+      `;
+      return NextResponse.json({ ok: true });
+    }
+
+    // Guardar referencia de pago
+    if (!referenciaPago || !String(referenciaPago).trim()) {
+      return NextResponse.json({ error: "Referencia requerida" }, { status: 400 });
+    }
     const ref = String(referenciaPago).trim().slice(0, 60);
     await sql`
       UPDATE "Quiniela"

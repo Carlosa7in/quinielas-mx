@@ -87,6 +87,7 @@ export default function TicketPage() {
   const [copiado, setCopiado] = useState<string | null>(null);
   const [ticketImgUrl, setTicketImgUrl]     = useState("");
   const [buildingImg,  setBuildingImg]      = useState(false);
+  const [cambiandoCanal, setCambiandoCanal] = useState(false);
 
   // Auto-generar PNG del ticket en modo registro (tienda/admin)
   useEffect(() => {
@@ -579,6 +580,31 @@ export default function TicketPage() {
               </div>
             )}
           </div>
+
+          {/* Cambiar método de pago */}
+          <button
+            disabled={cambiandoCanal}
+            onClick={async () => {
+              const nuevoCanal = quiniela.canal === "oxxo" ? "transferencia" : "oxxo";
+              setCambiandoCanal(true);
+              const res = await fetch(`/api/quinielas?folio=${quiniela.folio}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ canal: nuevoCanal }),
+              });
+              if (res.ok) {
+                setQuiniela((prev) => prev ? { ...prev, canal: nuevoCanal } : prev);
+              }
+              setCambiandoCanal(false);
+            }}
+            className="w-full text-center text-gray-500 text-sm py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          >
+            {cambiandoCanal
+              ? "Cambiando..."
+              : quiniela.canal === "oxxo"
+              ? "🔄 Pagar por transferencia bancaria"
+              : "🔄 Pagar en OXXO"}
+          </button>
 
           {/* Seguir comprando: vuelve a la misma jornada */}
           <a
