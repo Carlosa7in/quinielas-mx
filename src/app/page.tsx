@@ -170,7 +170,7 @@ function BolsaSection() {
   );
 }
 
-type PendienteItem = { folio: string; nombre: string; monto: number; jornada: string; ts: number };
+type PendienteItem = { folio: string; nombre: string; monto: number; jornada: string; ts: number; totalBoletos?: number; montoTotal?: number };
 
 function BannerPagosPendientes() {
   const [pendientes, setPendientes] = useState<PendienteItem[]>([]);
@@ -213,19 +213,26 @@ function BannerPagosPendientes() {
         </p>
       </div>
       <div className="space-y-2">
-        {pendientes.map((p) => (
-          <a
-            key={p.folio}
-            href={`/ticket/${p.folio}`}
-            className="flex items-center justify-between bg-white/10 hover:bg-white/20 rounded-xl px-3 py-2.5 transition-colors"
-          >
-            <div>
-              <p className="text-white font-semibold text-sm font-mono">{p.folio}</p>
-              <p className="text-amber-300/70 text-xs">{p.jornada}</p>
-            </div>
-            <span className="text-amber-300 text-sm font-bold">Ver instrucciones →</span>
-          </a>
-        ))}
+        {pendientes.map((p) => {
+          const boletos = p.totalBoletos ?? 1;
+          const monto = p.montoTotal ?? p.monto;
+          const params = new URLSearchParams({ total: String(boletos), formas: String(boletos), montoTotal: String(monto) });
+          return (
+            <a
+              key={p.folio}
+              href={`/ticket/${p.folio}?${params.toString()}`}
+              className="flex items-center justify-between bg-white/10 hover:bg-white/20 rounded-xl px-3 py-2.5 transition-colors"
+            >
+              <div>
+                <p className="text-white font-semibold text-sm font-mono">{p.folio}</p>
+                <p className="text-amber-300/70 text-xs">
+                  {p.jornada}{boletos > 1 ? ` · ${boletos} boletos · $${monto.toFixed(2)}` : ""}
+                </p>
+              </div>
+              <span className="text-amber-300 text-sm font-bold">Ver instrucciones →</span>
+            </a>
+          );
+        })}
       </div>
       <p className="text-amber-300/50 text-xs">
         Completa tu pago para confirmar tu registro. Cuando lo hagamos, desaparecerá este aviso.

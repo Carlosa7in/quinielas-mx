@@ -398,18 +398,19 @@ function QuinielaInner() {
 
     // Guardar en localStorage para recuperar pago si se cierra el navegador
     // Solo aplica para pagos online (transferencia/OXXO), no para tienda
+    // Guardamos UNA sola entrada (folio principal) con el monto total de todos los boletos
     if (metodoPago === "transferencia" || metodoPago === "oxxo") {
-      const pendientes: { folio: string; nombre: string; monto: number; jornada: string; ts: number }[] =
+      const pendientes: { folio: string; nombre: string; monto: number; jornada: string; ts: number; totalBoletos?: number; montoTotal?: number }[] =
         JSON.parse(localStorage.getItem("quinielasPendientes") ?? "[]");
-      for (const f of foliosTodos) {
-        pendientes.push({
-          folio: f,
-          nombre,
-          monto: 20,
-          jornada: jornada.nombre ?? `Jornada ${jornada.numero}`,
-          ts: Date.now(),
-        });
-      }
+      pendientes.push({
+        folio: foliosTodos[0],
+        nombre,
+        monto: foliosTodos.length * 20,
+        jornada: jornada.nombre ?? `Jornada ${jornada.numero}`,
+        ts: Date.now(),
+        totalBoletos: foliosTodos.length,
+        montoTotal: foliosTodos.length * 20,
+      });
       localStorage.setItem("quinielasPendientes", JSON.stringify(pendientes));
     }
 
