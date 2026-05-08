@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma, sql } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { calcularFechaCierre } from "@/lib/fechas";
 
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -243,12 +244,36 @@ export async function GET(req: NextRequest) {
       jornadaNombre: q.jornada.nombre ?? `Jornada ${q.jornada.numero}`,
     }));
 
-  // Jornadas abiertas (para botones de WhatsApp en dashboard vendedor)
-  const jornadasAbiertas = await prisma.jornada.findMany({
+  // Jornadas con registro aún abierto (estado=abierta + cierre no alcanzado)
+  const jornadasCandidatas = await prisma.jornada.findMany({
     where: { estado: "abierta" },
     select: { id: true, numero: true, nombre: true, liga: true, temporada: true },
     orderBy: { numero: "desc" },
   });
+
+  // Filtrar las que ya cerraron según fechaHora del primer partido
+  const ahora = new Date();
+  const jornadasAbiertas = await Promise.all(
+    jornadasCandidatas.map(async (j) => {
+      try {
+        const rows = await sql`
+          SELECT "fechaHora" FROM "Partido"
+          WHERE "jornadaId" = ${j.id}
+            AND "fechaHora" IS NOT NULL
+          ORDER BY "fechaHora" ASC
+          LIMIT 1
+        `;
+        const val = rows[0]?.fechaHora;
+        if (!val) return j; // sin fecha aún = abierta
+        const d = val instanceof Date ? val : new Date(String(val));
+        if (isNaN(d.getTime())) return j;
+        const cierre = calcularFechaCierre(d);
+        return ahora < cierre ? j : null;
+      } catch {
+        return j; // si falla, incluirla
+      }
+    })
+  ).then((results) => results.filter(Boolean) as typeof jornadasCandidatas);
 
   return NextResponse.json({
     usuario,
