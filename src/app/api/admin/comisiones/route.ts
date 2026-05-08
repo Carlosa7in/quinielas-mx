@@ -235,11 +235,14 @@ export async function GET(req: NextRequest) {
       })
     : [];
 
+  const recaudadoGlobal = Array.from(recaudadoGlobalPorJornada.values()).reduce((s, j) => s + j.recaudado, 0);
+
   return NextResponse.json({
     reporte,
     sinAsignar: sinAsignarQuinielas.length,
     esSuperadmin,
     numAdmins,
+    recaudadoGlobal,
   });
 }
 

@@ -55,6 +55,7 @@ export default function ComisionesPage() {
   const [reporte, setReporte] = useState<VendedorReporte[]>([]);
   const [sinAsignar, setSinAsignar] = useState(0);
   const [numAdmins, setNumAdmins] = useState(0);
+  const [recaudadoGlobal, setRecaudadoGlobal] = useState(0);
   const [jornadas, setJornadas] = useState<JornadaOpcion[]>([]);
   const [jornadaId, setJornadaId] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -72,7 +73,7 @@ export default function ComisionesPage() {
     const url = jornadaId ? `/api/admin/comisiones?jornadaId=${jornadaId}` : "/api/admin/comisiones";
     fetch(url)
       .then((r) => r.json())
-      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); setNumAdmins(data.numAdmins ?? 0); })
+      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); setNumAdmins(data.numAdmins ?? 0); setRecaudadoGlobal(data.recaudadoGlobal ?? 0); })
       .finally(() => setCargando(false));
   }, [jornadaId]);
 
@@ -100,9 +101,10 @@ export default function ComisionesPage() {
   const recaudadoGeneral = reporte.reduce((s, v) => s + v.recaudado, 0);
   const totalTiendaAll = reporte.filter((v) => v.rol === "tienda").reduce((s, v) => s + v.tienda, 0);
   const totalComisionesReferido = reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.comisionTotal, 0);
-  const cutDuenos = recaudadoGeneral * PCT_DUENOS;
+  const baseDesglose = recaudadoGlobal > 0 ? recaudadoGlobal : recaudadoGeneral;
+  const cutDuenos = baseDesglose * PCT_DUENOS;
   const cutTienda = totalTiendaAll * COMISION_TIENDA;
-  const bolsaNeta = Math.max(recaudadoGeneral - cutDuenos - cutTienda - totalComisionesReferido, 0);
+  const bolsaNeta = Math.max(baseDesglose - cutDuenos - cutTienda - totalComisionesReferido, 0);
   const totalComisiones = reporte.reduce((s, v) => s + v.comisionTotal, 0);
   const totalPendiente = reporte.reduce((s, v) => s + v.pendientePago, 0);
 
@@ -162,8 +164,13 @@ export default function ComisionesPage() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-stone-300">Total recaudado</span>
-                <span className="font-bold">${fmt(recaudadoGeneral)}</span>
+                <span className="font-bold">${fmt(baseDesglose)}</span>
               </div>
+              {recaudadoGlobal > recaudadoGeneral && (
+                <div className="flex justify-between text-stone-500 text-xs">
+                  <span>↳ {fmt(recaudadoGeneral)} atribuido · {fmt(recaudadoGlobal - recaudadoGeneral)} sin asignar</span>
+                </div>
+              )}
               <div className="flex justify-between text-blue-400">
                 <span>
                   − 15% fondo admin
