@@ -236,6 +236,7 @@ export async function GET(req: NextRequest) {
     : [];
 
   const recaudadoGlobal = Array.from(recaudadoGlobalPorJornada.values()).reduce((s, j) => s + j.recaudado, 0);
+  const totalGlobal = await prisma.quiniela.count({ where: jornadaId ? { jornadaId } : {} });
 
   return NextResponse.json({
     reporte,
@@ -243,6 +244,7 @@ export async function GET(req: NextRequest) {
     esSuperadmin,
     numAdmins,
     recaudadoGlobal,
+    totalGlobal,
   });
 }
 

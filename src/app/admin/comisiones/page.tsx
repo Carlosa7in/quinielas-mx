@@ -56,6 +56,7 @@ export default function ComisionesPage() {
   const [sinAsignar, setSinAsignar] = useState(0);
   const [numAdmins, setNumAdmins] = useState(0);
   const [recaudadoGlobal, setRecaudadoGlobal] = useState(0);
+  const [totalGlobal, setTotalGlobal] = useState(0);
   const [jornadas, setJornadas] = useState<JornadaOpcion[]>([]);
   const [jornadaId, setJornadaId] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -73,7 +74,7 @@ export default function ComisionesPage() {
     const url = jornadaId ? `/api/admin/comisiones?jornadaId=${jornadaId}` : "/api/admin/comisiones";
     fetch(url)
       .then((r) => r.json())
-      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); setNumAdmins(data.numAdmins ?? 0); setRecaudadoGlobal(data.recaudadoGlobal ?? 0); })
+      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); setNumAdmins(data.numAdmins ?? 0); setRecaudadoGlobal(data.recaudadoGlobal ?? 0); setTotalGlobal(data.totalGlobal ?? 0); })
       .finally(() => setCargando(false));
   }, [jornadaId]);
 
@@ -148,11 +149,11 @@ export default function ComisionesPage() {
         {/* Resumen global */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-            <p className="text-2xl font-bold text-green-700">{totalGeneral}</p>
+            <p className="text-2xl font-bold text-green-700">{totalGlobal || totalGeneral}</p>
             <p className="text-xs text-gray-500">Quinielas vendidas</p>
           </div>
           <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-            <p className="text-2xl font-bold text-yellow-600">${fmt(recaudadoGeneral)}</p>
+            <p className="text-2xl font-bold text-yellow-600">${fmt(recaudadoGlobal || recaudadoGeneral)}</p>
             <p className="text-xs text-gray-500">Total recaudado</p>
           </div>
         </div>
