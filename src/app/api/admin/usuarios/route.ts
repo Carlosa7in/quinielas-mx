@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   if (!ROLES_VALIDOS.includes(rol)) {
     return NextResponse.json({ error: "Rol inválido" }, { status: 400 });
   }
-  const existe = await prisma.usuario.findUnique({ where: { email } });
+  const existe = await prisma.usuario.findUnique({ where: { email }, select: { id: true } });
   if (existe) {
     return NextResponse.json({ error: "Email ya registrado" }, { status: 400 });
   }
@@ -81,6 +81,7 @@ export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "ID requerido" }, { status: 400 });
   const usuario = await prisma.usuario.findUnique({ where: { id }, select: { id: true, rol: true } });
+
   if (!usuario) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
   if (usuario.rol === "superadmin") {
     return NextResponse.json({ error: "No se puede eliminar al superadmin" }, { status: 400 });
