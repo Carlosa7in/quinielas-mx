@@ -212,7 +212,8 @@ function PerfilInner() {
   const { usuario, stats, porJornada, comisionesAdmin, apostadores, recientes } = data;
   const esAdminRole = usuario.rol === "admin" || usuario.rol === "superadmin";
   const esVendedor = usuario.rol === "vendedor";
-  const mostrarTabs = esAdminRole || esVendedor;
+  const esTienda = usuario.rol === "tienda";
+  const mostrarTabs = esAdminRole || esVendedor || esTienda;
 
   const copiarLink = () => {
     if (!usuario.codigoRef) return;
@@ -226,6 +227,14 @@ function PerfilInner() {
   const tabs: { id: Tab; label: string }[] = esVendedor
     ? [
         { id: "resumen", label: "Resumen" },
+        { id: "milink", label: "Mi Link" },
+        { id: "perfil", label: "Mi Perfil" },
+      ]
+    : esTienda
+    ? [
+        { id: "resumen", label: "Resumen" },
+        { id: "apostadores", label: "Apostadores" },
+        { id: "ganancias", label: "Ganancias" },
         { id: "milink", label: "Mi Link" },
         { id: "perfil", label: "Mi Perfil" },
       ]
@@ -315,8 +324,8 @@ function PerfilInner() {
               </div>
             </div>
 
-            {/* Link de referido — destacado para vendedores */}
-            {esVendedor && (
+            {/* Link de referido — destacado para vendedores y tienda */}
+            {(esVendedor || esTienda) && (
               <div className={`rounded-xl p-4 flex items-center justify-between gap-3 shadow-sm ${usuario.codigoRef ? "bg-cyan-600 text-white" : "bg-gray-100 text-gray-500"}`}>
                 <div className="min-w-0">
                   {usuario.codigoRef ? (
@@ -687,8 +696,8 @@ function PerfilInner() {
           </>
         )}
 
-        {/* ── Tab: Mi Link (Vendedor) ──────────────────────────────────── */}
-        {tab === "milink" && esVendedor && (
+        {/* ── Tab: Mi Link (Vendedor / Tienda) ────────────────────────── */}
+        {tab === "milink" && (esVendedor || esTienda) && (
           <>
             {usuario.codigoRef ? (
               <>

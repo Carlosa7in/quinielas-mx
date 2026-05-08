@@ -18,14 +18,21 @@ export async function middleware(req: NextRequest) {
     if (!rolesPermitidos.includes(rol)) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
-    // Rol tienda/vendedor: acceso limitado a su panel y funciones permitidas
+    // Rol tienda: acceso a su panel de registro presencial y perfil
     if (
-      (rol === "tienda" || rol === "vendedor") &&
+      rol === "tienda" &&
       !pathname.startsWith("/admin/tienda") &&
       !pathname.startsWith("/admin/perfil") &&
       !pathname.startsWith("/admin/forma")
     ) {
       return NextResponse.redirect(new URL("/admin/tienda", req.url));
+    }
+    // Rol vendedor (solo referidos): acceso únicamente a su dashboard
+    if (
+      rol === "vendedor" &&
+      !pathname.startsWith("/admin/perfil")
+    ) {
+      return NextResponse.redirect(new URL("/admin/perfil", req.url));
     }
     // Solo superadmin puede gestionar usuarios
     if (pathname.startsWith("/admin/usuarios") && rol !== "superadmin") {
