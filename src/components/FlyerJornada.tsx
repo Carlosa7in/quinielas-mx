@@ -42,12 +42,13 @@ async function dibujarFlyer(
   origen: string
 ) {
   const W = 800;
-  const PAD = 24;
-  const HEADER_H = 120;
-  const ROW_H = 58;
-  const FOOTER_H = 96;
-  const BRAND_H = 60;
-  const H = HEADER_H + partidos.length * ROW_H + FOOTER_H + BRAND_H;
+  const PAD = 48;          // padding horizontal generoso
+  const VPAD = 16;         // padding vertical entre secciones
+  const HEADER_H = 110;
+  const ROW_H = 50;        // filas más compactas
+  const FOOTER_H = 82;
+  const BRAND_H = 64;
+  const H = HEADER_H + VPAD + 30 + VPAD / 2 + partidos.length * ROW_H + VPAD + FOOTER_H + VPAD + BRAND_H + VPAD;
 
   // HiDPI
   const scale = 2;
@@ -124,7 +125,7 @@ async function dibujarFlyer(
   ctx.fillText("¡PARTICIPA AHORA!", W - PAD - 85, HEADER_H / 2 + 5);
 
   // ── Encabezado columnas ───────────────────────────────────────────────
-  const colY = HEADER_H + 8;
+  const colY = HEADER_H + VPAD;
   ctx.fillStyle = "rgba(30,58,95,0.85)";
   roundRect(ctx, PAD, colY, W - PAD * 2, 30, 8);
 
@@ -138,7 +139,7 @@ async function dibujarFlyer(
   ctx.fillText("V", W - PAD - 26, colY + 20);
 
   // ── Filas de partidos ─────────────────────────────────────────────────
-  const rowsY = colY + 30 + 6;
+  const rowsY = colY + 30 + VPAD / 2;
   partidos.forEach((p, i) => {
     const y = rowsY + i * ROW_H;
 
@@ -191,7 +192,7 @@ async function dibujarFlyer(
   });
 
   // ── Footer precio / cierre ────────────────────────────────────────────
-  const footerY = rowsY + partidos.length * ROW_H + 10;
+  const footerY = rowsY + partidos.length * ROW_H + VPAD;
   ctx.fillStyle = "rgba(6,78,59,0.88)";
   roundRect(ctx, PAD, footerY, W - PAD * 2, FOOTER_H, 12);
 
@@ -212,7 +213,7 @@ async function dibujarFlyer(
   ctx.fillText("Regístra tu quiniela en línea 👇", W - PAD - 20, footerY + 52);
 
   // ── Branding / link ───────────────────────────────────────────────────
-  const brandY = footerY + FOOTER_H + 10;
+  const brandY = footerY + FOOTER_H + VPAD;
   ctx.fillStyle = "rgba(2,6,23,0.90)";
   roundRect(ctx, PAD, brandY, W - PAD * 2, BRAND_H - 8, 12);
 
