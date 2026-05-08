@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { FlyerJornada } from "@/components/FlyerJornada";
 
 type Usuario = {
   id: string;
@@ -810,6 +811,14 @@ function PerfilInner() {
                                 Facebook
                               </a>
                             </div>
+                            {/* Flyer generador */}
+                            <FlyerJornada
+                              jornadaId={j.id}
+                              jornadaNombre={j.nombre ?? `Jornada ${j.numero}`}
+                              liga={j.liga}
+                              temporada={j.temporada}
+                              refCode={usuario.codigoRef!}
+                            />
                           </div>
                         );
                       })}
