@@ -3,7 +3,7 @@ import { getToken } from "next-auth/jwt";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
-const ROLES_VALIDOS = ["superadmin", "admin", "vendedor"];
+const ROLES_VALIDOS = ["superadmin", "admin", "tienda", "vendedor"];
 
 async function verificarSuperadmin(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });

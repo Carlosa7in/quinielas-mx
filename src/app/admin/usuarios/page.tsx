@@ -11,11 +11,17 @@ type Usuario = {
   codigoRef: string | null;
 };
 
-const ROL_LABEL: Record<string, string> = { superadmin: "Super Admin", admin: "Admin", vendedor: "Vendedor" };
+const ROL_LABEL: Record<string, string> = {
+  superadmin: "Super Admin",
+  admin: "Admin",
+  tienda: "Punto de venta",
+  vendedor: "Vendedor referido",
+};
 const ROL_COLOR: Record<string, string> = {
   superadmin: "bg-purple-100 text-purple-700",
   admin: "bg-blue-100 text-blue-700",
-  vendedor: "bg-green-100 text-green-700",
+  tienda: "bg-amber-100 text-amber-700",
+  vendedor: "bg-cyan-100 text-cyan-700",
 };
 
 export default function UsuariosPage() {
@@ -24,7 +30,7 @@ export default function UsuariosPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rol, setRol] = useState("vendedor");
+  const [rol, setRol] = useState("tienda");
   const [puntoVenta, setPuntoVenta] = useState("");
   const [error, setError] = useState("");
   const [exito, setExito] = useState("");
@@ -135,7 +141,8 @@ export default function UsuariosPage() {
               value={rol} onChange={(e) => setRol(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
-              <option value="vendedor">Vendedor (punto de venta)</option>
+              <option value="tienda">Vendedor — Punto de venta (registro presencial)</option>
+              <option value="vendedor">Vendedor — Por referido (solo link online)</option>
               <option value="admin">Admin</option>
               <option value="superadmin">Super Admin</option>
             </select>
