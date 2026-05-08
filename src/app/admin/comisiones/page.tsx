@@ -400,11 +400,11 @@ export default function ComisionesPage() {
                 <p className="text-xs font-bold tracking-widest text-amber-400 uppercase mb-3">Gran Total</p>
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div className="bg-white/10 rounded-lg p-2.5 text-center">
-                    <p className="text-xl font-bold">{totalGeneral}</p>
+                    <p className="text-xl font-bold">{totalGlobal || totalGeneral}</p>
                     <p className="text-xs text-amber-300">Quinielas</p>
                   </div>
                   <div className="bg-white/10 rounded-lg p-2.5 text-center">
-                    <p className="text-xl font-bold text-yellow-300">${fmt(recaudadoGeneral)}</p>
+                    <p className="text-xl font-bold text-yellow-300">${fmt(recaudadoGlobal || recaudadoGeneral)}</p>
                     <p className="text-xs text-amber-300">Recaudado</p>
                   </div>
                 </div>
