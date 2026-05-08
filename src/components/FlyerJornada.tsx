@@ -42,7 +42,7 @@ async function dibujarFlyer(
   origen: string
 ) {
   const W = 800;
-  const PAD = 48;          // padding horizontal generoso
+  const PAD = 64;          // padding horizontal generoso
   const VPAD = 16;         // padding vertical entre secciones
   const HEADER_H = 110;
   const ROW_H = 50;        // filas más compactas
@@ -82,11 +82,6 @@ async function dibujarFlyer(
   }
 
   // ── Header ───────────────────────────────────────────────────────────
-  const headerGrad = ctx.createLinearGradient(0, 0, W, 0);
-  headerGrad.addColorStop(0, "rgba(124,45,18,0.92)");
-  headerGrad.addColorStop(1, "rgba(146,64,14,0.92)");
-  ctx.fillStyle = headerGrad;
-  roundRect(ctx, 0, 0, W, HEADER_H, 0);
 
   // Logo
   const logoH = 64;
@@ -115,14 +110,6 @@ async function dibujarFlyer(
     ctx.font = "500 17px Arial, sans-serif";
     ctx.fillText(liga + " · " + new Date().getFullYear(), PAD + 70, HEADER_H / 2 + 20);
   }
-
-  // Badge "¡PARTICIPA AHORA!"
-  ctx.fillStyle = "#fbbf24";
-  roundRect(ctx, W - PAD - 170, (HEADER_H - 36) / 2, 170, 36, 8);
-  ctx.fillStyle = "#7c2d12";
-  ctx.font = "bold 14px Arial, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("¡PARTICIPA AHORA!", W - PAD - 85, HEADER_H / 2 + 5);
 
   // ── Encabezado columnas ───────────────────────────────────────────────
   const colY = HEADER_H + VPAD;
@@ -196,21 +183,22 @@ async function dibujarFlyer(
   ctx.fillStyle = "rgba(6,78,59,0.88)";
   roundRect(ctx, PAD, footerY, W - PAD * 2, FOOTER_H, 12);
 
+  const footerMid = footerY + FOOTER_H / 2;
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 15px Arial, sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("PRECIO:", PAD + 20, footerY + 34);
+  ctx.fillText("PRECIO:", PAD + 20, footerMid - 4);
   ctx.fillStyle = "#fbbf24";
   ctx.font = "bold 30px Arial, sans-serif";
-  ctx.fillText(`$${PRECIO}`, PAD + 105, footerY + 36);
+  ctx.fillText(`$${PRECIO}`, PAD + 110, footerMid + 14);
 
   ctx.fillStyle = "#6ee7b7";
   ctx.font = "bold 13px Arial, sans-serif";
   ctx.textAlign = "right";
-  ctx.fillText("¡GANA PREMIOS EN EFECTIVO!", W - PAD - 20, footerY + 30);
+  ctx.fillText("¡GANA PREMIOS EN EFECTIVO!", W - PAD - 20, footerMid - 8);
   ctx.fillStyle = "#d1fae5";
   ctx.font = "12px Arial, sans-serif";
-  ctx.fillText("Regístra tu quiniela en línea 👇", W - PAD - 20, footerY + 52);
+  ctx.fillText("Regístra tu quiniela en línea 👇", W - PAD - 20, footerMid + 12);
 
   // ── Branding / link ───────────────────────────────────────────────────
   const brandY = footerY + FOOTER_H + VPAD;
