@@ -12,6 +12,7 @@ type Usuario = {
   rol: string;
   puntoVenta: string | null;
   username: string | null;
+  codigoRef: string | null;
 };
 
 type Stats = {
@@ -106,7 +107,7 @@ const fmtFecha = (iso: string) =>
     timeZone: "America/Mexico_City",
   });
 
-type Tab = "resumen" | "apostadores" | "ganancias" | "perfil";
+type Tab = "resumen" | "apostadores" | "ganancias" | "milink" | "perfil";
 
 function PerfilInner() {
   const { data: session } = useSession();
@@ -130,6 +131,7 @@ function PerfilInner() {
   const [pwConfirmar, setPwConfirmar] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [feedbackPerfil, setFeedbackPerfil] = useState<{ tipo: "ok" | "err"; msg: string } | null>(null);
+  const [copiado, setCopiado] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/perfil")
@@ -209,20 +211,36 @@ function PerfilInner() {
 
   const { usuario, stats, porJornada, comisionesAdmin, apostadores, recientes } = data;
   const esAdminRole = usuario.rol === "admin" || usuario.rol === "superadmin";
-  // Para tienda/vendedor no se muestran tabs — cada sección se abre directo desde su panel home
-  const mostrarTabs = esAdminRole;
+  const esVendedor = usuario.rol === "vendedor";
+  const mostrarTabs = esAdminRole || esVendedor;
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "resumen", label: "Resumen" },
-    { id: "apostadores", label: "Apostadores" },
-    { id: "ganancias", label: "Ganancias" },
-    { id: "perfil", label: "Mi Perfil" },
-  ];
+  const copiarLink = () => {
+    if (!usuario.codigoRef) return;
+    const link = `${window.location.origin}/quiniela?ref=${usuario.codigoRef}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    });
+  };
+
+  const tabs: { id: Tab; label: string }[] = esVendedor
+    ? [
+        { id: "resumen", label: "Resumen" },
+        { id: "milink", label: "Mi Link" },
+        { id: "perfil", label: "Mi Perfil" },
+      ]
+    : [
+        { id: "resumen", label: "Resumen" },
+        { id: "apostadores", label: "Apostadores" },
+        { id: "ganancias", label: "Ganancias" },
+        { id: "perfil", label: "Mi Perfil" },
+      ];
 
   const TAB_TITULO: Record<Tab, string> = {
     resumen: "Resumen",
     apostadores: "Mis Apostadores",
     ganancias: "Mis Ganancias",
+    milink: "Mi Link",
     perfil: "Mi Perfil",
   };
 
@@ -241,7 +259,7 @@ function PerfilInner() {
               ← {esAdminNav ? "Admin" : "Mi Panel"}
             </Link>
             <h1 className="text-xl font-bold mt-1">
-              {mostrarTabs ? "Mi Panel" : TAB_TITULO[tab]}
+              {esVendedor ? "Mi Dashboard" : mostrarTabs ? "Mi Panel" : TAB_TITULO[tab]}
             </h1>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -297,15 +315,47 @@ function PerfilInner() {
               </div>
             </div>
 
+            {/* Link de referido — destacado para vendedores */}
+            {esVendedor && (
+              <div className={`rounded-xl p-4 flex items-center justify-between gap-3 shadow-sm ${usuario.codigoRef ? "bg-cyan-600 text-white" : "bg-gray-100 text-gray-500"}`}>
+                <div className="min-w-0">
+                  {usuario.codigoRef ? (
+                    <>
+                      <p className="text-xs font-bold text-cyan-100 uppercase tracking-wider mb-0.5">Tu link de ventas</p>
+                      <p className="font-mono text-sm font-bold truncate">/quiniela?ref={usuario.codigoRef}</p>
+                    </>
+                  ) : (
+                    <p className="text-sm">Sin código de referido asignado</p>
+                  )}
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  {usuario.codigoRef && (
+                    <button
+                      onClick={copiarLink}
+                      className="bg-white text-cyan-700 font-bold text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95"
+                    >
+                      {copiado ? "✓ Copiado" : "📋 Copiar"}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setTab("milink")}
+                    className="bg-cyan-700 text-white text-xs px-3 py-1.5 rounded-lg border border-cyan-500"
+                  >
+                    Ver →
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Stats cards */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white rounded-xl shadow-sm p-4 text-center">
                 <p className="text-2xl font-bold text-green-700">{stats.totalQuinielas}</p>
-                <p className="text-xs text-gray-500">Quinielas vendidas</p>
+                <p className="text-xs text-gray-500">{esVendedor ? "Quinielas referidas" : "Quinielas vendidas"}</p>
               </div>
               <div className="bg-white rounded-xl shadow-sm p-4 text-center">
                 <p className="text-2xl font-bold text-yellow-600">${fmt(stats.totalRecaudado)}</p>
-                <p className="text-xs text-gray-500">Recaudado personal</p>
+                <p className="text-xs text-gray-500">{esVendedor ? "Total generado" : "Recaudado personal"}</p>
               </div>
               {stats.comisionGanada > 0 && (
                 <div className="bg-white rounded-xl shadow-sm p-4 text-center">
@@ -441,8 +491,16 @@ function PerfilInner() {
 
             {stats.totalQuinielas === 0 && !esAdminRole && (
               <div className="text-center py-10 text-gray-400">
-                <p className="text-3xl mb-2">📋</p>
-                <p>Todavia no tienes quinielas registradas</p>
+                <p className="text-3xl mb-2">{esVendedor ? "🔗" : "📋"}</p>
+                <p>{esVendedor ? "Aún no has referido quinielas" : "Todavia no tienes quinielas registradas"}</p>
+                {esVendedor && usuario.codigoRef && (
+                  <button
+                    onClick={copiarLink}
+                    className="mt-3 bg-cyan-600 text-white font-bold text-sm px-4 py-2 rounded-xl"
+                  >
+                    {copiado ? "✓ ¡Copiado!" : "📋 Copiar mi link y compartir"}
+                  </button>
+                )}
               </div>
             )}
           </>
@@ -624,6 +682,66 @@ function PerfilInner() {
                 <p className="text-3xl mb-2">💰</p>
                 <p>Sin registros todavía</p>
                 <p className="text-sm mt-1">Las ganancias aparecen aquí conforme registres quinielas</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Tab: Mi Link (Vendedor) ──────────────────────────────────── */}
+        {tab === "milink" && esVendedor && (
+          <>
+            {usuario.codigoRef ? (
+              <>
+                {/* Link card */}
+                <div className="bg-gradient-to-br from-cyan-600 to-cyan-800 rounded-2xl p-5 text-white shadow-lg">
+                  <p className="text-xs font-bold tracking-widest text-cyan-200 uppercase mb-1">Tu link de referido</p>
+                  <p className="text-sm font-mono break-all text-cyan-100 mt-2 mb-4">
+                    {typeof window !== "undefined" ? window.location.origin : ""}/quiniela?ref={usuario.codigoRef}
+                  </p>
+                  <button
+                    onClick={copiarLink}
+                    className="w-full bg-white text-cyan-800 font-bold py-2.5 rounded-xl text-sm transition-all active:scale-95"
+                  >
+                    {copiado ? "✓ ¡Link copiado!" : "📋 Copiar link"}
+                  </button>
+                </div>
+
+                {/* Instrucciones */}
+                <div className="bg-white rounded-xl shadow-sm p-4 space-y-2">
+                  <h3 className="font-bold text-gray-800">¿Cómo usar tu link?</h3>
+                  <ul className="text-sm text-gray-600 space-y-2">
+                    <li className="flex gap-2"><span>1️⃣</span><span>Copia tu link y compártelo por WhatsApp, Instagram o donde quieras</span></li>
+                    <li className="flex gap-2"><span>2️⃣</span><span>Cuando alguien registre una quiniela con tu link, quedará atribuida a ti</span></li>
+                    <li className="flex gap-2"><span>3️⃣</span><span>Puedes ver cuántas quinielas has generado en la pestaña Resumen</span></li>
+                  </ul>
+                </div>
+
+                {/* Codigo */}
+                <div className="bg-white rounded-xl shadow-sm p-4">
+                  <p className="text-xs text-gray-500 mb-1">Tu código de vendedor</p>
+                  <p className="font-mono text-2xl font-bold text-cyan-700 tracking-widest">{usuario.codigoRef}</p>
+                  <p className="text-xs text-gray-400 mt-1">Puedes usarlo también como parámetro: <span className="font-mono">?ref={usuario.codigoRef}</span></p>
+                </div>
+
+                {/* Stats de referidos */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                    <p className="text-2xl font-bold text-green-700">{stats.totalQuinielas}</p>
+                    <p className="text-xs text-gray-500">Quinielas referidas</p>
+                  </div>
+                  <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                    <p className="text-2xl font-bold text-yellow-600">${fmt(stats.totalRecaudado)}</p>
+                    <p className="text-xs text-gray-500">Total generado</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12 text-gray-400 bg-white rounded-xl shadow-sm">
+                <p className="text-4xl mb-3">🔗</p>
+                <p className="font-semibold text-gray-600">Aún no tienes código de referido</p>
+                <p className="text-sm mt-2 max-w-xs mx-auto">
+                  Pídele al administrador que te asigne un código en la sección de Usuarios.
+                </p>
               </div>
             )}
           </>

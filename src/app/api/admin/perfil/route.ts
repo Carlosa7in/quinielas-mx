@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
       rol: true,
       puntoVenta: true,
       username: true,
+      codigoRef: true,
     },
   });
 
@@ -304,6 +305,7 @@ export async function PATCH(req: NextRequest) {
       rol: true,
       puntoVenta: true,
       username: true,
+      codigoRef: true,
     },
   });
 

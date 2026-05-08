@@ -122,27 +122,55 @@ export default function TiendaPage() {
               </div>
             </a>
 
-            <a
-              href="/admin/perfil?tab=ganancias"
-              className="bg-green-700 hover:bg-green-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-            >
-              <span className="text-2xl">💰</span>
-              <div>
-                <p className="font-bold">Mis Ganancias</p>
-                <p className="text-green-200 text-sm">Comisiones y ventas por jornada</p>
-              </div>
-            </a>
+            {rol === "vendedor" ? (
+              <a
+                href="/admin/perfil?tab=milink"
+                className="bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">🔗</span>
+                <div>
+                  <p className="font-bold">Mi Link de Ventas</p>
+                  <p className="text-cyan-200 text-sm">Comparte tu link y ve tus referidos</p>
+                </div>
+              </a>
+            ) : (
+              <>
+                <a
+                  href="/admin/perfil?tab=ganancias"
+                  className="bg-green-700 hover:bg-green-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+                >
+                  <span className="text-2xl">💰</span>
+                  <div>
+                    <p className="font-bold">Mis Ganancias</p>
+                    <p className="text-green-200 text-sm">Comisiones y ventas por jornada</p>
+                  </div>
+                </a>
 
-            <a
-              href="/admin/perfil?tab=apostadores"
-              className="bg-teal-700 hover:bg-teal-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-            >
-              <span className="text-2xl">📱</span>
-              <div>
-                <p className="font-bold">Mis Apostadores</p>
-                <p className="text-teal-200 text-sm">Historial de clientes registrados</p>
-              </div>
-            </a>
+                <a
+                  href="/admin/perfil?tab=apostadores"
+                  className="bg-teal-700 hover:bg-teal-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+                >
+                  <span className="text-2xl">📱</span>
+                  <div>
+                    <p className="font-bold">Mis Apostadores</p>
+                    <p className="text-teal-200 text-sm">Historial de clientes registrados</p>
+                  </div>
+                </a>
+              </>
+            )}
+
+            {rol === "vendedor" && (
+              <a
+                href="/admin/perfil"
+                className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">📊</span>
+                <div>
+                  <p className="font-bold">Mi Resumen</p>
+                  <p className="text-gray-500 text-sm">Quinielas referidas y estadísticas</p>
+                </div>
+              </a>
+            )}
 
             <a
               href="/admin/perfil?tab=perfil"
