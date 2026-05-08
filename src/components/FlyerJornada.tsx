@@ -23,7 +23,17 @@ function truncar(texto: string, max: number) {
   return texto.length > max ? texto.slice(0, max - 1) + "…" : texto;
 }
 
-function dibujarFlyer(
+function cargarImagen(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function dibujarFlyer(
   canvas: HTMLCanvasElement,
   partidos: Partido[],
   jornadaNombre: string,
@@ -32,10 +42,11 @@ function dibujarFlyer(
   origen: string
 ) {
   const W = 800;
-  const HEADER_H = 110;
-  const ROW_H = 54;
-  const FOOTER_H = 90;
-  const BRAND_H = 56;
+  const PAD = 24;
+  const HEADER_H = 120;
+  const ROW_H = 58;
+  const FOOTER_H = 96;
+  const BRAND_H = 60;
   const H = HEADER_H + partidos.length * ROW_H + FOOTER_H + BRAND_H;
 
   // HiDPI
@@ -48,106 +59,127 @@ function dibujarFlyer(
   const ctx = canvas.getContext("2d")!;
   ctx.scale(scale, scale);
 
+  // ── Cargar imágenes ──────────────────────────────────────────────────
+  let bgImg: HTMLImageElement | null = null;
+  let logoImg: HTMLImageElement | null = null;
+  try { bgImg = await cargarImagen("/flyer-bg.webp"); } catch { /* sin fondo */ }
+  try { logoImg = await cargarImagen("/logo-tablitas.png"); } catch { /* sin logo */ }
+
   // ── Fondo general ────────────────────────────────────────────────────
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, "#0a1628");
-  bg.addColorStop(1, "#0f2040");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
+  if (bgImg) {
+    // Dibujar imagen de fondo cubriendo todo el canvas
+    ctx.drawImage(bgImg, 0, 0, W, H);
+    // Overlay oscuro para legibilidad
+    ctx.fillStyle = "rgba(5, 15, 35, 0.72)";
+    ctx.fillRect(0, 0, W, H);
+  } else {
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, "#0a1628");
+    bg.addColorStop(1, "#0f2040");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+  }
 
   // ── Header ───────────────────────────────────────────────────────────
   const headerGrad = ctx.createLinearGradient(0, 0, W, 0);
-  headerGrad.addColorStop(0, "#7c2d12");
-  headerGrad.addColorStop(1, "#92400e");
+  headerGrad.addColorStop(0, "rgba(124,45,18,0.92)");
+  headerGrad.addColorStop(1, "rgba(146,64,14,0.92)");
   ctx.fillStyle = headerGrad;
   roundRect(ctx, 0, 0, W, HEADER_H, 0);
 
-  // Icono pelota
-  ctx.font = "bold 38px serif";
-  ctx.textAlign = "center";
-  ctx.fillText("⚽", 52, 52);
+  // Logo
+  const logoH = 64;
+  const logoW = logoH;
+  if (logoImg) {
+    const ratio = logoImg.width / logoImg.height;
+    const lW = Math.round(logoH * ratio);
+    ctx.drawImage(logoImg, PAD, (HEADER_H - logoH) / 2, lW, logoH);
+    // Título después del logo
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 26px Arial, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(jornadaNombre.toUpperCase(), PAD + lW + 14, HEADER_H / 2 - 4);
+    ctx.fillStyle = "#fcd34d";
+    ctx.font = "500 17px Arial, sans-serif";
+    ctx.fillText(liga + " · " + new Date().getFullYear(), PAD + lW + 14, HEADER_H / 2 + 20);
+  } else {
+    ctx.font = "bold 38px serif";
+    ctx.textAlign = "center";
+    ctx.fillText("⚽", PAD + 28, HEADER_H / 2 + 14);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 26px Arial, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(jornadaNombre.toUpperCase(), PAD + 70, HEADER_H / 2 - 4);
+    ctx.fillStyle = "#fcd34d";
+    ctx.font = "500 17px Arial, sans-serif";
+    ctx.fillText(liga + " · " + new Date().getFullYear(), PAD + 70, HEADER_H / 2 + 20);
+  }
 
-  // Título jornada
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 28px Arial, sans-serif";
-  ctx.textAlign = "left";
-  ctx.fillText(jornadaNombre.toUpperCase(), 90, 45);
-
-  ctx.fillStyle = "#fcd34d";
-  ctx.font = "500 18px Arial, sans-serif";
-  ctx.fillText(liga + " · " + new Date().getFullYear(), 90, 72);
-
-  // Badge "¡REGÍSTRATE!"
+  // Badge "¡PARTICIPA AHORA!"
   ctx.fillStyle = "#fbbf24";
-  roundRect(ctx, W - 180, 20, 160, 38, 8);
+  roundRect(ctx, W - PAD - 170, (HEADER_H - 36) / 2, 170, 36, 8);
   ctx.fillStyle = "#7c2d12";
-  ctx.font = "bold 15px Arial, sans-serif";
+  ctx.font = "bold 14px Arial, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("¡REGÍSTRATE!", W - 100, 44);
+  ctx.fillText("¡PARTICIPA AHORA!", W - PAD - 85, HEADER_H / 2 + 5);
 
   // ── Encabezado columnas ───────────────────────────────────────────────
-  const colY = HEADER_H;
-  ctx.fillStyle = "#1e3a5f";
-  ctx.fillRect(0, colY, W, 32);
+  const colY = HEADER_H + 8;
+  ctx.fillStyle = "rgba(30,58,95,0.85)";
+  roundRect(ctx, PAD, colY, W - PAD * 2, 30, 8);
 
   ctx.fillStyle = "#93c5fd";
-  ctx.font = "bold 12px Arial, sans-serif";
+  ctx.font = "bold 11px Arial, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("L", 44, colY + 21);
-  ctx.fillText("LOCAL", W * 0.27, colY + 21);
-  ctx.fillText("E", W * 0.5, colY + 21);
-  ctx.fillText("VISITANTE", W * 0.73, colY + 21);
-  ctx.fillText("V", W - 44, colY + 21);
+  ctx.fillText("L", PAD + 26, colY + 20);
+  ctx.fillText("LOCAL", W * 0.3, colY + 20);
+  ctx.fillText("E", W * 0.5, colY + 20);
+  ctx.fillText("VISITANTE", W * 0.7, colY + 20);
+  ctx.fillText("V", W - PAD - 26, colY + 20);
 
   // ── Filas de partidos ─────────────────────────────────────────────────
+  const rowsY = colY + 30 + 6;
   partidos.forEach((p, i) => {
-    const y = HEADER_H + 32 + i * ROW_H;
-    const par = i % 2 === 0;
+    const y = rowsY + i * ROW_H;
 
-    ctx.fillStyle = par ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)";
-    ctx.fillRect(0, y, W, ROW_H);
-
-    // Línea separadora
-    ctx.strokeStyle = "rgba(255,255,255,0.08)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(20, y);
-    ctx.lineTo(W - 20, y);
-    ctx.stroke();
+    // Fondo glassmorphism alternado
+    ctx.fillStyle = i % 2 === 0
+      ? "rgba(255,255,255,0.08)"
+      : "rgba(255,255,255,0.04)";
+    roundRect(ctx, PAD, y + 2, W - PAD * 2, ROW_H - 4, 10);
 
     const cy = y + ROW_H / 2 + 7;
+    const btnW = 36, btnH = 28;
 
-    // Botones L / E / V
-    const btnW = 34, btnH = 28;
-    // L
-    ctx.fillStyle = "#1d4ed8";
-    roundRect(ctx, 14, y + (ROW_H - btnH) / 2, btnW, btnH, 6);
+    // Botón L
+    ctx.fillStyle = "rgba(29,78,216,0.85)";
+    roundRect(ctx, PAD + 6, y + (ROW_H - btnH) / 2, btnW, btnH, 7);
     ctx.fillStyle = "#fff";
     ctx.font = "bold 14px Arial, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("L", 14 + btnW / 2, cy);
+    ctx.fillText("L", PAD + 6 + btnW / 2, cy);
 
-    // E
-    ctx.fillStyle = "#374151";
-    roundRect(ctx, W / 2 - btnW / 2, y + (ROW_H - btnH) / 2, btnW, btnH, 6);
+    // Botón E
+    ctx.fillStyle = "rgba(55,65,81,0.85)";
+    roundRect(ctx, W / 2 - btnW / 2, y + (ROW_H - btnH) / 2, btnW, btnH, 7);
     ctx.fillStyle = "#d1d5db";
     ctx.fillText("E", W / 2, cy);
 
-    // V
-    ctx.fillStyle = "#7c3aed";
-    roundRect(ctx, W - 14 - btnW, y + (ROW_H - btnH) / 2, btnW, btnH, 6);
+    // Botón V
+    ctx.fillStyle = "rgba(124,58,237,0.85)";
+    roundRect(ctx, W - PAD - 6 - btnW, y + (ROW_H - btnH) / 2, btnW, btnH, 7);
     ctx.fillStyle = "#fff";
-    ctx.fillText("V", W - 14 - btnW / 2, cy);
+    ctx.fillText("V", W - PAD - 6 - btnW / 2, cy);
 
     // Equipo local
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 16px Arial, sans-serif";
     ctx.textAlign = "right";
-    ctx.fillText(truncar(p.equipoLocal.toUpperCase(), 14), W * 0.44, cy);
+    ctx.fillText(truncar(p.equipoLocal.toUpperCase(), 13), W * 0.44, cy);
 
     // "vs"
-    ctx.fillStyle = "#6b7280";
-    ctx.font = "12px Arial, sans-serif";
+    ctx.fillStyle = "rgba(156,163,175,0.8)";
+    ctx.font = "11px Arial, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("vs", W * 0.5, cy);
 
@@ -155,50 +187,47 @@ function dibujarFlyer(
     ctx.fillStyle = "#e5e7eb";
     ctx.font = "bold 16px Arial, sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(truncar(p.equipoVisita.toUpperCase(), 14), W * 0.56, cy);
+    ctx.fillText(truncar(p.equipoVisita.toUpperCase(), 13), W * 0.56, cy);
   });
 
   // ── Footer precio / cierre ────────────────────────────────────────────
-  const footerY = HEADER_H + 32 + partidos.length * ROW_H;
-  const footerGrad = ctx.createLinearGradient(0, footerY, 0, footerY + FOOTER_H);
-  footerGrad.addColorStop(0, "#064e3b");
-  footerGrad.addColorStop(1, "#065f46");
-  ctx.fillStyle = footerGrad;
-  ctx.fillRect(0, footerY, W, FOOTER_H);
+  const footerY = rowsY + partidos.length * ROW_H + 10;
+  ctx.fillStyle = "rgba(6,78,59,0.88)";
+  roundRect(ctx, PAD, footerY, W - PAD * 2, FOOTER_H, 12);
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 16px Arial, sans-serif";
+  ctx.font = "bold 15px Arial, sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("PRECIO:", 30, footerY + 32);
+  ctx.fillText("PRECIO:", PAD + 20, footerY + 34);
   ctx.fillStyle = "#fbbf24";
-  ctx.font = "bold 28px Arial, sans-serif";
-  ctx.fillText(`$${PRECIO}`, 115, footerY + 34);
+  ctx.font = "bold 30px Arial, sans-serif";
+  ctx.fillText(`$${PRECIO}`, PAD + 105, footerY + 36);
 
   ctx.fillStyle = "#6ee7b7";
-  ctx.font = "bold 14px Arial, sans-serif";
+  ctx.font = "bold 13px Arial, sans-serif";
   ctx.textAlign = "right";
-  ctx.fillText("¡GANA PREMIOS EN EFECTIVO!", W - 30, footerY + 28);
+  ctx.fillText("¡GANA PREMIOS EN EFECTIVO!", W - PAD - 20, footerY + 30);
   ctx.fillStyle = "#d1fae5";
-  ctx.font = "13px Arial, sans-serif";
-  ctx.fillText("Regístra tu quiniela en línea 👇", W - 30, footerY + 48);
+  ctx.font = "12px Arial, sans-serif";
+  ctx.fillText("Regístra tu quiniela en línea 👇", W - PAD - 20, footerY + 52);
 
   // ── Branding / link ───────────────────────────────────────────────────
-  const brandY = footerY + FOOTER_H;
-  ctx.fillStyle = "#0f172a";
-  ctx.fillRect(0, brandY, W, BRAND_H);
+  const brandY = footerY + FOOTER_H + 10;
+  ctx.fillStyle = "rgba(2,6,23,0.90)";
+  roundRect(ctx, PAD, brandY, W - PAD * 2, BRAND_H - 8, 12);
 
-  // Flecha / CTA
+  // CTA
   ctx.fillStyle = "#fbbf24";
   ctx.font = "bold 13px Arial, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("👇 REGÍSTRATE AQUÍ 👇", W / 2, brandY + 14);
+  ctx.fillText("👇  REGÍSTRATE AQUÍ  👇", W / 2, brandY + 18);
 
   // Link
   const linkTexto = `${origen}/quiniela?ref=${refCode}`;
   ctx.fillStyle = "#38bdf8";
-  ctx.font = "bold 17px Arial, monospace";
+  ctx.font = "bold 16px Arial, monospace";
   ctx.textAlign = "center";
-  ctx.fillText(linkTexto, W / 2, brandY + 36);
+  ctx.fillText(linkTexto, W / 2, brandY + 40);
 }
 
 // Helper: rect con bordes redondeados
@@ -231,7 +260,7 @@ export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCod
 
       const canvas = canvasRef.current!;
       const origen = window.location.origin;
-      dibujarFlyer(canvas, partidos, jornadaNombre, liga, refCode, origen);
+      await dibujarFlyer(canvas, partidos, jornadaNombre, liga, refCode, origen);
 
       canvas.toBlob((b) => {
         if (b) setBlob(b);
