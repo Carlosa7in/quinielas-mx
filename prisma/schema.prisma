@@ -18,6 +18,7 @@ model Usuario {
   password    String
   rol         String     @default("user")
   puntoVenta  String?
+  codigoRef   String?    @unique  // link de referido: /quiniela?ref=CODIGO
   createdAt   DateTime   @default(now())
   quinielas   Quiniela[]
 }

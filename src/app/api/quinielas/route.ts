@@ -102,13 +102,18 @@ export async function POST(req: Request) {
       }
     }
 
-    // Buscar vendedor por código si viene en el body
+    // Buscar vendedor por código: primero Vendedor, luego Usuario por codigoRef
     let vendedorId: string | null = null;
+    let refUsuarioId: string | null = null;
     if (vendedorCodigo) {
-      const v = await prisma.vendedor.findUnique({
-        where: { codigo: String(vendedorCodigo).toUpperCase(), activo: true },
-      });
-      vendedorId = v?.id ?? null;
+      const codigo = String(vendedorCodigo).toUpperCase();
+      const v = await prisma.vendedor.findUnique({ where: { codigo, activo: true } });
+      if (v) {
+        vendedorId = v.id;
+      } else {
+        const u = await prisma.usuario.findUnique({ where: { codigoRef: codigo } });
+        if (u) refUsuarioId = u.id;
+      }
     }
 
     const estadoPago = canal === "tienda" ? "confirmado" : "pendiente";
@@ -124,7 +129,7 @@ export async function POST(req: Request) {
       data: {
         folio: folioQ,
         jornadaId,
-        usuarioId: usuarioId || null,
+        usuarioId: refUsuarioId || usuarioId || null,
         clienteId,
         nombreCliente: nombre || null,
         telefonoCliente: telefono || null,

@@ -64,5 +64,12 @@ export async function POST(req: NextRequest) {
     results.push("❌ vendedorId: " + String(e));
   }
 
+  try {
+    await sql`ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "codigoRef" TEXT UNIQUE`;
+    results.push("✅ Columna codigoRef añadida a Usuario (o ya existía)");
+  } catch (e) {
+    results.push("❌ codigoRef: " + String(e));
+  }
+
   return NextResponse.json({ ok: true, results });
 }

@@ -8,6 +8,7 @@ type Usuario = {
   email: string;
   rol: string;
   puntoVenta: string | null;
+  codigoRef: string | null;
 };
 
 const ROL_LABEL: Record<string, string> = { superadmin: "Super Admin", admin: "Admin", vendedor: "Vendedor" };
@@ -30,6 +31,9 @@ export default function UsuariosPage() {
   const [enviando, setEnviando] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [editPuntoVenta, setEditPuntoVenta] = useState("");
+  const [editandoRefId, setEditandoRefId] = useState<string | null>(null);
+  const [editCodigoRef, setEditCodigoRef] = useState("");
+  const [copiado, setCopiado] = useState<string | null>(null);
 
   const cargar = () =>
     fetch("/api/admin/usuarios")
@@ -63,6 +67,24 @@ export default function UsuariosPage() {
       body: JSON.stringify({ id, puntoVenta: editPuntoVenta }),
     });
     if (res.ok) { setEditandoId(null); cargar(); }
+  };
+
+  const guardarCodigoRef = async (id: string) => {
+    const res = await fetch("/api/admin/usuarios", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, codigoRef: editCodigoRef }),
+    });
+    if (res.ok) { setEditandoRefId(null); cargar(); }
+    else { const d = await res.json(); alert(d.error); }
+  };
+
+  const copiarLink = (codigo: string) => {
+    const link = `${window.location.origin}/quiniela?ref=${codigo}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopiado(codigo);
+      setTimeout(() => setCopiado(null), 2000);
+    });
   };
 
   const eliminar = async (id: string, nombre: string) => {
@@ -184,6 +206,43 @@ export default function UsuariosPage() {
                             : <span className="text-gray-400 hover:text-amber-700">+ Agregar punto de venta</span>
                           }
                         </button>
+                      )}
+
+                      {/* Link de referido */}
+                      {editandoRefId === u.id ? (
+                        <div className="flex gap-2 mt-2">
+                          <input
+                            type="text"
+                            value={editCodigoRef}
+                            onChange={(e) => setEditCodigoRef(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
+                            placeholder="Ej. CARLOS"
+                            maxLength={20}
+                            className="flex-1 border border-gray-200 rounded-lg px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            autoFocus
+                          />
+                          <button onClick={() => guardarCodigoRef(u.id)} className="text-xs bg-cyan-700 text-white px-2 py-1 rounded-lg">Guardar</button>
+                          <button onClick={() => setEditandoRefId(null)} className="text-xs text-gray-400 px-2 py-1">Cancelar</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <button
+                            onClick={() => { setEditandoRefId(u.id); setEditCodigoRef(u.codigoRef ?? ""); }}
+                            className="text-xs text-left"
+                          >
+                            {u.codigoRef
+                              ? <span className="text-cyan-700">🔗 Código: <span className="font-mono font-bold">{u.codigoRef}</span> <span className="text-gray-400">(editar)</span></span>
+                              : <span className="text-gray-400 hover:text-cyan-700">+ Asignar link de referido</span>
+                            }
+                          </button>
+                          {u.codigoRef && (
+                            <button
+                              onClick={() => copiarLink(u.codigoRef!)}
+                              className="text-xs bg-cyan-50 hover:bg-cyan-100 text-cyan-700 font-semibold px-2 py-0.5 rounded-lg transition-colors"
+                            >
+                              {copiado === u.codigoRef ? "✓ Copiado" : "📋 Copiar link"}
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
 

@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   }
   const usuarios = await prisma.usuario.findMany({
     where: { rol: { in: ROLES_VALIDOS } },
-    select: { id: true, nombre: true, username: true, email: true, rol: true, puntoVenta: true },
+    select: { id: true, nombre: true, username: true, email: true, rol: true, puntoVenta: true, codigoRef: true },
     orderBy: { nombre: "asc" },
   });
   return NextResponse.json(usuarios);
@@ -47,25 +47,30 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(usuario, { status: 201 });
 }
 
-// PATCH /api/admin/usuarios — actualizar puntoVenta o rol
+// PATCH /api/admin/usuarios — actualizar puntoVenta, rol o codigoRef
 export async function PATCH(req: NextRequest) {
   if (!(await verificarSuperadmin(req))) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
-  const { id, puntoVenta, rol } = await req.json();
+  const { id, puntoVenta, rol, codigoRef } = await req.json();
   if (!id) return NextResponse.json({ error: "ID requerido" }, { status: 400 });
   if (rol && !ROLES_VALIDOS.includes(rol)) {
     return NextResponse.json({ error: "Rol inválido" }, { status: 400 });
   }
-  const usuario = await prisma.usuario.update({
-    where: { id },
-    data: {
-      ...(puntoVenta !== undefined ? { puntoVenta: puntoVenta || null } : {}),
-      ...(rol ? { rol } : {}),
-    },
-    select: { id: true, nombre: true, username: true, email: true, rol: true, puntoVenta: true },
-  });
-  return NextResponse.json(usuario);
+  try {
+    const usuario = await prisma.usuario.update({
+      where: { id },
+      data: {
+        ...(puntoVenta !== undefined ? { puntoVenta: puntoVenta || null } : {}),
+        ...(rol ? { rol } : {}),
+        ...(codigoRef !== undefined ? { codigoRef: codigoRef ? codigoRef.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "") || null : null } : {}),
+      },
+      select: { id: true, nombre: true, username: true, email: true, rol: true, puntoVenta: true, codigoRef: true },
+    });
+    return NextResponse.json(usuario);
+  } catch {
+    return NextResponse.json({ error: "El código ya está en uso" }, { status: 409 });
+  }
 }
 
 // DELETE /api/admin/usuarios?id=xxx
