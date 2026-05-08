@@ -58,25 +58,36 @@ model Cliente {
   quinielas Quiniela[]
 }
 
+model Vendedor {
+  id        String     @id @default(cuid())
+  nombre    String
+  codigo    String     @unique   // slug corto, ej. "CARLOS"
+  activo    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  quinielas Quiniela[]
+}
+
 model Quiniela {
-  id              String   @id @default(cuid())
-  folio           String   @unique
+  id              String    @id @default(cuid())
+  folio           String    @unique
   usuarioId       String?
-  usuario         Usuario? @relation(fields: [usuarioId], references: [id])
+  usuario         Usuario?  @relation(fields: [usuarioId], references: [id])
   clienteId       String?
-  cliente         Cliente? @relation(fields: [clienteId], references: [id])
+  cliente         Cliente?  @relation(fields: [clienteId], references: [id])
   jornadaId       String
-  jornada         Jornada  @relation(fields: [jornadaId], references: [id])
+  jornada         Jornada   @relation(fields: [jornadaId], references: [id])
+  vendedorId      String?
+  vendedor        Vendedor? @relation(fields: [vendedorId], references: [id])
   nombreCliente   String?
   telefonoCliente String?
-  canal           String   @default("online")
-  monto           Float    @default(20.0)
-  estado          String   @default("pendiente")
-  estadoPago      String   @default("pendiente") // "pendiente" | "confirmado" | "no_realizado"
+  canal           String    @default("online")
+  monto           Float     @default(20.0)
+  estado          String    @default("pendiente")
+  estadoPago      String    @default("pendiente") // "pendiente" | "confirmado" | "no_realizado"
   referenciaPago  String?
   puntos          Int?
   aciertos        Int?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
   picks           Pick[]
 }
 

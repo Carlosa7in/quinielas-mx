@@ -248,6 +248,8 @@ function QuinielaInner() {
   const searchParams = useSearchParams();
   const jornadaParam = searchParams.get("jornada");
   const [jornada, setJornada] = useState<Jornada | null>(null);
+  // Código de vendedor referido (persiste en esta sesión aunque cambie de jornada)
+  const [refCode] = useState<string | null>(() => searchParams.get("ref"));
 
   // Auto-cargar jornada si viene por URL param
   useEffect(() => {
@@ -378,6 +380,7 @@ function QuinielaInner() {
           nombre,
           telefono,
           canal: metodoPago,
+          ...(refCode ? { vendedorCodigo: refCode } : {}),
         }),
       });
 

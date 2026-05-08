@@ -11,7 +11,7 @@ function numeroCombinaciones(picks: { predicciones: string[] }[]): number {
 // POST /api/quinielas - registrar quiniela (sencilla, reventado o múltiples boletos)
 export async function POST(req: Request) {
   const body = await req.json();
-  const { jornadaId, picks, nombre, telefono, canal = "online", usuarioId, cantidad = 1 } = body;
+  const { jornadaId, picks, nombre, telefono, canal = "online", usuarioId, cantidad = 1, vendedorCodigo } = body;
 
   if (!jornadaId || !picks || picks.length === 0) {
     return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
@@ -102,6 +102,15 @@ export async function POST(req: Request) {
       }
     }
 
+    // Buscar vendedor por código si viene en el body
+    let vendedorId: string | null = null;
+    if (vendedorCodigo) {
+      const v = await prisma.vendedor.findUnique({
+        where: { codigo: String(vendedorCodigo).toUpperCase(), activo: true },
+      });
+      vendedorId = v?.id ?? null;
+    }
+
     const estadoPago = canal === "tienda" ? "confirmado" : "pendiente";
     const BASE_PRICE = 20;
 
@@ -122,6 +131,7 @@ export async function POST(req: Request) {
         canal,
         estadoPago,
         monto,
+        vendedorId,
       },
       select: { id: true, folio: true },
     });

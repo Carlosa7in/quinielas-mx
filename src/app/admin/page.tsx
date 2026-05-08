@@ -288,6 +288,17 @@ export default function AdminPage() {
             </div>
           </Link>
 
+          <Link
+            href="/admin/vendedores"
+            className="bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+          >
+            <span className="text-2xl">🔗</span>
+            <div>
+              <p className="font-bold">Vendedores</p>
+              <p className="text-cyan-200 text-sm">Links de referido y ventas por vendedor</p>
+            </div>
+          </Link>
+
           {rol === "superadmin" && (
             <Link
               href="/admin/comisiones"

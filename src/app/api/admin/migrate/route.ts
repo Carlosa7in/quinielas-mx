@@ -40,5 +40,29 @@ export async function POST(req: NextRequest) {
     results.push("❌ referenciaPago: " + String(e));
   }
 
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS "Vendedor" (
+        "id"        TEXT NOT NULL,
+        "nombre"    TEXT NOT NULL,
+        "codigo"    TEXT NOT NULL,
+        "activo"    BOOLEAN NOT NULL DEFAULT true,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "Vendedor_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "Vendedor_codigo_key" UNIQUE ("codigo")
+      )
+    `;
+    results.push("✅ Tabla Vendedor creada (o ya existía)");
+  } catch (e) {
+    results.push("❌ Vendedor: " + String(e));
+  }
+
+  try {
+    await sql`ALTER TABLE "Quiniela" ADD COLUMN IF NOT EXISTS "vendedorId" TEXT REFERENCES "Vendedor"(id)`;
+    results.push("✅ Columna vendedorId añadida a Quiniela (o ya existía)");
+  } catch (e) {
+    results.push("❌ vendedorId: " + String(e));
+  }
+
   return NextResponse.json({ ok: true, results });
 }
