@@ -58,8 +58,11 @@ export async function GET(req: NextRequest) {
   // Stats personales
   const totalQuinielas = quinielas.length;
   const totalRecaudado = quinielas.reduce((s, q) => s + q.monto, 0);
+  const esVendedorReferido = usuario.rol === "vendedor";
   const tiendaQuinielas = quinielas.filter((q) => q.canal === "tienda");
-  const comisionGanada = tiendaQuinielas.length * 2;
+  const comisionGanada = esVendedorReferido
+    ? quinielas.filter((q) => q.estadoPago === "confirmado").length * 2
+    : tiendaQuinielas.length * 2;
 
   // PagoComision via sql (DateTime fields)
   let pagosComision: Array<{ usuarioId: string; jornadaId: string; monto: number; pagadoEn: string }> = [];
@@ -111,9 +114,12 @@ export async function GET(req: NextRequest) {
     entry.recaudado += q.monto;
     if (q.canal === "tienda") {
       entry.tienda += 1;
-      entry.comision += 2;
+      if (!esVendedorReferido) entry.comision += 2;
     } else {
       entry.online += 1;
+    }
+    if (esVendedorReferido && q.estadoPago === "confirmado") {
+      entry.comision += 2;
     }
   }
 
@@ -237,6 +243,13 @@ export async function GET(req: NextRequest) {
       jornadaNombre: q.jornada.nombre ?? `Jornada ${q.jornada.numero}`,
     }));
 
+  // Jornadas abiertas (para botones de WhatsApp en dashboard vendedor)
+  const jornadasAbiertas = await prisma.jornada.findMany({
+    where: { estado: "abierta" },
+    select: { id: true, numero: true, nombre: true, liga: true, temporada: true },
+    orderBy: { numero: "desc" },
+  });
+
   return NextResponse.json({
     usuario,
     stats: {
@@ -251,6 +264,7 @@ export async function GET(req: NextRequest) {
     comisionesAdmin,
     apostadores,
     recientes,
+    jornadasAbiertas,
   });
 }
 
