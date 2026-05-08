@@ -95,6 +95,7 @@ export async function GET(req: NextRequest) {
   } catch { /* tabla aún no existe — ignorar */ }
 
   const COMISION_TIENDA = 2;
+  const COMISION_REFERIDO = 2;
   const esRolAdmin = (r: string) => r === "admin" || r === "superadmin";
 
   type QItem = {
@@ -134,9 +135,11 @@ export async function GET(req: NextRequest) {
     for (const [jId, qs] of jornadasMap.entries()) {
       const jornada = qs[0].jornada;
       const tienda = qs.filter((q) => q.canal === "tienda").length;
-      const online = qs.filter((q) => q.canal === "online").length;
+      const online = qs.filter((q) => q.canal !== "tienda").length;
       const recaudado = qs.reduce((s, q) => s + q.monto, 0);
-      const comision = tienda * COMISION_TIENDA;
+      const comision = u.rol === "vendedor"
+        ? qs.filter((q) => q.estadoPago === "confirmado").length * COMISION_REFERIDO
+        : tienda * COMISION_TIENDA;
       const globalJ = recaudadoGlobalPorJornada.get(jId);
       const comisionAdmin = esRolAdmin(u.rol) && numAdmins > 0 && globalJ
         ? (globalJ.recaudado * 0.15) / numAdmins
@@ -199,9 +202,11 @@ export async function GET(req: NextRequest) {
     // Totales del usuario
     const total = misQ.length;
     const tienda = misQ.filter((q) => q.canal === "tienda").length;
-    const online = misQ.filter((q) => q.canal === "online").length;
+    const online = misQ.filter((q) => q.canal !== "tienda").length;
     const recaudado = misQ.reduce((s, q) => s + q.monto, 0);
-    const comisionTiendaTotal = tienda * COMISION_TIENDA;
+    const comisionTiendaTotal = u.rol === "vendedor"
+      ? misQ.filter((q) => q.estadoPago === "confirmado").length * COMISION_REFERIDO
+      : tienda * COMISION_TIENDA;
     const comisionAdminTotal = porJornada.reduce((s, j) => s + j.comisionAdmin, 0);
     const ganadoras = misQ.filter((q) => q.estado === "ganadora").length;
     const pendientePago = porJornada

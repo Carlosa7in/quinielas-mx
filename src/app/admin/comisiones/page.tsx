@@ -98,10 +98,11 @@ export default function ComisionesPage() {
 
   const totalGeneral = reporte.reduce((s, v) => s + v.total, 0);
   const recaudadoGeneral = reporte.reduce((s, v) => s + v.recaudado, 0);
-  const totalTiendaAll = reporte.reduce((s, v) => s + v.tienda, 0);
+  const totalTiendaAll = reporte.filter((v) => v.rol === "tienda").reduce((s, v) => s + v.tienda, 0);
+  const totalComisionesReferido = reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.comisionTotal, 0);
   const cutDuenos = recaudadoGeneral * PCT_DUENOS;
   const cutTienda = totalTiendaAll * COMISION_TIENDA;
-  const bolsaNeta = Math.max(recaudadoGeneral - cutDuenos - cutTienda, 0);
+  const bolsaNeta = Math.max(recaudadoGeneral - cutDuenos - cutTienda - totalComisionesReferido, 0);
   const totalComisiones = reporte.reduce((s, v) => s + v.comisionTotal, 0);
   const totalPendiente = reporte.reduce((s, v) => s + v.pendientePago, 0);
 
@@ -174,10 +175,18 @@ export default function ComisionesPage() {
                 </span>
                 <span className="font-bold">−${fmt(cutDuenos)}</span>
               </div>
-              <div className="flex justify-between text-orange-400">
-                <span>− Comisión tienda ($2 × {totalTiendaAll})</span>
-                <span className="font-bold">−${fmt(cutTienda)}</span>
-              </div>
+              {cutTienda > 0 && (
+                <div className="flex justify-between text-orange-400">
+                  <span>− Comisión tienda ($2 × {totalTiendaAll})</span>
+                  <span className="font-bold">−${fmt(cutTienda)}</span>
+                </div>
+              )}
+              {totalComisionesReferido > 0 && (
+                <div className="flex justify-between text-cyan-400">
+                  <span>− Comisión referidos ($2 × {reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.total, 0)} confirmadas)</span>
+                  <span className="font-bold">−${fmt(totalComisionesReferido)}</span>
+                </div>
+              )}
               <div className="border-t border-stone-700 pt-2 flex justify-between text-green-400">
                 <span className="font-bold">💰 Bolsa para premios</span>
                 <span className="font-black text-base">${fmt(bolsaNeta)}</span>
@@ -309,10 +318,10 @@ export default function ComisionesPage() {
                                 </div>
                               )}
                               {j.comision > 0 && (
-                                <div className="bg-orange-50 rounded-lg p-2 text-center">
-                                  <p className="font-bold text-orange-600">${fmt(j.comision)}</p>
-                                  <p className="text-[10px] text-gray-500">Com. tienda</p>
-                                  <p className="text-[9px] text-gray-400">$2 × {j.tienda}</p>
+                                <div className={`rounded-lg p-2 text-center ${v.rol === "vendedor" ? "bg-cyan-50" : "bg-orange-50"}`}>
+                                  <p className={`font-bold ${v.rol === "vendedor" ? "text-cyan-700" : "text-orange-600"}`}>${fmt(j.comision)}</p>
+                                  <p className="text-[10px] text-gray-500">{v.rol === "vendedor" ? "Com. referido" : "Com. tienda"}</p>
+                                  <p className="text-[9px] text-gray-400">$2 × {v.rol === "vendedor" ? j.total : j.tienda}</p>
                                 </div>
                               )}
                               {j.comisionAdmin > 0 && (
