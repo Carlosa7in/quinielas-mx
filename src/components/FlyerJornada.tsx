@@ -35,7 +35,7 @@ function dibujarFlyer(
   const HEADER_H = 110;
   const ROW_H = 54;
   const FOOTER_H = 90;
-  const BRAND_H = 44;
+  const BRAND_H = 56;
   const H = HEADER_H + partidos.length * ROW_H + FOOTER_H + BRAND_H;
 
   // HiDPI
@@ -187,11 +187,18 @@ function dibujarFlyer(
   ctx.fillStyle = "#0f172a";
   ctx.fillRect(0, brandY, W, BRAND_H);
 
+  // Flecha / CTA
+  ctx.fillStyle = "#fbbf24";
+  ctx.font = "bold 13px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("👇 REGÍSTRATE AQUÍ 👇", W / 2, brandY + 14);
+
+  // Link
   const linkTexto = `${origen}/quiniela?ref=${refCode}`;
   ctx.fillStyle = "#38bdf8";
-  ctx.font = "bold 16px Arial, monospace";
+  ctx.font = "bold 17px Arial, monospace";
   ctx.textAlign = "center";
-  ctx.fillText(linkTexto, W / 2, brandY + 28);
+  ctx.fillText(linkTexto, W / 2, brandY + 36);
 }
 
 // Helper: rect con bordes redondeados
