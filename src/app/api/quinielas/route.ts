@@ -111,7 +111,7 @@ export async function POST(req: Request) {
       if (v) {
         vendedorId = v.id;
       } else {
-        const u = await prisma.usuario.findUnique({ where: { codigoRef: codigo } });
+        const u = await prisma.usuario.findUnique({ where: { codigoRef: codigo }, select: { id: true } });
         if (u) refUsuarioId = u.id;
       }
     }
