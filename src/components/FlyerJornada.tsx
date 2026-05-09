@@ -19,74 +19,6 @@ type FlyerProps = {
 
 const PRECIO = 20;
 
-// ── Mapa de logos locales (/public/logos/) ───────────────────────────────
-// Agrega aquí cada equipo con su archivo PNG correspondiente.
-const LOGO_MAP: Record<string, string> = {
-  // Liga MX
-  "América":              "/logos/liga-mx/america.png",
-  "Guadalajara":          "/logos/liga-mx/guadalajara.png",
-  "Cruz Azul":            "/logos/liga-mx/cruz-azul.png",
-  "Pumas UNAM":           "/logos/liga-mx/pumas.png",
-  "Tigres UANL":          "/logos/liga-mx/tigres.png",
-  "Monterrey":            "/logos/liga-mx/monterrey.png",
-  "Atlas":                "/logos/liga-mx/atlas.png",
-  "León":                 "/logos/liga-mx/leon.png",
-  "Santos Laguna":        "/logos/liga-mx/santos.png",
-  "Toluca":               "/logos/liga-mx/toluca.png",
-  "Necaxa":               "/logos/liga-mx/necaxa.png",
-  "Mazatlán":             "/logos/liga-mx/mazatlan.png",
-  "FC Juárez":            "/logos/liga-mx/juarez.png",
-  "Querétaro":            "/logos/liga-mx/queretaro.png",
-  "Tijuana":              "/logos/liga-mx/tijuana.png",
-  "Pachuca":              "/logos/liga-mx/pachuca.png",
-  "Atlético San Luis":    "/logos/liga-mx/san-luis.png",
-  // Champions League
-  "Real Madrid":          "/logos/champions/real-madrid.png",
-  "Barcelona":            "/logos/champions/barcelona.png",
-  "Bayern Munich":        "/logos/champions/bayern.png",
-  "Manchester City":      "/logos/champions/man-city.png",
-  "PSG":                  "/logos/champions/psg.png",
-  "Borussia Dortmund":    "/logos/champions/dortmund.png",
-  "Arsenal":              "/logos/champions/arsenal.png",
-  "Liverpool":            "/logos/champions/liverpool.png",
-  "Chelsea":              "/logos/champions/chelsea.png",
-  "Atlético Madrid":      "/logos/champions/atletico.png",
-  "Inter Milan":          "/logos/champions/inter.png",
-  "AC Milan":             "/logos/champions/milan.png",
-  "Juventus":             "/logos/champions/juventus.png",
-  "Porto":                "/logos/champions/porto.png",
-  "Benfica":              "/logos/champions/benfica.png",
-  "Ajax":                 "/logos/champions/ajax.png",
-  "Sporting CP":          "/logos/champions/sporting.png",
-  "Club Brugge":          "/logos/champions/brugge.png",
-  "Bayer Leverkusen":     "/logos/champions/leverkusen.png",
-  "Aston Villa":          "/logos/champions/aston-villa.png",
-  // Premier League
-  "Tottenham":            "/logos/premier/tottenham.png",
-  "Manchester United":    "/logos/premier/man-united.png",
-  "Newcastle":            "/logos/premier/newcastle.png",
-  "West Ham":             "/logos/premier/west-ham.png",
-  "Brighton":             "/logos/premier/brighton.png",
-  "Wolverhampton":        "/logos/premier/wolves.png",
-  "Nottingham Forest":    "/logos/premier/nottingham.png",
-  "Leicester City":       "/logos/premier/leicester.png",
-  "Bournemouth":          "/logos/premier/bournemouth.png",
-  "Everton":              "/logos/premier/everton.png",
-  "Fulham":               "/logos/premier/fulham.png",
-  "Crystal Palace":       "/logos/premier/crystal-palace.png",
-  "Brentford":            "/logos/premier/brentford.png",
-  // La Liga
-  "Real Sociedad":        "/logos/la-liga/real-sociedad.png",
-  "Sevilla":              "/logos/la-liga/sevilla.png",
-  "Villarreal":           "/logos/la-liga/villarreal.png",
-  "Valencia":             "/logos/la-liga/valencia.png",
-  "Athletic Club":        "/logos/la-liga/athletic.png",
-  "Real Betis":           "/logos/la-liga/betis.png",
-  "Celta Vigo":           "/logos/la-liga/celta.png",
-  "Getafe":               "/logos/la-liga/getafe.png",
-  "Osasuna":              "/logos/la-liga/osasuna.png",
-  "Rayo Vallecano":       "/logos/la-liga/rayo.png",
-};
 
 function truncar(texto: string, max: number) {
   return texto.length > max ? texto.slice(0, max - 1) + "…" : texto;
@@ -209,15 +141,34 @@ async function dibujarFlyer(
   try { bgImg = await cargarImagen("/flyer-bg.webp"); } catch { /* sin fondo */ }
   try { logoImg = await cargarImagen("/logo-tablitas.png"); } catch { /* sin logo */ }
 
-  // ── Cargar logos de equipos en paralelo ──────────────────────────────
+  // ── Cargar logos de equipos desde ESPN (vía proxy) ───────────────────
+  // Primero obtenemos el mapa nombre→URL para la liga de esta jornada.
+  // Para jornadas Mixtas cargamos todas las ligas soportadas.
+  const ligas = liga === "Mixta"
+    ? ["Liga MX", "Champions League", "Premier League", "La Liga"]
+    : [liga];
+
+  const logoUrlMaps = await Promise.all(
+    ligas.map(l =>
+      fetch(`/api/logos?liga=${encodeURIComponent(l)}`)
+        .then(r => r.json() as Promise<Record<string, string>>)
+        .catch(() => ({} as Record<string, string>))
+    )
+  );
+  const logoUrlMap: Record<string, string> = Object.assign({}, ...logoUrlMaps);
+
+  // Luego cargamos cada imagen vía proxy (mismo origen → sin CORS)
   const equiposUnicos = [...new Set(partidos.flatMap(p => [p.equipoLocal, p.equipoVisita]))];
   const logoImgMap: Record<string, HTMLImageElement | null> = {};
   await Promise.all(
     equiposUnicos.map(async (equipo) => {
-      const path = LOGO_MAP[equipo];
-      if (!path) { logoImgMap[equipo] = null; return; }
-      try { logoImgMap[equipo] = await cargarImagen(path); }
-      catch { logoImgMap[equipo] = null; }
+      const url = logoUrlMap[equipo];
+      if (!url) { logoImgMap[equipo] = null; return; }
+      try {
+        logoImgMap[equipo] = await cargarImagen(`/api/logo?url=${encodeURIComponent(url)}`);
+      } catch {
+        logoImgMap[equipo] = null;
+      }
     })
   );
 
