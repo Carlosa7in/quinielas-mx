@@ -165,7 +165,10 @@ async function dibujarFlyer(
     )
   );
   const logoUrlMap: Record<string, string> = Object.assign({}, ...logoUrlMaps);
-  console.log("🗺️ logoUrlMap keys:", Object.keys(logoUrlMap));
+  const allKeys = Object.keys(logoUrlMap);
+  console.log("🗺️ logoUrlMap keys:", allKeys);
+  console.log("🔎 milan keys:", allKeys.filter(k => k.toLowerCase().includes("milan")));
+  console.log("🔎 santos keys:", allKeys.filter(k => k.toLowerCase().includes("santos")));
 
   // Luego cargamos cada imagen vía proxy (mismo origen → sin CORS)
   const equiposUnicos = [...new Set(partidos.flatMap(p => [p.equipoLocal, p.equipoVisita]))];
