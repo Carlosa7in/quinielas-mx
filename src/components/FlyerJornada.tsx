@@ -226,19 +226,19 @@ async function dibujarFlyer(
   // Layout: [L] [LOCAL →] [logo|E btn|logo] [← VISITANTE] [V]
   const btnW = 40, btnH = 30;
   const LOGO_R = 20;
-  // Logo local centro: justo a la izquierda del botón E
-  const localLogoCX = W / 2 - btnW / 2 - 10 - LOGO_R;  // 385 - 10 - 20 = 355
-  // Logo visitante centro: justo a la derecha del botón E
-  const awayLogoCX  = W / 2 + btnW / 2 + 10 + LOGO_R;  // 425 + 10 + 20 = 455
+  // Logo local centro: separado del botón E
+  const localLogoCX = W / 2 - btnW / 2 - 22 - LOGO_R;
+  // Logo visitante centro: separado del botón E
+  const awayLogoCX  = W / 2 + btnW / 2 + 22 + LOGO_R;
   // Nombre local: right-aligned hasta el borde izq del logo local
-  const localNameX  = localLogoCX - LOGO_R - 8;          // 355 - 20 - 8 = 327
+  const localNameX  = localLogoCX - LOGO_R - 8;
   // Nombre visitante: left-aligned desde el borde der del logo visitante
-  const awayNameX   = awayLogoCX  + LOGO_R + 8;          // 455 + 20 + 8 = 483
+  const awayNameX   = awayLogoCX  + LOGO_R + 8;
 
   ctx.fillStyle = "rgba(30,58,95,0.85)";
   roundRect(ctx, PAD, curY, W - PAD * 2, COL_H, 8);
   ctx.fillStyle = "#93c5fd";
-  ctx.font = "bold 15px Arial, sans-serif";
+  ctx.font = "bold 18px Arial, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("L",          PAD + 26,          curY + 24);
   ctx.fillText("LOCAL",      (PAD + localNameX) / 2 + PAD / 2, curY + 24);
@@ -302,26 +302,27 @@ async function dibujarFlyer(
   ctx.fillStyle = "rgba(6,78,59,0.90)";
   roundRect(ctx, PAD, curY, W - PAD * 2, FOOTER_H, 14);
 
-  const LINE1 = curY + FOOTER_H * 0.34;
-  const LINE2 = curY + FOOTER_H * 0.76;
-
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 20px Arial, sans-serif";
+  // Izquierda: "PRECIO:" + "$20" en una sola línea centrada verticalmente
+  const priceY = curY + FOOTER_H * 0.60;
   ctx.textAlign = "left";
-  ctx.fillText("PRECIO:", PAD + 26, LINE1);
-
-  ctx.fillStyle = "#fbbf24";
+  ctx.font = "bold 20px Arial, sans-serif";
+  ctx.fillStyle = "#ffffff";
+  const labelW = ctx.measureText("PRECIO: ").width;
+  ctx.fillText("PRECIO: ", PAD + 26, priceY);
   ctx.font = "bold 38px Arial, sans-serif";
-  ctx.fillText(`$${PRECIO}`, PAD + 26, LINE2);
+  ctx.fillStyle = "#fbbf24";
+  ctx.fillText(`$${PRECIO}`, PAD + 26 + labelW, priceY);
 
+  // Derecha: dos líneas juntas, centradas verticalmente como grupo
+  const RR1 = curY + FOOTER_H * 0.38;
+  const RR2 = curY + FOOTER_H * 0.70;
   ctx.fillStyle = "#6ee7b7";
   ctx.font = "bold 19px Arial, sans-serif";
   ctx.textAlign = "right";
-  ctx.fillText("¡GANA PREMIOS EN EFECTIVO!", W - PAD - 26, LINE1);
-
+  ctx.fillText("¡GANA PREMIOS EN EFECTIVO!", W - PAD - 26, RR1);
   ctx.fillStyle = "#d1fae5";
   ctx.font = "17px Arial, sans-serif";
-  ctx.fillText("Regístra tu quiniela en línea", W - PAD - 26, LINE2);
+  ctx.fillText("Regístra tu quiniela en línea", W - PAD - 26, RR2);
 }
 
 // Helper: rect con bordes redondeados
