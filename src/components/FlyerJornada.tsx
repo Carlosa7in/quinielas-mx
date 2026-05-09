@@ -217,9 +217,9 @@ async function dibujarFlyer(
 
   // ── Subtítulo ─────────────────────────────────────────────────────────
   ctx.fillStyle = "#fcd34d";
-  ctx.font = "600 21px Arial, sans-serif";
+  ctx.font = "600 26px Arial, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(`${liga} · ${new Date().getFullYear()}`, W / 2, curY + 22);
+  ctx.fillText(`${liga} · ${new Date().getFullYear()}`, W / 2, curY + 26);
   curY += SUBTITLE_H + GAP_TITLE_COLS;
 
   // ── Encabezado columnas ───────────────────────────────────────────────
@@ -238,7 +238,7 @@ async function dibujarFlyer(
   ctx.fillStyle = "rgba(30,58,95,0.85)";
   roundRect(ctx, PAD, curY, W - PAD * 2, COL_H, 8);
   ctx.fillStyle = "#93c5fd";
-  ctx.font = "bold 12px Arial, sans-serif";
+  ctx.font = "bold 15px Arial, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("L",          PAD + 26,          curY + 24);
   ctx.fillText("LOCAL",      (PAD + localNameX) / 2 + PAD / 2, curY + 24);
@@ -261,7 +261,7 @@ async function dibujarFlyer(
     ctx.fillStyle = "rgba(29,78,216,0.85)";
     roundRect(ctx, PAD + 6, midY - btnH / 2, btnW, btnH, 7);
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 14px Arial, sans-serif";
+    ctx.font = "bold 18px Arial, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("L", PAD + 6 + btnW / 2, cy);
 
@@ -279,7 +279,7 @@ async function dibujarFlyer(
 
     // Nombre local  (right-aligned → logo local → E btn)
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 17px Arial, sans-serif";
+    ctx.font = "bold 21px Arial, sans-serif";
     ctx.textAlign = "right";
     ctx.fillText(truncar(p.equipoLocal.toUpperCase(), 12), localNameX, cy);
 
@@ -291,7 +291,7 @@ async function dibujarFlyer(
 
     // Nombre visitante (left-aligned ← logo visitante ← E btn)
     ctx.fillStyle = "#e5e7eb";
-    ctx.font = "bold 17px Arial, sans-serif";
+    ctx.font = "bold 21px Arial, sans-serif";
     ctx.textAlign = "left";
     ctx.fillText(truncar(p.equipoVisita.toUpperCase(), 12), awayNameX, cy);
   });
@@ -306,21 +306,21 @@ async function dibujarFlyer(
   const LINE2 = curY + FOOTER_H * 0.76;
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 16px Arial, sans-serif";
+  ctx.font = "bold 20px Arial, sans-serif";
   ctx.textAlign = "left";
   ctx.fillText("PRECIO:", PAD + 26, LINE1);
 
   ctx.fillStyle = "#fbbf24";
-  ctx.font = "bold 34px Arial, sans-serif";
+  ctx.font = "bold 38px Arial, sans-serif";
   ctx.fillText(`$${PRECIO}`, PAD + 26, LINE2);
 
   ctx.fillStyle = "#6ee7b7";
-  ctx.font = "bold 15px Arial, sans-serif";
+  ctx.font = "bold 19px Arial, sans-serif";
   ctx.textAlign = "right";
   ctx.fillText("¡GANA PREMIOS EN EFECTIVO!", W - PAD - 26, LINE1);
 
   ctx.fillStyle = "#d1fae5";
-  ctx.font = "14px Arial, sans-serif";
+  ctx.font = "17px Arial, sans-serif";
   ctx.fillText("Regístra tu quiniela en línea", W - PAD - 26, LINE2);
 }
 
