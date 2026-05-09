@@ -154,7 +154,7 @@ async function dibujarFlyer(
   // Primero obtenemos el mapa nombre→URL para la liga de esta jornada.
   // Para jornadas Mixtas cargamos todas las ligas soportadas.
   const ligas = liga === "Mixta"
-    ? ["Liga MX", "Champions League", "Premier League", "La Liga"]
+    ? ["Liga MX", "Champions League", "Premier League", "La Liga", "Serie A"]
     : [liga];
 
   const logoUrlMaps = await Promise.all(
@@ -165,19 +165,13 @@ async function dibujarFlyer(
     )
   );
   const logoUrlMap: Record<string, string> = Object.assign({}, ...logoUrlMaps);
-  const allKeys = Object.keys(logoUrlMap);
-  console.log("🗺️ logoUrlMap keys:", allKeys);
-  console.log("🔎 milan keys:", allKeys.filter(k => k.toLowerCase().includes("milan")));
-  console.log("🔎 santos keys:", allKeys.filter(k => k.toLowerCase().includes("santos")));
 
   // Luego cargamos cada imagen vía proxy (mismo origen → sin CORS)
   const equiposUnicos = [...new Set(partidos.flatMap(p => [p.equipoLocal, p.equipoVisita]))];
-  console.log("⚽ equipos en jornada:", equiposUnicos);
   const logoImgMap: Record<string, HTMLImageElement | null> = {};
   await Promise.all(
     equiposUnicos.map(async (equipo) => {
       const url = buscarLogo(logoUrlMap, equipo);
-      console.log(`🔍 ${equipo} → ${url ?? "NO ENCONTRADO"}`);
       if (!url) { logoImgMap[equipo] = null; return; }
       try {
         logoImgMap[equipo] = await cargarImagen(`/api/logo?url=${encodeURIComponent(url)}`);

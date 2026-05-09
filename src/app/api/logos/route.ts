@@ -7,6 +7,7 @@ const LIGA_ESPN: Record<string, string> = {
   "Champions League": "uefa.champions",
   "Premier League":   "eng.1",
   "La Liga":          "esp.1",
+  "Serie A":          "ita.1",
 };
 
 // Quita acentos y pasa a minúsculas para comparación flexible
@@ -42,12 +43,15 @@ const NOMBRE_MAP: Record<string, string> = {
   "Atlético de Madrid":          "Atlético Madrid",
   "Club Brugge KV":              "Club Brugge",
   "Sporting Clube de Portugal":  "Sporting CP",
-  // AC Milan / Inter
+  // Serie A
   "Milan":                       "AC Milan",
   "AC Milan":                    "AC Milan",
   "Internazionale":              "Inter",
   "Inter Milan":                 "Inter",
   "FC Internazionale Milano":    "Inter",
+  // Liga MX
+  "Santos":                      "Santos Laguna",
+  "Santos Laguna":               "Santos Laguna",
   // Premier
   "West Ham United":             "West Ham",
   "Brighton & Hove Albion":      "Brighton",
