@@ -38,17 +38,35 @@ async function dibujarFlyer(
   partidos: Partido[],
   jornadaNombre: string,
   liga: string,
-  refCode: string,
-  origen: string
+  _refCode: string,
+  _origen: string
 ) {
-  const W = 800;
-  const PAD = 64;          // padding horizontal generoso
-  const VPAD = 16;         // padding vertical entre secciones
-  const HEADER_H = 110;
-  const ROW_H = 50;        // filas más compactas
-  const FOOTER_H = 82;
-  const BRAND_H = 64;
-  const H = HEADER_H + VPAD + 30 + VPAD / 2 + partidos.length * ROW_H + VPAD + FOOTER_H + VPAD + BRAND_H + VPAD;
+  // ── Dimensiones 9:16 ─────────────────────────────────────────────────
+  const W = 810;
+  const H = Math.round(W * 16 / 9); // 1440
+  const PAD = 72;          // padding horizontal
+  const PAD_TOP = 72;      // padding superior
+  const PAD_BOT = 72;      // padding inferior
+
+  // Alturas fijas
+  const LOGO_H = 120;
+  const GAP_LOGO_TITLE = 18;
+  const TITLE_H = 38;      // jornadaNombre
+  const SUBTITLE_H = 28;   // liga
+  const GAP_TITLE_COLS = 36;
+  const COL_H = 34;
+  const GAP_COL_ROWS = 10;
+  const GAP_ROWS_FOOTER = 24;
+  const FOOTER_H = 110;
+
+  const fixedH =
+    PAD_TOP + LOGO_H + GAP_LOGO_TITLE +
+    TITLE_H + SUBTITLE_H + GAP_TITLE_COLS +
+    COL_H + GAP_COL_ROWS +
+    GAP_ROWS_FOOTER + FOOTER_H + PAD_BOT;
+
+  const n = Math.max(partidos.length, 1);
+  const ROW_H = Math.min(76, Math.max(52, Math.floor((H - fixedH) / n)));
 
   // HiDPI
   const scale = 2;
@@ -66,12 +84,10 @@ async function dibujarFlyer(
   try { bgImg = await cargarImagen("/flyer-bg.webp"); } catch { /* sin fondo */ }
   try { logoImg = await cargarImagen("/logo-tablitas.png"); } catch { /* sin logo */ }
 
-  // ── Fondo general ────────────────────────────────────────────────────
+  // ── Fondo ────────────────────────────────────────────────────────────
   if (bgImg) {
-    // Dibujar imagen de fondo cubriendo todo el canvas
     ctx.drawImage(bgImg, 0, 0, W, H);
-    // Overlay oscuro para legibilidad
-    ctx.fillStyle = "rgba(5, 15, 35, 0.72)";
+    ctx.fillStyle = "rgba(5, 15, 35, 0.75)";
     ctx.fillRect(0, 0, W, H);
   } else {
     const bg = ctx.createLinearGradient(0, 0, 0, H);
@@ -81,63 +97,58 @@ async function dibujarFlyer(
     ctx.fillRect(0, 0, W, H);
   }
 
-  // ── Header ───────────────────────────────────────────────────────────
-
-  // Logo
-  const logoH = 64;
-  const logoW = logoH;
+  // ── Logo centrado ────────────────────────────────────────────────────
+  let curY = PAD_TOP;
   if (logoImg) {
     const ratio = logoImg.width / logoImg.height;
-    const lW = Math.round(logoH * ratio);
-    ctx.drawImage(logoImg, PAD, (HEADER_H - logoH) / 2, lW, logoH);
-    // Título después del logo
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 26px Arial, sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText(jornadaNombre.toUpperCase(), PAD + lW + 14, HEADER_H / 2 - 4);
-    ctx.fillStyle = "#fcd34d";
-    ctx.font = "500 17px Arial, sans-serif";
-    ctx.fillText(liga + " · " + new Date().getFullYear(), PAD + lW + 14, HEADER_H / 2 + 20);
+    const lW = Math.round(LOGO_H * ratio);
+    ctx.drawImage(logoImg, (W - lW) / 2, curY, lW, LOGO_H);
   } else {
-    ctx.font = "bold 38px serif";
+    ctx.font = `bold ${LOGO_H * 0.8}px serif`;
     ctx.textAlign = "center";
-    ctx.fillText("⚽", PAD + 28, HEADER_H / 2 + 14);
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 26px Arial, sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText(jornadaNombre.toUpperCase(), PAD + 70, HEADER_H / 2 - 4);
-    ctx.fillStyle = "#fcd34d";
-    ctx.font = "500 17px Arial, sans-serif";
-    ctx.fillText(liga + " · " + new Date().getFullYear(), PAD + 70, HEADER_H / 2 + 20);
+    ctx.fillText("⚽", W / 2, curY + LOGO_H * 0.8);
   }
+  curY += LOGO_H + GAP_LOGO_TITLE;
+
+  // ── Título (jornada) ──────────────────────────────────────────────────
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 28px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(jornadaNombre.toUpperCase(), W / 2, curY + 26);
+  curY += TITLE_H;
+
+  // ── Subtítulo (liga · año) ────────────────────────────────────────────
+  ctx.fillStyle = "#fcd34d";
+  ctx.font = "500 18px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(`${liga} · ${new Date().getFullYear()}`, W / 2, curY + 20);
+  curY += SUBTITLE_H + GAP_TITLE_COLS;
 
   // ── Encabezado columnas ───────────────────────────────────────────────
-  const colY = HEADER_H + VPAD;
   ctx.fillStyle = "rgba(30,58,95,0.85)";
-  roundRect(ctx, PAD, colY, W - PAD * 2, 30, 8);
-
+  roundRect(ctx, PAD, curY, W - PAD * 2, COL_H, 8);
   ctx.fillStyle = "#93c5fd";
   ctx.font = "bold 11px Arial, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("L", PAD + 26, colY + 20);
-  ctx.fillText("LOCAL", W * 0.3, colY + 20);
-  ctx.fillText("E", W * 0.5, colY + 20);
-  ctx.fillText("VISITANTE", W * 0.7, colY + 20);
-  ctx.fillText("V", W - PAD - 26, colY + 20);
+  ctx.fillText("L", PAD + 26, curY + 22);
+  ctx.fillText("LOCAL", W * 0.32, curY + 22);
+  ctx.fillText("E", W * 0.5, curY + 22);
+  ctx.fillText("VISITANTE", W * 0.68, curY + 22);
+  ctx.fillText("V", W - PAD - 26, curY + 22);
+  curY += COL_H + GAP_COL_ROWS;
 
   // ── Filas de partidos ─────────────────────────────────────────────────
-  const rowsY = colY + 30 + VPAD / 2;
+  const btnW = 40, btnH = 30;
   partidos.forEach((p, i) => {
-    const y = rowsY + i * ROW_H;
+    const y = curY + i * ROW_H;
 
-    // Fondo glassmorphism alternado
     ctx.fillStyle = i % 2 === 0
       ? "rgba(255,255,255,0.08)"
       : "rgba(255,255,255,0.04)";
     roundRect(ctx, PAD, y + 2, W - PAD * 2, ROW_H - 4, 10);
 
-    const cy = y + ROW_H / 2 + 7;
-    const btnW = 36, btnH = 28;
+    const cy = y + ROW_H / 2 + 6;
 
     // Botón L
     ctx.fillStyle = "rgba(29,78,216,0.85)";
@@ -161,9 +172,9 @@ async function dibujarFlyer(
 
     // Equipo local
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 16px Arial, sans-serif";
+    ctx.font = "bold 15px Arial, sans-serif";
     ctx.textAlign = "right";
-    ctx.fillText(truncar(p.equipoLocal.toUpperCase(), 13), W * 0.44, cy);
+    ctx.fillText(truncar(p.equipoLocal.toUpperCase(), 14), W * 0.44, cy);
 
     // "vs"
     ctx.fillStyle = "rgba(156,163,175,0.8)";
@@ -173,50 +184,33 @@ async function dibujarFlyer(
 
     // Equipo visitante
     ctx.fillStyle = "#e5e7eb";
-    ctx.font = "bold 16px Arial, sans-serif";
+    ctx.font = "bold 15px Arial, sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(truncar(p.equipoVisita.toUpperCase(), 13), W * 0.56, cy);
+    ctx.fillText(truncar(p.equipoVisita.toUpperCase(), 14), W * 0.56, cy);
   });
 
-  // ── Footer precio / cierre ────────────────────────────────────────────
-  const footerY = rowsY + partidos.length * ROW_H + VPAD;
-  ctx.fillStyle = "rgba(6,78,59,0.88)";
-  roundRect(ctx, PAD, footerY, W - PAD * 2, FOOTER_H, 12);
+  curY += n * ROW_H + GAP_ROWS_FOOTER;
 
-  const footerMid = footerY + FOOTER_H / 2;
+  // ── Footer precio ─────────────────────────────────────────────────────
+  ctx.fillStyle = "rgba(6,78,59,0.90)";
+  roundRect(ctx, PAD, curY, W - PAD * 2, FOOTER_H, 14);
+
+  const fMid = curY + FOOTER_H / 2;
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 15px Arial, sans-serif";
+  ctx.font = "bold 16px Arial, sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("PRECIO:", PAD + 20, footerMid - 4);
+  ctx.fillText("PRECIO:", PAD + 24, fMid - 6);
   ctx.fillStyle = "#fbbf24";
-  ctx.font = "bold 30px Arial, sans-serif";
-  ctx.fillText(`$${PRECIO}`, PAD + 110, footerMid + 14);
+  ctx.font = "bold 36px Arial, sans-serif";
+  ctx.fillText(`$${PRECIO}`, PAD + 120, fMid + 16);
 
   ctx.fillStyle = "#6ee7b7";
-  ctx.font = "bold 13px Arial, sans-serif";
+  ctx.font = "bold 14px Arial, sans-serif";
   ctx.textAlign = "right";
-  ctx.fillText("¡GANA PREMIOS EN EFECTIVO!", W - PAD - 20, footerMid - 8);
+  ctx.fillText("¡GANA PREMIOS EN EFECTIVO!", W - PAD - 24, fMid - 10);
   ctx.fillStyle = "#d1fae5";
-  ctx.font = "12px Arial, sans-serif";
-  ctx.fillText("Regístra tu quiniela en línea 👇", W - PAD - 20, footerMid + 12);
-
-  // ── Branding / link ───────────────────────────────────────────────────
-  const brandY = footerY + FOOTER_H + VPAD;
-  ctx.fillStyle = "rgba(2,6,23,0.90)";
-  roundRect(ctx, PAD, brandY, W - PAD * 2, BRAND_H - 8, 12);
-
-  // CTA
-  ctx.fillStyle = "#fbbf24";
-  ctx.font = "bold 13px Arial, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("👇  REGÍSTRATE AQUÍ  👇", W / 2, brandY + 18);
-
-  // Link
-  const linkTexto = `${origen}/quiniela?ref=${refCode}`;
-  ctx.fillStyle = "#38bdf8";
-  ctx.font = "bold 16px Arial, monospace";
-  ctx.textAlign = "center";
-  ctx.fillText(linkTexto, W / 2, brandY + 40);
+  ctx.font = "13px Arial, sans-serif";
+  ctx.fillText("Regístra tu quiniela en línea", W - PAD - 24, fMid + 14);
 }
 
 // Helper: rect con bordes redondeados
