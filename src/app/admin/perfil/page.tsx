@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { FlyerJornada } from "@/components/FlyerJornada";
 
 type Usuario = {
@@ -274,19 +274,36 @@ function PerfilInner() {
       <div className="bg-brand text-white py-4 px-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
           <div>
-            <Link href={esAdminNav ? "/admin" : "/admin/tienda"} className="text-amber-400 text-sm">
-              ← {esAdminNav ? "Admin" : "Mi Panel"}
-            </Link>
+            {esAdminNav && (
+              <Link href="/admin" className="text-amber-400 text-sm">
+                ← Admin
+              </Link>
+            )}
+            {esTienda && !esAdminNav && (
+              <Link href="/admin/tienda" className="text-amber-400 text-sm">
+                ← Mi Panel
+              </Link>
+            )}
             <h1 className="text-xl font-bold mt-1">
               {esVendedor ? "Mi Dashboard" : mostrarTabs ? "Mi Panel" : TAB_TITULO[tab]}
             </h1>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo-tablitas.png"
-            alt="Tablitas"
-            style={{ height: "44px", objectFit: "contain", flexShrink: 0 }}
-          />
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-tablitas.png"
+              alt="Tablitas"
+              style={{ height: "44px", objectFit: "contain", flexShrink: 0 }}
+            />
+            {esVendedor && (
+              <button
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                Salir
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
