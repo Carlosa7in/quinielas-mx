@@ -19,6 +19,75 @@ type FlyerProps = {
 
 const PRECIO = 20;
 
+// ── Mapa de logos locales (/public/logos/) ───────────────────────────────
+// Agrega aquí cada equipo con su archivo PNG correspondiente.
+const LOGO_MAP: Record<string, string> = {
+  // Liga MX
+  "América":              "/logos/liga-mx/america.png",
+  "Guadalajara":          "/logos/liga-mx/guadalajara.png",
+  "Cruz Azul":            "/logos/liga-mx/cruz-azul.png",
+  "Pumas UNAM":           "/logos/liga-mx/pumas.png",
+  "Tigres UANL":          "/logos/liga-mx/tigres.png",
+  "Monterrey":            "/logos/liga-mx/monterrey.png",
+  "Atlas":                "/logos/liga-mx/atlas.png",
+  "León":                 "/logos/liga-mx/leon.png",
+  "Santos Laguna":        "/logos/liga-mx/santos.png",
+  "Toluca":               "/logos/liga-mx/toluca.png",
+  "Necaxa":               "/logos/liga-mx/necaxa.png",
+  "Mazatlán":             "/logos/liga-mx/mazatlan.png",
+  "FC Juárez":            "/logos/liga-mx/juarez.png",
+  "Querétaro":            "/logos/liga-mx/queretaro.png",
+  "Tijuana":              "/logos/liga-mx/tijuana.png",
+  "Pachuca":              "/logos/liga-mx/pachuca.png",
+  "Atlético San Luis":    "/logos/liga-mx/san-luis.png",
+  // Champions League
+  "Real Madrid":          "/logos/champions/real-madrid.png",
+  "Barcelona":            "/logos/champions/barcelona.png",
+  "Bayern Munich":        "/logos/champions/bayern.png",
+  "Manchester City":      "/logos/champions/man-city.png",
+  "PSG":                  "/logos/champions/psg.png",
+  "Borussia Dortmund":    "/logos/champions/dortmund.png",
+  "Arsenal":              "/logos/champions/arsenal.png",
+  "Liverpool":            "/logos/champions/liverpool.png",
+  "Chelsea":              "/logos/champions/chelsea.png",
+  "Atlético Madrid":      "/logos/champions/atletico.png",
+  "Inter Milan":          "/logos/champions/inter.png",
+  "AC Milan":             "/logos/champions/milan.png",
+  "Juventus":             "/logos/champions/juventus.png",
+  "Porto":                "/logos/champions/porto.png",
+  "Benfica":              "/logos/champions/benfica.png",
+  "Ajax":                 "/logos/champions/ajax.png",
+  "Sporting CP":          "/logos/champions/sporting.png",
+  "Club Brugge":          "/logos/champions/brugge.png",
+  "Bayer Leverkusen":     "/logos/champions/leverkusen.png",
+  "Aston Villa":          "/logos/champions/aston-villa.png",
+  // Premier League
+  "Tottenham":            "/logos/premier/tottenham.png",
+  "Manchester United":    "/logos/premier/man-united.png",
+  "Newcastle":            "/logos/premier/newcastle.png",
+  "West Ham":             "/logos/premier/west-ham.png",
+  "Brighton":             "/logos/premier/brighton.png",
+  "Wolverhampton":        "/logos/premier/wolves.png",
+  "Nottingham Forest":    "/logos/premier/nottingham.png",
+  "Leicester City":       "/logos/premier/leicester.png",
+  "Bournemouth":          "/logos/premier/bournemouth.png",
+  "Everton":              "/logos/premier/everton.png",
+  "Fulham":               "/logos/premier/fulham.png",
+  "Crystal Palace":       "/logos/premier/crystal-palace.png",
+  "Brentford":            "/logos/premier/brentford.png",
+  // La Liga
+  "Real Sociedad":        "/logos/la-liga/real-sociedad.png",
+  "Sevilla":              "/logos/la-liga/sevilla.png",
+  "Villarreal":           "/logos/la-liga/villarreal.png",
+  "Valencia":             "/logos/la-liga/valencia.png",
+  "Athletic Club":        "/logos/la-liga/athletic.png",
+  "Real Betis":           "/logos/la-liga/betis.png",
+  "Celta Vigo":           "/logos/la-liga/celta.png",
+  "Getafe":               "/logos/la-liga/getafe.png",
+  "Osasuna":              "/logos/la-liga/osasuna.png",
+  "Rayo Vallecano":       "/logos/la-liga/rayo.png",
+};
+
 function truncar(texto: string, max: number) {
   return texto.length > max ? texto.slice(0, max - 1) + "…" : texto;
 }
@@ -33,22 +102,6 @@ function cargarImagen(src: string): Promise<HTMLImageElement> {
   });
 }
 
-// Carga logos de todos los equipos de una (o varias) ligas
-async function cargarLogos(liga: string): Promise<Record<string, string>> {
-  const ligas = liga === "Mixta"
-    ? ["Liga MX", "Champions League", "Premier League", "La Liga"]
-    : [liga];
-
-  const results = await Promise.all(
-    ligas.map(l =>
-      fetch(`/api/logos?liga=${encodeURIComponent(l)}`)
-        .then(r => r.json() as Promise<Record<string, string>>)
-        .catch(() => ({} as Record<string, string>))
-    )
-  );
-  return Object.assign({}, ...results);
-}
-
 // Dibuja logo real (recortado en círculo) o iniciales como fallback
 function dibujarLogoCirculo(
   ctx: CanvasRenderingContext2D,
@@ -59,13 +112,11 @@ function dibujarLogoCirculo(
   r: number
 ) {
   if (img) {
-    // Fondo blanco semitransparente
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255,255,255,0.12)";
+    ctx.fillStyle = "rgba(255,255,255,0.10)";
     ctx.fill();
 
-    // Imagen recortada en círculo
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
@@ -73,14 +124,13 @@ function dibujarLogoCirculo(
     ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2);
     ctx.restore();
 
-    // Borde
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.strokeStyle = "rgba(255,255,255,0.20)";
     ctx.lineWidth = 1.5;
     ctx.stroke();
   } else {
-    // Fallback: círculo de color con iniciales
+    // Fallback: círculo con iniciales
     let hash = 0;
     for (let i = 0; i < nombre.length; i++) hash = (hash * 31 + nombre.charCodeAt(i)) | 0;
     const hue = Math.abs(hash) % 360;
@@ -124,7 +174,6 @@ async function dibujarFlyer(
   const PAD_TOP = 72;
   const PAD_BOT = 72;
 
-  // Alturas fijas
   const LOGO_H = 120;
   const GAP_LOGO_TITLE = 20;
   const TITLE_H = 46;
@@ -154,25 +203,21 @@ async function dibujarFlyer(
   const ctx = canvas.getContext("2d")!;
   ctx.scale(scale, scale);
 
-  // ── Cargar imágenes ──────────────────────────────────────────────────
+  // ── Cargar imágenes de fondo y logo ──────────────────────────────────
   let bgImg: HTMLImageElement | null = null;
   let logoImg: HTMLImageElement | null = null;
   try { bgImg = await cargarImagen("/flyer-bg.webp"); } catch { /* sin fondo */ }
   try { logoImg = await cargarImagen("/logo-tablitas.png"); } catch { /* sin logo */ }
 
-  // ── Logos de equipos desde ESPN ──────────────────────────────────────
-  const logoUrlMap = await cargarLogos(liga);
+  // ── Cargar logos de equipos en paralelo ──────────────────────────────
   const equiposUnicos = [...new Set(partidos.flatMap(p => [p.equipoLocal, p.equipoVisita]))];
   const logoImgMap: Record<string, HTMLImageElement | null> = {};
   await Promise.all(
     equiposUnicos.map(async (equipo) => {
-      const url = logoUrlMap[equipo];
-      if (!url) { logoImgMap[equipo] = null; return; }
-      try {
-        logoImgMap[equipo] = await cargarImagen(`/api/logo?url=${encodeURIComponent(url)}`);
-      } catch {
-        logoImgMap[equipo] = null;
-      }
+      const path = LOGO_MAP[equipo];
+      if (!path) { logoImgMap[equipo] = null; return; }
+      try { logoImgMap[equipo] = await cargarImagen(path); }
+      catch { logoImgMap[equipo] = null; }
     })
   );
 
@@ -189,7 +234,7 @@ async function dibujarFlyer(
     ctx.fillRect(0, 0, W, H);
   }
 
-  // ── Logo centrado ────────────────────────────────────────────────────
+  // ── Logo de la app centrado ───────────────────────────────────────────
   let curY = PAD_TOP;
   if (logoImg) {
     const ratio = logoImg.width / logoImg.height;
@@ -203,14 +248,14 @@ async function dibujarFlyer(
   }
   curY += LOGO_H + GAP_LOGO_TITLE;
 
-  // ── Título (jornada) ──────────────────────────────────────────────────
+  // ── Título ────────────────────────────────────────────────────────────
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 34px Arial, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(jornadaNombre.toUpperCase(), W / 2, curY + 32);
   curY += TITLE_H;
 
-  // ── Subtítulo (liga · año) ────────────────────────────────────────────
+  // ── Subtítulo ─────────────────────────────────────────────────────────
   ctx.fillStyle = "#fcd34d";
   ctx.font = "600 21px Arial, sans-serif";
   ctx.textAlign = "center";
@@ -218,26 +263,35 @@ async function dibujarFlyer(
   curY += SUBTITLE_H + GAP_TITLE_COLS;
 
   // ── Encabezado columnas ───────────────────────────────────────────────
+  // Layout: [L] [LOCAL →] [logo|E btn|logo] [← VISITANTE] [V]
+  const btnW = 40, btnH = 30;
+  const LOGO_R = 20;
+  // Logo local centro: justo a la izquierda del botón E
+  const localLogoCX = W / 2 - btnW / 2 - 10 - LOGO_R;  // 385 - 10 - 20 = 355
+  // Logo visitante centro: justo a la derecha del botón E
+  const awayLogoCX  = W / 2 + btnW / 2 + 10 + LOGO_R;  // 425 + 10 + 20 = 455
+  // Nombre local: right-aligned hasta el borde izq del logo local
+  const localNameX  = localLogoCX - LOGO_R - 8;          // 355 - 20 - 8 = 327
+  // Nombre visitante: left-aligned desde el borde der del logo visitante
+  const awayNameX   = awayLogoCX  + LOGO_R + 8;          // 455 + 20 + 8 = 483
+
   ctx.fillStyle = "rgba(30,58,95,0.85)";
   roundRect(ctx, PAD, curY, W - PAD * 2, COL_H, 8);
   ctx.fillStyle = "#93c5fd";
   ctx.font = "bold 12px Arial, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("L", PAD + 26, curY + 24);
-  ctx.fillText("LOCAL", W * 0.32, curY + 24);
-  ctx.fillText("E", W * 0.5, curY + 24);
-  ctx.fillText("VISITANTE", W * 0.68, curY + 24);
-  ctx.fillText("V", W - PAD - 26, curY + 24);
+  ctx.fillText("L",          PAD + 26,          curY + 24);
+  ctx.fillText("LOCAL",      (PAD + localNameX) / 2 + PAD / 2, curY + 24);
+  ctx.fillText("E",          W / 2,             curY + 24);
+  ctx.fillText("VISITANTE",  (awayNameX + W - PAD) / 2, curY + 24);
+  ctx.fillText("V",          W - PAD - 26,      curY + 24);
   curY += COL_H + GAP_COL_ROWS;
 
   // ── Filas de partidos ─────────────────────────────────────────────────
-  const btnW = 40, btnH = 30;
-  const LOGO_R = 19; // radio del círculo de iniciales
-
   partidos.forEach((p, i) => {
-    const y = curY + i * ROW_H;
+    const y   = curY + i * ROW_H;
     const midY = y + ROW_H / 2;
-    const cy = midY + 6; // baseline del texto
+    const cy  = midY + 6; // baseline texto
 
     // Fondo alternado
     ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)";
@@ -251,7 +305,7 @@ async function dibujarFlyer(
     ctx.textAlign = "center";
     ctx.fillText("L", PAD + 6 + btnW / 2, cy);
 
-    // Botón E (centro)
+    // Botón E
     ctx.fillStyle = "rgba(55,65,81,0.85)";
     roundRect(ctx, W / 2 - btnW / 2, midY - btnH / 2, btnW, btnH, 7);
     ctx.fillStyle = "#d1d5db";
@@ -263,31 +317,23 @@ async function dibujarFlyer(
     ctx.fillStyle = "#fff";
     ctx.fillText("V", W - PAD - 6 - btnW / 2, cy);
 
-    // Logo equipo local
-    const localLogoX = PAD + 6 + btnW + 10 + LOGO_R;
-    dibujarLogoCirculo(ctx, logoImgMap[p.equipoLocal] ?? null, p.equipoLocal, localLogoX, midY, LOGO_R);
-
-    // Nombre equipo local (right-aligned)
+    // Nombre local  (right-aligned → logo local → E btn)
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 17px Arial, sans-serif";
     ctx.textAlign = "right";
-    ctx.fillText(truncar(p.equipoLocal.toUpperCase(), 12), W * 0.43, cy);
+    ctx.fillText(truncar(p.equipoLocal.toUpperCase(), 12), localNameX, cy);
 
-    // "vs" sobre el botón E
-    ctx.fillStyle = "rgba(156,163,175,0.85)";
-    ctx.font = "bold 11px Arial, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("vs", W * 0.5, cy);
+    // Logo local (derecha del nombre, pegado al E btn)
+    dibujarLogoCirculo(ctx, logoImgMap[p.equipoLocal] ?? null, p.equipoLocal, localLogoCX, midY, LOGO_R);
 
-    // Nombre equipo visitante (left-aligned)
+    // Logo visitante (izquierda del nombre, pegado al E btn)
+    dibujarLogoCirculo(ctx, logoImgMap[p.equipoVisita] ?? null, p.equipoVisita, awayLogoCX, midY, LOGO_R);
+
+    // Nombre visitante (left-aligned ← logo visitante ← E btn)
     ctx.fillStyle = "#e5e7eb";
     ctx.font = "bold 17px Arial, sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(truncar(p.equipoVisita.toUpperCase(), 12), W * 0.57, cy);
-
-    // Logo equipo visitante
-    const awayLogoX = W - PAD - 6 - btnW - 10 - LOGO_R;
-    dibujarLogoCirculo(ctx, logoImgMap[p.equipoVisita] ?? null, p.equipoVisita, awayLogoX, midY, LOGO_R);
+    ctx.fillText(truncar(p.equipoVisita.toUpperCase(), 12), awayNameX, cy);
   });
 
   curY += n * ROW_H + GAP_ROWS_FOOTER;
@@ -296,11 +342,9 @@ async function dibujarFlyer(
   ctx.fillStyle = "rgba(6,78,59,0.90)";
   roundRect(ctx, PAD, curY, W - PAD * 2, FOOTER_H, 14);
 
-  // Dos líneas alineadas en ambos lados
   const LINE1 = curY + FOOTER_H * 0.34;
   const LINE2 = curY + FOOTER_H * 0.76;
 
-  // Izquierda
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 16px Arial, sans-serif";
   ctx.textAlign = "left";
@@ -310,7 +354,6 @@ async function dibujarFlyer(
   ctx.font = "bold 34px Arial, sans-serif";
   ctx.fillText(`$${PRECIO}`, PAD + 26, LINE2);
 
-  // Derecha
   ctx.fillStyle = "#6ee7b7";
   ctx.font = "bold 15px Arial, sans-serif";
   ctx.textAlign = "right";
@@ -390,7 +433,6 @@ export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCod
 
   return (
     <div className="space-y-2">
-      {/* Canvas oculto para dibujar */}
       <canvas ref={canvasRef} className="hidden" />
 
       {estado === "idle" && (
@@ -410,15 +452,9 @@ export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCod
 
       {estado === "listo" && blob && (
         <div className="space-y-2">
-          {/* Preview */}
           <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-            <img
-              src={URL.createObjectURL(blob)}
-              alt="Flyer"
-              className="w-full"
-            />
+            <img src={URL.createObjectURL(blob)} alt="Flyer" className="w-full" />
           </div>
-          {/* Acciones */}
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={compartir}
