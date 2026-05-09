@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Proxy para imágenes de ESPN CDN — necesario porque canvas bloquea
-// imágenes cross-origin sin CORS headers, y ESPN no los incluye.
-// IMPORTANTE: NO usar `next: { revalidate }` aquí — causa que Next.js
-// devuelva la misma respuesta cacheada para URLs distintas.
+export const dynamic = "force-dynamic";
+
+// Proxy para logos de ESPN.
+// Cache-Control: private → el NAVEGADOR cachea, pero Netlify CDN NO.
+// Esto evita que el CDN sirva el mismo logo para todos los equipos.
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url");
   if (!url) return new NextResponse("Missing url", { status: 400 });
@@ -20,12 +21,12 @@ export async function GET(req: NextRequest) {
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": res.headers.get("Content-Type") ?? "image/png",
-        // El navegador cachea por URL — no necesitamos Next.js cache
-        "Cache-Control": "public, max-age=86400",
+        // private = navegador cachea, CDN no
+        "Cache-Control": "private, max-age=86400",
         "Access-Control-Allow-Origin": "*",
       },
     });
   } catch {
-    return new NextResponse("Error fetching logo", { status: 500 });
+    return new NextResponse("Error", { status: 500 });
   }
 }

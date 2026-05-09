@@ -24,6 +24,15 @@ function truncar(texto: string, max: number) {
   return texto.length > max ? texto.slice(0, max - 1) + "…" : texto;
 }
 
+// Misma función que en /api/logos — busca por nombre exacto y sin acentos
+function slugify(str: string): string {
+  return str.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
+
+function buscarLogo(logoUrlMap: Record<string, string>, equipo: string): string | null {
+  return logoUrlMap[equipo] ?? logoUrlMap[slugify(equipo)] ?? null;
+}
+
 function cargarImagen(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -162,7 +171,7 @@ async function dibujarFlyer(
   const logoImgMap: Record<string, HTMLImageElement | null> = {};
   await Promise.all(
     equiposUnicos.map(async (equipo) => {
-      const url = logoUrlMap[equipo];
+      const url = buscarLogo(logoUrlMap, equipo);
       if (!url) { logoImgMap[equipo] = null; return; }
       try {
         logoImgMap[equipo] = await cargarImagen(`/api/logo?url=${encodeURIComponent(url)}`);
