@@ -165,13 +165,16 @@ async function dibujarFlyer(
     )
   );
   const logoUrlMap: Record<string, string> = Object.assign({}, ...logoUrlMaps);
+  console.log("🗺️ logoUrlMap keys:", Object.keys(logoUrlMap));
 
   // Luego cargamos cada imagen vía proxy (mismo origen → sin CORS)
   const equiposUnicos = [...new Set(partidos.flatMap(p => [p.equipoLocal, p.equipoVisita]))];
+  console.log("⚽ equipos en jornada:", equiposUnicos);
   const logoImgMap: Record<string, HTMLImageElement | null> = {};
   await Promise.all(
     equiposUnicos.map(async (equipo) => {
       const url = buscarLogo(logoUrlMap, equipo);
+      console.log(`🔍 ${equipo} → ${url ?? "NO ENCONTRADO"}`);
       if (!url) { logoImgMap[equipo] = null; return; }
       try {
         logoImgMap[equipo] = await cargarImagen(`/api/logo?url=${encodeURIComponent(url)}`);
