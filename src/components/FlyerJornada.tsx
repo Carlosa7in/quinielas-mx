@@ -302,8 +302,9 @@ async function dibujarFlyer(
   ctx.fillStyle = "rgba(6,78,59,0.90)";
   roundRect(ctx, PAD, curY, W - PAD * 2, FOOTER_H, 14);
 
-  // Izquierda: "PRECIO:" + "$20" en una sola línea centrada verticalmente
-  const priceY = curY + FOOTER_H * 0.60;
+  // Izquierda: "PRECIO:" + "$20" alineados por el centro vertical
+  const priceY = curY + FOOTER_H / 2;
+  ctx.textBaseline = "middle";
   ctx.textAlign = "left";
   ctx.font = "bold 20px Arial, sans-serif";
   ctx.fillStyle = "#ffffff";
@@ -312,17 +313,21 @@ async function dibujarFlyer(
   ctx.font = "bold 38px Arial, sans-serif";
   ctx.fillStyle = "#fbbf24";
   ctx.fillText(`$${PRECIO}`, PAD + 26 + labelW, priceY);
+  ctx.textBaseline = "alphabetic";
 
   // Derecha: dos líneas juntas, centradas verticalmente como grupo
-  const RR1 = curY + FOOTER_H * 0.38;
-  const RR2 = curY + FOOTER_H * 0.70;
+  const lineGap = 24;
+  const RR1 = curY + FOOTER_H / 2 - lineGap / 2;
+  const RR2 = curY + FOOTER_H / 2 + lineGap / 2 + 14;
   ctx.fillStyle = "#6ee7b7";
   ctx.font = "bold 19px Arial, sans-serif";
+  ctx.textBaseline = "middle";
   ctx.textAlign = "right";
   ctx.fillText("¡GANA PREMIOS EN EFECTIVO!", W - PAD - 26, RR1);
   ctx.fillStyle = "#d1fae5";
   ctx.font = "17px Arial, sans-serif";
   ctx.fillText("Regístra tu quiniela en línea", W - PAD - 26, RR2);
+  ctx.textBaseline = "alphabetic";
 }
 
 // Helper: rect con bordes redondeados
