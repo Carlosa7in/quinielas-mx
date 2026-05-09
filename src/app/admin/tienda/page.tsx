@@ -51,11 +51,17 @@ function formaCompleta(partidos: Partido[], picks: FormaPicks): boolean {
 }
 
 export default function TiendaPage() {
-  const [modo, setModo] = useState<"home" | "selector" | "seleccion" | "manual">("home");
   const router = useRouter();
   const { data: session } = useSession();
   const usuarioId = (session?.user as { id?: string })?.id ?? null;
   const nombreUsuario = session?.user?.name ?? "";
+  const rol = (session?.user as { role?: string })?.role ?? "";
+  const esAdmin = ["admin", "superadmin"].includes(rol);
+
+  // Admins entran directo al selector — su home es /admin con toda la navegación
+  const [modo, setModo] = useState<"home" | "selector" | "seleccion" | "manual">(
+    esAdmin ? "selector" : "home"
+  );
 
   const [jornada, setJornada] = useState<Jornada | null>(null);
 
@@ -70,7 +76,6 @@ export default function TiendaPage() {
 
   /* ── Pantalla de inicio ──────────────────────────────────────── */
   if (modo === "home") {
-    const rol = (session?.user as { role?: string })?.role ?? "";
     const rolLabel: Record<string, string> = { tienda: "Tienda", vendedor: "Vendedor", admin: "Admin", superadmin: "Superadmin" };
     return (
       <div className="min-h-screen bg-gray-50">
@@ -186,10 +191,11 @@ export default function TiendaPage() {
       <JornadaSelector
         onSelect={seleccionarJornada}
         titulo="Registrar Quiniela"
-        backLabel="Inicio"
-        onBack={() => setModo("home")}
+        backLabel={esAdmin ? "Admin" : "Inicio"}
+        backHref={esAdmin ? "/admin" : undefined}
+        onBack={esAdmin ? undefined : () => setModo("home")}
         soloActivas
-        onSignOut={() => signOut({ callbackUrl: "/login" })}
+        onSignOut={() => signOut({ callbackUrl: esAdmin ? "/login" : "/" })}
       />
     );
   }
