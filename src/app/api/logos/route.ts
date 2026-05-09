@@ -42,6 +42,12 @@ const NOMBRE_MAP: Record<string, string> = {
   "Atlético de Madrid":          "Atlético Madrid",
   "Club Brugge KV":              "Club Brugge",
   "Sporting Clube de Portugal":  "Sporting CP",
+  // AC Milan / Inter
+  "Milan":                       "AC Milan",
+  "AC Milan":                    "AC Milan",
+  "Internazionale":              "Inter",
+  "Inter Milan":                 "Inter",
+  "FC Internazionale Milano":    "Inter",
   // Premier
   "West Ham United":             "West Ham",
   "Brighton & Hove Albion":      "Brighton",
