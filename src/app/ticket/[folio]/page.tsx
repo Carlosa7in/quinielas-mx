@@ -79,6 +79,7 @@ export default function TicketPage() {
   const esRegistro   = searchParams.get("total") !== null;
   const [quiniela, setQuiniela] = useState<Quiniela | null>(null);
   const [otrasQuinielas, setOtrasQuinielas] = useState<Quiniela[]>([]);
+  const [cargandoOtras, setCargandoOtras] = useState(false);
   const [error, setError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [cargandoPNG, setCargandoPNG] = useState(false);
@@ -134,11 +135,12 @@ export default function TicketPage() {
     const { folios: allFolios = [], formas: nFormas = 1 } = JSON.parse(stored) as { folios: string[]; formas: number };
     if (nFormas <= 1 || allFolios.length !== nFormas) return;
     const otrosFolios = allFolios.filter((f) => f !== folio);
+    setCargandoOtras(true);
     Promise.all(
       otrosFolios.map((f) => fetch(`/api/quinielas?folio=${f}`).then((r) => r.json()))
     ).then((results) => {
       setOtrasQuinielas(results.filter((d) => !d.error));
-    });
+    }).finally(() => setCargandoOtras(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [folio, esRegistro]);
 
@@ -1142,9 +1144,14 @@ export default function TicketPage() {
           {esRegistro && (
             <button
               onClick={() => window.print()}
-              className="w-full bg-brand hover:bg-amber-900 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+              disabled={cargandoOtras}
+              className="w-full bg-brand hover:bg-amber-900 disabled:bg-gray-300 disabled:cursor-wait text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
             >
-              <span>🧾</span> Imprimir en Térmica
+              {cargandoOtras ? (
+                <><span className="animate-spin inline-block">⟳</span> Preparando {totalFormas} tickets...</>
+              ) : (
+                <><span>🧾</span> Imprimir {totalFormas > 1 ? `${totalFormas} tickets` : "en Térmica"}</>
+              )}
             </button>
           )}
 
