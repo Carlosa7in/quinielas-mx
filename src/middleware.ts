@@ -23,14 +23,16 @@ export async function middleware(req: NextRequest) {
       rol === "tienda" &&
       !pathname.startsWith("/admin/tienda") &&
       !pathname.startsWith("/admin/perfil") &&
-      !pathname.startsWith("/admin/forma")
+      !pathname.startsWith("/admin/forma") &&
+      !pathname.startsWith("/admin/apostadores")
     ) {
       return NextResponse.redirect(new URL("/admin/tienda", req.url));
     }
     // Rol vendedor (solo referidos): acceso únicamente a su dashboard
     if (
       rol === "vendedor" &&
-      !pathname.startsWith("/admin/perfil")
+      !pathname.startsWith("/admin/perfil") &&
+      !pathname.startsWith("/admin/apostadores")
     ) {
       return NextResponse.redirect(new URL("/admin/perfil", req.url));
     }
