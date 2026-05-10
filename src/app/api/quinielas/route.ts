@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma, sql } from "@/lib/prisma";
 import { generarFolio } from "@/lib/folio";
@@ -10,8 +10,8 @@ function numeroCombinaciones(picks: { predicciones: string[] }[]): number {
 }
 
 // POST /api/quinielas - registrar quiniela (sencilla, reventado o múltiples boletos)
-export async function POST(req: Request) {
-  const token = await getToken({ req: req as Parameters<typeof getToken>[0]["req"], secret: process.env.NEXTAUTH_SECRET });
+export async function POST(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const rolSesion = (token?.role as string) ?? "";
   const esAdminSesion = ["admin", "superadmin"].includes(rolSesion);
 
