@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
@@ -73,6 +73,30 @@ export default function TiendaPage() {
   const [telefono, setTelefono] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
+  const [clienteEncontrado, setClienteEncontrado] = useState<{ nombre: string } | null>(null);
+  const [buscandoCliente, setBuscandoCliente] = useState(false);
+
+  /* ── Búsqueda de cliente por teléfono (debounced 500ms) ─────── */
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const tel = telefono.replace(/\D/g, "");
+    if (tel.length < 10) { setClienteEncontrado(null); return; }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setBuscandoCliente(true);
+    debounceRef.current = setTimeout(() => {
+      fetch(`/api/admin/cliente?telefono=${tel}`)
+        .then((r) => r.json())
+        .then((data) => {
+          setClienteEncontrado(data.cliente ?? null);
+          // Auto-rellenar nombre si el campo está vacío
+          if (data.cliente && !nombre.trim()) setNombre(data.cliente.nombre);
+        })
+        .catch(() => setClienteEncontrado(null))
+        .finally(() => setBuscandoCliente(false));
+    }, 500);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [telefono]);
 
   /* ── Header compartido home/vender ──────────────────────────── */
   const headerPanel = (onBack?: () => void) => {
@@ -643,13 +667,44 @@ export default function TiendaPage() {
             required
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
-          <input
-            type="tel"
-            placeholder="Teléfono (opcional)"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-          />
+          <div>
+            <input
+              type="tel"
+              placeholder="Teléfono (opcional)"
+              value={telefono}
+              onChange={(e) => { setTelefono(e.target.value); setClienteEncontrado(null); }}
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                clienteEncontrado && clienteEncontrado.nombre.toLowerCase() !== nombre.trim().toLowerCase()
+                  ? "border-yellow-400"
+                  : clienteEncontrado
+                  ? "border-green-400"
+                  : "border-gray-200"
+              }`}
+            />
+            {buscandoCliente && (
+              <p className="text-xs text-gray-400 mt-1.5 px-1">Buscando...</p>
+            )}
+            {!buscandoCliente && clienteEncontrado && (
+              clienteEncontrado.nombre.toLowerCase() === nombre.trim().toLowerCase() ? (
+                <p className="text-xs text-green-600 mt-1.5 px-1 font-medium">
+                  ✓ Cliente reconocido: <span className="font-bold">{clienteEncontrado.nombre}</span>
+                </p>
+              ) : (
+                <div className="mt-1.5 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+                  <p className="text-xs text-yellow-800 font-medium">
+                    📱 Este número ya está registrado como <span className="font-bold">{clienteEncontrado.nombre}</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setNombre(clienteEncontrado.nombre)}
+                    className="text-xs text-yellow-700 underline mt-0.5"
+                  >
+                    Usar ese nombre
+                  </button>
+                </div>
+              )
+            )}
+          </div>
         </div>
 
         {error && (
