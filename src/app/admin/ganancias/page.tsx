@@ -36,7 +36,6 @@ export default function GananciasPage() {
   const [porJornada, setPorJornada] = useState<JornadaRow[]>([]);
   const [comisionesAdmin, setComisionesAdmin] = useState<AdminRow[]>([]);
   const [totales, setTotales] = useState<Totales | null>(null);
-  const [esVendedor, setEsVendedor] = useState(false);
   const [esAdmin, setEsAdmin] = useState(false);
   const [cargando, setCargando] = useState(true);
 
@@ -47,19 +46,19 @@ export default function GananciasPage() {
         setPorJornada(data.porJornada ?? []);
         setComisionesAdmin(data.comisionesAdmin ?? []);
         setTotales(data.totales ?? null);
-        setEsVendedor(data.esVendedor ?? false);
         setEsAdmin(data.esAdmin ?? false);
       })
       .catch(() => {})
       .finally(() => setCargando(false));
   }, []);
 
-  const backHref = esAdminNav ? "/admin" : "/admin/tienda";
+  const backHref  = esAdminNav ? "/admin" : "/admin/tienda";
   const backLabel = esAdminNav ? "Admin" : "Mi Panel";
 
-  const totalQuinielas = porJornada.reduce((s, j) => s + j.tienda + j.online, 0);
-  const totalComision = totales ? totales.comisionTienda + totales.comisionAdmin : 0;
-  const totalPendiente = totales ? totales.pendienteTienda + totales.pendienteAdmin : 0;
+  const totalQuinielas  = porJornada.reduce((s, j) => s + j.tienda + j.online, 0);
+  const totalComision   = totales ? totales.comisionTienda + totales.comisionAdmin : 0;
+  const totalPagado     = totales ? totales.pagadoTienda + (totales.comisionAdmin - totales.pendienteAdmin) : 0;
+  const totalPendiente  = totales ? totales.pendienteTienda + totales.pendienteAdmin : 0;
 
   const sinDatos = porJornada.length === 0 && comisionesAdmin.length === 0;
 
@@ -88,66 +87,92 @@ export default function GananciasPage() {
           </div>
         ) : (
           <>
-            {/* ── Cards de resumen ── */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                <p className="text-2xl font-bold text-green-700">{totalQuinielas}</p>
-                <p className="text-xs text-gray-500">Quinielas vendidas</p>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                <p className="text-2xl font-bold text-amber-600">${fmt(totalComision)}</p>
-                <p className="text-xs text-gray-500">Comisión total</p>
-              </div>
-              {totalPendiente > 0 && (
-                <div className="bg-orange-50 rounded-xl shadow-sm p-4 text-center col-span-2">
-                  <p className="text-xl font-bold text-orange-500">${fmt(totalPendiente)}</p>
-                  <p className="text-xs text-gray-500">Pendiente de cobrar</p>
+            {/* ── Resumen global ── */}
+            <div className="bg-amber-900 text-white rounded-2xl p-5 space-y-4">
+              <p className="text-xs font-bold tracking-widest text-amber-400 uppercase">Resumen</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white/10 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-white">{totalQuinielas}</p>
+                  <p className="text-xs text-amber-300 mt-0.5">Quinielas</p>
                 </div>
-              )}
-              {totalPendiente === 0 && totalComision > 0 && (
-                <div className="bg-green-50 rounded-xl shadow-sm p-4 text-center col-span-2">
-                  <p className="text-sm font-bold text-green-700">✓ Todo pagado</p>
-                  <p className="text-xs text-gray-500 mt-0.5">${fmt(totalComision)} cobrado</p>
+                <div className="bg-white/10 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-amber-300">${fmt(totalComision)}</p>
+                  <p className="text-xs text-amber-300 mt-0.5">Ganado</p>
                 </div>
+                <div className="bg-white/10 rounded-xl p-3 text-center">
+                  <p className={`text-2xl font-bold ${totalPendiente > 0 ? "text-orange-300" : "text-green-300"}`}>
+                    ${fmt(totalPendiente)}
+                  </p>
+                  <p className="text-xs text-amber-300 mt-0.5">
+                    {totalPendiente > 0 ? "Pendiente" : "Al corriente"}
+                  </p>
+                </div>
+              </div>
+              {totalPagado > 0 && (
+                <p className="text-xs text-amber-400 text-center">
+                  ${fmt(totalPagado)} ya cobrado · ${fmt(totalPendiente)} por cobrar
+                </p>
               )}
             </div>
 
-            {/* ── Desglose por jornada — ventas personales ── */}
+            {/* ── Ventas en tienda por jornada ── */}
             {porJornada.length > 0 && (
               <div>
                 <p className="text-xs text-gray-400 font-medium px-1 uppercase tracking-wider mb-3">
-                  {porJornada.some((j) => j.tienda > 0)
-                    ? "Comisión por ventas en tienda ($2 por quiniela)"
-                    : "Ventas por jornada"}
+                  Comisión por jornada
                 </p>
                 <div className="space-y-3">
                   {porJornada.map((j) => (
-                    <div key={j.jornadaId} className="bg-white rounded-xl shadow-sm p-4">
-                      <div className="flex items-start justify-between gap-2 mb-3">
+                    <div key={j.jornadaId} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                      {/* Cabecera jornada */}
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
                         <div>
                           <p className="font-semibold text-gray-800">{j.jornadaNombre}</p>
                           <p className="text-xs text-gray-400">{j.liga}</p>
                         </div>
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 ${j.pagado ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
-                          {j.pagado ? "Pagado" : "Pendiente"}
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                          j.pagado ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                        }`}>
+                          {j.pagado ? "✓ Pagado" : "Pendiente"}
                         </span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-gray-50 rounded-lg p-2 text-center">
-                          <p className="font-bold text-gray-700">{j.tienda + j.online}</p>
-                          <p className="text-[10px] text-gray-500">Quinielas</p>
-                        </div>
-                        <div className="bg-yellow-50 rounded-lg p-2 text-center">
-                          <p className="font-bold text-yellow-600">${fmt(j.recaudado)}</p>
-                          <p className="text-[10px] text-gray-500">Recaudado</p>
-                        </div>
-                        <div className="bg-amber-50 rounded-lg p-2 text-center">
-                          <p className="font-bold text-amber-600">${fmt(j.comision)}</p>
-                          <p className="text-[10px] text-gray-500">Comisión</p>
+
+                      {/* Desglose */}
+                      <div className="px-4 py-3 space-y-2">
+                        {/* Ventas en tienda */}
+                        {j.tienda > 0 && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-500">
+                              🏪 {j.tienda} quiniela{j.tienda !== 1 ? "s" : ""} en tienda × $2
+                            </span>
+                            <span className="font-bold text-amber-700">${fmt(j.tienda * 2)}</span>
+                          </div>
+                        )}
+                        {/* Ventas online (referidos) */}
+                        {j.online > 0 && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-500">
+                              🔗 {j.online} quiniela{j.online !== 1 ? "s" : ""} online × $2
+                            </span>
+                            <span className="font-bold text-cyan-700">${fmt(j.online * 2)}</span>
+                          </div>
+                        )}
+                        {/* Divisor */}
+                        <div className="border-t border-gray-100 pt-2 flex items-center justify-between">
+                          <div className="text-xs text-gray-400">
+                            Total recaudado: <span className="font-medium text-gray-600">${fmt(j.recaudado)}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs text-gray-400">Tu comisión</span>
+                            <p className="text-lg font-bold text-amber-600">${fmt(j.comision)}</p>
+                          </div>
                         </div>
                       </div>
+
                       {j.pagado && j.pagadoEn && (
-                        <p className="text-xs text-green-600 mt-2">Pagado el {fmtFecha(j.pagadoEn)}</p>
+                        <div className="px-4 py-2 bg-green-50 border-t border-green-100">
+                          <p className="text-xs text-green-600">Cobrado el {fmtFecha(j.pagadoEn)}</p>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -159,36 +184,40 @@ export default function GananciasPage() {
             {esAdmin && comisionesAdmin.length > 0 && (
               <div>
                 <p className="text-xs text-gray-400 font-medium px-1 uppercase tracking-wider mb-3">
-                  Fondo de administración · 15% repartido entre {comisionesAdmin[0]?.numAdmins ?? "—"} administradores
+                  Fondo de administración · 15% del total
                 </p>
                 <div className="space-y-3">
                   {comisionesAdmin.map((j) => (
-                    <div key={j.jornadaId} className="bg-white rounded-xl shadow-sm p-4">
-                      <div className="flex items-start justify-between gap-2 mb-3">
+                    <div key={j.jornadaId} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
                         <div>
                           <p className="font-semibold text-gray-800">{j.jornadaNombre}</p>
                           <p className="text-xs text-gray-400">{j.liga} · {j.temporada}</p>
                         </div>
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 ${j.pagado ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
-                          {j.pagado ? "Pagado" : "Pendiente"}
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                          j.pagado ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                        }`}>
+                          {j.pagado ? "✓ Pagado" : "Pendiente"}
                         </span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-gray-50 rounded-lg p-2 text-center">
-                          <p className="font-bold text-gray-700">${fmt(j.recaudadoTotal)}</p>
-                          <p className="text-[10px] text-gray-500">Total jornada</p>
+                      <div className="px-4 py-3 space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500">Total jornada</span>
+                          <span className="font-medium text-gray-700">${fmt(j.recaudadoTotal)}</span>
                         </div>
-                        <div className="bg-blue-50 rounded-lg p-2 text-center">
-                          <p className="font-bold text-blue-600">${fmt(j.recaudadoTotal * 0.15)}</p>
-                          <p className="text-[10px] text-gray-500">15% fondo</p>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500">15% fondo ÷ {j.numAdmins} admins</span>
+                          <span className="font-medium text-gray-700">${fmt(j.recaudadoTotal * 0.15)} ÷ {j.numAdmins}</span>
                         </div>
-                        <div className="bg-indigo-50 rounded-lg p-2 text-center">
-                          <p className="font-bold text-indigo-600">${fmt(j.miParte)}</p>
-                          <p className="text-[10px] text-gray-500">Tu parte</p>
+                        <div className="border-t border-gray-100 pt-2 flex items-center justify-between">
+                          <span className="text-xs text-gray-400">Tu parte</span>
+                          <p className="text-lg font-bold text-indigo-600">${fmt(j.miParte)}</p>
                         </div>
                       </div>
                       {j.pagado && j.pagadoEn && (
-                        <p className="text-xs text-green-600 mt-2">Pagado el {fmtFecha(j.pagadoEn)}</p>
+                        <div className="px-4 py-2 bg-green-50 border-t border-green-100">
+                          <p className="text-xs text-green-600">Cobrado el {fmtFecha(j.pagadoEn)}</p>
+                        </div>
                       )}
                     </div>
                   ))}
