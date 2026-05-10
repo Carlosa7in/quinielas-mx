@@ -30,7 +30,7 @@ type Totales = {
 
 type UltimaQuiniela = {
   folio: string; nombreCliente: string; canal: string;
-  monto: number; estadoPago: string; jornada: string; creadoEn: string;
+  monto: number; estadoPago: string; jornada: string;
 };
 
 const CANAL_LABEL: Record<string, string> = {

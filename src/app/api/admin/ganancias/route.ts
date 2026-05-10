@@ -19,7 +19,6 @@ export async function GET(req: NextRequest) {
   // Quinielas propias (todas, para stats + últimas)
   const quinielas = await prisma.quiniela.findMany({
     where: { usuarioId: userId },
-    orderBy: { createdAt: "desc" },
     select: {
       folio: true,
       monto: true,
@@ -27,7 +26,6 @@ export async function GET(req: NextRequest) {
       estadoPago: true,
       jornadaId: true,
       nombreCliente: true,
-      createdAt: true,
       jornada: { select: { id: true, nombre: true, numero: true, liga: true, temporada: true } },
     },
   });
@@ -134,7 +132,6 @@ export async function GET(req: NextRequest) {
     monto: q.monto,
     estadoPago: q.estadoPago,
     jornada: q.jornada.nombre ?? `Jornada ${q.jornada.numero}`,
-    creadoEn: q.createdAt,
   }));
 
   return NextResponse.json({
