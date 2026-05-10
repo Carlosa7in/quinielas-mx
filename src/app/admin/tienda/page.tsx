@@ -240,7 +240,7 @@ export default function TiendaPage() {
         backLabel={esAdmin ? "Admin" : "Volver"}
         backHref={esAdmin ? "/admin" : undefined}
         onBack={esAdmin ? undefined : () => setModo("vender")}
-        soloActivas={!esAdmin}
+        soloActivas={true}
         onSignOut={() => signOut({ callbackUrl: esAdmin ? "/login" : "/" })}
       />
     );
