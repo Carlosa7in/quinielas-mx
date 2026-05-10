@@ -1082,14 +1082,23 @@ export default function TicketPage() {
           {esRegistro && quiniela.telefonoCliente && (() => {
             const tel     = quiniela.telefonoCliente.replace(/\D/g, "");
             const waPhone = tel.length === 10 ? `52${tel}` : tel;
-            const ticketUrl = `${window.location.origin}/ticket/${quiniela.folio}`;
             const nombre1   = quiniela.nombreCliente?.split(" ")[0] ?? "";
+            // Leer todos los folios del sessionStorage (registro multi-forma)
+            const stored = typeof window !== "undefined" ? sessionStorage.getItem("lastRegistro") : null;
+            const { folios: allFolios = [quiniela.folio], formas: nFormas = 1 } =
+              stored ? (JSON.parse(stored) as { folios: string[]; formas: number }) : {};
+            const esMultiForma = nFormas > 1 && allFolios.length === nFormas;
+            const origin = window.location.origin;
+            const linksFormas = esMultiForma
+              ? allFolios.map((f, i) => `Forma ${i + 1}: ${origin}/ticket/${f}`).join("\n")
+              : `${origin}/ticket/${quiniela.folio}`;
             const msg = [
               `¡Gracias por tu registro${nombre1 ? `, ${nombre1}` : ""}! 🎉`,
               ``,
-              `*Folio:* ${quiniela.folio}`,
-              `Consulta tu quiniela aquí:`,
-              `👉 ${ticketUrl}`,
+              esMultiForma
+                ? `*${nFormas} quinielas registradas:*`
+                : `*Folio:* ${quiniela.folio}`,
+              esMultiForma ? linksFormas : `Consulta tu quiniela aquí:\n👉 ${origin}/ticket/${quiniela.folio}`,
               ``,
               `¡Buena suerte! 🍀`,
               `— Tablitas Quinielas`,
