@@ -185,18 +185,6 @@ export default function TiendaPage() {
           </button>
 
           <a
-            href="/admin/forma"
-            className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors flex"
-          >
-            <span className="text-2xl">🖨️</span>
-            <div className="flex-1">
-              <p className="font-bold">Imprimir Formas</p>
-              <p className="text-gray-500 text-sm">Formas en blanco o con picks aleatorios</p>
-            </div>
-            <span className="text-gray-400 text-lg">›</span>
-          </a>
-
-          <a
             href="/admin/perfil?tab=milink"
             className="bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors flex"
           >
@@ -261,14 +249,14 @@ export default function TiendaPage() {
     );
   }
 
-  /* ── Modo selección (manual vs escanear) ─────────────────────── */
+  /* ── Modo selección (manual vs escanear vs imprimir) ────────── */
   if (modo === "seleccion") {
     return (
       <div className="min-h-screen bg-gray-100">
         <div className="bg-brand text-white py-4 px-4">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             <div>
-              <button onClick={() => { setJornada(null); setModo("home"); }} className="text-amber-400 text-sm">← Inicio</button>
+              <button onClick={() => { setJornada(null); setModo(esAdmin ? "selector" : "vender"); }} className="text-amber-400 text-sm">← Volver</button>
               <h1 className="text-xl font-bold mt-1">Registrar Quiniela</h1>
               {jornada && (
                 <p className="text-amber-400 text-xs">
@@ -277,7 +265,7 @@ export default function TiendaPage() {
               )}
             </div>
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => signOut({ callbackUrl: esAdmin ? "/login" : "/" })}
               className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
             >
               Salir
@@ -286,7 +274,7 @@ export default function TiendaPage() {
         </div>
 
         <div className="max-w-xl mx-auto px-4 py-8 space-y-4">
-          <p className="text-gray-500 text-sm text-center mb-6">
+          <p className="text-gray-500 text-sm text-center mb-2">
             ¿Cómo deseas registrar la quiniela del cliente?
           </p>
 
@@ -316,14 +304,18 @@ export default function TiendaPage() {
             </div>
           </Link>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700 text-center">
-            Para la opción b) el cliente debe haber llenado una forma impresa.{" "}
-            {jornada && (
-              <a href={`/admin/forma/${jornada.id}`} target="_blank" className="font-bold underline">
-                Imprimir formas →
-              </a>
-            )}
-          </div>
+          <Link
+            href={jornada ? `/admin/forma/${jornada.id}` : "/admin/forma"}
+            className="w-full bg-white border-2 border-gray-300 hover:bg-gray-50 rounded-2xl p-6 flex items-center gap-4 transition-colors text-left block"
+          >
+            <span className="text-4xl">🖨️</span>
+            <div>
+              <p className="font-bold text-gray-800 text-lg">c) Imprimir formas</p>
+              <p className="text-gray-500 text-sm">
+                Imprime la forma en blanco o con picks aleatorios para que el cliente la llene
+              </p>
+            </div>
+          </Link>
         </div>
       </div>
     );
