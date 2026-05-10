@@ -144,7 +144,8 @@ function EscanearInner() {
   const [camaraError, setCamaraError] = useState("");
 
   useEffect(() => {
-    fetch("/api/jornadas")
+    const url = jornadaId ? `/api/jornadas?id=${jornadaId}` : "/api/jornadas";
+    fetch(url)
       .then((r) => r.json())
       .then((data) => { if (!data.error) setJornada(data); });
   }, [jornadaId]);
