@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { PasswordInput } from "@/components/PasswordInput";
 import { FlyerJornada } from "@/components/FlyerJornada";
 
 type Usuario = {
@@ -919,36 +920,18 @@ function PerfilInner() {
               <p className="text-xs text-gray-400">Deja en blanco si no deseas cambiarla</p>
 
               <div>
-                <label className="text-xs text-gray-500 block mb-1">Contrasena actual</label>
-                <input
-                  type="password"
-                  value={pwActual}
-                  onChange={(e) => setPwActual(e.target.value)}
-                  autoComplete="current-password"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
+                <label className="text-xs text-gray-500 block mb-1">Contraseña actual</label>
+                <PasswordInput value={pwActual} onChange={setPwActual} placeholder="Contraseña actual" autoComplete="current-password" />
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 block mb-1">Nueva contrasena</label>
-                <input
-                  type="password"
-                  value={pwNueva}
-                  onChange={(e) => setPwNueva(e.target.value)}
-                  autoComplete="new-password"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
+                <label className="text-xs text-gray-500 block mb-1">Nueva contraseña</label>
+                <PasswordInput value={pwNueva} onChange={setPwNueva} placeholder="Nueva contraseña" autoComplete="new-password" />
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 block mb-1">Confirmar nueva contrasena</label>
-                <input
-                  type="password"
-                  value={pwConfirmar}
-                  onChange={(e) => setPwConfirmar(e.target.value)}
-                  autoComplete="new-password"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
+                <label className="text-xs text-gray-500 block mb-1">Confirmar nueva contraseña</label>
+                <PasswordInput value={pwConfirmar} onChange={setPwConfirmar} placeholder="Confirmar contraseña" autoComplete="new-password" />
               </div>
             </div>
 

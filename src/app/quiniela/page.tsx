@@ -515,13 +515,24 @@ function QuinielaInner() {
             required
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
-          <input
-            type="tel"
-            placeholder="Teléfono (para consultar tus boletos después)"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-          />
+          <div>
+            <input
+              type="tel"
+              placeholder="Teléfono (10 dígitos)"
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              maxLength={10}
+              inputMode="numeric"
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                telefono.replace(/\D/g, "").length > 0 && telefono.replace(/\D/g, "").length < 10
+                  ? "border-red-300"
+                  : "border-gray-200"
+              }`}
+            />
+            {telefono.replace(/\D/g, "").length > 0 && telefono.replace(/\D/g, "").length < 10 && (
+              <p className="text-xs text-red-500 mt-1 px-1">El teléfono debe tener 10 dígitos</p>
+            )}
+          </div>
         </div>
 
         {/* ── Barra de formas ── */}

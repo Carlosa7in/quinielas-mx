@@ -667,18 +667,25 @@ export default function TiendaPage() {
           <div>
             <input
               type="tel"
-              placeholder="Teléfono (opcional)"
+              placeholder="Teléfono (10 dígitos, opcional)"
               value={telefono}
               onChange={(e) => { setTelefono(e.target.value); setClienteEncontrado(null); }}
+              maxLength={10}
+              inputMode="numeric"
               className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                clienteEncontrado && clienteEncontrado.nombre.toLowerCase() !== nombre.trim().toLowerCase()
+                telefono.replace(/\D/g, "").length > 0 && telefono.replace(/\D/g, "").length < 10
+                  ? "border-red-300"
+                  : clienteEncontrado && clienteEncontrado.nombre.toLowerCase() !== nombre.trim().toLowerCase()
                   ? "border-yellow-400"
                   : clienteEncontrado
                   ? "border-green-400"
                   : "border-gray-200"
               }`}
             />
-            {buscandoCliente && (
+            {telefono.replace(/\D/g, "").length > 0 && telefono.replace(/\D/g, "").length < 10 && (
+              <p className="text-xs text-red-500 mt-1.5 px-1">El teléfono debe tener 10 dígitos</p>
+            )}
+            {buscandoCliente && telefono.replace(/\D/g, "").length === 10 && (
               <p className="text-xs text-gray-400 mt-1.5 px-1">Buscando...</p>
             )}
             {!buscandoCliente && clienteEncontrado && (

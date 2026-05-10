@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { PasswordInput } from "@/components/PasswordInput";
 
 type Usuario = {
   nombre: string;
@@ -155,35 +156,17 @@ export default function MiPerfilPage() {
 
               <div>
                 <label className="text-xs text-gray-500 block mb-1">Contraseña actual</label>
-                <input
-                  type="password"
-                  value={pwActual}
-                  onChange={(e) => setPwActual(e.target.value)}
-                  autoComplete="current-password"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
+                <PasswordInput value={pwActual} onChange={setPwActual} placeholder="Contraseña actual" autoComplete="current-password" />
               </div>
 
               <div>
                 <label className="text-xs text-gray-500 block mb-1">Nueva contraseña</label>
-                <input
-                  type="password"
-                  value={pwNueva}
-                  onChange={(e) => setPwNueva(e.target.value)}
-                  autoComplete="new-password"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
+                <PasswordInput value={pwNueva} onChange={setPwNueva} placeholder="Nueva contraseña" autoComplete="new-password" />
               </div>
 
               <div>
                 <label className="text-xs text-gray-500 block mb-1">Confirmar nueva contraseña</label>
-                <input
-                  type="password"
-                  value={pwConfirmar}
-                  onChange={(e) => setPwConfirmar(e.target.value)}
-                  autoComplete="new-password"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
+                <PasswordInput value={pwConfirmar} onChange={setPwConfirmar} placeholder="Confirmar contraseña" autoComplete="new-password" />
               </div>
             </div>
 

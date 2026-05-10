@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { PasswordInput } from "@/components/PasswordInput";
 
 type Usuario = {
   id: string;
@@ -132,11 +133,7 @@ export default function UsuariosPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
-            <input
-              type="password" placeholder="Contraseña temporal" value={password} required
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
+            <PasswordInput value={password} onChange={setPassword} placeholder="Contraseña temporal" required />
             <select
               value={rol} onChange={(e) => setRol(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
