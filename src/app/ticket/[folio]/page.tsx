@@ -78,6 +78,7 @@ export default function TicketPage() {
   // esRegistro = llegamos desde el flujo de registro (admin/tienda), NO desde el link del cliente
   const esRegistro   = searchParams.get("total") !== null;
   const [quiniela, setQuiniela] = useState<Quiniela | null>(null);
+  const [otrasQuinielas, setOtrasQuinielas] = useState<Quiniela[]>([]);
   const [error, setError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [cargandoPNG, setCargandoPNG] = useState(false);
@@ -124,6 +125,22 @@ export default function TicketPage() {
         else setQuiniela(data);
       });
   }, [folio]);
+
+  // Cargar las demás quinielas del mismo registro (multi-forma) para impresión
+  useEffect(() => {
+    if (!esRegistro) return;
+    const stored = sessionStorage.getItem("lastRegistro");
+    if (!stored) return;
+    const { folios: allFolios = [], formas: nFormas = 1 } = JSON.parse(stored) as { folios: string[]; formas: number };
+    if (nFormas <= 1 || allFolios.length !== nFormas) return;
+    const otrosFolios = allFolios.filter((f) => f !== folio);
+    Promise.all(
+      otrosFolios.map((f) => fetch(`/api/quinielas?folio=${f}`).then((r) => r.json()))
+    ).then((results) => {
+      setOtrasQuinielas(results.filter((d) => !d.error));
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [folio, esRegistro]);
 
   // ── Función que genera el PNG de UNA quiniela ────────────────
   const buildPNG = async (q: Quiniela, qrUrl: string): Promise<File> => {
@@ -1024,40 +1041,44 @@ export default function TicketPage() {
 
         {/* ── Área exclusiva para impresión térmica (oculta en pantalla) ── */}
         <div id="print-ticket">
-          <p style={{ textAlign: "center", fontWeight: "bold", fontSize: "13pt", letterSpacing: "2px" }}>TABLITAS QUINIELAS</p>
-          <p style={{ textAlign: "center" }}>{norm(quiniela.jornada.liga)}</p>
-          <p style={{ textAlign: "center" }}>
-            {norm(quiniela.jornada.nombre ?? `Jornada ${quiniela.jornada.numero}`)} * {norm(quiniela.jornada.temporada)}
-          </p>
-          <div style={{ borderTop: "1px solid #000", margin: "4px 0" }} />
-          <p><strong>FOLIO:</strong> {quiniela.folio}</p>
-          <p><strong>NOMBRE:</strong> {norm(quiniela.nombreCliente ?? "—")}</p>
-          {quiniela.telefonoCliente && <p><strong>TEL:</strong> {quiniela.telefonoCliente}</p>}
-          <p><strong>TOTAL:</strong> ${quiniela.monto.toFixed(2)} MXN</p>
-          <div style={{ borderTop: "1px solid #000", margin: "4px 0" }} />
-          <p style={{ fontWeight: "bold" }}>PRONOSTICOS:</p>
-          {agruparPicksPorPartido([...quiniela.picks])
-            .map((g, i) => {
-              const labels = g.predicciones.map(p =>
-                p === "1" ? "LOCAL" : p === "2" ? "VISITA" : "EMPATE"
-              ).join(" / ");
-              const badge = g.predicciones.length === 2 ? " [DOBLE]" : g.predicciones.length >= 3 ? " [TRIPLE]" : "";
-              return (
-                <div key={i} style={{ marginBottom: "3px" }}>
-                  <p>{i + 1}. {norm(g.equipoLocal)} vs {norm(g.equipoVisita)}</p>
-                  <p style={{ paddingLeft: "6mm" }}>[{labels}]{badge}</p>
+          {[quiniela, ...otrasQuinielas].map((q, idx) => (
+            <div key={q.folio} style={idx > 0 ? { pageBreakBefore: "always", paddingTop: "4mm" } : {}}>
+              <p style={{ textAlign: "center", fontWeight: "bold", fontSize: "13pt", letterSpacing: "2px" }}>TABLITAS QUINIELAS</p>
+              <p style={{ textAlign: "center" }}>{norm(q.jornada.liga)}</p>
+              <p style={{ textAlign: "center" }}>
+                {norm(q.jornada.nombre ?? `Jornada ${q.jornada.numero}`)} * {norm(q.jornada.temporada)}
+              </p>
+              <div style={{ borderTop: "1px solid #000", margin: "4px 0" }} />
+              <p><strong>FOLIO:</strong> {q.folio}</p>
+              <p><strong>NOMBRE:</strong> {norm(q.nombreCliente ?? "—")}</p>
+              {q.telefonoCliente && <p><strong>TEL:</strong> {q.telefonoCliente}</p>}
+              <p><strong>TOTAL:</strong> ${q.monto.toFixed(2)} MXN</p>
+              <div style={{ borderTop: "1px solid #000", margin: "4px 0" }} />
+              <p style={{ fontWeight: "bold" }}>PRONOSTICOS:</p>
+              {agruparPicksPorPartido([...q.picks])
+                .map((g, i) => {
+                  const labels = g.predicciones.map(p =>
+                    p === "1" ? "LOCAL" : p === "2" ? "VISITA" : "EMPATE"
+                  ).join(" / ");
+                  const badge = g.predicciones.length === 2 ? " [DOBLE]" : g.predicciones.length >= 3 ? " [TRIPLE]" : "";
+                  return (
+                    <div key={i} style={{ marginBottom: "3px" }}>
+                      <p>{i + 1}. {norm(g.equipoLocal)} vs {norm(g.equipoVisita)}</p>
+                      <p style={{ paddingLeft: "6mm" }}>[{labels}]{badge}</p>
+                    </div>
+                  );
+                })}
+              <div style={{ borderTop: "1px solid #000", margin: "4px 0" }} />
+              <p style={{ textAlign: "center", fontSize: "8pt" }}>Conserva este ticket para reclamar tu premio.</p>
+              <p style={{ textAlign: "center", fontSize: "8pt" }}>tablitasquinielas.net</p>
+              {idx === 0 && qrDataUrl && (
+                <div style={{ textAlign: "center", marginTop: "6px" }}>
+                  <img src={qrDataUrl} alt="QR" style={{ width: "55mm", height: "55mm", margin: "0 auto" }} />
+                  <p style={{ fontSize: "7pt", textAlign: "center", marginTop: "2px" }}>Escanea para consultar resultados</p>
                 </div>
-              );
-            })}
-          <div style={{ borderTop: "1px solid #000", margin: "4px 0" }} />
-          <p style={{ textAlign: "center", fontSize: "8pt" }}>Conserva este ticket para reclamar tu premio.</p>
-          <p style={{ textAlign: "center", fontSize: "8pt" }}>tablitasquinielas.net</p>
-          {qrDataUrl && (
-            <div style={{ textAlign: "center", marginTop: "6px" }}>
-              <img src={qrDataUrl} alt="QR" style={{ width: "55mm", height: "55mm", margin: "0 auto" }} />
-              <p style={{ fontSize: "7pt", textAlign: "center", marginTop: "2px" }}>Escanea para consultar resultados</p>
+              )}
             </div>
-          )}
+          ))}
         </div>
 
         {/* Acciones */}
