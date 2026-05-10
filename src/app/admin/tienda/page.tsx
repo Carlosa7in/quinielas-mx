@@ -159,7 +159,7 @@ export default function TiendaPage() {
               </a>
 
               <a
-                href="/admin/perfil?tab=apostadores"
+                href="/admin/apostadores"
                 className="bg-teal-700 hover:bg-teal-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
               >
                 <span className="text-2xl">👥</span>
