@@ -76,6 +76,12 @@ export default function TiendaPage() {
   const [clienteEncontrado, setClienteEncontrado] = useState<{ nombre: string } | null>(null);
   const [buscandoCliente, setBuscandoCliente] = useState(false);
 
+  // Si la sesión carga y el usuario es admin, saltar directo al selector (no mostrar home de tienda)
+  useEffect(() => {
+    if (esAdmin && modo === "home") setModo("selector");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [esAdmin]);
+
   /* ── Búsqueda de cliente por teléfono (debounced 500ms) ─────── */
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
