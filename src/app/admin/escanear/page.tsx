@@ -276,7 +276,7 @@ function EscanearInner() {
       return;
     }
 
-    router.push(`/ticket/${data.folio}`);
+    router.push(`/ticket/${data.folio}?total=1`);
   };
 
   // ── FASE: CÁMARA ──────────────────────────────────────────────
