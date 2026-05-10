@@ -274,124 +274,146 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Acciones */}
-        <div className="grid grid-cols-1 gap-3">
-          <Link
-            href="/admin/quinielas"
-            className="bg-purple-700 hover:bg-purple-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-          >
-            <span className="text-2xl">📋</span>
-            <div>
-              <p className="font-bold">Ver Quinielas</p>
-              <p className="text-purple-200 text-sm">Lista de todas las quinielas registradas</p>
-            </div>
-          </Link>
+        {/* ── Mi Perfil ── */}
+        <div>
+          <p className="text-xs text-gray-400 font-medium px-1 mb-2">MI PERFIL</p>
+          <div className="grid grid-cols-1 gap-3">
+            <button
+              onClick={() => setPantalla("vender")}
+              className="w-full bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left"
+            >
+              <span className="text-2xl">🏪</span>
+              <div className="flex-1">
+                <p className="font-bold">Vender</p>
+                <p className="text-amber-300/70 text-sm">Registro en tienda, imprimir formas y mi link</p>
+              </div>
+              <span className="text-amber-300 text-lg">›</span>
+            </button>
 
-          <button
-            onClick={() => setPantalla("vender")}
-            className="w-full bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left"
-          >
-            <span className="text-2xl">🏪</span>
-            <div>
-              <p className="font-bold">Vender</p>
-              <p className="text-amber-300/70 text-sm">Registro en tienda, imprimir formas y mi link</p>
-            </div>
-            <span className="text-amber-300 ml-auto text-lg">›</span>
-          </button>
-
-          <Link
-            href="/admin/resultados"
-            className="bg-blue-700 hover:bg-blue-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-          >
-            <span className="text-2xl">📊</span>
-            <div>
-              <p className="font-bold">Registrar Resultados</p>
-              <p className="text-blue-200 text-sm">Capturar resultados y calcular ganadores</p>
-            </div>
-          </Link>
-
-          <Link
-            href="/admin/nueva-jornada"
-            className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
-          >
-            <span className="text-2xl">📅</span>
-            <div>
-              <p className="font-bold">Nueva Jornada</p>
-              <p className="text-gray-500 text-sm">Crear jornada con sus partidos</p>
-            </div>
-          </Link>
-
-          <Link
-            href="/admin/participantes"
-            className="bg-teal-700 hover:bg-teal-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-          >
-            <span className="text-2xl">📱</span>
-            <div>
-              <p className="font-bold">Participantes</p>
-              <p className="text-teal-200 text-sm">Historial de clientes y notificaciones WhatsApp</p>
-            </div>
-          </Link>
-
-          <Link
-            href="/admin/vendedores"
-            className="bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-          >
-            <span className="text-2xl">🔗</span>
-            <div>
-              <p className="font-bold">Vendedores</p>
-              <p className="text-cyan-200 text-sm">Links de referido y ventas por vendedor</p>
-            </div>
-          </Link>
-
-          {rol === "superadmin" && (
             <Link
-              href="/admin/comisiones"
-              className="bg-orange-600 hover:bg-orange-500 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              href="/admin/ganancias"
+              className="bg-green-700 hover:bg-green-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
             >
               <span className="text-2xl">💰</span>
-              <div>
-                <p className="font-bold">Comisiones</p>
-                <p className="text-orange-200 text-sm">Ventas y recaudado por punto de venta</p>
+              <div className="flex-1">
+                <p className="font-bold">Mis Ganancias</p>
+                <p className="text-green-200 text-sm">Comisiones y ventas por jornada</p>
               </div>
+              <span className="text-green-300 text-lg">›</span>
             </Link>
-          )}
 
-          {rol === "superadmin" && (
             <Link
-              href="/admin/usuarios"
-              className="bg-purple-900 hover:bg-purple-800 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              href="/admin/perfil"
+              className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
             >
-              <span className="text-2xl">👥</span>
-              <div>
-                <p className="font-bold">Administradores</p>
-                <p className="text-purple-300 text-sm">Gestionar accesos y puntos de venta</p>
+              <span className="text-2xl">👤</span>
+              <div className="flex-1">
+                <p className="font-bold">Mi Perfil</p>
+                <p className="text-gray-500 text-sm">Estadísticas personales, apostadores y perfil</p>
               </div>
+              <span className="text-gray-300 text-lg">›</span>
             </Link>
-          )}
+          </div>
+        </div>
 
-          {["superadmin", "admin"].includes(rol) && (
+        {/* ── Administración ── */}
+        <div>
+          <p className="text-xs text-gray-400 font-medium px-1 mb-2">ADMINISTRACIÓN</p>
+          <div className="grid grid-cols-1 gap-3">
             <Link
-              href="/admin/equipos"
-              className="bg-stone-800 hover:bg-stone-700 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              href="/admin/quinielas"
+              className="bg-purple-700 hover:bg-purple-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
             >
-              <span className="text-2xl">⚽</span>
+              <span className="text-2xl">📋</span>
               <div>
-                <p className="font-bold">Catálogo de Equipos</p>
-                <p className="text-stone-300 text-sm">Agregar y gestionar equipos por liga</p>
+                <p className="font-bold">Ver Quinielas</p>
+                <p className="text-purple-200 text-sm">Lista de todas las quinielas registradas</p>
               </div>
             </Link>
-          )}
 
-          <Link
-            href="/admin/perfil"
-            className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
-          >
-            <span className="text-2xl">👤</span>
-            <div>
-              <p className="font-bold">Mi Panel</p>
-              <p className="text-gray-500 text-sm">Estadisticas personales, apostadores y perfil</p>
-            </div>
-          </Link>
+            <Link
+              href="/admin/resultados"
+              className="bg-blue-700 hover:bg-blue-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+            >
+              <span className="text-2xl">📊</span>
+              <div>
+                <p className="font-bold">Registrar Resultados</p>
+                <p className="text-blue-200 text-sm">Capturar resultados y calcular ganadores</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/admin/nueva-jornada"
+              className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
+            >
+              <span className="text-2xl">📅</span>
+              <div>
+                <p className="font-bold">Nueva Jornada</p>
+                <p className="text-gray-500 text-sm">Crear jornada con sus partidos</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/admin/participantes"
+              className="bg-teal-700 hover:bg-teal-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+            >
+              <span className="text-2xl">📱</span>
+              <div>
+                <p className="font-bold">Participantes</p>
+                <p className="text-teal-200 text-sm">Historial de clientes y notificaciones WhatsApp</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/admin/vendedores"
+              className="bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+            >
+              <span className="text-2xl">🔗</span>
+              <div>
+                <p className="font-bold">Vendedores</p>
+                <p className="text-cyan-200 text-sm">Links de referido y ventas por vendedor</p>
+              </div>
+            </Link>
+
+            {["superadmin", "admin"].includes(rol) && (
+              <Link
+                href="/admin/equipos"
+                className="bg-stone-800 hover:bg-stone-700 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">⚽</span>
+                <div>
+                  <p className="font-bold">Catálogo de Equipos</p>
+                  <p className="text-stone-300 text-sm">Agregar y gestionar equipos por liga</p>
+                </div>
+              </Link>
+            )}
+
+            {rol === "superadmin" && (
+              <Link
+                href="/admin/comisiones"
+                className="bg-orange-600 hover:bg-orange-500 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">📈</span>
+                <div>
+                  <p className="font-bold">Comisiones</p>
+                  <p className="text-orange-200 text-sm">Ventas y recaudado por punto de venta</p>
+                </div>
+              </Link>
+            )}
+
+            {rol === "superadmin" && (
+              <Link
+                href="/admin/usuarios"
+                className="bg-purple-900 hover:bg-purple-800 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">👥</span>
+                <div>
+                  <p className="font-bold">Administradores</p>
+                  <p className="text-purple-300 text-sm">Gestionar accesos y puntos de venta</p>
+                </div>
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Seed datos de ejemplo */}
