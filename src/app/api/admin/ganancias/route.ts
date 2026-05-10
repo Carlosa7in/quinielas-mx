@@ -16,14 +16,18 @@ export async function GET(req: NextRequest) {
   const esVendedor = usuario.rol === "vendedor";
   const esAdmin = ["admin", "superadmin"].includes(usuario.rol);
 
-  // Quinielas propias
+  // Quinielas propias (todas, para stats + últimas)
   const quinielas = await prisma.quiniela.findMany({
     where: { usuarioId: userId },
+    orderBy: { creadoEn: "desc" },
     select: {
+      folio: true,
       monto: true,
       canal: true,
       estadoPago: true,
       jornadaId: true,
+      nombreCliente: true,
+      creadoEn: true,
       jornada: { select: { id: true, nombre: true, numero: true, liga: true, temporada: true } },
     },
   });
@@ -122,9 +126,21 @@ export async function GET(req: NextRequest) {
     comisionesAdmin.sort((a, b) => b.jornadaNombre.localeCompare(a.jornadaNombre));
   }
 
+  // Últimas 15 quinielas para la tabla
+  const ultimasQuinielas = quinielas.slice(0, 15).map((q) => ({
+    folio: q.folio,
+    nombreCliente: q.nombreCliente ?? "—",
+    canal: q.canal,
+    monto: q.monto,
+    estadoPago: q.estadoPago,
+    jornada: q.jornada.nombre ?? `Jornada ${q.jornada.numero}`,
+    creadoEn: q.creadoEn,
+  }));
+
   return NextResponse.json({
     porJornada,
     comisionesAdmin,
+    ultimasQuinielas,
     totales: {
       comisionTienda: totalComisionTienda,
       pagadoTienda: totalPagadoTienda,
