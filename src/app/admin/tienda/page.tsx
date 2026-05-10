@@ -149,7 +149,7 @@ export default function TiendaPage() {
           </a>
 
           <a
-            href="/admin/perfil?tab=perfil"
+            href="/admin/mi-perfil"
             className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors flex"
           >
             <span className="text-2xl">👤</span>
