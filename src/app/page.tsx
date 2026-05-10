@@ -208,9 +208,18 @@ function BannerPagosPendientes() {
     <div className="bg-amber-400/20 border border-amber-400/50 rounded-2xl p-4 text-left space-y-3">
       <div className="flex items-center gap-2">
         <span className="text-xl">⏳</span>
-        <p className="font-bold text-amber-200 text-sm">
-          {pendientes.length === 1 ? "Tienes un pago pendiente" : `Tienes ${pendientes.length} pagos pendientes`}
-        </p>
+        <div>
+          {pendientes[0]?.nombre && (
+            <p className="text-amber-300 font-bold text-sm">
+              ¡Hola {pendientes[0].nombre.split(" ")[0]}!
+            </p>
+          )}
+          <p className="font-bold text-amber-200 text-sm">
+            {pendientes.length === 1
+              ? "Tienes un pago pendiente, ¡no te quedes sin participar!"
+              : `Tienes ${pendientes.length} pagos pendientes, ¡no te quedes sin participar!`}
+          </p>
+        </div>
       </div>
       <div className="space-y-2">
         {pendientes.map((p) => {
