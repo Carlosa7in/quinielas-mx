@@ -38,6 +38,7 @@ export default function MiLinkPage() {
   const [data, setData] = useState<Data | null>(null);
   const [cargando, setCargando] = useState(true);
   const [copiado, setCopiado] = useState(false);
+  const [copiadoInstrucciones, setCopiadoInstrucciones] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/perfil")
@@ -60,6 +61,25 @@ export default function MiLinkPage() {
     navigator.clipboard.writeText(link).then(() => {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2500);
+    });
+  };
+
+  const copiarInstrucciones = () => {
+    if (!data?.codigoRef) return;
+    const link = `${window.location.origin}/quiniela?ref=${data.codigoRef}`;
+    const texto = [
+      `🎯 *¿Cómo participar en la quiniela?*`,
+      ``,
+      `*1.* Entra aquí 👉 ${link}`,
+      `*2.* Llena tus picks y elige cómo pagar (transferencia u OXXO — instrucciones ahí dentro). Guarda tu comprobante 📸`,
+      `*3.* Desde el mismo cel, regresa al link → toca *Registrar pago* → adjunta la foto del comprobante por WhatsApp`,
+      `*4.* Lo revisamos y te mandamos tu folio 🏆 (también lo puedes ver en el mismo link)`,
+      ``,
+      `¡Cualquier duda aquí estoy! 😉`,
+    ].join("\n");
+    navigator.clipboard.writeText(texto).then(() => {
+      setCopiadoInstrucciones(true);
+      setTimeout(() => setCopiadoInstrucciones(false), 2500);
     });
   };
 
@@ -121,6 +141,12 @@ export default function MiLinkPage() {
                 className="w-full bg-white text-cyan-800 font-bold py-2.5 rounded-xl text-sm transition-all active:scale-95"
               >
                 {copiado ? "✓ ¡Copiado!" : "📋 Copiar link"}
+              </button>
+              <button
+                onClick={copiarInstrucciones}
+                className="w-full bg-cyan-700/60 hover:bg-cyan-700/80 text-white font-semibold py-2.5 rounded-xl text-sm transition-all active:scale-95 mt-2"
+              >
+                {copiadoInstrucciones ? "✓ ¡Instrucciones copiadas!" : "💬 Copiar instrucciones para prospectos"}
               </button>
             </div>
 
