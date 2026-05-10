@@ -384,12 +384,25 @@ export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCod
   const compartir = async () => {
     if (!blob) return;
     const file = new File([blob], "quiniela-flyer.png", { type: "image/png" });
+    const origen = typeof window !== "undefined" ? window.location.origin : "";
+    const link = `${origen}/quiniela${refCode ? `?ref=${refCode}` : ""}`;
+    const texto = [
+      `🏆 ¡Ya están abiertas las quinielas!`,
+      ``,
+      `⚽ ${liga} · ${jornadaNombre}`,
+      `💰 Solo $${PRECIO} por boleto — ¡gana premios en efectivo!`,
+      ``,
+      `Registra la tuya aquí 👇`,
+      link,
+      ``,
+      `¡No te quedes sin la tuya! 🔥`,
+    ].join("\n");
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({
           files: [file],
           title: `Quinielas ${jornadaNombre}`,
-          text: `🏆 ¡Ya están abiertas las quinielas! ⚽ ${liga} · ${jornadaNombre} — Solo $${PRECIO}. ¡Regístra la tuya!`,
+          text: texto,
         });
       } catch { /* cancelado */ }
     } else {
