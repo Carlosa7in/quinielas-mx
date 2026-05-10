@@ -216,10 +216,10 @@ export default function TiendaPage() {
       <JornadaSelector
         onSelect={seleccionarJornada}
         titulo="Registrar Quiniela"
-        backLabel={esAdmin ? "Admin" : "Inicio"}
+        backLabel={esAdmin ? "Admin" : "Volver"}
         backHref={esAdmin ? "/admin" : undefined}
-        onBack={esAdmin ? undefined : () => setModo("home")}
-        soloActivas
+        onBack={esAdmin ? undefined : () => setModo("vender")}
+        soloActivas={!esAdmin}
         onSignOut={() => signOut({ callbackUrl: esAdmin ? "/login" : "/" })}
       />
     );

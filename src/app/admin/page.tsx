@@ -240,7 +240,7 @@ export default function AdminPage() {
             <span className="text-2xl">🏪</span>
             <div>
               <p className="font-bold">Registro en Tienda</p>
-              <p className="text-amber-300/70 text-sm">Registrar quiniela presencial e imprimir ticket</p>
+              <p className="text-amber-300/70 text-sm">Registrar quiniela en cualquier jornada</p>
             </div>
           </Link>
 
