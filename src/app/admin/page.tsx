@@ -30,7 +30,7 @@ export default function AdminPage() {
   const [jornadas, setJornadas] = useState<JornadaResumen[]>([]);
   const [cargando, setCargando] = useState(true);
   const [seedStatus, setSeedStatus] = useState("");
-  const [venderAbierto, setVenderAbierto] = useState(false);
+  const [pantalla, setPantalla] = useState<"home" | "vender">("home");
   // Edición inline de nombre
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [editNombre, setEditNombre] = useState("");
@@ -83,6 +83,59 @@ export default function AdminPage() {
   const totalQuinielas = jornadas.reduce((s, j) => s + j.totalQuinielas, 0);
   const totalRecaudado = jornadas.reduce((s, j) => s + j.recaudado, 0);
   const totalGanadoras = jornadas.reduce((s, j) => s + j.ganadoras, 0);
+
+  // ── Sub-pantalla: Vender ──
+  if (pantalla === "vender") {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-brand text-white py-4 px-4">
+          <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
+            <div>
+              <button onClick={() => setPantalla("home")} className="text-amber-400 text-sm">← Admin</button>
+              <h1 className="text-xl font-bold mt-1">Vender</h1>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "40px", objectFit: "contain" }} />
+          </div>
+        </div>
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-3">
+          <Link
+            href="/admin/tienda"
+            className="bg-white border border-gray-200 hover:bg-amber-50 text-gray-800 rounded-xl p-4 flex items-center gap-4 transition-colors"
+          >
+            <span className="text-3xl">🏪</span>
+            <div>
+              <p className="font-bold">Registro en Tienda</p>
+              <p className="text-gray-500 text-sm">Registrar quiniela presencial</p>
+            </div>
+            <span className="text-gray-300 ml-auto text-xl">›</span>
+          </Link>
+          <Link
+            href="/admin/mi-link"
+            className="bg-white border border-gray-200 hover:bg-amber-50 text-gray-800 rounded-xl p-4 flex items-center gap-4 transition-colors"
+          >
+            <span className="text-3xl">🔗</span>
+            <div>
+              <p className="font-bold">Mi Link de Ventas</p>
+              <p className="text-gray-500 text-sm">Compartir link y ver referidos</p>
+            </div>
+            <span className="text-gray-300 ml-auto text-xl">›</span>
+          </Link>
+          <Link
+            href="/admin/forma"
+            className="bg-white border border-gray-200 hover:bg-amber-50 text-gray-800 rounded-xl p-4 flex items-center gap-4 transition-colors"
+          >
+            <span className="text-3xl">🖨️</span>
+            <div>
+              <p className="font-bold">Imprimir Formas</p>
+              <p className="text-gray-500 text-sm">Formas en blanco o con picks aleatorios</p>
+            </div>
+            <span className="text-gray-300 ml-auto text-xl">›</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -234,54 +287,17 @@ export default function AdminPage() {
             </div>
           </Link>
 
-          {/* ── Vender (expandible) ── */}
-          <div className="rounded-xl overflow-hidden border border-amber-200">
-            <button
-              onClick={() => setVenderAbierto((v) => !v)}
-              className="w-full bg-amber-700 hover:bg-amber-600 text-white p-4 flex items-center gap-3 transition-colors text-left"
-            >
-              <span className="text-2xl">🏪</span>
-              <div className="flex-1">
-                <p className="font-bold">Vender</p>
-                <p className="text-amber-300/70 text-sm">Registro en tienda, imprimir formas y mi link</p>
-              </div>
-              <span className="text-amber-300 text-lg">{venderAbierto ? "▲" : "▼"}</span>
-            </button>
-            {venderAbierto && (
-              <div className="bg-amber-50 divide-y divide-amber-100">
-                <Link
-                  href="/admin/tienda"
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-amber-100 transition-colors"
-                >
-                  <span className="text-lg">🏪</span>
-                  <div>
-                    <p className="font-semibold text-amber-900 text-sm">Registro en Tienda</p>
-                    <p className="text-amber-700/60 text-xs">Registrar quiniela presencial</p>
-                  </div>
-                </Link>
-                <Link
-                  href="/admin/mi-link"
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-amber-100 transition-colors"
-                >
-                  <span className="text-lg">🔗</span>
-                  <div>
-                    <p className="font-semibold text-amber-900 text-sm">Mi Link de Ventas</p>
-                    <p className="text-amber-700/60 text-xs">Compartir link y ver referidos</p>
-                  </div>
-                </Link>
-                <Link
-                  href="/admin/forma"
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-amber-100 transition-colors"
-                >
-                  <span className="text-lg">🖨️</span>
-                  <div>
-                    <p className="font-semibold text-amber-900 text-sm">Imprimir Formas</p>
-                    <p className="text-amber-700/60 text-xs">Formas en blanco o con picks aleatorios</p>
-                  </div>
-                </Link>
-              </div>
-            )}
-          </div>
+          <button
+            onClick={() => setPantalla("vender")}
+            className="w-full bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left"
+          >
+            <span className="text-2xl">🏪</span>
+            <div>
+              <p className="font-bold">Vender</p>
+              <p className="text-amber-300/70 text-sm">Registro en tienda, imprimir formas y mi link</p>
+            </div>
+            <span className="text-amber-300 ml-auto text-lg">›</span>
+          </button>
 
           <Link
             href="/admin/resultados"
