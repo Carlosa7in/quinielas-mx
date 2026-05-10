@@ -67,12 +67,13 @@ export default function MiLinkPage() {
   const copiarInstrucciones = () => {
     if (!data?.codigoRef) return;
     const link = `${window.location.origin}/quiniela?ref=${data.codigoRef}`;
+    const home = window.location.origin;
     const texto = [
       `🎯 *¿Cómo participar en la quiniela?*`,
       ``,
       `*1.* Entra aquí 👉 ${link}`,
       `*2.* Llena tus picks y elige cómo pagar (transferencia u OXXO — instrucciones ahí dentro). Guarda tu comprobante 📸`,
-      `*3.* Desde el mismo cel, regresa al link → toca *Registrar pago* → adjunta la foto del comprobante por WhatsApp`,
+      `*3.* Desde el mismo cel, entra a ${home} → verás un aviso de pago pendiente → toca *Registrar pago* → adjunta la foto del comprobante por WhatsApp`,
       `*4.* Lo revisamos y te mandamos tu folio 🏆 (también lo puedes ver en el mismo link)`,
       ``,
       `¡Cualquier duda aquí estoy! 😉`,
