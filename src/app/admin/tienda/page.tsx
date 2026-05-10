@@ -79,7 +79,7 @@ export default function TiendaPage() {
     const rolLabel: Record<string, string> = { tienda: "Tienda", vendedor: "Vendedor", admin: "Admin", superadmin: "Superadmin" };
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Header igual al admin panel */}
+        {/* Header */}
         <div className="bg-brand text-white py-6 px-4">
           <div className="max-w-2xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -93,7 +93,7 @@ export default function TiendaPage() {
                 <p className="text-amber-400 text-xs capitalize">{rolLabel[rol] ?? rol}</p>
               </div>
               <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={() => signOut({ callbackUrl: "/" })}
                 className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
               >
                 Salir
@@ -103,74 +103,91 @@ export default function TiendaPage() {
         </div>
 
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-          {/* Acciones */}
-          <div className="grid grid-cols-1 gap-3">
-            <button
-              onClick={() => setModo("selector")}
-              className="bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left"
-            >
-              <span className="text-2xl">🏪</span>
-              <div>
-                <p className="font-bold">Registro en Tienda</p>
-                <p className="text-amber-300/70 text-sm">Registrar quiniela presencial e imprimir ticket</p>
-              </div>
-            </button>
 
-            <a
-              href="/admin/forma"
-              className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
-            >
-              <span className="text-2xl">🖨️</span>
-              <div>
-                <p className="font-bold">Imprimir Formas</p>
-                <p className="text-gray-500 text-sm">Formas en blanco o con picks aleatorios</p>
-              </div>
-            </a>
+          {/* ── Vender ─────────────────────────────────────────── */}
+          <div>
+            <p className="text-xs text-gray-400 font-medium px-1 mb-2">VENDER</p>
+            <div className="grid grid-cols-1 gap-3">
+              <button
+                onClick={() => setModo("selector")}
+                className="bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left"
+              >
+                <span className="text-2xl">🏪</span>
+                <div>
+                  <p className="font-bold">Registro en Tienda</p>
+                  <p className="text-amber-300/70 text-sm">Registrar quiniela presencial e imprimir ticket</p>
+                </div>
+              </button>
 
-            <a
-              href="/admin/perfil?tab=ganancias"
-              className="bg-green-700 hover:bg-green-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-            >
-              <span className="text-2xl">💰</span>
-              <div>
-                <p className="font-bold">Mis Ganancias</p>
-                <p className="text-green-200 text-sm">Comisiones y ventas por jornada</p>
-              </div>
-            </a>
+              <a
+                href="/admin/forma"
+                className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">🖨️</span>
+                <div>
+                  <p className="font-bold">Imprimir Formas</p>
+                  <p className="text-gray-500 text-sm">Formas en blanco o con picks aleatorios</p>
+                </div>
+              </a>
 
-            <a
-              href="/admin/perfil?tab=apostadores"
-              className="bg-teal-700 hover:bg-teal-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-            >
-              <span className="text-2xl">📱</span>
-              <div>
-                <p className="font-bold">Mis Apostadores</p>
-                <p className="text-teal-200 text-sm">Historial de clientes registrados</p>
-              </div>
-            </a>
-
-            <a
-              href="/admin/perfil?tab=milink"
-              className="bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-            >
-              <span className="text-2xl">🔗</span>
-              <div>
-                <p className="font-bold">Mi Link de Ventas</p>
-                <p className="text-cyan-200 text-sm">Comparte tu link y ve tus referidos online</p>
-              </div>
-            </a>
-
-            <a
-              href="/admin/perfil?tab=perfil"
-              className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
-            >
-              <span className="text-2xl">👤</span>
-              <div>
-                <p className="font-bold">Mi Perfil</p>
-                <p className="text-gray-500 text-sm">Editar datos y cambiar contraseña</p>
-              </div>
-            </a>
+              <a
+                href="/admin/perfil?tab=milink"
+                className="bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">🔗</span>
+                <div>
+                  <p className="font-bold">Mi Link de Ventas</p>
+                  <p className="text-cyan-200 text-sm">Comparte tu link y ve tus referidos online</p>
+                </div>
+              </a>
+            </div>
           </div>
+
+          {/* ── Mis stats ──────────────────────────────────────── */}
+          <div>
+            <p className="text-xs text-gray-400 font-medium px-1 mb-2">MIS ESTADÍSTICAS</p>
+            <div className="grid grid-cols-1 gap-3">
+              <a
+                href="/admin/perfil?tab=ganancias"
+                className="bg-green-700 hover:bg-green-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">💰</span>
+                <div>
+                  <p className="font-bold">Mis Ganancias</p>
+                  <p className="text-green-200 text-sm">Comisiones y ventas por jornada</p>
+                </div>
+              </a>
+
+              <a
+                href="/admin/perfil?tab=apostadores"
+                className="bg-teal-700 hover:bg-teal-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">👥</span>
+                <div>
+                  <p className="font-bold">Apostadores</p>
+                  <p className="text-teal-200 text-sm">Historial de clientes registrados</p>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          {/* ── Mi cuenta ──────────────────────────────────────── */}
+          <div>
+            <p className="text-xs text-gray-400 font-medium px-1 mb-2">MI CUENTA</p>
+            <div className="grid grid-cols-1 gap-3">
+              <a
+                href="/admin/perfil?tab=perfil"
+                className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">👤</span>
+                <div>
+                  <p className="font-bold">Mi Perfil</p>
+                  <p className="text-gray-500 text-sm">Editar datos y cambiar contraseña</p>
+                </div>
+              </a>
+            </div>
+          </div>
+
         </div>
       </div>
     );
