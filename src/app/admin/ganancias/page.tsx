@@ -57,6 +57,10 @@ export default function GananciasPage() {
   const backHref = esAdminNav ? "/admin" : "/admin/tienda";
   const backLabel = esAdminNav ? "Admin" : "Mi Panel";
 
+  const totalQuinielas = porJornada.reduce((s, j) => s + j.tienda + j.online, 0);
+  const totalComision = totales ? totales.comisionTienda + totales.comisionAdmin : 0;
+  const totalPendiente = totales ? totales.pendienteTienda + totales.pendienteAdmin : 0;
+
   const sinDatos = porJornada.length === 0 && comisionesAdmin.length === 0;
 
   return (
@@ -84,12 +88,36 @@ export default function GananciasPage() {
           </div>
         ) : (
           <>
-            {/* ── Ventas personales ── */}
+            {/* ── Cards de resumen ── */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                <p className="text-2xl font-bold text-green-700">{totalQuinielas}</p>
+                <p className="text-xs text-gray-500">Quinielas vendidas</p>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                <p className="text-2xl font-bold text-amber-600">${fmt(totalComision)}</p>
+                <p className="text-xs text-gray-500">Comisión total</p>
+              </div>
+              {totalPendiente > 0 && (
+                <div className="bg-orange-50 rounded-xl shadow-sm p-4 text-center col-span-2">
+                  <p className="text-xl font-bold text-orange-500">${fmt(totalPendiente)}</p>
+                  <p className="text-xs text-gray-500">Pendiente de cobrar</p>
+                </div>
+              )}
+              {totalPendiente === 0 && totalComision > 0 && (
+                <div className="bg-green-50 rounded-xl shadow-sm p-4 text-center col-span-2">
+                  <p className="text-sm font-bold text-green-700">✓ Todo pagado</p>
+                  <p className="text-xs text-gray-500 mt-0.5">${fmt(totalComision)} cobrado</p>
+                </div>
+              )}
+            </div>
+
+            {/* ── Desglose por jornada — ventas personales ── */}
             {porJornada.length > 0 && (
               <div>
                 <p className="text-xs text-gray-400 font-medium px-1 uppercase tracking-wider mb-3">
                   {porJornada.some((j) => j.tienda > 0)
-                    ? "Comisión por ventas en tienda ($2/quiniela)"
+                    ? "Comisión por ventas en tienda ($2 por quiniela)"
                     : "Ventas por jornada"}
                 </p>
                 <div className="space-y-3">
@@ -106,8 +134,8 @@ export default function GananciasPage() {
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div className="bg-gray-50 rounded-lg p-2 text-center">
-                          <p className="font-bold text-gray-700">{j.tienda}</p>
-                          <p className="text-[10px] text-gray-500">Tienda</p>
+                          <p className="font-bold text-gray-700">{j.tienda + j.online}</p>
+                          <p className="text-[10px] text-gray-500">Quinielas</p>
                         </div>
                         <div className="bg-yellow-50 rounded-lg p-2 text-center">
                           <p className="font-bold text-yellow-600">${fmt(j.recaudado)}</p>
@@ -124,16 +152,6 @@ export default function GananciasPage() {
                     </div>
                   ))}
                 </div>
-
-                {totales && totales.comisionTienda > 0 && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between mt-3">
-                    <div>
-                      <p className="text-sm font-bold text-amber-800">Subtotal tienda</p>
-                      <p className="text-xs text-amber-600">${fmt(totales.pagadoTienda)} pagado</p>
-                    </div>
-                    <p className="text-xl font-bold text-amber-700">${fmt(totales.comisionTienda)}</p>
-                  </div>
-                )}
               </div>
             )}
 
@@ -141,7 +159,7 @@ export default function GananciasPage() {
             {esAdmin && comisionesAdmin.length > 0 && (
               <div>
                 <p className="text-xs text-gray-400 font-medium px-1 uppercase tracking-wider mb-3">
-                  Fondo de administración · 15% del total repartido entre {comisionesAdmin[0]?.numAdmins ?? "—"} administradores
+                  Fondo de administración · 15% repartido entre {comisionesAdmin[0]?.numAdmins ?? "—"} administradores
                 </p>
                 <div className="space-y-3">
                   {comisionesAdmin.map((j) => (
@@ -174,39 +192,6 @@ export default function GananciasPage() {
                       )}
                     </div>
                   ))}
-                </div>
-
-                {totales && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between mt-3">
-                    <div>
-                      <p className="text-sm font-bold text-blue-800">Subtotal fondo admin</p>
-                      <p className="text-xs text-blue-600">${fmt(totales.comisionAdmin - totales.pendienteAdmin)} pagado</p>
-                    </div>
-                    <p className="text-xl font-bold text-blue-700">${fmt(totales.comisionAdmin)}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── Gran total ── */}
-            {totales && (totales.comisionTienda > 0 || totales.comisionAdmin > 0) && (
-              <div className="bg-amber-900 text-white rounded-2xl p-4">
-                <p className="text-xs font-bold tracking-widest text-amber-400 uppercase mb-3">Total acumulado</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white/10 rounded-lg p-3 text-center">
-                    <p className="text-xl font-bold text-amber-300">
-                      ${fmt(totales.comisionTienda + totales.comisionAdmin)}
-                    </p>
-                    <p className="text-xs text-amber-400">Ganancias totales</p>
-                  </div>
-                  <div className="bg-white/10 rounded-lg p-3 text-center">
-                    <p className={`text-xl font-bold ${(totales.pendienteTienda + totales.pendienteAdmin) > 0 ? "text-orange-300" : "text-green-300"}`}>
-                      ${fmt(totales.pendienteTienda + totales.pendienteAdmin)}
-                    </p>
-                    <p className="text-xs text-amber-400">
-                      {(totales.pendienteTienda + totales.pendienteAdmin) > 0 ? "Pendiente de cobrar" : "Todo pagado"}
-                    </p>
-                  </div>
                 </div>
               </div>
             )}
