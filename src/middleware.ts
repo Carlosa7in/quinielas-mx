@@ -27,7 +27,8 @@ export async function middleware(req: NextRequest) {
       !pathname.startsWith("/admin/apostadores") &&
       !pathname.startsWith("/admin/ganancias") &&
       !pathname.startsWith("/admin/mi-perfil") &&
-      !pathname.startsWith("/admin/mi-link")
+      !pathname.startsWith("/admin/mi-link") &&
+      !pathname.startsWith("/admin/escanear")
     ) {
       return NextResponse.redirect(new URL("/admin/tienda", req.url));
     }
