@@ -185,7 +185,7 @@ export default function TiendaPage() {
           </button>
 
           <a
-            href="/admin/perfil?tab=milink"
+            href="/admin/mi-link"
             className="bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors flex"
           >
             <span className="text-2xl">🔗</span>

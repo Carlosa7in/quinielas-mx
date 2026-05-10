@@ -26,7 +26,8 @@ export async function middleware(req: NextRequest) {
       !pathname.startsWith("/admin/forma") &&
       !pathname.startsWith("/admin/apostadores") &&
       !pathname.startsWith("/admin/ganancias") &&
-      !pathname.startsWith("/admin/mi-perfil")
+      !pathname.startsWith("/admin/mi-perfil") &&
+      !pathname.startsWith("/admin/mi-link")
     ) {
       return NextResponse.redirect(new URL("/admin/tienda", req.url));
     }
@@ -36,7 +37,8 @@ export async function middleware(req: NextRequest) {
       !pathname.startsWith("/admin/perfil") &&
       !pathname.startsWith("/admin/apostadores") &&
       !pathname.startsWith("/admin/ganancias") &&
-      !pathname.startsWith("/admin/mi-perfil")
+      !pathname.startsWith("/admin/mi-perfil") &&
+      !pathname.startsWith("/admin/mi-link")
     ) {
       return NextResponse.redirect(new URL("/admin/perfil", req.url));
     }
