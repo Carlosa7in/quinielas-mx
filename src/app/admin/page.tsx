@@ -321,17 +321,6 @@ export default function AdminPage() {
           <p className="text-xs text-gray-400 font-medium px-1 mb-2">ADMINISTRACIÓN</p>
           <div className="grid grid-cols-1 gap-3">
             <Link
-              href="/admin/quinielas"
-              className="bg-purple-700 hover:bg-purple-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-            >
-              <span className="text-2xl">📋</span>
-              <div>
-                <p className="font-bold">Ver Quinielas</p>
-                <p className="text-purple-200 text-sm">Lista de todas las quinielas registradas</p>
-              </div>
-            </Link>
-
-            <Link
               href="/admin/resultados"
               className="bg-blue-700 hover:bg-blue-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
             >
@@ -365,28 +354,15 @@ export default function AdminPage() {
             </Link>
 
             <Link
-              href="/admin/vendedores"
-              className="bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              href="/admin/quinielas"
+              className="bg-indigo-700 hover:bg-indigo-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
             >
-              <span className="text-2xl">🔗</span>
+              <span className="text-2xl">✏️</span>
               <div>
-                <p className="font-bold">Vendedores</p>
-                <p className="text-cyan-200 text-sm">Links de referido y ventas por vendedor</p>
+                <p className="font-bold">Modificar Quinielas</p>
+                <p className="text-indigo-200 text-sm">Editar quinielas de jornadas abiertas y cerradas</p>
               </div>
             </Link>
-
-            {["superadmin", "admin"].includes(rol) && (
-              <Link
-                href="/admin/equipos"
-                className="bg-stone-800 hover:bg-stone-700 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-              >
-                <span className="text-2xl">⚽</span>
-                <div>
-                  <p className="font-bold">Catálogo de Equipos</p>
-                  <p className="text-stone-300 text-sm">Agregar y gestionar equipos por liga</p>
-                </div>
-              </Link>
-            )}
 
             {rol === "superadmin" && (
               <Link

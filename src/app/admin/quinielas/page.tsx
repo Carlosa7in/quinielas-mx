@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 // Detecta si estamos en móvil Android (para usar intent de WA Business)
 function useIsMobile() {
@@ -525,6 +526,10 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
 }
 
 export default function QuinielasAdminPage() {
+  const { data: session } = useSession();
+  const rol = (session?.user as { role?: string })?.role ?? "";
+  const esAdmin = ["admin", "superadmin"].includes(rol);
+
   const [jornadas, setJornadas] = useState<Jornada[]>([]);
   const [cargando, setCargando] = useState(true);
   const [tab, setTab] = useState<"activa" | "pasadas">("activa");
@@ -540,7 +545,8 @@ export default function QuinielasAdminPage() {
 
   const ligas = [...new Set(jornadas.map((j) => j.liga))];
 
-  const jornadasFiltradas = ligaFiltro === "todas" ? jornadas : jornadas.filter((j) => j.liga === ligaFiltro);
+  const jornadasFiltradas = (ligaFiltro === "todas" ? jornadas : jornadas.filter((j) => j.liga === ligaFiltro))
+    .filter((j) => esAdmin || j.estado === "abierta"); // vendedores solo ven jornadas abiertas
   const activas = jornadasFiltradas.filter((j) => j.estado === "abierta");
   const pasadas = jornadasFiltradas.filter((j) => j.estado === "finalizada");
   const mostrar = tab === "activa" ? activas : pasadas;
@@ -598,39 +604,41 @@ export default function QuinielasAdminPage() {
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex bg-white rounded-xl shadow-sm overflow-hidden">
-          <button
-            onClick={() => setTab("activa")}
-            className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-              tab === "activa"
-                ? "bg-amber-700 text-white"
-                : "text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            🟢 Activa
-            {activas.length > 0 && (
-              <span className="ml-1.5 bg-white/30 text-xs px-1.5 py-0.5 rounded-full">
-                {activas.flatMap((j) => j.quinielas).length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setTab("pasadas")}
-            className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-              tab === "pasadas"
-                ? "bg-amber-700 text-white"
-                : "text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            📁 Pasadas
-            {pasadas.length > 0 && (
-              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${tab === "pasadas" ? "bg-white/30" : "bg-gray-100 text-gray-500"}`}>
-                {pasadas.length}
-              </span>
-            )}
-          </button>
-        </div>
+        {/* Tabs — Pasadas solo para admins */}
+        {esAdmin ? (
+          <div className="flex bg-white rounded-xl shadow-sm overflow-hidden">
+            <button
+              onClick={() => setTab("activa")}
+              className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+                tab === "activa" ? "bg-amber-700 text-white" : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              🟢 Activa
+              {activas.length > 0 && (
+                <span className="ml-1.5 bg-white/30 text-xs px-1.5 py-0.5 rounded-full">
+                  {activas.flatMap((j) => j.quinielas).length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setTab("pasadas")}
+              className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+                tab === "pasadas" ? "bg-amber-700 text-white" : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              📁 Pasadas
+              {pasadas.length > 0 && (
+                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${tab === "pasadas" ? "bg-white/30" : "bg-gray-100 text-gray-500"}`}>
+                  {pasadas.length}
+                </span>
+              )}
+            </button>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm px-4 py-3">
+            <p className="text-sm font-semibold text-amber-700">🟢 Jornada activa</p>
+          </div>
+        )}
 
         {/* Buscador */}
         <input
