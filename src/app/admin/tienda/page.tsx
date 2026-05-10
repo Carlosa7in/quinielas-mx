@@ -236,7 +236,7 @@ export default function TiendaPage() {
         return calcularFechaCierre(primera);
       })()
     : null;
-  const registroCerrado = fechaCierreObj ? new Date() >= fechaCierreObj : false;
+  const registroCerrado = !esAdmin && (fechaCierreObj ? new Date() >= fechaCierreObj : false);
 
   if (registroCerrado && fechaCierreObj && jornada) {
     return (

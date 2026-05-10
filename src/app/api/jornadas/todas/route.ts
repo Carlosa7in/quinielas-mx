@@ -46,23 +46,6 @@ export async function GET() {
       }
     }
 
-    // fechaInicio como fallback (cuando partidos no tienen fechaHora)
-    const fiMap = new Map<string, Date>();
-    for (const id of ids) {
-      try {
-        const rows = await sql`
-          SELECT "fechaInicio" FROM "Jornada" WHERE id = ${id}
-        `;
-        const val = rows[0]?.fechaInicio;
-        if (val) {
-          const d = val instanceof Date ? val : new Date(String(val));
-          if (!isNaN(d.getTime())) fiMap.set(id, d);
-        }
-      } catch (e) {
-        console.error(`[/api/jornadas/todas] fechaInicio failed for ${id}:`, e);
-      }
-    }
-
     const qMap = new Map<string, { monto: number; estado: string }[]>();
     for (const q of quinielas) {
       if (!qMap.has(q.jornadaId)) qMap.set(q.jornadaId, []);
@@ -76,11 +59,7 @@ export async function GET() {
 
     const resultado = jornadas.map((j) => {
       const qs = qMap.get(j.id) ?? [];
-      let baseParaCierre: Date | null = pMap.get(j.id) ?? null;
-      if (!baseParaCierre) {
-        const fi = fiMap.get(j.id);
-        if (fi) baseParaCierre = new Date(fi.getTime() + 18 * 3_600_000);
-      }
+      const baseParaCierre: Date | null = pMap.get(j.id) ?? null;
       return {
         id: j.id,
         numero: j.numero,
