@@ -45,6 +45,14 @@ type Jornada = {
 
 const LABEL = { "1": "L", "X": "E", "2": "V" } as Record<string, string>;
 
+const LIGA_ICON: Record<string, string> = {
+  "Liga MX": "🇲🇽",
+  "Champions League": "⭐",
+  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "La Liga": "🇪🇸",
+  "Mixta": "⚽",
+};
+
 function estadoColor(estado: string) {
   if (estado === "ganadora") return "bg-green-100 text-green-700";
   if (estado === "perdedora") return "bg-red-100 text-red-600";
@@ -589,7 +597,7 @@ export default function QuinielasAdminPage() {
 
         {/* Filtro liga */}
         {ligas.length > 1 && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {["todas", ...ligas].map((l) => (
               <button
                 key={l}
@@ -598,7 +606,7 @@ export default function QuinielasAdminPage() {
                   ligaFiltro === l ? "bg-amber-700 text-white" : "bg-white text-gray-500 hover:bg-gray-50"
                 }`}
               >
-                {l === "todas" ? "Todas" : l === "Liga MX" ? "🇲🇽 Liga MX" : "⭐ Champions"}
+                {l === "todas" ? "Todas" : `${LIGA_ICON[l] ?? "⚽"} ${l}`}
               </button>
             ))}
           </div>
