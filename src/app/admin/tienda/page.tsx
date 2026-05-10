@@ -59,7 +59,7 @@ export default function TiendaPage() {
   const esAdmin = ["admin", "superadmin"].includes(rol);
 
   // Admins entran directo al selector — su home es /admin con toda la navegación
-  const [modo, setModo] = useState<"home" | "selector" | "seleccion" | "manual">(
+  const [modo, setModo] = useState<"home" | "vender" | "selector" | "seleccion" | "manual">(
     esAdmin ? "selector" : "home"
   );
 
@@ -74,119 +74,139 @@ export default function TiendaPage() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
-  /* ── Pantalla de inicio ──────────────────────────────────────── */
-  if (modo === "home") {
+  /* ── Header compartido home/vender ──────────────────────────── */
+  const headerPanel = (onBack?: () => void) => {
     const rolLabel: Record<string, string> = { tienda: "Tienda", vendedor: "Vendedor", admin: "Admin", superadmin: "Superadmin" };
     return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-brand text-white py-6 px-4">
-          <div className="max-w-2xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "40px", objectFit: "contain" }} />
-              <h1 className="text-2xl font-bold">Mi Panel</h1>
+      <div className="bg-brand text-white py-6 px-4">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {onBack ? (
+              <button onClick={onBack} className="text-amber-400 text-sm mr-1">←</button>
+            ) : null}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "40px", objectFit: "contain" }} />
+            <h1 className="text-2xl font-bold">{onBack ? "Vender" : "Mi Panel"}</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right hidden sm:block">
+              <p className="text-white text-sm font-medium">{nombreUsuario}</p>
+              <p className="text-amber-400 text-xs capitalize">{rolLabel[rol] ?? rol}</p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="text-right hidden sm:block">
-                <p className="text-white text-sm font-medium">{nombreUsuario}</p>
-                <p className="text-amber-400 text-xs capitalize">{rolLabel[rol] ?? rol}</p>
-              </div>
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                Salir
-              </button>
-            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Salir
+            </button>
           </div>
         </div>
+      </div>
+    );
+  };
 
-        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+  /* ── Pantalla de inicio ──────────────────────────────────────── */
+  if (modo === "home") {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {headerPanel()}
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-3">
 
-          {/* ── Vender ─────────────────────────────────────────── */}
-          <div>
-            <p className="text-xs text-gray-400 font-medium px-1 mb-2">VENDER</p>
-            <div className="grid grid-cols-1 gap-3">
-              <button
-                onClick={() => setModo("selector")}
-                className="bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left"
-              >
-                <span className="text-2xl">🏪</span>
-                <div>
-                  <p className="font-bold">Registro en Tienda</p>
-                  <p className="text-amber-300/70 text-sm">Registrar quiniela presencial e imprimir ticket</p>
-                </div>
-              </button>
-
-              <a
-                href="/admin/forma"
-                className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
-              >
-                <span className="text-2xl">🖨️</span>
-                <div>
-                  <p className="font-bold">Imprimir Formas</p>
-                  <p className="text-gray-500 text-sm">Formas en blanco o con picks aleatorios</p>
-                </div>
-              </a>
-
-              <a
-                href="/admin/perfil?tab=milink"
-                className="bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-              >
-                <span className="text-2xl">🔗</span>
-                <div>
-                  <p className="font-bold">Mi Link de Ventas</p>
-                  <p className="text-cyan-200 text-sm">Comparte tu link y ve tus referidos online</p>
-                </div>
-              </a>
+          <button
+            onClick={() => setModo("vender")}
+            className="w-full bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left"
+          >
+            <span className="text-2xl">🏪</span>
+            <div className="flex-1">
+              <p className="font-bold">Vender</p>
+              <p className="text-amber-300/70 text-sm">Registro en tienda, imprimir formas y mi link</p>
             </div>
-          </div>
+            <span className="text-amber-400 text-lg">›</span>
+          </button>
 
-          {/* ── Mis stats ──────────────────────────────────────── */}
-          <div>
-            <p className="text-xs text-gray-400 font-medium px-1 mb-2">MIS ESTADÍSTICAS</p>
-            <div className="grid grid-cols-1 gap-3">
-              <a
-                href="/admin/ganancias"
-                className="bg-green-700 hover:bg-green-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-              >
-                <span className="text-2xl">💰</span>
-                <div>
-                  <p className="font-bold">Mis Ganancias</p>
-                  <p className="text-green-200 text-sm">Comisiones y ventas por jornada</p>
-                </div>
-              </a>
-
-              <a
-                href="/admin/apostadores"
-                className="bg-teal-700 hover:bg-teal-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
-              >
-                <span className="text-2xl">👥</span>
-                <div>
-                  <p className="font-bold">Apostadores</p>
-                  <p className="text-teal-200 text-sm">Historial de clientes registrados</p>
-                </div>
-              </a>
+          <a
+            href="/admin/ganancias"
+            className="bg-green-700 hover:bg-green-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors flex"
+          >
+            <span className="text-2xl">💰</span>
+            <div className="flex-1">
+              <p className="font-bold">Mis Ganancias</p>
+              <p className="text-green-200 text-sm">Comisiones y ventas por jornada</p>
             </div>
-          </div>
+            <span className="text-green-400 text-lg">›</span>
+          </a>
 
-          {/* ── Mi cuenta ──────────────────────────────────────── */}
-          <div>
-            <p className="text-xs text-gray-400 font-medium px-1 mb-2">MI CUENTA</p>
-            <div className="grid grid-cols-1 gap-3">
-              <a
-                href="/admin/perfil?tab=perfil"
-                className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
-              >
-                <span className="text-2xl">👤</span>
-                <div>
-                  <p className="font-bold">Mi Perfil</p>
-                  <p className="text-gray-500 text-sm">Editar datos y cambiar contraseña</p>
-                </div>
-              </a>
+          <a
+            href="/admin/apostadores"
+            className="bg-teal-700 hover:bg-teal-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors flex"
+          >
+            <span className="text-2xl">👥</span>
+            <div className="flex-1">
+              <p className="font-bold">Apostadores</p>
+              <p className="text-teal-200 text-sm">Historial de clientes registrados</p>
             </div>
-          </div>
+            <span className="text-teal-400 text-lg">›</span>
+          </a>
+
+          <a
+            href="/admin/perfil?tab=perfil"
+            className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors flex"
+          >
+            <span className="text-2xl">👤</span>
+            <div className="flex-1">
+              <p className="font-bold">Mi Perfil</p>
+              <p className="text-gray-500 text-sm">Editar datos y cambiar contraseña</p>
+            </div>
+            <span className="text-gray-400 text-lg">›</span>
+          </a>
+
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Sub-pantalla Vender ─────────────────────────────────────── */
+  if (modo === "vender") {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {headerPanel(() => setModo("home"))}
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-3">
+
+          <button
+            onClick={() => setModo("selector")}
+            className="w-full bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left"
+          >
+            <span className="text-2xl">🏪</span>
+            <div className="flex-1">
+              <p className="font-bold">Registro en Tienda</p>
+              <p className="text-amber-300/70 text-sm">Registrar quiniela presencial e imprimir ticket</p>
+            </div>
+            <span className="text-amber-400 text-lg">›</span>
+          </button>
+
+          <a
+            href="/admin/forma"
+            className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors flex"
+          >
+            <span className="text-2xl">🖨️</span>
+            <div className="flex-1">
+              <p className="font-bold">Imprimir Formas</p>
+              <p className="text-gray-500 text-sm">Formas en blanco o con picks aleatorios</p>
+            </div>
+            <span className="text-gray-400 text-lg">›</span>
+          </a>
+
+          <a
+            href="/admin/perfil?tab=milink"
+            className="bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors flex"
+          >
+            <span className="text-2xl">🔗</span>
+            <div className="flex-1">
+              <p className="font-bold">Mi Link de Ventas</p>
+              <p className="text-cyan-200 text-sm">Comparte tu link y ve tus referidos online</p>
+            </div>
+            <span className="text-cyan-400 text-lg">›</span>
+          </a>
 
         </div>
       </div>
