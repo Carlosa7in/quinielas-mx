@@ -58,7 +58,29 @@ export default function TiendaPage() {
   const rol = (session?.user as { role?: string })?.role ?? "";
   const esAdmin = ["admin", "superadmin"].includes(rol);
 
-  const [modo, setModo] = useState<"home" | "vender" | "selector" | "seleccion" | "manual">("home");
+  type Modo = "home" | "vender" | "selector" | "seleccion" | "manual";
+  const [modo, setModo] = useState<Modo>("home");
+
+  // Navegar entre modos registrando historial para que el botón atrás funcione
+  const irA = (nuevoModo: Modo) => {
+    history.pushState({ modo: nuevoModo }, "");
+    setModo(nuevoModo);
+  };
+
+  // Retroceder en el estado cuando el navegador/teléfono pulsa atrás
+  useEffect(() => {
+    const handlePop = () => {
+      setModo((prev) => {
+        if (prev === "seleccion" || prev === "manual") { setJornada(null); return "selector"; }
+        if (prev === "selector") return esAdmin ? "home" : "vender";
+        if (prev === "vender") return "home";
+        return "home";
+      });
+    };
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [esAdmin]);
 
   const [jornada, setJornada] = useState<Jornada | null>(null);
 
@@ -134,7 +156,7 @@ export default function TiendaPage() {
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-3">
 
           <button
-            onClick={() => setModo("vender")}
+            onClick={() => irA("vender")}
             className="w-full bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left"
           >
             <span className="text-2xl">🏪</span>
@@ -194,7 +216,7 @@ export default function TiendaPage() {
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-3">
 
           <button
-            onClick={() => setModo("selector")}
+            onClick={() => irA("selector")}
             className="w-full bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left"
           >
             <span className="text-2xl">🏪</span>
@@ -228,7 +250,7 @@ export default function TiendaPage() {
     const data = await res.json();
     if (!data.error) {
       setJornada(data);
-      setModo("seleccion");
+      irA("seleccion");
     }
   };
 
@@ -265,7 +287,7 @@ export default function TiendaPage() {
         jornada={jornada}
         fechaCierre={fechaCierreObj}
         onBack={() => { setJornada(null); setModo("selector"); setFormas([{}]); }}
-        onReabrir={(jornadaActualizada) => { setJornada(jornadaActualizada as unknown as Jornada); setModo("seleccion"); }}
+        onReabrir={(jornadaActualizada) => { setJornada(jornadaActualizada as unknown as Jornada); irA("seleccion"); }}
       />
     );
   }
@@ -300,7 +322,7 @@ export default function TiendaPage() {
           </p>
 
           <button
-            onClick={() => setModo("manual")}
+            onClick={() => irA("manual")}
             className="w-full bg-white border-2 border-amber-600 hover:bg-amber-50 rounded-2xl p-6 flex items-center gap-4 transition-colors text-left"
           >
             <span className="text-4xl">✏️</span>
