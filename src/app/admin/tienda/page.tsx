@@ -243,7 +243,7 @@ export default function TiendaPage() {
       <RegistroCerrado
         jornada={jornada}
         fechaCierre={fechaCierreObj}
-        onBack={() => { setJornada(null); setModo("home"); setFormas([{}]); }}
+        onBack={() => { setJornada(null); setModo("selector"); setFormas([{}]); }}
         onReabrir={(jornadaActualizada) => { setJornada(jornadaActualizada as unknown as Jornada); setModo("seleccion"); }}
       />
     );
@@ -256,7 +256,7 @@ export default function TiendaPage() {
         <div className="bg-brand text-white py-4 px-4">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             <div>
-              <button onClick={() => { setJornada(null); setModo(esAdmin ? "selector" : "vender"); }} className="text-amber-400 text-sm">← Volver</button>
+              <button onClick={() => { setJornada(null); setModo("selector"); }} className="text-amber-400 text-sm">← Registrar Quiniela</button>
               <h1 className="text-xl font-bold mt-1">Registrar Quiniela</h1>
               {jornada && (
                 <p className="text-amber-400 text-xs">
