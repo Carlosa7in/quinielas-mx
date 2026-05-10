@@ -148,7 +148,7 @@ export default function TiendaPage() {
             <p className="text-xs text-gray-400 font-medium px-1 mb-2">MIS ESTADÍSTICAS</p>
             <div className="grid grid-cols-1 gap-3">
               <a
-                href="/admin/perfil?tab=ganancias"
+                href="/admin/ganancias"
                 className="bg-green-700 hover:bg-green-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
               >
                 <span className="text-2xl">💰</span>

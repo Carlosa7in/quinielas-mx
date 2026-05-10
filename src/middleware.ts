@@ -24,7 +24,8 @@ export async function middleware(req: NextRequest) {
       !pathname.startsWith("/admin/tienda") &&
       !pathname.startsWith("/admin/perfil") &&
       !pathname.startsWith("/admin/forma") &&
-      !pathname.startsWith("/admin/apostadores")
+      !pathname.startsWith("/admin/apostadores") &&
+      !pathname.startsWith("/admin/ganancias")
     ) {
       return NextResponse.redirect(new URL("/admin/tienda", req.url));
     }
@@ -32,7 +33,8 @@ export async function middleware(req: NextRequest) {
     if (
       rol === "vendedor" &&
       !pathname.startsWith("/admin/perfil") &&
-      !pathname.startsWith("/admin/apostadores")
+      !pathname.startsWith("/admin/apostadores") &&
+      !pathname.startsWith("/admin/ganancias")
     ) {
       return NextResponse.redirect(new URL("/admin/perfil", req.url));
     }
