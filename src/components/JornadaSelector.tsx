@@ -12,7 +12,15 @@ export type JornadaResumen = {
   totalPartidos: number;
   recaudado: number;
   ganadoras: number;
+  primerPartidoFecha: string | null;
 };
+
+// Jornada visible para vender: estado abierta Y registro aún no cerrado
+function estaAbierta(j: JornadaResumen): boolean {
+  if (j.estado !== "abierta") return false;
+  if (!j.primerPartidoFecha) return true; // sin fecha → mostrar
+  return new Date() < new Date(j.primerPartidoFecha);
+}
 
 const LIGA_ICON: Record<string, string> = {
   "Liga MX": "🇲🇽",
@@ -43,7 +51,7 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
       .then((r) => r.json())
       .then((data: JornadaResumen[]) => {
         setJornadas(data);
-        const visibles = soloActivas ? data.filter((j) => j.estado === "abierta") : data;
+        const visibles = soloActivas ? data.filter(estaAbierta) : data;
         if (visibles.length > 0) {
           const ligas = [...new Set(visibles.map((j) => j.liga))];
           setLigaActiva(ligas[0]);
@@ -54,7 +62,7 @@ export function JornadaSelector({ onSelect, titulo = "Seleccionar Jornada", back
   }, [soloActivas]);
 
   const LIGA_ORDEN: Record<string, number> = { "Liga MX": 0, "Champions League": 1, "Premier League": 2, "La Liga": 3, "Mixta": 4 };
-  const jornadasVisibles = soloActivas ? jornadas.filter((j) => j.estado === "abierta") : jornadas;
+  const jornadasVisibles = soloActivas ? jornadas.filter(estaAbierta) : jornadas;
   const ligas = [...new Set(jornadasVisibles.map((j) => j.liga))]
     .sort((a, b) => (LIGA_ORDEN[a] ?? 9) - (LIGA_ORDEN[b] ?? 9));
   const jornadasFiltradas = jornadasVisibles.filter((j) => j.liga === ligaActiva);
