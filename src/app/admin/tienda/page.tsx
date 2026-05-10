@@ -58,10 +58,7 @@ export default function TiendaPage() {
   const rol = (session?.user as { role?: string })?.role ?? "";
   const esAdmin = ["admin", "superadmin"].includes(rol);
 
-  // Admins entran directo al selector — su home es /admin con toda la navegación
-  const [modo, setModo] = useState<"home" | "vender" | "selector" | "seleccion" | "manual">(
-    esAdmin ? "selector" : "home"
-  );
+  const [modo, setModo] = useState<"home" | "vender" | "selector" | "seleccion" | "manual">("home");
 
   const [jornada, setJornada] = useState<Jornada | null>(null);
 
@@ -75,12 +72,6 @@ export default function TiendaPage() {
   const [error, setError] = useState("");
   const [clienteEncontrado, setClienteEncontrado] = useState<{ nombre: string } | null>(null);
   const [buscandoCliente, setBuscandoCliente] = useState(false);
-
-  // Si la sesión carga y el usuario es admin, saltar directo al selector (no mostrar home de tienda)
-  useEffect(() => {
-    if (esAdmin && modo === "home") setModo("selector");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [esAdmin]);
 
   /* ── Búsqueda de cliente por teléfono (debounced 500ms) ─────── */
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
