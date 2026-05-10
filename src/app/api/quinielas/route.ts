@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { prisma, sql } from "@/lib/prisma";
 import { generarFolio } from "@/lib/folio";
 import { calcularFechaCierre } from "@/lib/fechas";
@@ -10,6 +11,10 @@ function numeroCombinaciones(picks: { predicciones: string[] }[]): number {
 
 // POST /api/quinielas - registrar quiniela (sencilla, reventado o múltiples boletos)
 export async function POST(req: Request) {
+  const token = await getToken({ req: req as Parameters<typeof getToken>[0]["req"], secret: process.env.NEXTAUTH_SECRET });
+  const rolSesion = (token?.role as string) ?? "";
+  const esAdminSesion = ["admin", "superadmin"].includes(rolSesion);
+
   const body = await req.json();
   const { jornadaId, picks, nombre, telefono, canal = "online", usuarioId, cantidad = 1, vendedorCodigo } = body;
 
@@ -65,7 +70,7 @@ export async function POST(req: Request) {
         );
       }
 
-      if (primerPartidoFecha) {
+      if (primerPartidoFecha && !esAdminSesion) {
         const fechaCierre = calcularFechaCierre(primerPartidoFecha);
         if (new Date() >= fechaCierre) {
           return NextResponse.json(
