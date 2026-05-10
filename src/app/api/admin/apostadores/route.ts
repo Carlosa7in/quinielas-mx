@@ -20,8 +20,10 @@ export async function GET(req: NextRequest) {
 
   const map = new Map<string, { nombre: string; telefono: string | null; totalQuinielas: number }>();
   for (const q of quinielas) {
-    const key = q.clienteId ?? q.nombreCliente ?? "sin-nombre";
-    const nombre = q.nombreCliente ?? "Sin nombre";
+    // Agrupar por nombre (normalizado) para que cada persona aparezca por separado
+    // aunque compartan teléfono o clienteId
+    const nombre = q.nombreCliente?.trim() ?? "Sin nombre";
+    const key = nombre.toLowerCase();
     const telefono = q.telefonoCliente ?? null;
     if (!map.has(key)) {
       map.set(key, { nombre, telefono, totalQuinielas: 0 });
