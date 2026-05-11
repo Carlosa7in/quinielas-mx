@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { AuthGuard } from "@/components/AuthGuard";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -19,7 +20,10 @@ export default function RootLayout({
   return (
     <html lang="es" className="h-full" suppressHydrationWarning>
       <body className={`${geist.className} min-h-full flex flex-col bg-gray-50`} suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <Providers>
+          <AuthGuard />
+          {children}
+        </Providers>
       </body>
     </html>
   );
