@@ -104,7 +104,7 @@ export default function ComisionesPage() {
   const recaudadoGeneral = reporte.reduce((s, v) => s + v.recaudado, 0);
   const totalTiendaAll = reporte.filter((v) => v.rol !== "vendedor").reduce((s, v) => s + v.tienda, 0);
   const totalReferidoAll = reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.total, 0);
-  const totalDirectasAll = Math.max(0, (totalGlobal || totalGeneral) - totalGeneral);
+  const totalDirectasAll = Math.max(0, (totalGlobal || totalGeneral) - totalGeneral - sinAsignar);
   const totalComisionesReferido = reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.comisionTotal, 0);
   const baseDesglose = recaudadoGlobal > 0 ? recaudadoGlobal : recaudadoGeneral;
   const cutDuenos = baseDesglose * PCT_DUENOS;
