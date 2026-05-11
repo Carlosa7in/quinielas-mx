@@ -22,6 +22,7 @@ type Pick = { prediccion: string; acertado: boolean | null; partidoId: string; p
 type Quiniela = {
   id: string;
   folio: string;
+  usuarioId: string | null;
   nombreCliente: string | null;
   telefonoCliente: string | null;
   canal: string;
@@ -32,6 +33,8 @@ type Quiniela = {
   referenciaPago: string | null;
   picks: Pick[];
 };
+
+type UsuarioOpcion = { id: string; nombre: string; rol: string };
 
 type Jornada = {
   id: string;
@@ -220,7 +223,57 @@ function agruparPicks(picks: Pick[]): { predicciones: string[]; acertados: (bool
 
 type NotifItem = { tel: string; nombre: string; folios: string[] };
 
-function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string }) {
+function AsignarVendedor({
+  quiniela,
+  usuarios,
+  onAsignado,
+}: {
+  quiniela: Quiniela;
+  usuarios: UsuarioOpcion[];
+  onAsignado: (id: string, usuarioId: string) => void;
+}) {
+  const [seleccionado, setSeleccionado] = useState("");
+  const [guardando, setGuardando] = useState(false);
+
+  const asignar = async () => {
+    if (!seleccionado) return;
+    setGuardando(true);
+    const res = await fetch(`/api/admin/quinielas/${quiniela.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ usuarioId: seleccionado }),
+    });
+    if (res.ok) onAsignado(quiniela.id, seleccionado);
+    setGuardando(false);
+  };
+
+  return (
+    <div className="mt-2 pt-2 border-t border-orange-100 flex items-center gap-2 flex-wrap">
+      <span className="text-xs text-orange-600 font-medium">⚠️ Sin vendedor</span>
+      <select
+        value={seleccionado}
+        onChange={(e) => setSeleccionado(e.target.value)}
+        className="flex-1 text-xs border border-orange-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-orange-400"
+      >
+        <option value="">Seleccionar vendedor...</option>
+        {usuarios.map((u) => (
+          <option key={u.id} value={u.id}>
+            {u.nombre} ({u.rol})
+          </option>
+        ))}
+      </select>
+      <button
+        onClick={asignar}
+        disabled={!seleccionado || guardando}
+        className="text-xs bg-orange-600 hover:bg-orange-700 text-white font-semibold px-3 py-1.5 rounded-lg disabled:opacity-40 transition-colors"
+      >
+        {guardando ? "..." : "Asignar"}
+      </button>
+    </div>
+  );
+}
+
+function JornadaCard({ jornada, busqueda, usuarios }: { jornada: Jornada; busqueda: string; usuarios: UsuarioOpcion[] }) {
   const [abierta, setAbierta] = useState(true);
   const [quinielas, setQuinielas] = useState(jornada.quinielas);
   const [eliminando, setEliminando] = useState<string | null>(null);
@@ -231,6 +284,10 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
 
   const actualizarPago = (id: string, estadoPago: string) => {
     setQuinielas((prev) => prev.map((q) => (q.id === id ? { ...q, estadoPago } : q)));
+  };
+
+  const actualizarUsuario = (id: string, usuarioId: string) => {
+    setQuinielas((prev) => prev.map((q) => (q.id === id ? { ...q, usuarioId } : q)));
   };
 
   const eliminar = async (q: Quiniela) => {
@@ -499,6 +556,13 @@ function JornadaCard({ jornada, busqueda }: { jornada: Jornada; busqueda: string
                           })}
                         </div>
                         <PagoAcciones quiniela={q} onUpdate={actualizarPago} />
+                        {q.canal === "tienda" && !q.usuarioId && (
+                          <AsignarVendedor
+                            quiniela={q}
+                            usuarios={usuarios}
+                            onAsignado={actualizarUsuario}
+                          />
+                        )}
                       </div>
 
                       {/* Columna derecha */}
@@ -543,12 +607,16 @@ export default function QuinielasAdminPage() {
   const [tab, setTab] = useState<"activa" | "pasadas">("activa");
   const [busqueda, setBusqueda] = useState("");
   const [ligaFiltro, setLigaFiltro] = useState<string>("todas");
+  const [usuarios, setUsuarios] = useState<UsuarioOpcion[]>([]);
 
   useEffect(() => {
     fetch("/api/admin/quinielas")
       .then((r) => r.json())
       .then((data) => setJornadas(data))
       .finally(() => setCargando(false));
+    fetch("/api/admin/usuarios")
+      .then((r) => r.json())
+      .then((data: UsuarioOpcion[]) => Array.isArray(data) && setUsuarios(data));
   }, []);
 
   const ligas = [...new Set(jornadas.map((j) => j.liga))];
@@ -668,7 +736,7 @@ export default function QuinielasAdminPage() {
         ) : (
           <div className="space-y-4">
             {mostrar.map((j) => (
-              <JornadaCard key={j.id} jornada={j} busqueda={busqueda} />
+              <JornadaCard key={j.id} jornada={j} busqueda={busqueda} usuarios={usuarios} />
             ))}
           </div>
         )}

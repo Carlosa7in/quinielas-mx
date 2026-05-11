@@ -15,6 +15,7 @@ export async function GET() {
         select: {
           id: true,
           folio: true,
+          usuarioId: true,
           nombreCliente: true,
           telefonoCliente: true,
           canal: true,
