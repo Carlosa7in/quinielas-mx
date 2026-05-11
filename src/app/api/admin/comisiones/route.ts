@@ -231,8 +231,8 @@ export async function GET(req: NextRequest) {
   const ventasDirectas = esSuperadmin
     ? await prisma.quiniela.findMany({
         where: {
-          canal: "online",
           usuarioId: null,
+          canal: { not: "tienda" },  // tienda sin usuario = error de captura, no venta directa
           estadoPago: "confirmado",
           ...(jornadaId ? { jornadaId } : {}),
         },
