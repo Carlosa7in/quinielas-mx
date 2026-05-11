@@ -1159,6 +1159,12 @@ export default function TicketPage() {
             🔍 Consultar resultados
           </a>
           <a
+            href={`/resultados/${quiniela.jornada.id}`}
+            className="block w-full text-center text-green-700 text-sm font-medium py-2 hover:underline transition-colors"
+          >
+            📊 Ver tabla de resultados →
+          </a>
+          <a
             href="/reglamento"
             className="block w-full text-center text-amber-600 text-sm font-medium py-2 hover:underline transition-colors"
           >
