@@ -169,9 +169,9 @@ export default function ComisionesPage() {
                 <span className="text-stone-300">Total recaudado</span>
                 <span className="font-bold">${fmt(baseDesglose)}</span>
               </div>
-              {recaudadoGlobal > recaudadoGeneral && (
+              {recaudadoGlobal > 0 && (
                 <div className="flex justify-between text-stone-500 text-xs">
-                  <span>↳ {fmt(recaudadoGeneral)} atribuido · {fmt(recaudadoGlobal - recaudadoGeneral)} sin asignar</span>
+                  <span>↳ ${fmt(recaudadoGeneral)} por referido · ${fmt(recaudadoGlobal - recaudadoGeneral)} directas 🌐</span>
                 </div>
               )}
               <div className="flex justify-between text-blue-400">
