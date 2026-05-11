@@ -103,6 +103,8 @@ export default function ComisionesPage() {
   const totalGeneral = reporte.reduce((s, v) => s + v.total, 0);
   const recaudadoGeneral = reporte.reduce((s, v) => s + v.recaudado, 0);
   const totalTiendaAll = reporte.filter((v) => v.rol !== "vendedor").reduce((s, v) => s + v.tienda, 0);
+  const totalReferidoAll = reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.total, 0);
+  const totalDirectasAll = Math.max(0, (totalGlobal || totalGeneral) - totalGeneral);
   const totalComisionesReferido = reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.comisionTotal, 0);
   const baseDesglose = recaudadoGlobal > 0 ? recaudadoGlobal : recaudadoGeneral;
   const cutDuenos = baseDesglose * PCT_DUENOS;
@@ -169,11 +171,11 @@ export default function ComisionesPage() {
                 <span className="text-stone-300">Total recaudado</span>
                 <span className="font-bold">${fmt(baseDesglose)}</span>
               </div>
-              {recaudadoGlobal > 0 && (
-                <div className="flex justify-between text-stone-500 text-xs">
-                  <span>↳ ${fmt(recaudadoGeneral)} por referido · ${fmt(recaudadoGlobal - recaudadoGeneral)} directas 🌐</span>
-                </div>
-              )}
+              <div className="flex gap-3 text-stone-500 text-xs flex-wrap">
+                {totalTiendaAll > 0 && <span>🏪 {totalTiendaAll} tienda</span>}
+                {totalReferidoAll > 0 && <span>🔗 {totalReferidoAll} referido</span>}
+                {totalDirectasAll > 0 && <span>🌐 {totalDirectasAll} directas</span>}
+              </div>
               <div className="flex justify-between text-blue-400">
                 <span>
                   − 15% fondo admin
