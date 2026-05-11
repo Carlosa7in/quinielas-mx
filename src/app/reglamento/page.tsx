@@ -2,44 +2,55 @@ import Link from "next/link";
 
 const secciones = [
   {
-    titulo: "Registro y verificación",
-    icono: "📋",
+    titulo: "Participantes",
+    icono: "👤",
     items: [
-      "Revisa tu quiniela en la pre-lista para verificar que esté bien escrita. En caso de no estarlo, da aviso al organizador para corregir.",
-      "Una vez enviada la lista oficial ya no se puede corregir.",
-      "Casilleros en blanco, no marcados o marcados con cualquier símbolo que no sea L, E o V serán tomados como E (Empate).",
+      "Solo pueden participar personas mayores de 18 años.",
+      "Al registrarte en la quiniela aceptas todas las reglas del presente reglamento.",
     ],
   },
   {
-    titulo: "Partidos pospuestos",
-    icono: "⏸️",
+    titulo: "Ganadores",
+    icono: "🏆",
     items: [
-      "Los partidos pospuestos tienen un día de prórroga después del último partido de la misma quiniela.",
-      "Pasando el día de prórroga, el partido queda anulado y la quiniela se jugará con los partidos restantes.",
-      "Ejemplo: si el último partido termina en domingo, el lunes es el día de prórroga para que se juegue el partido pospuesto.",
-      "No podrán anularse más de 3 partidos. Si se pospone un 4.° partido, se esperará hasta que se jueguen al menos 6 partidos, sin importar el tiempo de espera.",
+      "El ganador o ganadores serán quienes obtengan el mayor número de aciertos al finalizar todos los partidos.",
+      "Premio de 1.° lugar: el premio siempre se reparte en partes iguales entre todos los que empaten en primer lugar, sin importar cuántos sean.",
+      "Premio de 2.° lugar: máximo 20 ganadores para repartir el premio. Si hay más de 20, la bolsa se acumula para la siguiente semana. A la tercera semana acumulada, el premio se repartirá sin importar el número de ganadores.",
+    ],
+  },
+  {
+    titulo: "Partidos eliminatorios",
+    icono: "⚔️",
+    items: [
+      "En partidos de fase eliminatoria únicamente cuenta el tiempo reglamentario (90 minutos más compensación).",
+      "No se consideran tiempos extra ni penales.",
+    ],
+  },
+  {
+    titulo: "Lista de aclaraciones",
+    icono: "📋",
+    items: [
+      "Cada semana se avisará la hora en que se publicará la lista de aclaraciones.",
+      "Durante ese lapso los participantes deberán revisar que sus quinielas estén capturadas correctamente o reportar cualquier error.",
+      "Una vez publicada la lista final no se aceptan reclamos ni quejas.",
+      "Si una quiniela no fue capturada, se reembolsará el dinero o se guardará para la siguiente semana.",
+      "Si una quiniela no capturada hubiera resultado ganadora, no se entregará ningún premio — únicamente se realiza el reembolso o se guarda para la siguiente semana. Por ello es muy importante revisar la lista de aclaraciones.",
     ],
   },
   {
     titulo: "Partidos suspendidos",
     icono: "🚫",
     items: [
-      "Si un partido es suspendido después de empezar y no se reanuda antes del día de prórroga, se tomará como resultado el marcador en el minuto en que se suspendió.",
+      "Si un partido se suspende durante el encuentro, se tomará como resultado el marcador existente al momento de la suspensión.",
+      "No contarán los partidos suspendidos antes de iniciar, excepto cuando dicho partido se reprograme para el mismo día en que se juegue el último partido de la quiniela — en ese caso sí contará.",
     ],
   },
   {
-    titulo: "Partidos eliminatorios",
-    icono: "🏆",
+    titulo: "Entrega de premios",
+    icono: "💰",
     items: [
-      "En partidos de fase eliminatoria únicamente se toman en cuenta los primeros 90 minutos reglamentarios.",
-      "No se consideran tiempos extra ni penales.",
-    ],
-  },
-  {
-    titulo: "Reglas generales",
-    icono: "📌",
-    items: [
-      "En casos especiales, cualquier regla puede modificarse, siempre y cuando se haga mención con anticipación.",
+      "El premio se entrega al día siguiente de finalizar todos los partidos.",
+      "Los ganadores cuentan con un plazo máximo de 7 días naturales para reclamar su premio.",
     ],
   },
 ];
@@ -51,7 +62,7 @@ const premios = [
     color: "bg-yellow-50 border-yellow-200",
     titleColor: "text-yellow-700",
     descripcion:
-      "Premio principal. Lo ganan quienes más aciertos tengan al terminar la jornada.",
+      "Quienes obtengan el mayor número de aciertos. El premio se reparte en partes iguales entre todos los que empaten en primer lugar, sin importar cuántos sean.",
   },
   {
     lugar: "2.° Lugar",
@@ -59,23 +70,7 @@ const premios = [
     color: "bg-gray-50 border-gray-200",
     titleColor: "text-gray-600",
     descripcion:
-      "Lo ganan quienes tengan la segunda mayor cantidad de aciertos. Tope de 30 ganadores; si se superan, se acumula para la siguiente quiniela (máximo 2 veces, después se reparte sin tope).",
-  },
-  {
-    lugar: "Quiniela Perfecta",
-    icono: "🏅",
-    color: "bg-green-50 border-green-200",
-    titleColor: "text-green-700",
-    descripcion:
-      "Premio adicional para quien acierte todos los partidos de la jornada.",
-  },
-  {
-    lugar: "Cero Aciertos",
-    icono: "❌",
-    color: "bg-red-50 border-red-200",
-    titleColor: "text-red-600",
-    descripcion:
-      "Premio especial para participantes con cero aciertos. Tope de 25 ganadores; si se superan, se acumula para la siguiente quiniela.",
+      "Quienes tengan la segunda mayor cantidad de aciertos. Máximo 20 ganadores; si hay más, la bolsa se acumula hasta la semana siguiente. A la tercera semana acumulada se reparte sin importar el número de ganadores.",
   },
 ];
 
@@ -97,7 +92,15 @@ export default function ReglamentoPage() {
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
 
-        {/* Reglas */}
+        {/* Aviso de mayoría de edad */}
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-start gap-3">
+          <span className="text-xl shrink-0 mt-0.5">⚠️</span>
+          <p className="text-sm text-amber-800 font-medium">
+            Al participar confirmas que eres mayor de 18 años y aceptas las reglas del presente reglamento.
+          </p>
+        </div>
+
+        {/* Secciones */}
         {secciones.map((sec) => (
           <div key={sec.titulo} className="bg-white rounded-2xl shadow-sm overflow-hidden">
             <div className="flex items-center gap-3 px-4 py-3 bg-brand text-white">
