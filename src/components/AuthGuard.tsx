@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -10,33 +10,39 @@ const PUBLIC_PATHS = ["/", "/login", "/quiniela", "/ticket", "/consultar"];
  * (botón atrás después de cerrar sesión) y redirige al login inmediatamente.
  */
 export function AuthGuard() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const statusRef = useRef(status);
+
+  // Mantener ref actualizado sin causar re-renders adicionales
+  statusRef.current = status;
 
   const isProtected = !PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
 
+  // Redirige cuando la sesión termina
+  useEffect(() => {
+    if (!isProtected) return;
+    if (status === "unauthenticated") {
+      router.replace("/login");
+    }
+  }, [status, isProtected, router]);
+
+  // Detecta restauración desde bfcache (botón atrás del navegador/teléfono)
   useEffect(() => {
     if (!isProtected) return;
 
-    // Si la sesión ya cargó y no hay usuario → login
-    if (status === "unauthenticated") {
-      router.replace("/login");
-      return;
-    }
-
-    // Detecta restauración desde bfcache (botón atrás del navegador/teléfono)
     const handlePageShow = (e: PageTransitionEvent) => {
-      if (e.persisted && status === "unauthenticated") {
+      if (e.persisted && statusRef.current === "unauthenticated") {
         window.location.replace("/login");
       }
     };
 
     window.addEventListener("pageshow", handlePageShow);
     return () => window.removeEventListener("pageshow", handlePageShow);
-  }, [status, isProtected, router]);
+  }, [isProtected]);
 
   return null;
 }
