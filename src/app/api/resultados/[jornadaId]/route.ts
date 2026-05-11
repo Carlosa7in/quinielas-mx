@@ -43,7 +43,6 @@ export async function GET(
         resultado: true,
         golesLocal: true,
         golesVisita: true,
-        fechaHora: true,
       },
     });
 
