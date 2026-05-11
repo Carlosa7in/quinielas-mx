@@ -170,6 +170,36 @@ function BolsaSection() {
   );
 }
 
+function ResultadosRecientes() {
+  const [jornada, setJornada] = useState<{ id: string; nombre: string | null; numero: number; liga: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/jornadas/todas")
+      .then((r) => r.json())
+      .then((data: { id: string; nombre: string | null; numero: number; liga: string; estado: string }[]) => {
+        if (!Array.isArray(data)) return;
+        const finalizada = data.find((j) => j.estado === "finalizada");
+        if (finalizada) setJornada(finalizada);
+      })
+      .catch(() => {});
+  }, []);
+
+  if (!jornada) return null;
+
+  const nombre = jornada.nombre ?? `Jornada ${jornada.numero}`;
+
+  return (
+    <a
+      href={`/resultados/${jornada.id}`}
+      className="block w-full bg-white/8 hover:bg-white/15 rounded-xl p-4 text-left transition-colors"
+    >
+      <p className="text-xs text-amber-400 font-semibold mb-0.5">RESULTADOS RECIENTES</p>
+      <p className="text-white font-bold">{nombre}</p>
+      <p className="text-stone-400 text-sm mt-0.5">Ver cuadrícula completa de picks y ganadores 📊</p>
+    </a>
+  );
+}
+
 type PendienteItem = { folio: string; jornadaId?: string; nombre: string; monto: number; jornada: string; ts: number; totalBoletos?: number; montoTotal?: number };
 
 function BannerPagosPendientes() {
@@ -263,6 +293,8 @@ export default function Home() {
         <BannerPagosPendientes />
 
         <BolsaSection />
+
+        <ResultadosRecientes />
 
         <div className="space-y-3">
           <Link
