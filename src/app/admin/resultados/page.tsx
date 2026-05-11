@@ -237,6 +237,14 @@ export default function ResultadosPage() {
           )}
 
           <a
+            href={`/resultados/${jornada.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full text-center bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-colors"
+          >
+            📊 Ver cuadrícula de resultados
+          </a>
+          <a
             href="/admin"
             className="block w-full text-center bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-colors"
           >
