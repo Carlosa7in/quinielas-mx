@@ -37,7 +37,7 @@ const ROL_COLOR: Record<string, string> = {
   superadmin: "bg-purple-100 text-purple-700", admin: "bg-blue-100 text-blue-700",
   vendedor: "bg-green-100 text-green-700", tienda: "bg-amber-100 text-amber-700",
 };
-const CANAL_LABEL: Record<string, string> = { tienda: "Tienda", online: "Online" };
+const CANAL_LABEL: Record<string, string> = { tienda: "Tienda", online: "Online", directa: "Directa 🌐" };
 const ESTADO_COLOR: Record<string, string> = {
   pendiente: "text-yellow-600", confirmado: "text-green-600",
   ganadora: "text-amber-600 font-bold", perdedora: "text-gray-400",
@@ -328,8 +328,10 @@ export default function ComisionesPage() {
                               {j.comision > 0 && (
                                 <div className={`rounded-lg p-2 text-center ${v.rol === "vendedor" ? "bg-cyan-50" : "bg-orange-50"}`}>
                                   <p className={`font-bold ${v.rol === "vendedor" ? "text-cyan-700" : "text-orange-600"}`}>${fmt(j.comision)}</p>
-                                  <p className="text-[10px] text-gray-500">{v.rol === "vendedor" ? "Com. referido" : "Com. tienda"}</p>
-                                  <p className="text-[9px] text-gray-400">$2 × {v.rol === "vendedor" ? j.total : j.tienda}</p>
+                                  <p className="text-[10px] text-gray-500">
+                                    {v.rol === "vendedor" ? "Com. referido" : j.quinielas.some((q) => q.canal === "directa") ? "Com. directas 🌐" : "Com. tienda"}
+                                  </p>
+                                  <p className="text-[9px] text-gray-400">$2 × {v.rol === "vendedor" ? j.total : j.tienda || j.quinielas.filter((q) => q.canal === "directa").length}</p>
                                 </div>
                               )}
                               {j.comisionAdmin > 0 && (

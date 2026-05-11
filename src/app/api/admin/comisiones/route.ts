@@ -227,7 +227,84 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  // Sin asignar
+  // Ventas directas (homepage, sin código de referido) — $2 por quiniela confirmada → superadmin
+  const ventasDirectas = esSuperadmin
+    ? await prisma.quiniela.findMany({
+        where: {
+          canal: "online",
+          usuarioId: null,
+          estadoPago: "confirmado",
+          ...(jornadaId ? { jornadaId } : {}),
+        },
+        select: {
+          id: true, folio: true, monto: true, estado: true, estadoPago: true,
+          canal: true, nombreCliente: true, jornadaId: true,
+          jornada: { select: { id: true, numero: true, nombre: true, liga: true, temporada: true } },
+        },
+      })
+    : [];
+
+  // Agrupar ventas directas por jornada
+  const ventasDirectasPorJornada = new Map<string, typeof ventasDirectas>();
+  for (const q of ventasDirectas) {
+    if (!ventasDirectasPorJornada.has(q.jornadaId)) ventasDirectasPorJornada.set(q.jornadaId, []);
+    ventasDirectasPorJornada.get(q.jornadaId)!.push(q);
+  }
+
+  // Cuántos superadmins hay (para repartir ventas directas si fueran varios)
+  const numSuperadmins = await prisma.usuario.count({ where: { rol: "superadmin" } });
+
+  // Inyectar comisiones de ventas directas al reporte de cada superadmin
+  if (esSuperadmin) {
+    for (const u of reporte) {
+      if (u.rol !== "superadmin") continue;
+      for (const [jId, qs] of ventasDirectasPorJornada.entries()) {
+        const comisionDirecta = numSuperadmins > 0
+          ? (qs.length * COMISION_TIENDA) / numSuperadmins
+          : 0;
+        const jornada = qs[0].jornada;
+        const jornadaNombre = jornada.nombre ?? `Jornada ${jornada.numero}`;
+        const existente = u.porJornada.find((j) => j.jornadaId === jId);
+        if (existente) {
+          existente.comision += comisionDirecta;
+          existente.comisionTotal += comisionDirecta;
+          existente.quinielas.push(...qs.map((q) => ({
+            id: q.id, folio: q.folio, monto: q.monto, canal: "directa",
+            estado: q.estado, estadoPago: q.estadoPago, nombreCliente: q.nombreCliente,
+          })));
+        } else {
+          const pago = pagos.find((p) => p.usuarioId === u.id && p.jornadaId === jId);
+          u.porJornada.push({
+            jornadaId: jId,
+            jornadaNombre,
+            liga: jornada.liga,
+            temporada: jornada.temporada,
+            total: qs.length,
+            tienda: 0,
+            online: 0,
+            recaudado: 0,
+            comision: comisionDirecta,
+            comisionAdmin: 0,
+            comisionTotal: comisionDirecta,
+            pagado: !!pago,
+            pagadoEn: pago ? (pago.pagadoEn instanceof Date ? pago.pagadoEn.toISOString() : String(pago.pagadoEn)) : null,
+            montoPagado: pago?.monto ?? null,
+            quinielas: qs.map((q) => ({
+              id: q.id, folio: q.folio, monto: q.monto, canal: "directa",
+              estado: q.estado, estadoPago: q.estadoPago, nombreCliente: q.nombreCliente,
+            })),
+          });
+        }
+        u.comisionTotal += comisionDirecta;
+        u.pendientePago = u.porJornada
+          .filter((j) => !j.pagado && j.comisionTotal > 0)
+          .reduce((s, j) => s + j.comisionTotal, 0);
+      }
+      u.porJornada.sort((a, b) => b.jornadaNombre.localeCompare(a.jornadaNombre));
+    }
+  }
+
+  // Sin asignar (tienda sin usuario)
   const sinAsignarQuinielas = esSuperadmin
     ? await prisma.quiniela.findMany({
         where: { canal: "tienda", usuarioId: null, ...(jornadaId ? { jornadaId } : {}) },
