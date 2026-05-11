@@ -31,6 +31,11 @@ type FormaPicks = Record<string, string[]>;
 const OPCIONES = ["1", "X", "2"] as const;
 const LABELS: Record<string, string> = { "1": "L", X: "E", "2": "V" };
 
+const toTitleCase = (str: string) =>
+  str.replace(/\b\w/g, (c) => c.toUpperCase());
+
+const nombreCompleto = (str: string) => str.trim().split(/\s+/).length >= 2;
+
 function rellenarAzar(partidos: Partido[], picks: FormaPicks): FormaPicks {
   const next = { ...picks };
   for (const p of partidos) {
@@ -430,7 +435,7 @@ export default function TiendaPage() {
   /* ── Submit ──────────────────────────────────────────────────── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!todasCompletas || !nombre) return;
+    if (!todasCompletas || !nombreCompleto(nombre)) return;
     setEnviando(true);
     setError("");
 
@@ -678,14 +683,23 @@ export default function TiendaPage() {
         {/* ── Datos del cliente ── */}
         <div className="bg-white rounded-xl p-4 space-y-3">
           <h2 className="font-semibold text-gray-700">Datos del cliente</h2>
-          <input
-            type="text"
-            placeholder="Nombre del cliente *"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-          />
+          <div>
+            <input
+              type="text"
+              placeholder="Nombre y apellido *"
+              value={nombre}
+              onChange={(e) => setNombre(toTitleCase(e.target.value))}
+              required
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                nombre.trim().length > 0 && !nombreCompleto(nombre)
+                  ? "border-red-300"
+                  : "border-gray-200"
+              }`}
+            />
+            {nombre.trim().length > 0 && !nombreCompleto(nombre) && (
+              <p className="text-xs text-red-500 mt-1 px-1">Ingresa nombre y apellido</p>
+            )}
+          </div>
           <div>
             <input
               type="tel"
@@ -740,7 +754,7 @@ export default function TiendaPage() {
         {/* ── Botón registrar ── */}
         <button
           type="submit"
-          disabled={!todasCompletas || !nombre || enviando}
+          disabled={!todasCompletas || !nombreCompleto(nombre) || enviando}
           className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-colors text-lg"
         >
           {enviando
