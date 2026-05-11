@@ -24,17 +24,19 @@ model Usuario {
 }
 
 model Jornada {
-  id          String     @id @default(cuid())
-  numero      Int
-  nombre      String?
-  temporada   String
-  liga        String     @default("Liga MX")
-  estado      String     @default("abierta")
-  fechaInicio DateTime
-  fechaFin    DateTime
-  createdAt   DateTime   @default(now())
-  partidos    Partido[]
-  quinielas   Quiniela[]
+  id               String     @id @default(cuid())
+  numero           Int
+  nombre           String?
+  temporada        String
+  liga             String     @default("Liga MX")
+  estado           String     @default("abierta")
+  fechaInicio      DateTime
+  fechaFin         DateTime
+  createdAt        DateTime   @default(now())
+  bolsa2Acumulada  Float      @default(0)
+  acumulaciones2   Int        @default(0)
+  partidos         Partido[]
+  quinielas        Quiniela[]
 }
 
 model Partido {
@@ -88,6 +90,7 @@ model Quiniela {
   referenciaPago  String?
   puntos          Int?
   aciertos        Int?
+  premio          Float?
   createdAt       DateTime  @default(now())
   picks           Pick[]
 }

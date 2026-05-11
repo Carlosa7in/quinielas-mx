@@ -159,6 +159,17 @@ export default function AdminPage() {
             </Link>
 
             <Link
+              href="/admin/premiacion"
+              className="bg-yellow-600 hover:bg-yellow-500 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+            >
+              <span className="text-2xl">🏆</span>
+              <div>
+                <p className="font-bold">Premiación</p>
+                <p className="text-yellow-200 text-sm">Ver ganadores y enviar notificaciones de premios</p>
+              </div>
+            </Link>
+
+            <Link
               href="/admin/nueva-jornada"
               className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center gap-3 transition-colors"
             >

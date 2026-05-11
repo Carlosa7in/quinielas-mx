@@ -95,12 +95,131 @@ export async function POST(req: Request) {
         select: { folio: true, nombreCliente: true, aciertos: true },
       });
 
+      // ── Prize calculation ──────────────────────────────────────────────────
+      // Prize constants — easy to change
+      const PORC_PRIMERO = 0.60;
+      const PORC_SEGUNDO = 0.25;
+      const MAX_GANADORES_2 = 20;
+      const MAX_ACUMULACIONES = 2;
+
+      // Get jornada with accumulated prize
+      const jornadaData = await prisma.jornada.findUnique({
+        where: { id: jornadaId },
+        select: { bolsa2Acumulada: true, acumulaciones2: true },
+      });
+
+      // Total recaudado from confirmed quinielas only
+      const todasConfirmadas = await prisma.quiniela.findMany({
+        where: { jornadaId, estadoPago: "confirmado" },
+        select: { id: true, monto: true, aciertos: true, nombreCliente: true, telefonoCliente: true, folio: true },
+      });
+
+      const totalRecaudado = todasConfirmadas.reduce((s, q) => s + q.monto, 0);
+      const bolsa1 = totalRecaudado * PORC_PRIMERO;
+      const bolsa2Base = totalRecaudado * PORC_SEGUNDO;
+      const bolsa2Total = bolsa2Base + (jornadaData?.bolsa2Acumulada ?? 0);
+
+      // Find max aciertos (1st place)
+      const maxAciertos = todasConfirmadas.length > 0 ? Math.max(...todasConfirmadas.map((q) => q.aciertos ?? 0)) : 0;
+      const ganadores1 = todasConfirmadas.filter((q) => (q.aciertos ?? 0) === maxAciertos);
+      const premio1Cada = ganadores1.length > 0 ? bolsa1 / ganadores1.length : 0;
+
+      // Find 2nd place (second highest aciertos, different from 1st)
+      const aciertosUnicos = [...new Set(todasConfirmadas.map((q) => q.aciertos ?? 0))].sort((a, b) => b - a);
+      const segundoAciertos = aciertosUnicos.length > 1 ? aciertosUnicos[1] : null;
+      const ganadores2 = segundoAciertos !== null
+        ? todasConfirmadas.filter((q) => (q.aciertos ?? 0) === segundoAciertos)
+        : [];
+
+      // Determine 2nd place distribution
+      let premio2Cada = 0;
+      let bolsa2SiguienteJornada = 0;
+      let acumulaciones2Nuevas = jornadaData?.acumulaciones2 ?? 0;
+      let segundoDistribuido = false;
+
+      if (ganadores2.length > 0) {
+        if (ganadores2.length <= MAX_GANADORES_2 || acumulaciones2Nuevas >= MAX_ACUMULACIONES) {
+          // Distribute
+          premio2Cada = bolsa2Total / ganadores2.length;
+          segundoDistribuido = true;
+          acumulaciones2Nuevas = 0;
+          bolsa2SiguienteJornada = 0;
+        } else {
+          // Accumulate
+          bolsa2SiguienteJornada = bolsa2Total;
+          acumulaciones2Nuevas = acumulaciones2Nuevas + 1;
+          segundoDistribuido = false;
+        }
+      }
+
+      // Update prizes on winning quinielas
+      for (const q of ganadores1) {
+        await prisma.quiniela.update({ where: { id: q.id }, data: { premio: premio1Cada }, select: { id: true } });
+      }
+      if (segundoDistribuido) {
+        for (const q of ganadores2) {
+          await prisma.quiniela.update({ where: { id: q.id }, data: { premio: premio2Cada }, select: { id: true } });
+        }
+      }
+
+      // Update current jornada acumulaciones counter
+      await prisma.jornada.update({
+        where: { id: jornadaId },
+        data: { acumulaciones2: acumulaciones2Nuevas },
+      });
+
+      // If 2nd prize accumulates, find the next open jornada and add to it
+      if (!segundoDistribuido && bolsa2SiguienteJornada > 0) {
+        const siguienteJornada = await prisma.jornada.findFirst({
+          where: { estado: "abierta", id: { not: jornadaId } },
+          orderBy: { fechaInicio: "asc" },
+          select: { id: true, bolsa2Acumulada: true, acumulaciones2: true },
+        });
+        if (siguienteJornada) {
+          await prisma.jornada.update({
+            where: { id: siguienteJornada.id },
+            data: {
+              bolsa2Acumulada: (siguienteJornada.bolsa2Acumulada ?? 0) + bolsa2SiguienteJornada,
+              acumulaciones2: acumulaciones2Nuevas,
+            },
+          });
+        }
+      }
+
+      // Build premios summary for response
+      const premios = {
+        totalRecaudado,
+        bolsa1,
+        bolsa2Total,
+        segundoDistribuido,
+        acumulaciones2: acumulaciones2Nuevas,
+        ganadores1: ganadores1.map((q) => ({
+          folio: q.folio,
+          nombre: q.nombreCliente,
+          telefono: q.telefonoCliente,
+          aciertos: q.aciertos,
+          premio: premio1Cada,
+        })),
+        ganadores2: segundoDistribuido
+          ? ganadores2.map((q) => ({
+              folio: q.folio,
+              nombre: q.nombreCliente,
+              telefono: q.telefonoCliente,
+              aciertos: q.aciertos,
+              premio: premio2Cada,
+            }))
+          : [],
+        bolsa2Acumulada: bolsa2SiguienteJornada,
+      };
+      // ── End prize calculation ──────────────────────────────────────────────
+
       return NextResponse.json({
         ok: true,
         resueltos,
         totalPartidos,
         finalizada: true,
         ganadoras,
+        premios,
       });
     }
 
