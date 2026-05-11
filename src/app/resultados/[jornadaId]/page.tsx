@@ -1,8 +1,6 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
-
-// ── Types ────────────────────────────────────────────────────────────────────
 
 type Partido = {
   id: string;
@@ -12,7 +10,6 @@ type Partido = {
   resultado: string | null;
   golesLocal: number | null;
   golesVisita: number | null;
-  fechaHora: string;
 };
 
 type PickItem = {
@@ -47,7 +44,6 @@ type Jornada = {
   liga: string;
   estado: string;
   bolsa2Acumulada: number;
-  acumulaciones2: number;
 };
 
 type ResultadosData = {
@@ -57,52 +53,48 @@ type ResultadosData = {
   premios: Premios;
 };
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 const PRED_LABEL: Record<string, string> = { "1": "L", "X": "E", "2": "V" };
+
+function abrev(nombre: string, n = 4): string {
+  return nombre.length > n ? nombre.slice(0, n) : nombre;
+}
 
 function fmt(n: number): string {
   return n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-/** Group picks for a quiniela by partidoId, returning one cell string per partido (sorted by orden). */
-function picksForPartido(picks: PickItem[], partidoId: string): { label: string; acertado: boolean | null }[] {
+function picksForPartido(picks: PickItem[], partidoId: string) {
   const filtered = picks.filter((p) => p.partidoId === partidoId);
-  if (filtered.length === 0) return [];
-  // For double/triple — join labels
+  if (filtered.length === 0) return null;
   const label = filtered.map((p) => PRED_LABEL[p.prediccion] ?? p.prediccion).join("/");
-  // acertado: true if any is true, false if all are false, null otherwise
   const acertado = filtered.some((p) => p.acertado === true)
     ? true
-    : filtered.every((p) => p.acertado === false) && filtered.length > 0
+    : filtered.every((p) => p.acertado === false)
     ? false
     : null;
-  return [{ label, acertado }];
+  return { label, acertado };
 }
 
-function pickCellClass(acertado: boolean | null, hasResult: boolean): string {
-  if (hasResult && acertado === true) return "bg-green-500 text-white";
-  if (hasResult && acertado === false) return "bg-red-400 text-white";
-  return "bg-gray-100 text-gray-600";
+function pickBg(acertado: boolean | null, hasResult: boolean) {
+  if (hasResult && acertado === true)  return { bg: "#22c55e", text: "#fff" };
+  if (hasResult && acertado === false) return { bg: "#f87171", text: "#fff" };
+  return { bg: "#f3f4f6", text: "#6b7280" };
 }
-
-// ── Main Component ────────────────────────────────────────────────────────────
 
 export default function ResultadosPage() {
   const params = useParams();
   const jornadaId = params.jornadaId as string;
 
-  const [data, setData] = useState<ResultadosData | null>(null);
-  const [error, setError] = useState("");
+  const [data, setData]       = useState<ResultadosData | null>(null);
+  const [error, setError]     = useState("");
   const [busqueda, setBusqueda] = useState("");
+  const [generando, setGenerando] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(`/api/resultados/${jornadaId}`)
       .then((r) => r.json())
-      .then((d) => {
-        if (d.error) setError(d.error);
-        else setData(d);
-      })
+      .then((d) => { if (d.error) setError(d.error); else setData(d); })
       .catch(() => setError("Error al cargar los resultados"));
   }, [jornadaId]);
 
@@ -114,277 +106,249 @@ export default function ResultadosPage() {
   const quinielasFiltradas = useMemo(() => {
     if (!data) return [];
     const q = busqueda.trim().toLowerCase();
-    if (!q) return data.quinielas;
-    return data.quinielas.filter((q2) =>
-      (q2.nombreCliente ?? "").toLowerCase().includes(q)
-    );
+    return q ? data.quinielas.filter((q2) => (q2.nombreCliente ?? "").toLowerCase().includes(q)) : data.quinielas;
   }, [data, busqueda]);
 
-  // ── Loading / Error states ──────────────────────────────────────────────
+  const generarImagen = async () => {
+    if (!gridRef.current) return;
+    setGenerando(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(gridRef.current, {
+        backgroundColor: "#1c1917",
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      const blob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), "image/png"));
+      const file = new File([blob], "resultados.png", { type: "image/png" });
+      const url  = URL.createObjectURL(blob);
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Resultados Quiniela", url: window.location.href });
+      } else {
+        const a = document.createElement("a");
+        a.href = url; a.download = "resultados.png"; a.click();
+      }
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+    }
+    setGenerando(false);
+  };
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="text-center space-y-3">
-          <p className="text-red-600 font-medium">{error}</p>
-          <a href="/" className="text-amber-700 underline text-sm">Volver al inicio</a>
-        </div>
+  if (error) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="text-center space-y-3">
+        <p className="text-red-600 font-medium">{error}</p>
+        <a href="/" className="text-amber-700 underline text-sm">Volver al inicio</a>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (!data) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400 animate-pulse">Cargando resultados...</p>
-      </div>
-    );
-  }
+  if (!data) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <p className="text-gray-400 animate-pulse">Cargando resultados...</p>
+    </div>
+  );
 
   const { jornada, partidos, premios } = data;
   const nombreJornada = jornada.nombre ?? `Jornada ${jornada.numero}`;
-
-  // ── Render ────────────────────────────────────────────────────────────────
+  const COL_W = 38; // px por columna de partido
+  const NAME_W = 130;
 
   return (
     <div className="min-h-screen bg-gray-50">
 
       {/* ── Header ── */}
-      <div className="bg-brand text-white">
-        <div className="max-w-screen-xl mx-auto px-4 py-5">
+      <div className="bg-brand text-white px-4 py-4">
+        <div className="max-w-screen-lg mx-auto">
           <div className="flex items-center gap-3 mb-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo-tablitas.png"
-              alt="Tablitas Quinielas"
-              className="h-10 w-auto object-contain shrink-0"
-            />
+            <img src="/logo-tablitas.png" alt="Tablitas" className="h-10 w-auto object-contain shrink-0" />
             <div>
               <p className="text-amber-300/70 text-xs">{jornada.liga} · {jornada.temporada}</p>
-              <h1 className="text-xl font-bold leading-tight">{nombreJornada}</h1>
+              <h1 className="text-lg font-bold leading-tight">{nombreJornada}</h1>
             </div>
           </div>
 
-          {/* Prize info */}
-          <div className="flex flex-wrap gap-3 text-sm">
-            <div className="bg-white/10 rounded-lg px-3 py-1.5">
-              <span className="text-amber-300 font-bold">1° Lugar</span>
-              <span className="ml-1.5 font-black text-yellow-300">${fmt(premios.bolsa1)}</span>
+          <div className="flex flex-wrap gap-2 text-sm mb-2">
+            <div className="bg-white/10 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+              <span className="text-yellow-300 font-bold">1° ${fmt(premios.bolsa1)}</span>
+              {premios.primeroCount > 0 && <span className="text-amber-300/60 text-xs">({premios.primeroCount} ganador{premios.primeroCount !== 1 ? "es" : ""})</span>}
             </div>
-            <div className="bg-white/10 rounded-lg px-3 py-1.5">
-              <span className="text-amber-300 font-bold">2° Lugar</span>
-              <span className="ml-1.5 font-black text-white">
-                ${fmt(premios.bolsa2)}
-                {jornada.bolsa2Acumulada > 0 && (
-                  <span className="ml-1 text-xs text-amber-400">(acumulado)</span>
-                )}
-              </span>
+            <div className="bg-white/10 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+              <span className="text-white font-bold">2° ${fmt(premios.bolsa2)}</span>
+              {premios.segundoCount > 0 && <span className="text-white/50 text-xs">({premios.segundoCount})</span>}
+              {jornada.bolsa2Acumulada > 0 && <span className="text-amber-400 text-xs">acumulado</span>}
             </div>
-          </div>
-
-          {/* Winner counts */}
-          <div className="flex flex-wrap gap-4 mt-2 text-xs text-amber-300/80">
-            <span>Total de primeros lugares: <strong className="text-white">{premios.primeroCount}</strong></span>
-            <span>Total de segundos lugares: <strong className="text-white">{premios.segundoCount}</strong></span>
           </div>
         </div>
       </div>
 
-      {/* ── Body ── */}
-      <div className="max-w-screen-xl mx-auto px-4 py-4 space-y-4">
+      <div className="max-w-screen-lg mx-auto px-3 py-3 space-y-3">
 
-        {/* Search */}
-        <div className="flex items-center gap-2">
+        {/* Búsqueda + botón imagen */}
+        <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Buscar Quiniela (por nombre)"
+            placeholder="🔍 Buscar participante"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-sm"
+            className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-sm"
           />
-          {busqueda && (
-            <button
-              onClick={() => setBusqueda("")}
-              className="text-gray-400 hover:text-gray-600 px-2 py-2"
-            >
-              ✕
-            </button>
-          )}
+          <button
+            onClick={generarImagen}
+            disabled={generando || !hayAlgunResultado}
+            className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white font-semibold px-3 py-2 rounded-xl text-sm transition-colors shrink-0 flex items-center gap-1.5"
+          >
+            {generando ? "⏳" : "📸"} {generando ? "..." : "Imagen"}
+          </button>
         </div>
 
-        {/* Gate: show message if no results at all */}
         {!hayAlgunResultado && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800 text-center">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-800 text-center">
             Los picks se revelan una vez que inicien los partidos.
           </div>
         )}
 
-        {/* Results Grid */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs border-collapse" style={{ minWidth: `${160 + partidos.length * 44 + 52}px` }}>
+        {/* ── Grid ── */}
+        <div ref={gridRef} style={{ background: "#1c1917", borderRadius: 16, overflow: "hidden", padding: "12px 8px" }}>
 
-              {/* ── Header rows ── */}
+          {/* Título dentro de la imagen */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, paddingLeft: 4 }}>
+            <div>
+              <div style={{ color: "#fbbf24", fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>TABLITAS QUINIELAS</div>
+              <div style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>{nombreJornada}</div>
+            </div>
+            <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+              {premios.primeroCount > 0 && (
+                <div style={{ color: "#fde047", fontSize: 11, fontWeight: 700 }}>
+                  1° ${fmt(premios.bolsa1)} · {premios.primeroCount} ganador{premios.primeroCount !== 1 ? "es" : ""}
+                </div>
+              )}
+              {premios.segundoCount > 0 && (
+                <div style={{ color: "#d1d5db", fontSize: 11, fontWeight: 700 }}>
+                  2° ${fmt(premios.bolsa2)} · {premios.segundoCount} ganador{premios.segundoCount !== 1 ? "es" : ""}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ borderCollapse: "collapse", minWidth: NAME_W + partidos.length * COL_W + 44, width: "100%" }}>
+
+              {/* ─── Cabecera: LOCAL / MARCADOR / VISITA por columna ─── */}
               <thead>
-                {/* Row 1: LOCAL */}
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th
-                    className="sticky left-0 z-10 bg-gray-50 text-left px-3 py-1.5 text-gray-400 font-semibold uppercase tracking-wide text-[10px] min-w-[140px] max-w-[160px]"
-                  >
-                    NOMBRE
+                <tr>
+                  {/* Nombre col header */}
+                  <th style={{ width: NAME_W, minWidth: NAME_W, textAlign: "left", verticalAlign: "bottom", paddingBottom: 4, paddingLeft: 4 }}>
+                    <span style={{ color: "#6b7280", fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>NOMBRE</span>
                   </th>
-                  {partidos.map((p) => (
-                    <th
-                      key={`local-${p.id}`}
-                      className="px-1 py-1.5 text-center text-gray-700 font-medium w-[44px] max-w-[44px]"
-                      title={p.equipoLocal}
-                    >
-                      <span className="block truncate" style={{ maxWidth: "40px" }}>
-                        {p.equipoLocal.length > 6 ? p.equipoLocal.slice(0, 5) + "…" : p.equipoLocal}
-                      </span>
-                    </th>
-                  ))}
-                  <th className="px-2 py-1.5 text-center text-gray-400 font-semibold uppercase tracking-wide text-[10px] w-[52px]">
-                    PTS
-                  </th>
-                </tr>
 
-                {/* Row 2: MARCADOR */}
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="sticky left-0 z-10 bg-gray-50 px-3 py-1 text-left text-gray-400 font-semibold uppercase tracking-wide text-[10px] min-w-[140px] max-w-[160px]">
-                    MARCADOR
-                  </th>
+                  {/* Partido columns */}
                   {partidos.map((p) => {
-                    const score =
-                      p.golesLocal !== null && p.golesVisita !== null
-                        ? `${p.golesLocal}-${p.golesVisita}`
-                        : "—";
+                    const score = p.golesLocal !== null && p.golesVisita !== null
+                      ? `${p.golesLocal}-${p.golesVisita}`
+                      : "—";
                     const hasScore = score !== "—";
                     return (
-                      <td
-                        key={`score-${p.id}`}
-                        className={`px-1 py-1 text-center font-bold w-[44px] ${
-                          hasScore ? "text-green-600" : "text-gray-300"
-                        }`}
-                      >
-                        {score}
-                      </td>
+                      <th key={p.id} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "0 1px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                          {/* LOCAL */}
+                          <div style={{ background: "#292524", borderRadius: 4, padding: "2px 3px", width: "100%", textAlign: "center" }}>
+                            <span style={{ color: "#e7e5e4", fontSize: 9, fontWeight: 700, display: "block", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                              {abrev(p.equipoLocal, 5)}
+                            </span>
+                          </div>
+                          {/* MARCADOR */}
+                          <div style={{ background: hasScore ? "#16a34a" : "#292524", borderRadius: 4, padding: "2px 3px", width: "100%", textAlign: "center" }}>
+                            <span style={{ color: hasScore ? "#fff" : "#6b7280", fontSize: 10, fontWeight: 800, display: "block" }}>
+                              {score}
+                            </span>
+                          </div>
+                          {/* VISITA */}
+                          <div style={{ background: "#292524", borderRadius: 4, padding: "2px 3px", width: "100%", textAlign: "center" }}>
+                            <span style={{ color: "#a8a29e", fontSize: 9, fontWeight: 700, display: "block", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                              {abrev(p.equipoVisita, 5)}
+                            </span>
+                          </div>
+                        </div>
+                      </th>
                     );
                   })}
-                  <td className="px-2 py-1" />
-                </tr>
 
-                {/* Row 3: VISITA */}
-                <tr className="border-b border-gray-200">
-                  <th className="sticky left-0 z-10 bg-white px-3 py-1.5 text-left text-gray-400 font-semibold uppercase tracking-wide text-[10px] min-w-[140px] max-w-[160px]">
-                    &nbsp;
+                  {/* PTS col */}
+                  <th style={{ width: 44, textAlign: "center", verticalAlign: "bottom", paddingBottom: 4 }}>
+                    <span style={{ color: "#6b7280", fontSize: 9, fontWeight: 700, letterSpacing: 1 }}>PTS</span>
                   </th>
-                  {partidos.map((p, i) => (
-                    <th
-                      key={`visita-${p.id}`}
-                      className="px-1 py-1.5 text-center text-gray-500 font-medium w-[44px]"
-                      title={p.equipoVisita}
-                    >
-                      <span className="block text-[9px] text-gray-400 font-normal mb-0.5">P{i + 1}</span>
-                      <span className="block truncate" style={{ maxWidth: "40px" }}>
-                        {p.equipoVisita.length > 6 ? p.equipoVisita.slice(0, 5) + "…" : p.equipoVisita}
-                      </span>
-                    </th>
-                  ))}
-                  <th className="px-2 py-1.5" />
                 </tr>
               </thead>
 
-              {/* ── Data rows ── */}
-              <tbody className="divide-y divide-gray-50">
+              {/* ─── Filas de participantes ─── */}
+              <tbody>
                 {quinielasFiltradas.length === 0 && (
                   <tr>
-                    <td
-                      colSpan={partidos.length + 2}
-                      className="text-center py-8 text-gray-400"
-                    >
-                      {busqueda ? "Sin resultados para esa búsqueda" : "Sin quinielas confirmadas"}
+                    <td colSpan={partidos.length + 2} style={{ textAlign: "center", padding: "24px 0", color: "#6b7280", fontSize: 12 }}>
+                      {busqueda ? "Sin resultados" : "Sin quinielas"}
                     </td>
                   </tr>
                 )}
 
-                {quinielasFiltradas.map((q) => {
-                  const esPrimero =
-                    premios.maxAciertos !== null && q.aciertos === premios.maxAciertos;
-                  const esSegundo =
-                    premios.segundoAciertos !== null && q.aciertos === premios.segundoAciertos;
-
-                  const rowBg = esPrimero
-                    ? "bg-yellow-50"
-                    : esSegundo
-                    ? "bg-gray-100"
-                    : "bg-white hover:bg-gray-50";
+                {quinielasFiltradas.map((q, idx) => {
+                  const esPrimero  = premios.maxAciertos    !== null && q.aciertos === premios.maxAciertos;
+                  const esSegundo  = premios.segundoAciertos !== null && q.aciertos === premios.segundoAciertos;
+                  const rowBg      = esPrimero ? "#422006" : esSegundo ? "#292524" : idx % 2 === 0 ? "#1c1917" : "#211f1e";
 
                   return (
-                    <tr key={q.id} className={`transition-colors ${rowBg}`}>
-                      {/* Name column */}
-                      <td className={`sticky left-0 z-10 px-3 py-2 font-medium text-gray-800 min-w-[140px] max-w-[160px] ${rowBg}`}>
-                        <span className="block truncate" style={{ maxWidth: "150px" }}>
-                          {esPrimero && (
-                            <span className="inline-block mr-1 text-yellow-500 text-[10px] font-bold">1°</span>
-                          )}
-                          {esSegundo && (
-                            <span className="inline-block mr-1 text-gray-500 text-[10px] font-bold">2°</span>
-                          )}
-                          {q.nombreCliente ?? q.folio}
-                        </span>
+                    <tr key={q.id} style={{ background: rowBg }}>
+                      {/* Nombre */}
+                      <td style={{ padding: "3px 4px", width: NAME_W, minWidth: NAME_W }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          {esPrimero && <span style={{ color: "#fbbf24", fontSize: 9, fontWeight: 800 }}>1°</span>}
+                          {esSegundo && <span style={{ color: "#9ca3af", fontSize: 9, fontWeight: 800 }}>2°</span>}
+                          <span style={{ color: "#e7e5e4", fontSize: 11, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", maxWidth: NAME_W - 24 }}>
+                            {q.nombreCliente ?? q.folio}
+                          </span>
+                        </div>
                       </td>
 
-                      {/* Pick columns */}
+                      {/* Picks */}
                       {partidos.map((p) => {
-                        const cells = picksForPartido(q.picks, p.id);
-                        const hasPartidoResult = p.resultado !== null;
-
-                        if (cells.length === 0) {
-                          // No pick for this partido
+                        const cell = picksForPartido(q.picks, p.id);
+                        const hasResult = p.resultado !== null;
+                        if (!hayAlgunResultado || !cell) {
                           return (
-                            <td key={`pick-${q.id}-${p.id}`} className="px-1 py-2 text-center w-[44px]">
-                              <span className="text-gray-200">—</span>
+                            <td key={`${q.id}-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "3px 1px" }}>
+                              <div style={{ background: "#292524", borderRadius: 4, height: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <span style={{ color: "#57534e", fontSize: 10, fontWeight: 700 }}>?</span>
+                              </div>
                             </td>
                           );
                         }
-
-                        // Only show picks if jornada has at least one result
-                        if (!hayAlgunResultado) {
-                          return (
-                            <td key={`pick-${q.id}-${p.id}`} className="px-1 py-2 text-center w-[44px]">
-                              <span className="inline-flex items-center justify-center w-7 h-6 rounded text-[10px] font-bold bg-gray-100 text-gray-300">
-                                ?
-                              </span>
-                            </td>
-                          );
-                        }
-
-                        const cell = cells[0];
+                        const { bg, text } = pickBg(cell.acertado, hasResult);
                         return (
-                          <td key={`pick-${q.id}-${p.id}`} className="px-1 py-2 text-center w-[44px]">
-                            <span
-                              className={`inline-flex items-center justify-center w-7 h-6 rounded text-[10px] font-bold ${pickCellClass(cell.acertado, hasPartidoResult)}`}
-                            >
-                              {cell.label}
-                            </span>
+                          <td key={`${q.id}-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "3px 1px" }}>
+                            <div style={{ background: bg, borderRadius: 4, height: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <span style={{ color: text, fontSize: 10, fontWeight: 700 }}>{cell.label}</span>
+                            </div>
                           </td>
                         );
                       })}
 
-                      {/* PTS column */}
-                      <td className="px-2 py-2 text-center w-[52px]">
-                        <span
-                          className={`inline-flex items-center justify-center w-9 h-7 rounded-lg text-sm font-black ${
-                            esPrimero
-                              ? "bg-yellow-400 text-yellow-900"
-                              : esSegundo
-                              ? "bg-gray-300 text-gray-700"
-                              : "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          {q.aciertos ?? "—"}
-                        </span>
+                      {/* PTS */}
+                      <td style={{ width: 44, textAlign: "center", padding: "3px 2px" }}>
+                        <div style={{
+                          background: esPrimero ? "#fbbf24" : esSegundo ? "#9ca3af" : "#292524",
+                          borderRadius: 6,
+                          height: 24,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          margin: "0 auto",
+                          width: 36,
+                        }}>
+                          <span style={{ color: esPrimero ? "#7c2d12" : esSegundo ? "#1c1917" : "#a8a29e", fontSize: 12, fontWeight: 800 }}>
+                            {q.aciertos ?? "—"}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -392,38 +356,31 @@ export default function ResultadosPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Footer en imagen */}
+          <div style={{ textAlign: "center", marginTop: 10, color: "#57534e", fontSize: 9 }}>
+            tablitasquinielas.com · Ver resultados completos: {typeof window !== "undefined" ? window.location.href : ""}
+          </div>
         </div>
 
-        {/* Legend */}
+        {/* Leyenda */}
         <div className="flex flex-wrap gap-3 text-xs text-gray-500 px-1">
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block w-5 h-4 rounded bg-green-500" />
-            Acertado
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block w-5 h-4 rounded bg-red-400" />
-            Fallado
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block w-5 h-4 rounded bg-gray-100" />
-            Pendiente
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block w-5 h-4 rounded bg-yellow-400" />
-            1° Lugar
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block w-5 h-4 rounded bg-gray-300" />
-            2° Lugar
-          </span>
+          {[
+            { bg: "bg-green-500", label: "Acertado" },
+            { bg: "bg-red-400",   label: "Fallado" },
+            { bg: "bg-gray-200",  label: "Pendiente" },
+            { bg: "bg-yellow-400",label: "1° Lugar" },
+            { bg: "bg-gray-400",  label: "2° Lugar" },
+          ].map(({ bg, label }) => (
+            <span key={label} className="flex items-center gap-1.5">
+              <span className={`inline-block w-4 h-3.5 rounded ${bg}`} />
+              {label}
+            </span>
+          ))}
         </div>
 
-        {/* Back link */}
-        <div className="pt-2 pb-6 text-center">
-          <a
-            href="/consultar"
-            className="text-amber-700 text-sm font-medium hover:underline"
-          >
+        <div className="pb-6 text-center">
+          <a href="/consultar" className="text-amber-700 text-sm font-medium hover:underline">
             ← Consultar mi quiniela
           </a>
         </div>
