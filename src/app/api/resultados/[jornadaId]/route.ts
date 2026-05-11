@@ -46,9 +46,16 @@ export async function GET(
       },
     });
 
-    // Only confirmed quinielas with picks
+    // Prize pool: tienda (cash) + online confirmed
     const quinielas = await prisma.quiniela.findMany({
-      where: { jornadaId, estadoPago: "confirmado" },
+      where: {
+        jornadaId,
+        OR: [
+          { canal: "tienda" },
+          { estadoPago: "confirmado" },
+        ],
+        estadoPago: { not: "no_realizado" },
+      },
       select: {
         id: true,
         folio: true,

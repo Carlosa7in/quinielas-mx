@@ -29,9 +29,16 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Jornada no encontrada" }, { status: 404 });
     }
 
-    // Only confirmed quinielas count for prize pool
+    // Prize pool: tienda (cash in hand, always counts) + online confirmed
     const todasConfirmadas = await prisma.quiniela.findMany({
-      where: { jornadaId, estadoPago: "confirmado" },
+      where: {
+        jornadaId,
+        OR: [
+          { canal: "tienda" },           // efectivo en mano → siempre cuenta
+          { estadoPago: "confirmado" },  // online → solo al confirmar pago
+        ],
+        estadoPago: { not: "no_realizado" }, // excluir los que explícitamente no pagaron
+      },
       select: {
         id: true,
         folio: true,

@@ -108,9 +108,13 @@ export async function POST(req: Request) {
         select: { bolsa2Acumulada: true, acumulaciones2: true },
       });
 
-      // Total recaudado from confirmed quinielas only
+      // Prize pool: tienda (cash in hand) + online confirmed
       const todasConfirmadas = await prisma.quiniela.findMany({
-        where: { jornadaId, estadoPago: "confirmado" },
+        where: {
+          jornadaId,
+          OR: [{ canal: "tienda" }, { estadoPago: "confirmado" }],
+          estadoPago: { not: "no_realizado" },
+        },
         select: { id: true, monto: true, aciertos: true, nombreCliente: true, telefonoCliente: true, folio: true },
       });
 
