@@ -54,6 +54,7 @@ export default function ComisionesPage() {
 
   const [reporte, setReporte] = useState<VendedorReporte[]>([]);
   const [sinAsignar, setSinAsignar] = useState(0);
+  const [sinAsignarDetalle, setSinAsignarDetalle] = useState<{ folio: string; nombreCliente: string; monto: number; jornada: string }[]>([]);
   const [numAdmins, setNumAdmins] = useState(0);
   const [ventasDirectasConfirmadas, setVentasDirectasConfirmadas] = useState(0);
   const [comisionDirectaTotal, setComisionDirectaTotal] = useState(0);
@@ -76,7 +77,7 @@ export default function ComisionesPage() {
     const url = jornadaId ? `/api/admin/comisiones?jornadaId=${jornadaId}` : "/api/admin/comisiones";
     fetch(url)
       .then((r) => r.json())
-      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); setNumAdmins(data.numAdmins ?? 0); setRecaudadoGlobal(data.recaudadoGlobal ?? 0); setTotalGlobal(data.totalGlobal ?? 0); setVentasDirectasConfirmadas(data.ventasDirectasConfirmadas ?? 0); setComisionDirectaTotal(data.comisionDirectaTotal ?? 0); })
+      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); setSinAsignarDetalle(data.sinAsignarDetalle ?? []); setNumAdmins(data.numAdmins ?? 0); setRecaudadoGlobal(data.recaudadoGlobal ?? 0); setTotalGlobal(data.totalGlobal ?? 0); setVentasDirectasConfirmadas(data.ventasDirectasConfirmadas ?? 0); setComisionDirectaTotal(data.comisionDirectaTotal ?? 0); })
       .finally(() => setCargando(false));
   }, [jornadaId]);
 
@@ -459,13 +460,28 @@ export default function ComisionesPage() {
 
             {/* Sin asignar */}
             {sinAsignar > 0 && (
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 space-y-2">
                 <p className="text-sm text-orange-700 font-medium">
                   ⚠️ {sinAsignar} quiniela{sinAsignar > 1 ? "s" : ""} de tienda sin vendedor asignado
                 </p>
-                <p className="text-xs text-orange-600 mt-1">
-                  Fueron registradas antes de agregar el seguimiento por usuario.
-                </p>
+                <div className="space-y-1">
+                  {sinAsignarDetalle.map((q) => (
+                    <div key={q.folio} className="flex items-center justify-between text-xs bg-white rounded-lg px-3 py-2 border border-orange-100">
+                      <div>
+                        <span className="font-mono font-bold text-orange-800">{q.folio}</span>
+                        <span className="text-gray-500 ml-2">{q.nombreCliente}</span>
+                        <span className="text-gray-400 ml-2">· {q.jornada}</span>
+                      </div>
+                      <span className="text-gray-600 font-medium">${fmt(q.monto)}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link
+                  href="/admin/quinielas"
+                  className="inline-block text-xs text-orange-700 underline"
+                >
+                  Ir a Modificar Quinielas para asignarlas →
+                </Link>
               </div>
             )}
           </div>

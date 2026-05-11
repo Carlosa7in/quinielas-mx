@@ -308,7 +308,13 @@ export async function GET(req: NextRequest) {
   const sinAsignarQuinielas = esSuperadmin
     ? await prisma.quiniela.findMany({
         where: { canal: "tienda", usuarioId: null, ...(jornadaId ? { jornadaId } : {}) },
-        select: { id: true },
+        select: {
+          id: true,
+          folio: true,
+          nombreCliente: true,
+          monto: true,
+          jornada: { select: { nombre: true, numero: true } },
+        },
       })
     : [];
 
@@ -318,6 +324,12 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     reporte,
     sinAsignar: sinAsignarQuinielas.length,
+    sinAsignarDetalle: sinAsignarQuinielas.map((q) => ({
+      folio: q.folio,
+      nombreCliente: q.nombreCliente ?? "—",
+      monto: q.monto,
+      jornada: q.jornada.nombre ?? `Jornada ${q.jornada.numero}`,
+    })),
     esSuperadmin,
     numAdmins,
     recaudadoGlobal,
