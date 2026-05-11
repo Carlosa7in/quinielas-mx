@@ -55,6 +55,8 @@ export default function ComisionesPage() {
   const [reporte, setReporte] = useState<VendedorReporte[]>([]);
   const [sinAsignar, setSinAsignar] = useState(0);
   const [numAdmins, setNumAdmins] = useState(0);
+  const [ventasDirectasConfirmadas, setVentasDirectasConfirmadas] = useState(0);
+  const [comisionDirectaTotal, setComisionDirectaTotal] = useState(0);
   const [recaudadoGlobal, setRecaudadoGlobal] = useState(0);
   const [totalGlobal, setTotalGlobal] = useState(0);
   const [jornadas, setJornadas] = useState<JornadaOpcion[]>([]);
@@ -74,7 +76,7 @@ export default function ComisionesPage() {
     const url = jornadaId ? `/api/admin/comisiones?jornadaId=${jornadaId}` : "/api/admin/comisiones";
     fetch(url)
       .then((r) => r.json())
-      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); setNumAdmins(data.numAdmins ?? 0); setRecaudadoGlobal(data.recaudadoGlobal ?? 0); setTotalGlobal(data.totalGlobal ?? 0); })
+      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); setNumAdmins(data.numAdmins ?? 0); setRecaudadoGlobal(data.recaudadoGlobal ?? 0); setTotalGlobal(data.totalGlobal ?? 0); setVentasDirectasConfirmadas(data.ventasDirectasConfirmadas ?? 0); setComisionDirectaTotal(data.comisionDirectaTotal ?? 0); })
       .finally(() => setCargando(false));
   }, [jornadaId]);
 
@@ -105,7 +107,7 @@ export default function ComisionesPage() {
   const baseDesglose = recaudadoGlobal > 0 ? recaudadoGlobal : recaudadoGeneral;
   const cutDuenos = baseDesglose * PCT_DUENOS;
   const cutTienda = totalTiendaAll * COMISION_TIENDA;
-  const bolsaNeta = Math.max(baseDesglose - cutDuenos - cutTienda - totalComisionesReferido, 0);
+  const bolsaNeta = Math.max(baseDesglose - cutDuenos - cutTienda - totalComisionesReferido - comisionDirectaTotal, 0);
   const totalComisiones = reporte.reduce((s, v) => s + v.comisionTotal, 0);
   const totalPendiente = reporte.reduce((s, v) => s + v.pendientePago, 0);
 
@@ -193,6 +195,12 @@ export default function ComisionesPage() {
                 <div className="flex justify-between text-cyan-400">
                   <span>− Comisión referidos ($2 × {reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.total, 0)} confirmadas)</span>
                   <span className="font-bold">−${fmt(totalComisionesReferido)}</span>
+                </div>
+              )}
+              {comisionDirectaTotal > 0 && (
+                <div className="flex justify-between text-purple-400">
+                  <span>− Ventas directas 🌐 ($2 × {ventasDirectasConfirmadas} confirmadas)</span>
+                  <span className="font-bold">−${fmt(comisionDirectaTotal)}</span>
                 </div>
               )}
               <div className="border-t border-stone-700 pt-2 flex justify-between text-green-400">

@@ -322,6 +322,8 @@ export async function GET(req: NextRequest) {
     numAdmins,
     recaudadoGlobal,
     totalGlobal,
+    ventasDirectasConfirmadas: ventasDirectas.length,
+    comisionDirectaTotal: ventasDirectas.length * COMISION_TIENDA,
   });
 }
 
