@@ -46,6 +46,21 @@ export async function GET(
       },
     });
 
+    // Fetch logos from Equipo table for all teams in this jornada
+    const teamNames = [...new Set(partidos.flatMap((p) => [p.equipoLocal, p.equipoVisita]))];
+    const equipos = await prisma.equipo.findMany({
+      where: { nombre: { in: teamNames } },
+      select: { nombre: true, logoUrl: true },
+    });
+    const logoMap: Record<string, string> = Object.fromEntries(
+      equipos.map((e) => [e.nombre, e.logoUrl])
+    );
+    const partidosConLogos = partidos.map((p) => ({
+      ...p,
+      logoLocal:  logoMap[p.equipoLocal]  ?? "",
+      logoVisita: logoMap[p.equipoVisita] ?? "",
+    }));
+
     // Prize pool: tienda (cash) + online confirmed
     const quinielas = await prisma.quiniela.findMany({
       where: {
@@ -130,7 +145,7 @@ export async function GET(
         bolsa2Acumulada: jornada.bolsa2Acumulada,
         acumulaciones2: jornada.acumulaciones2,
       },
-      partidos,
+      partidos: partidosConLogos,
       quinielas: quinielasFormatted,
       premios: {
         bolsa1,

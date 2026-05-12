@@ -10,6 +10,8 @@ type Partido = {
   resultado: string | null;
   golesLocal: number | null;
   golesVisita: number | null;
+  logoLocal: string;
+  logoVisita: string;
 };
 
 type PickItem = {
@@ -55,33 +57,6 @@ type ResultadosData = {
 
 const PRED_LABEL: Record<string, string> = { "1": "L", "X": "E", "2": "V" };
 
-// All logo folders to try, in order
-const ALL_FOLDERS = ["liga-mx", "premier", "champions", "la-liga"];
-
-function slug(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-/** Which folder to try first based on jornada liga */
-function primaryFolder(liga: string): string {
-  const l = liga.toLowerCase();
-  if (l.includes("mx") || l.includes("mexicana")) return "liga-mx";
-  if (l.includes("premier")) return "premier";
-  if (l.includes("champion")) return "champions";
-  if (l.includes("la liga") || l.includes("laliga") || l.includes("española")) return "la-liga";
-  return "champions";
-}
-
-function orderedFolders(liga: string): string[] {
-  const first = primaryFolder(liga);
-  return [first, ...ALL_FOLDERS.filter((f) => f !== first)];
-}
-
 function fmt(n: number): string {
   return n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
@@ -94,25 +69,11 @@ function initials(name: string): string {
     .join("");
 }
 
-/** Logo that tries every folder before showing initials */
-function TeamLogo({ team, liga, size = 32 }: { team: string; liga: string; size?: number }) {
-  const folders = useMemo(() => orderedFolders(liga), [liga]);
-  const [idx, setIdx] = useState(0);
+/** Shows ESPN logo URL; fallback to initials circle if missing/broken */
+function TeamLogo({ logoUrl, team, size = 32 }: { logoUrl: string; team: string; size?: number }) {
   const [failed, setFailed] = useState(false);
 
-  const teamSlug = slug(team);
-  const src = `/logos/${folders[idx]}/${teamSlug}.png`;
-
-  const onError = () => {
-    if (idx < folders.length - 1) {
-      setIdx((i) => i + 1);
-    } else {
-      setFailed(true);
-    }
-  };
-
-  if (failed) {
-    // Colored circle with initials
+  if (!logoUrl || failed) {
     return (
       <div style={{
         width: size, height: size, borderRadius: "50%",
@@ -129,9 +90,9 @@ function TeamLogo({ team, liga, size = 32 }: { team: string; liga: string; size?
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src}
+      src={logoUrl}
       alt={team}
-      onError={onError}
+      onError={() => setFailed(true)}
       crossOrigin="anonymous"
       style={{ width: size, height: size, objectFit: "contain", display: "block", flexShrink: 0 }}
     />
@@ -333,7 +294,7 @@ export default function ResultadosPage() {
                   {partidos.map((p) => (
                     <td key={`local-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "6px 2px" }}>
                       <div style={{ display: "flex", justifyContent: "center" }}>
-                        <TeamLogo team={p.equipoLocal} liga={jornada.liga} size={34} />
+                        <TeamLogo logoUrl={p.logoLocal} team={p.equipoLocal} size={34} />
                       </div>
                     </td>
                   ))}
@@ -370,7 +331,7 @@ export default function ResultadosPage() {
                   {partidos.map((p) => (
                     <td key={`visit-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "6px 2px" }}>
                       <div style={{ display: "flex", justifyContent: "center" }}>
-                        <TeamLogo team={p.equipoVisita} liga={jornada.liga} size={34} />
+                        <TeamLogo logoUrl={p.logoVisita} team={p.equipoVisita} size={34} />
                       </div>
                     </td>
                   ))}
