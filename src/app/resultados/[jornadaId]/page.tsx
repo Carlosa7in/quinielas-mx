@@ -385,6 +385,15 @@ export default function ResultadosPage() {
     setEstadoImg("generando");
     try {
       const el = flyerRef.current;
+
+      // Esperar a que todos los logos terminen de cargar
+      const imgs = Array.from(el.querySelectorAll("img"));
+      await Promise.all(imgs.map((img) =>
+        img.complete
+          ? Promise.resolve()
+          : new Promise<void>((res) => { img.onload = () => res(); img.onerror = () => res(); })
+      ));
+
       const fullHeight = el.scrollHeight;
       const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(el, {
