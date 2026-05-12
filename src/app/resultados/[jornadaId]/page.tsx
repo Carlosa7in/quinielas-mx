@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useParams } from "next/navigation";
 
@@ -105,148 +105,170 @@ const COL_W  = 50;
 const NAME_W = 140;
 const PTS_W  = 44;
 const FLYER_W    = 480;
-const FLYER_COL  = 32;  // px per game column inside flyer
 const FLYER_NAME = 108; // px name column inside flyer
 const FLYER_PTS  = 30;  // px pts column inside flyer
+const FLYER_MARGIN = 14; // px side margin for table area
+// row heights inside flyer (used for flex rows)
+const FH_LOGO  = 30; // LOCAL / VISITA logo rows
+const FH_SCORE = 20; // MARCADOR row
+const FH_NUM   = 15; // numbers header row
+const FH_DATA  = 15; // data rows
 
-// ─── Flyer (hidden, captured by html2canvas — height is auto) ─────────────────
+// ─── Flyer (hidden, captured by html2canvas — uses flex divs, NOT table) ──────
+// NOTE: html2canvas ignores verticalAlign on <td> and alignItems inside <td>
+//       but correctly renders alignItems: center on a flex-row <div>.
+//       So we build every "row" as a display:flex div with explicit heights.
 function Flyer({ jornada, partidos, premios, quinielas, url }: {
   jornada: Jornada; partidos: Partido[]; premios: Premios; quinielas: Quiniela[]; url: string;
 }) {
   const nombreJornada = jornada.nombre ?? `Jornada ${jornada.numero}`;
 
+  // Dynamic column width so all games fit within FLYER_W
+  const innerW = FLYER_W - FLYER_MARGIN * 2;
+  const colW   = Math.max(16, Math.floor((innerW - FLYER_NAME - FLYER_PTS) / Math.max(1, partidos.length)));
+
+  // Reusable flex-row builder
+  const Row = ({ bg, h, children }: { bg: string; h: number; children: React.ReactNode }) => (
+    <div style={{ display: "flex", alignItems: "center", height: h, background: bg, borderTop: "1px solid rgba(255,255,255,0.03)", overflow: "hidden" }}>
+      {children}
+    </div>
+  );
+
+  // Label cell (left-aligned, name column)
+  const LabelCell = ({ children }: { children: React.ReactNode }) => (
+    <div style={{ width: FLYER_NAME, flexShrink: 0, paddingLeft: 8, display: "flex", alignItems: "center" }}>
+      {children}
+    </div>
+  );
+
+  // Center cell (game/pts columns)
+  const CenterCell = ({ w, children }: { w: number; children?: React.ReactNode }) => (
+    <div style={{ width: w, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {children}
+    </div>
+  );
+
   return (
     <div style={{ width: FLYER_W, background: "#0f172a", display: "flex", flexDirection: "column", fontFamily: "system-ui, -apple-system, sans-serif" }}>
 
       {/* ── Header ── */}
-      <div style={{ background: NAVY, padding: "16px 18px 12px", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ background: NAVY, padding: "14px 18px 10px", display: "flex", alignItems: "center", gap: 12 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-tablitas.png" alt="Tablitas" crossOrigin="anonymous" style={{ width: 48, height: 48, objectFit: "contain" }} />
+        <img src="/logo-tablitas.png" alt="Tablitas" crossOrigin="anonymous" style={{ width: 44, height: 44, objectFit: "contain" }} />
         <div>
           <div style={{ color: "#fbbf24", fontSize: 9, fontWeight: 800, letterSpacing: 1.5 }}>TABLITAS QUINIELAS</div>
-          <div style={{ color: WHITE, fontSize: 17, fontWeight: 900, lineHeight: 1.2, marginTop: 1 }}>{nombreJornada}</div>
+          <div style={{ color: WHITE, fontSize: 16, fontWeight: 900, lineHeight: "1.2", marginTop: 1 }}>{nombreJornada}</div>
           <div style={{ color: "#93c5fd", fontSize: 9, marginTop: 2 }}>{jornada.liga} · {jornada.temporada}</div>
         </div>
       </div>
 
       {/* ── Premios en una línea ── */}
-      <div style={{ padding: "10px 18px", display: "flex", alignItems: "center", justifyContent: "center", gap: 24, borderBottom: "1px solid #1e3a5f" }}>
-        <span style={{ color: "#fde047", fontSize: 13, fontWeight: 800 }}>
+      <div style={{ padding: "8px 18px", display: "flex", alignItems: "center", justifyContent: "center", gap: 24, borderBottom: "1px solid #1e3a5f" }}>
+        <span style={{ color: "#fde047", fontSize: 12, fontWeight: 800 }}>
           🥇 {fmt(premios.bolsa1)}{premios.primeroCount > 0 ? ` · ${premios.primeroCount} ganador${premios.primeroCount !== 1 ? "es" : ""}` : ""}
         </span>
-        <span style={{ color: "#a7f3d0", fontSize: 13, fontWeight: 800 }}>
+        <span style={{ color: "#a7f3d0", fontSize: 12, fontWeight: 800 }}>
           🥈 {fmt(premios.bolsa2)}{premios.segundoCount > 0 ? ` · ${premios.segundoCount} ganador${premios.segundoCount !== 1 ? "es" : ""}` : jornada.bolsa2Acumulada > 0 ? " · acumulado" : ""}
         </span>
       </div>
 
-      {/* ── Full picks table ── */}
-      <div style={{ margin: "0 14px 14px", borderRadius: 10, overflow: "hidden", border: "1px solid #1e3a5f" }}>
-        {/* "RESULTADOS" bar */}
+      {/* ── Full picks grid (flex divs — no table) ── */}
+      <div style={{ margin: `0 ${FLYER_MARGIN}px ${FLYER_MARGIN}px`, borderRadius: 10, overflow: "hidden", border: "1px solid #1e3a5f" }}>
+
+        {/* RESULTADOS bar */}
         <div style={{ background: NAVY2, padding: "4px 0", textAlign: "center" }}>
           <span style={{ color: WHITE, fontSize: 9, fontWeight: 800, letterSpacing: 2 }}>RESULTADOS</span>
         </div>
 
-        <table style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed" }}>
-          <colgroup>
-            <col style={{ width: FLYER_NAME }} />
-            {partidos.map((p) => <col key={p.id} style={{ width: FLYER_COL }} />)}
-            <col style={{ width: FLYER_PTS }} />
-          </colgroup>
+        {/* ── LOCAL logos row ── */}
+        <Row bg="#e8edf2" h={FH_LOGO}>
+          <LabelCell><span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span></LabelCell>
+          {partidos.map((p) => (
+            <CenterCell key={`fl-${p.id}`} w={colW}>
+              <TeamLogo logoUrl={p.logoLocal} team={p.equipoLocal} size={22} />
+            </CenterCell>
+          ))}
+          <CenterCell w={FLYER_PTS} />
+        </Row>
 
-          <thead>
-            {/* LOCAL logos */}
-            <tr style={{ background: "#e8edf2" }}>
-              <td style={{ padding: "4px 4px 4px 8px" }}>
-                <span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span>
-              </td>
-              {partidos.map((p) => (
-                <td key={`fl-${p.id}`} style={{ padding: "4px 2px", textAlign: "center" }}>
-                  <TeamLogo logoUrl={p.logoLocal} team={p.equipoLocal} size={24} />
-                </td>
-              ))}
-              <td />
-            </tr>
-            {/* MARCADOR */}
-            <tr style={{ background: NAVY2 }}>
-              <td style={{ padding: "4px 4px 4px 8px" }}>
-                <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>MARCADOR</span>
-              </td>
+        {/* ── MARCADOR row ── */}
+        <Row bg={NAVY2} h={FH_SCORE}>
+          <LabelCell><span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>MARCADOR</span></LabelCell>
+          {partidos.map((p) => {
+            const has = p.golesLocal !== null && p.golesVisita !== null;
+            return (
+              <CenterCell key={`fm-${p.id}`} w={colW}>
+                <span style={{ color: has ? WHITE : "#4b5563", fontSize: 8, fontWeight: 900, lineHeight: "1" }}>
+                  {has ? `${p.golesLocal}-${p.golesVisita}` : "·"}
+                </span>
+              </CenterCell>
+            );
+          })}
+          <CenterCell w={FLYER_PTS} />
+        </Row>
+
+        {/* ── VISITA logos row ── */}
+        <Row bg="#e8edf2" h={FH_LOGO}>
+          <LabelCell><span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>VISITA</span></LabelCell>
+          {partidos.map((p) => (
+            <CenterCell key={`fv-${p.id}`} w={colW}>
+              <TeamLogo logoUrl={p.logoVisita} team={p.equipoVisita} size={22} />
+            </CenterCell>
+          ))}
+          <CenterCell w={FLYER_PTS} />
+        </Row>
+
+        {/* ── Numbers header row ── */}
+        <Row bg="#0a1e38" h={FH_NUM}>
+          <LabelCell><span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span></LabelCell>
+          {partidos.map((_, i) => (
+            <CenterCell key={i} w={colW}>
+              <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, lineHeight: "1" }}>{i + 1}</span>
+            </CenterCell>
+          ))}
+          <CenterCell w={FLYER_PTS}>
+            <span style={{ color: WHITE, fontSize: 7, fontWeight: 800, lineHeight: "1" }}>PTS</span>
+          </CenterCell>
+        </Row>
+
+        {/* ── Data rows ── */}
+        {quinielas.map((q, idx) => {
+          const esPrimero = premios.maxAciertos    !== null && q.aciertos === premios.maxAciertos;
+          const esSegundo = premios.segundoAciertos !== null && q.aciertos === premios.segundoAciertos;
+          const rowBg     = esPrimero ? "#2a2000" : esSegundo ? "#0d2b0d" : idx % 2 === 0 ? "#111827" : "#0f172a";
+
+          return (
+            <Row key={q.id} bg={rowBg} h={FH_DATA}>
+              {/* Name */}
+              <div style={{ width: FLYER_NAME, flexShrink: 0, paddingLeft: 8, paddingRight: 4, overflow: "hidden", display: "flex", alignItems: "center" }}>
+                <span style={{ color: esPrimero ? "#fde047" : esSegundo ? "#86efac" : "#d1d5db", fontSize: 8, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {q.nombreCliente ?? q.folio}
+                </span>
+              </div>
+              {/* Pick badges */}
               {partidos.map((p) => {
-                const has = p.golesLocal !== null && p.golesVisita !== null;
+                const cell  = picksForPartido(q.picks, p.id);
+                const hasR  = p.resultado !== null;
+                const s     = cell ? pickStyle(cell.acertado, hasR) : { bg: "#374151", color: "#6b7280" };
+                const label = cell ? cell.label : "?";
                 return (
-                  <td key={`fm-${p.id}`} style={{ padding: "4px 2px", textAlign: "center" }}>
-                    <span style={{ color: has ? WHITE : "#4b5563", fontSize: 9, fontWeight: 900 }}>
-                      {has ? `${p.golesLocal}-${p.golesVisita}` : "·"}
+                  <CenterCell key={`${q.id}-${p.id}`} w={colW}>
+                    <span style={{ display: "inline-block", background: s.bg, borderRadius: 2, padding: "1px 2px", fontSize: 7, fontWeight: 800, color: s.color, lineHeight: "10px" }}>
+                      {label}
                     </span>
-                  </td>
+                  </CenterCell>
                 );
               })}
-              <td />
-            </tr>
-            {/* VISITA logos */}
-            <tr style={{ background: "#e8edf2" }}>
-              <td style={{ padding: "4px 4px 4px 8px" }}>
-                <span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>VISITA</span>
-              </td>
-              {partidos.map((p) => (
-                <td key={`fv-${p.id}`} style={{ padding: "4px 2px", textAlign: "center" }}>
-                  <TeamLogo logoUrl={p.logoVisita} team={p.equipoVisita} size={24} />
-                </td>
-              ))}
-              <td />
-            </tr>
-            {/* NOMBRE / # col headers */}
-            <tr style={{ background: "#0a1e38" }}>
-              <td style={{ padding: "3px 4px 3px 8px" }}>
-                <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span>
-              </td>
-              {partidos.map((_, i) => (
-                <td key={i} style={{ padding: "3px 2px", textAlign: "center" }}>
-                  <span style={{ color: "#93c5fd", fontSize: 8, fontWeight: 800 }}>{i + 1}</span>
-                </td>
-              ))}
-              <td style={{ padding: "3px 2px", textAlign: "center" }}>
-                <span style={{ color: WHITE, fontSize: 7, fontWeight: 800 }}>PTS</span>
-              </td>
-            </tr>
-          </thead>
+              {/* PTS */}
+              <CenterCell w={FLYER_PTS}>
+                <span style={{ display: "inline-block", background: esPrimero ? "#fbbf24" : esSegundo ? "#86efac" : "#1e2d3d", borderRadius: 2, padding: "1px 2px", fontSize: 8, fontWeight: 900, color: esPrimero ? "#78350f" : esSegundo ? "#14532d" : "#6b7280", lineHeight: "10px" }}>
+                  {q.aciertos ?? "—"}
+                </span>
+              </CenterCell>
+            </Row>
+          );
+        })}
 
-          <tbody>
-            {quinielas.map((q, idx) => {
-              const esPrimero = premios.maxAciertos    !== null && q.aciertos === premios.maxAciertos;
-              const esSegundo = premios.segundoAciertos !== null && q.aciertos === premios.segundoAciertos;
-              const rowBg     = esPrimero ? "#2a2000" : esSegundo ? "#0d2b0d" : idx % 2 === 0 ? "#111827" : "#0f172a";
-
-              return (
-                <tr key={q.id} style={{ background: rowBg }}>
-                  <td style={{ padding: "3px 4px 3px 8px", overflow: "hidden" }}>
-                    <span style={{ color: esPrimero ? "#fde047" : esSegundo ? "#86efac" : "#d1d5db", fontSize: 9, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
-                      {q.nombreCliente ?? q.folio}
-                    </span>
-                  </td>
-                  {partidos.map((p) => {
-                    const cell  = picksForPartido(q.picks, p.id);
-                    const hasR  = p.resultado !== null;
-                    const s     = cell ? pickStyle(cell.acertado, hasR) : { bg: "#374151", color: "#6b7280" };
-                    const label = cell ? cell.label : "?";
-                    return (
-                      <td key={`${q.id}-${p.id}`} style={{ padding: "3px 1px", textAlign: "center" }}>
-                        <span style={{ display: "inline-block", background: s.bg, borderRadius: 3, padding: "2px 3px", fontSize: 8, fontWeight: 800, color: s.color, minWidth: 14 }}>
-                          {label}
-                        </span>
-                      </td>
-                    );
-                  })}
-                  <td style={{ padding: "3px 2px", textAlign: "center" }}>
-                    <span style={{ display: "inline-block", background: esPrimero ? "#fbbf24" : esSegundo ? "#86efac" : "#1e2d3d", borderRadius: 3, padding: "2px 3px", fontSize: 9, fontWeight: 900, color: esPrimero ? "#78350f" : esSegundo ? "#14532d" : "#6b7280", minWidth: 16 }}>
-                      {q.aciertos ?? "—"}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
       </div>
 
     </div>
@@ -383,6 +405,7 @@ export default function ResultadosPage() {
           : new Promise<void>((res) => { img.onload = () => res(); img.onerror = () => res(); })
       ));
 
+      const fullH = el.scrollHeight;
       const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(el, {
         backgroundColor: "#0f172a",
@@ -391,7 +414,9 @@ export default function ResultadosPage() {
         allowTaint: false,
         logging: false,
         width: FLYER_W,
+        height: fullH,
         windowWidth: FLYER_W,
+        windowHeight: fullH,
         scrollX: 0,
         scrollY: 0,
       });
