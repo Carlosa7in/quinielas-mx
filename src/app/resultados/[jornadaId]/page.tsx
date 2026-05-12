@@ -129,20 +129,14 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
         </div>
       </div>
 
-      {/* ── Prize boxes ── */}
-      <div style={{ display: "flex", gap: 8, padding: "10px 14px" }}>
-        <div style={{ flex: 1, background: "#1e3a5f", borderRadius: 10, padding: "10px 12px", border: "1px solid #2d5a8e" }}>
-          <div style={{ color: "#fbbf24", fontSize: 9, fontWeight: 800, letterSpacing: 1 }}>1° LUGAR</div>
-          <div style={{ color: "#fde047", fontSize: 20, fontWeight: 900, marginTop: 3 }}>{fmt(premios.bolsa1)}</div>
-          {premios.primeroCount > 0 && <div style={{ color: "#93c5fd", fontSize: 10, marginTop: 1 }}>{premios.primeroCount} ganador{premios.primeroCount !== 1 ? "es" : ""}</div>}
-        </div>
-        <div style={{ flex: 1, background: "#1e3a5f", borderRadius: 10, padding: "10px 12px", border: "1px solid #2d5a8e" }}>
-          <div style={{ color: "#6ee7b7", fontSize: 9, fontWeight: 800, letterSpacing: 1 }}>2° LUGAR</div>
-          <div style={{ color: "#a7f3d0", fontSize: 20, fontWeight: 900, marginTop: 3 }}>{fmt(premios.bolsa2)}</div>
-          {premios.segundoCount > 0
-            ? <div style={{ color: "#93c5fd", fontSize: 10, marginTop: 1 }}>{premios.segundoCount} ganador{premios.segundoCount !== 1 ? "es" : ""}</div>
-            : jornada.bolsa2Acumulada > 0 ? <div style={{ color: "#fbbf24", fontSize: 10, marginTop: 1 }}>acumulado</div> : null}
-        </div>
+      {/* ── Premios en una línea ── */}
+      <div style={{ padding: "8px 18px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid #1e3a5f" }}>
+        <span style={{ color: "#fde047", fontSize: 12, fontWeight: 800 }}>
+          🥇 {fmt(premios.bolsa1)}{premios.primeroCount > 0 ? ` · ${premios.primeroCount} ganador${premios.primeroCount !== 1 ? "es" : ""}` : ""}
+        </span>
+        <span style={{ color: "#a7f3d0", fontSize: 12, fontWeight: 800 }}>
+          🥈 {fmt(premios.bolsa2)}{premios.segundoCount > 0 ? ` · ${premios.segundoCount} ganador${premios.segundoCount !== 1 ? "es" : ""}` : jornada.bolsa2Acumulada > 0 ? " · acumulado" : ""}
+        </span>
       </div>
 
       {/* ── Full picks table ── */}
