@@ -55,36 +55,87 @@ type ResultadosData = {
 
 const PRED_LABEL: Record<string, string> = { "1": "L", "X": "E", "2": "V" };
 
-/** Normalise team name → file slug */
+// All logo folders to try, in order
+const ALL_FOLDERS = ["liga-mx", "premier", "champions", "la-liga"];
+
 function slug(name: string): string {
   return name
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")   // strip accents
-    .replace(/[^a-z0-9]+/g, "-")       // spaces/special → hyphen
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 }
 
-/** League folder based on jornada.liga string */
-function ligaFolder(liga: string): string {
+/** Which folder to try first based on jornada liga */
+function primaryFolder(liga: string): string {
   const l = liga.toLowerCase();
-  if (l.includes("mx") || l.includes("mexicana") || l.includes("liga mx")) return "liga-mx";
-  if (l.includes("premier"))    return "premier";
+  if (l.includes("mx") || l.includes("mexicana")) return "liga-mx";
+  if (l.includes("premier")) return "premier";
+  if (l.includes("champion")) return "champions";
   if (l.includes("la liga") || l.includes("laliga") || l.includes("española")) return "la-liga";
-  if (l.includes("champion"))   return "champions";
-  return "champions"; // fallback
+  return "champions";
 }
 
-function logoUrl(team: string, liga: string): string {
-  return `/logos/${ligaFolder(liga)}/${slug(team)}.png`;
-}
-
-function abrev(nombre: string, n = 4): string {
-  return nombre.length > n ? nombre.slice(0, n) : nombre;
+function orderedFolders(liga: string): string[] {
+  const first = primaryFolder(liga);
+  return [first, ...ALL_FOLDERS.filter((f) => f !== first)];
 }
 
 function fmt(n: number): string {
   return n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+/** Logo that tries every folder before showing initials */
+function TeamLogo({ team, liga, size = 32 }: { team: string; liga: string; size?: number }) {
+  const folders = useMemo(() => orderedFolders(liga), [liga]);
+  const [idx, setIdx] = useState(0);
+  const [failed, setFailed] = useState(false);
+
+  const teamSlug = slug(team);
+  const src = `/logos/${folders[idx]}/${teamSlug}.png`;
+
+  const onError = () => {
+    if (idx < folders.length - 1) {
+      setIdx((i) => i + 1);
+    } else {
+      setFailed(true);
+    }
+  };
+
+  if (failed) {
+    // Colored circle with initials
+    return (
+      <div style={{
+        width: size, height: size, borderRadius: "50%",
+        background: "#334155", display: "flex", alignItems: "center", justifyContent: "center",
+        flexShrink: 0,
+      }}>
+        <span style={{ color: "#fff", fontSize: size * 0.32, fontWeight: 800, lineHeight: 1 }}>
+          {initials(team)}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={team}
+      onError={onError}
+      crossOrigin="anonymous"
+      style={{ width: size, height: size, objectFit: "contain", display: "block", flexShrink: 0 }}
+    />
+  );
 }
 
 function picksForPartido(picks: PickItem[], partidoId: string) {
@@ -99,48 +150,29 @@ function picksForPartido(picks: PickItem[], partidoId: string) {
   return { label, acertado };
 }
 
-function pickBg(acertado: boolean | null, hasResult: boolean) {
-  if (hasResult && acertado === true)  return { bg: "#22c55e", text: "#fff" };
-  if (hasResult && acertado === false) return { bg: "#f87171", text: "#fff" };
-  return { bg: "#e5e7eb", text: "#6b7280" };
+function pickStyle(acertado: boolean | null, hasResult: boolean): { bg: string; color: string } {
+  if (hasResult && acertado === true)  return { bg: "#16a34a", color: "#fff" };
+  if (hasResult && acertado === false) return { bg: "#dc2626", color: "#fff" };
+  return { bg: "#d1d5db", color: "#374151" };
 }
 
-/** Small logo image that falls back to text if the file doesn't exist */
-function TeamLogo({ team, liga, size = 26 }: { team: string; liga: string; size?: number }) {
-  const [failed, setFailed] = useState(false);
-  const src = logoUrl(team, liga);
-
-  if (failed) {
-    return (
-      <span style={{
-        display: "block", fontSize: 9, fontWeight: 700, color: "#374151",
-        overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
-        maxWidth: size + 4, textAlign: "center",
-      }}>
-        {abrev(team, 5)}
-      </span>
-    );
-  }
-
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={team}
-      onError={() => setFailed(true)}
-      crossOrigin="anonymous"
-      style={{ width: size, height: size, objectFit: "contain", display: "block", margin: "0 auto" }}
-    />
-  );
-}
+// ─── Styles (inline for html2canvas) ──────────────────────────────────────────
+const NAVY   = "#1e3a5f";
+const NAVY2  = "#162d4a";
+const WHITE  = "#ffffff";
+const LGRAY  = "#f3f4f6";
+const LGRAY2 = "#e5e7eb";
+const COL_W  = 50;   // px per partido column
+const NAME_W = 140;  // px for name column
+const PTS_W  = 44;   // px for pts column
 
 export default function ResultadosPage() {
   const params = useParams();
   const jornadaId = params.jornadaId as string;
 
-  const [data, setData]         = useState<ResultadosData | null>(null);
-  const [error, setError]       = useState("");
-  const [busqueda, setBusqueda] = useState("");
+  const [data, setData]           = useState<ResultadosData | null>(null);
+  const [error, setError]         = useState("");
+  const [busqueda, setBusqueda]   = useState("");
   const [generando, setGenerando] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -151,7 +183,7 @@ export default function ResultadosPage() {
       .catch(() => setError("Error al cargar los resultados"));
   }, [jornadaId]);
 
-  const hayAlgunResultado = useMemo(
+  const hayResultados = useMemo(
     () => data?.partidos.some((p) => p.resultado !== null) ?? false,
     [data]
   );
@@ -170,25 +202,22 @@ export default function ResultadosPage() {
     try {
       const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(gridRef.current, {
-        backgroundColor: "#ffffff",
+        backgroundColor: WHITE,
         scale: 2,
         useCORS: true,
         allowTaint: false,
         logging: false,
       });
       const blob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), "image/png"));
-      const file  = new File([blob], "resultados.png", { type: "image/png" });
-      const url   = URL.createObjectURL(blob);
+      const file = new File([blob], "resultados.png", { type: "image/png" });
+      const url  = URL.createObjectURL(blob);
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: "Resultados Quiniela", url: window.location.href });
       } else {
-        const a = document.createElement("a");
-        a.href = url; a.download = "resultados.png"; a.click();
+        const a = document.createElement("a"); a.href = url; a.download = "resultados.png"; a.click();
       }
       URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
     setGenerando(false);
   };
 
@@ -200,7 +229,6 @@ export default function ResultadosPage() {
       </div>
     </div>
   );
-
   if (!data) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <p className="text-gray-400 animate-pulse">Cargando resultados...</p>
@@ -209,45 +237,33 @@ export default function ResultadosPage() {
 
   const { jornada, partidos, premios } = data;
   const nombreJornada = jornada.nombre ?? `Jornada ${jornada.numero}`;
-  const COL_W  = 42;   // px per partido column
-  const NAME_W = 130;  // px for name column
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
 
-      {/* ── Header ── */}
+      {/* ── Top header ── */}
       <div className="bg-brand text-white px-4 py-4">
-        <div className="max-w-screen-lg mx-auto">
-          <div className="flex items-center gap-3 mb-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-tablitas.png" alt="Tablitas" className="h-10 w-auto object-contain shrink-0" />
-            <div>
-              <p className="text-amber-300/70 text-xs">{jornada.liga} · {jornada.temporada}</p>
-              <h1 className="text-lg font-bold leading-tight">{nombreJornada}</h1>
-            </div>
+        <div className="max-w-screen-lg mx-auto flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-tablitas.png" alt="Tablitas" className="h-10 w-auto object-contain shrink-0" />
+          <div className="flex-1">
+            <p className="text-amber-300/70 text-xs">{jornada.liga} · {jornada.temporada}</p>
+            <h1 className="text-lg font-bold leading-tight">{nombreJornada}</h1>
           </div>
-
-          <div className="flex flex-wrap gap-2 text-sm mb-2">
-            <div className="bg-white/10 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
-              <span className="text-yellow-300 font-bold">1° ${fmt(premios.bolsa1)}</span>
-              {premios.primeroCount > 0 && (
-                <span className="text-amber-300/60 text-xs">
-                  ({premios.primeroCount} ganador{premios.primeroCount !== 1 ? "es" : ""})
-                </span>
-              )}
-            </div>
-            <div className="bg-white/10 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
-              <span className="text-white font-bold">2° ${fmt(premios.bolsa2)}</span>
-              {premios.segundoCount > 0 && <span className="text-white/50 text-xs">({premios.segundoCount})</span>}
-              {jornada.bolsa2Acumulada > 0 && <span className="text-amber-400 text-xs">acumulado</span>}
-            </div>
+          <div className="text-right text-sm space-y-1 shrink-0">
+            {premios.primeroCount > 0 && (
+              <p className="text-yellow-300 font-bold">🥇 ${fmt(premios.bolsa1)} · {premios.primeroCount} gana{premios.primeroCount !== 1 ? "dores" : "dor"}</p>
+            )}
+            {premios.segundoCount > 0 && (
+              <p className="text-white/70 font-semibold text-xs">🥈 ${fmt(premios.bolsa2)} · {premios.segundoCount}</p>
+            )}
           </div>
         </div>
       </div>
 
       <div className="max-w-screen-lg mx-auto px-3 py-3 space-y-3">
 
-        {/* Búsqueda + botón imagen */}
+        {/* Búsqueda + imagen */}
         <div className="flex gap-2">
           <input
             type="text"
@@ -258,118 +274,152 @@ export default function ResultadosPage() {
           />
           <button
             onClick={generarImagen}
-            disabled={generando || !hayAlgunResultado}
+            disabled={generando || !hayResultados}
             className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white font-semibold px-3 py-2 rounded-xl text-sm transition-colors shrink-0 flex items-center gap-1.5"
           >
             {generando ? "⏳" : "📸"} {generando ? "..." : "Imagen"}
           </button>
         </div>
 
-        {!hayAlgunResultado && (
+        {!hayResultados && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-800 text-center">
             Los picks se revelan una vez que inicien los partidos.
           </div>
         )}
 
-        {/* ── Grid ── */}
+        {/* ── GRID (capturado por html2canvas) ── */}
         <div
           ref={gridRef}
-          style={{ background: "#ffffff", borderRadius: 16, overflow: "hidden", padding: "12px 8px", border: "1px solid #e5e7eb" }}
+          style={{ background: WHITE, borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 6px rgba(0,0,0,.10)" }}
         >
 
-          {/* Título dentro de la imagen */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, paddingLeft: 4 }}>
+          {/* Marca dentro de la imagen */}
+          <div style={{ background: NAVY, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
-              <div style={{ color: "#92400e", fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>TABLITAS QUINIELAS</div>
-              <div style={{ color: "#1c1917", fontSize: 14, fontWeight: 800 }}>{nombreJornada}</div>
+              <div style={{ color: "#fbbf24", fontSize: 10, fontWeight: 800, letterSpacing: 1 }}>TABLITAS QUINIELAS</div>
+              <div style={{ color: WHITE, fontSize: 16, fontWeight: 800 }}>{nombreJornada}</div>
             </div>
-            <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+            <div style={{ textAlign: "right" }}>
               {premios.primeroCount > 0 && (
-                <div style={{ color: "#b45309", fontSize: 11, fontWeight: 700 }}>
-                  🥇 ${fmt(premios.bolsa1)} · {premios.primeroCount} ganador{premios.primeroCount !== 1 ? "es" : ""}
+                <div style={{ color: "#fde047", fontSize: 12, fontWeight: 800 }}>
+                  1° ${fmt(premios.bolsa1)} · {premios.primeroCount} ganador{premios.primeroCount !== 1 ? "es" : ""}
                 </div>
               )}
               {premios.segundoCount > 0 && (
-                <div style={{ color: "#6b7280", fontSize: 11, fontWeight: 700 }}>
-                  🥈 ${fmt(premios.bolsa2)} · {premios.segundoCount} ganador{premios.segundoCount !== 1 ? "es" : ""}
+                <div style={{ color: "#d1d5db", fontSize: 11, fontWeight: 700 }}>
+                  2° ${fmt(premios.bolsa2)} · {premios.segundoCount} ganador{premios.segundoCount !== 1 ? "es" : ""}
                 </div>
               )}
             </div>
           </div>
 
+          {/* "RESULTADOS" bar */}
+          <div style={{ background: NAVY2, padding: "5px 14px", textAlign: "center" }}>
+            <span style={{ color: WHITE, fontSize: 11, fontWeight: 800, letterSpacing: 2 }}>RESULTADOS</span>
+          </div>
+
+          {/* Scrollable table */}
           <div style={{ overflowX: "auto" }}>
-            <table style={{ borderCollapse: "collapse", minWidth: NAME_W + partidos.length * COL_W + 44, width: "100%" }}>
+            <table style={{ borderCollapse: "collapse", width: "100%", minWidth: NAME_W + partidos.length * COL_W + PTS_W }}>
 
-              {/* ─── Cabecera: logo local / marcador / logo visita ─── */}
+              {/* ─── Header: 3 fixed rows (LOCAL, MARCADOR, VISITA) + col headers ─── */}
               <thead>
-                <tr style={{ background: "#f9fafb" }}>
-                  {/* Nombre col */}
-                  <th style={{ width: NAME_W, minWidth: NAME_W, textAlign: "left", verticalAlign: "bottom", paddingBottom: 6, paddingLeft: 6, borderBottom: "2px solid #e5e7eb" }}>
-                    <span style={{ color: "#9ca3af", fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>NOMBRE</span>
-                  </th>
 
-                  {/* Partido columns */}
+                {/* LOCAL logos row */}
+                <tr style={{ background: NAVY }}>
+                  <td style={{ width: NAME_W, minWidth: NAME_W, padding: "6px 10px" }}>
+                    <span style={{ color: WHITE, fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span>
+                  </td>
+                  {partidos.map((p) => (
+                    <td key={`local-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "6px 2px" }}>
+                      <div style={{ display: "flex", justifyContent: "center" }}>
+                        <TeamLogo team={p.equipoLocal} liga={jornada.liga} size={34} />
+                      </div>
+                    </td>
+                  ))}
+                  <td style={{ width: PTS_W }} />
+                </tr>
+
+                {/* MARCADOR row */}
+                <tr style={{ background: "#0f2a47" }}>
+                  <td style={{ padding: "5px 10px" }}>
+                    <span style={{ color: "#93c5fd", fontSize: 10, fontWeight: 800, letterSpacing: 1 }}>MARCADOR</span>
+                  </td>
                   {partidos.map((p) => {
-                    const score    = p.golesLocal !== null && p.golesVisita !== null ? `${p.golesLocal}-${p.golesVisita}` : "·";
                     const hasScore = p.golesLocal !== null && p.golesVisita !== null;
+                    const score    = hasScore ? `${p.golesLocal}-${p.golesVisita}` : "·";
                     return (
-                      <th key={p.id} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "4px 2px", borderBottom: "2px solid #e5e7eb" }}>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                          {/* Logo LOCAL */}
-                          <div style={{ width: COL_W - 4, display: "flex", justifyContent: "center" }}>
-                            <TeamLogo team={p.equipoLocal} liga={jornada.liga} size={26} />
-                          </div>
-                          {/* MARCADOR */}
-                          <div style={{
-                            background: hasScore ? "#16a34a" : "#f3f4f6",
-                            borderRadius: 4, padding: "1px 4px", minWidth: 28, textAlign: "center",
-                          }}>
-                            <span style={{ color: hasScore ? "#fff" : "#9ca3af", fontSize: 10, fontWeight: 800 }}>
-                              {score}
-                            </span>
-                          </div>
-                          {/* Logo VISITA */}
-                          <div style={{ width: COL_W - 4, display: "flex", justifyContent: "center" }}>
-                            <TeamLogo team={p.equipoVisita} liga={jornada.liga} size={26} />
-                          </div>
+                      <td key={`marc-${p.id}`} style={{ textAlign: "center", padding: "5px 2px" }}>
+                        <div style={{
+                          background: hasScore ? "#16a34a" : "#1e3a5f",
+                          borderRadius: 6, padding: "3px 4px", margin: "0 auto", display: "inline-block", minWidth: 32,
+                        }}>
+                          <span style={{ color: WHITE, fontSize: 11, fontWeight: 900 }}>{score}</span>
                         </div>
-                      </th>
+                      </td>
                     );
                   })}
+                  <td />
+                </tr>
 
-                  {/* PTS col */}
-                  <th style={{ width: 44, textAlign: "center", verticalAlign: "bottom", paddingBottom: 6, borderBottom: "2px solid #e5e7eb" }}>
-                    <span style={{ color: "#9ca3af", fontSize: 9, fontWeight: 700, letterSpacing: 1 }}>PTS</span>
-                  </th>
+                {/* VISITA logos row */}
+                <tr style={{ background: NAVY }}>
+                  <td style={{ padding: "6px 10px" }}>
+                    <span style={{ color: WHITE, fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>VISITA</span>
+                  </td>
+                  {partidos.map((p) => (
+                    <td key={`visit-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "6px 2px" }}>
+                      <div style={{ display: "flex", justifyContent: "center" }}>
+                        <TeamLogo team={p.equipoVisita} liga={jornada.liga} size={34} />
+                      </div>
+                    </td>
+                  ))}
+                  <td />
+                </tr>
+
+                {/* Column labels row (NOMBRE / 1,2,3… / PTS) */}
+                <tr style={{ background: NAVY2, borderBottom: `2px solid ${LGRAY2}` }}>
+                  <td style={{ padding: "5px 10px" }}>
+                    <span style={{ color: WHITE, fontSize: 10, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span>
+                  </td>
+                  {partidos.map((p, i) => (
+                    <td key={`num-${p.id}`} style={{ textAlign: "center", padding: "5px 2px" }}>
+                      <span style={{ color: "#93c5fd", fontSize: 10, fontWeight: 800 }}>{i + 1}</span>
+                    </td>
+                  ))}
+                  <td style={{ textAlign: "center" }}>
+                    <span style={{ color: WHITE, fontSize: 10, fontWeight: 800, letterSpacing: 1 }}>PTS</span>
+                  </td>
                 </tr>
               </thead>
 
-              {/* ─── Filas ─── */}
+              {/* ─── Participant rows ─── */}
               <tbody>
                 {quinielasFiltradas.length === 0 && (
                   <tr>
-                    <td colSpan={partidos.length + 2} style={{ textAlign: "center", padding: "24px 0", color: "#9ca3af", fontSize: 12 }}>
-                      {busqueda ? "Sin resultados" : "Sin quinielas"}
+                    <td colSpan={partidos.length + 2} style={{ textAlign: "center", padding: "28px 0", color: "#9ca3af", fontSize: 13 }}>
+                      {busqueda ? "Sin resultados para esa búsqueda" : "Sin quinielas"}
                     </td>
                   </tr>
                 )}
 
                 {quinielasFiltradas.map((q, idx) => {
-                  const esPrimero = premios.maxAciertos    !== null && q.aciertos === premios.maxAciertos;
-                  const esSegundo = premios.segundoAciertos !== null && q.aciertos === premios.segundoAciertos;
-                  const rowBg     = esPrimero ? "#fef9c3" : esSegundo ? "#f0fdf4" : idx % 2 === 0 ? "#ffffff" : "#f9fafb";
+                  const esPrimero  = premios.maxAciertos    !== null && q.aciertos === premios.maxAciertos;
+                  const esSegundo  = premios.segundoAciertos !== null && q.aciertos === premios.segundoAciertos;
+                  const rowBg      = esPrimero ? "#fef9c3" : esSegundo ? "#f0fdf4" : idx % 2 === 0 ? WHITE : LGRAY;
 
                   return (
-                    <tr key={q.id} style={{ background: rowBg, borderBottom: "1px solid #f3f4f6" }}>
+                    <tr key={q.id} style={{ background: rowBg, borderBottom: `1px solid ${LGRAY2}` }}>
+
                       {/* Nombre */}
-                      <td style={{ padding: "4px 6px", width: NAME_W, minWidth: NAME_W }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                          {esPrimero && <span style={{ color: "#d97706", fontSize: 9, fontWeight: 800 }}>🥇</span>}
-                          {esSegundo && <span style={{ color: "#4ade80", fontSize: 9, fontWeight: 800 }}>🥈</span>}
+                      <td style={{ padding: "5px 10px", width: NAME_W, minWidth: NAME_W }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          {esPrimero && <span style={{ fontSize: 12 }}>🥇</span>}
+                          {esSegundo && <span style={{ fontSize: 12 }}>🥈</span>}
                           <span style={{
-                            color: "#111827", fontSize: 11, fontWeight: 600,
+                            color: "#111827", fontSize: 12, fontWeight: 600,
                             overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
-                            maxWidth: NAME_W - 28,
+                            maxWidth: NAME_W - 36,
                           }}>
                             {q.nombreCliente ?? q.folio}
                           </span>
@@ -380,35 +430,32 @@ export default function ResultadosPage() {
                       {partidos.map((p) => {
                         const cell      = picksForPartido(q.picks, p.id);
                         const hasResult = p.resultado !== null;
+                        const style     = cell && hayResultados
+                          ? pickStyle(cell.acertado, hasResult)
+                          : { bg: "#d1d5db", color: "#6b7280" };
+                        const label     = cell && hayResultados ? cell.label : "?";
 
-                        if (!hayAlgunResultado || !cell) {
-                          return (
-                            <td key={`${q.id}-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "4px 2px" }}>
-                              <div style={{ background: "#e5e7eb", borderRadius: 4, height: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <span style={{ color: "#9ca3af", fontSize: 10, fontWeight: 700 }}>?</span>
-                              </div>
-                            </td>
-                          );
-                        }
-                        const { bg, text } = pickBg(cell.acertado, hasResult);
                         return (
-                          <td key={`${q.id}-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "4px 2px" }}>
-                            <div style={{ background: bg, borderRadius: 4, height: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <span style={{ color: text, fontSize: 10, fontWeight: 700 }}>{cell.label}</span>
+                          <td key={`${q.id}-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "5px 2px" }}>
+                            <div style={{
+                              background: style.bg, borderRadius: 6,
+                              height: 28, width: COL_W - 6, margin: "0 auto",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                            }}>
+                              <span style={{ color: style.color, fontSize: 11, fontWeight: 800 }}>{label}</span>
                             </div>
                           </td>
                         );
                       })}
 
                       {/* PTS */}
-                      <td style={{ width: 44, textAlign: "center", padding: "4px 2px" }}>
+                      <td style={{ width: PTS_W, textAlign: "center", padding: "5px 3px" }}>
                         <div style={{
-                          background: esPrimero ? "#fbbf24" : esSegundo ? "#86efac" : "#e5e7eb",
-                          borderRadius: 6, height: 24,
+                          background: esPrimero ? "#fbbf24" : esSegundo ? "#86efac" : LGRAY2,
+                          borderRadius: 6, height: 28, width: PTS_W - 8, margin: "0 auto",
                           display: "flex", alignItems: "center", justifyContent: "center",
-                          margin: "0 auto", width: 36,
                         }}>
-                          <span style={{ color: esPrimero ? "#78350f" : esSegundo ? "#14532d" : "#6b7280", fontSize: 12, fontWeight: 800 }}>
+                          <span style={{ color: esPrimero ? "#78350f" : esSegundo ? "#14532d" : "#6b7280", fontSize: 13, fontWeight: 900 }}>
                             {q.aciertos ?? "—"}
                           </span>
                         </div>
@@ -420,23 +467,25 @@ export default function ResultadosPage() {
             </table>
           </div>
 
-          {/* Footer en imagen */}
-          <div style={{ textAlign: "center", marginTop: 10, color: "#9ca3af", fontSize: 9 }}>
-            tablitasquinielas.com · Ver resultados: {typeof window !== "undefined" ? window.location.href : ""}
+          {/* Footer */}
+          <div style={{ padding: "8px 14px", borderTop: `1px solid ${LGRAY2}`, textAlign: "center", background: LGRAY }}>
+            <span style={{ color: "#9ca3af", fontSize: 9 }}>
+              tablitasquinielas.com · {typeof window !== "undefined" ? window.location.href : ""}
+            </span>
           </div>
         </div>
 
         {/* Leyenda */}
         <div className="flex flex-wrap gap-3 text-xs text-gray-500 px-1">
           {[
-            { bg: "bg-green-500", label: "Acertado" },
-            { bg: "bg-red-400",   label: "Fallado" },
-            { bg: "bg-gray-200",  label: "Pendiente" },
-            { bg: "bg-yellow-300",label: "1° Lugar" },
-            { bg: "bg-green-200", label: "2° Lugar" },
+            { bg: "#16a34a", label: "Acertado" },
+            { bg: "#dc2626", label: "Fallado" },
+            { bg: "#d1d5db", label: "Pendiente" },
+            { bg: "#fbbf24", label: "1° Lugar" },
+            { bg: "#86efac", label: "2° Lugar" },
           ].map(({ bg, label }) => (
             <span key={label} className="flex items-center gap-1.5">
-              <span className={`inline-block w-4 h-3.5 rounded ${bg}`} />
+              <span style={{ background: bg, width: 16, height: 13, borderRadius: 3, display: "inline-block" }} />
               {label}
             </span>
           ))}
