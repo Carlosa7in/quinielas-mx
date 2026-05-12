@@ -1,6 +1,5 @@
 "use client";
-import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 
 type Partido = {
@@ -104,179 +103,7 @@ const LGRAY2 = "#e5e7eb";
 const COL_W  = 50;
 const NAME_W = 140;
 const PTS_W  = 44;
-const FLYER_W    = 480;
-const FLYER_NAME = 108; // px name column inside flyer
-const FLYER_PTS  = 30;  // px pts column inside flyer
-const FLYER_MARGIN = 14; // px side margin for table area
-// row heights inside flyer (used for flex rows)
-const FH_LOGO  = 30; // LOCAL / VISITA logo rows
-const FH_SCORE = 20; // MARCADOR row
-const FH_NUM   = 15; // numbers header row
-const FH_DATA  = 15; // data rows
 
-// ─── Flyer (hidden, captured by html2canvas — uses flex divs, NOT table) ──────
-// NOTE: html2canvas ignores verticalAlign on <td> and alignItems inside <td>
-//       but correctly renders alignItems: center on a flex-row <div>.
-//       So we build every "row" as a display:flex div with explicit heights.
-function Flyer({ jornada, partidos, premios, quinielas, url }: {
-  jornada: Jornada; partidos: Partido[]; premios: Premios; quinielas: Quiniela[]; url: string;
-}) {
-  const nombreJornada = jornada.nombre ?? `Jornada ${jornada.numero}`;
-
-  // Reusable flex-row builder — width:100% ensures it fills the container exactly
-  const Row = ({ bg, h, children }: { bg: string; h: number; children: React.ReactNode }) => (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", height: h, background: bg, borderTop: "1px solid rgba(255,255,255,0.03)" }}>
-      {children}
-    </div>
-  );
-
-  // Name label cell (left-aligned, fixed width)
-  const LabelCell = ({ children }: { children: React.ReactNode }) => (
-    <div style={{ width: FLYER_NAME, flexShrink: 0, paddingLeft: 8, display: "flex", alignItems: "center" }}>
-      {children}
-    </div>
-  );
-
-  // Game column cell — flex:1 so all N columns share remaining space equally
-  const GCell = ({ children }: { children?: React.ReactNode }) => (
-    <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-      {children}
-    </div>
-  );
-
-  // PTS cell — fixed width, right-anchored
-  const PtsCell = ({ children }: { children?: React.ReactNode }) => (
-    <div style={{ width: FLYER_PTS, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {children}
-    </div>
-  );
-
-  return (
-    <div style={{ width: FLYER_W, background: "#0f172a", display: "flex", flexDirection: "column", fontFamily: "system-ui, -apple-system, sans-serif" }}>
-
-      {/* ── Header ── */}
-      <div style={{ background: NAVY, padding: "14px 18px 10px", display: "flex", alignItems: "center", gap: 12 }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-tablitas.png" alt="Tablitas" crossOrigin="anonymous" style={{ width: 44, height: 44, objectFit: "contain" }} />
-        <div>
-          <div style={{ color: "#fbbf24", fontSize: 9, fontWeight: 800, letterSpacing: 1.5 }}>TABLITAS QUINIELAS</div>
-          <div style={{ color: WHITE, fontSize: 16, fontWeight: 900, lineHeight: "1.2", marginTop: 1 }}>{nombreJornada}</div>
-          <div style={{ color: "#93c5fd", fontSize: 9, marginTop: 2 }}>{jornada.liga} · {jornada.temporada}</div>
-        </div>
-      </div>
-
-      {/* ── Premios en una línea ── */}
-      <div style={{ padding: "8px 18px", display: "flex", alignItems: "center", justifyContent: "center", gap: 24, borderBottom: "1px solid #1e3a5f" }}>
-        <span style={{ color: "#fde047", fontSize: 12, fontWeight: 800 }}>
-          🥇 {fmt(premios.bolsa1)}{premios.primeroCount > 0 ? ` · ${premios.primeroCount} ganador${premios.primeroCount !== 1 ? "es" : ""}` : ""}
-        </span>
-        <span style={{ color: "#a7f3d0", fontSize: 12, fontWeight: 800 }}>
-          🥈 {fmt(premios.bolsa2)}{premios.segundoCount > 0 ? ` · ${premios.segundoCount} ganador${premios.segundoCount !== 1 ? "es" : ""}` : jornada.bolsa2Acumulada > 0 ? " · acumulado" : ""}
-        </span>
-      </div>
-
-      {/* ── Full picks grid (flex divs — no table) ── */}
-      <div style={{ margin: `0 ${FLYER_MARGIN}px ${FLYER_MARGIN}px`, borderRadius: 10, overflow: "hidden", border: "1px solid #1e3a5f" }}>
-
-        {/* RESULTADOS bar */}
-        <div style={{ background: NAVY2, padding: "4px 0", textAlign: "center" }}>
-          <span style={{ color: WHITE, fontSize: 9, fontWeight: 800, letterSpacing: 2 }}>RESULTADOS</span>
-        </div>
-
-        {/* ── LOCAL logos row ── */}
-        <Row bg="#e8edf2" h={FH_LOGO}>
-          <LabelCell><span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span></LabelCell>
-          {partidos.map((p) => (
-            <GCell key={`fl-${p.id}`}>
-              <TeamLogo logoUrl={p.logoLocal} team={p.equipoLocal} size={22} />
-            </GCell>
-          ))}
-          <PtsCell />
-        </Row>
-
-        {/* ── MARCADOR row ── */}
-        <Row bg={NAVY2} h={FH_SCORE}>
-          <LabelCell><span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>MARCADOR</span></LabelCell>
-          {partidos.map((p) => {
-            const has = p.golesLocal !== null && p.golesVisita !== null;
-            return (
-              <GCell key={`fm-${p.id}`}>
-                <span style={{ color: has ? WHITE : "#4b5563", fontSize: 8, fontWeight: 900, lineHeight: "1" }}>
-                  {has ? `${p.golesLocal}-${p.golesVisita}` : "·"}
-                </span>
-              </GCell>
-            );
-          })}
-          <PtsCell />
-        </Row>
-
-        {/* ── VISITA logos row ── */}
-        <Row bg="#e8edf2" h={FH_LOGO}>
-          <LabelCell><span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>VISITA</span></LabelCell>
-          {partidos.map((p) => (
-            <GCell key={`fv-${p.id}`}>
-              <TeamLogo logoUrl={p.logoVisita} team={p.equipoVisita} size={22} />
-            </GCell>
-          ))}
-          <PtsCell />
-        </Row>
-
-        {/* ── Numbers header row ── */}
-        <Row bg="#0a1e38" h={FH_NUM}>
-          <LabelCell><span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span></LabelCell>
-          {partidos.map((_, i) => (
-            <GCell key={i}>
-              <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, lineHeight: "1" }}>{i + 1}</span>
-            </GCell>
-          ))}
-          <PtsCell>
-            <span style={{ color: WHITE, fontSize: 7, fontWeight: 800, lineHeight: "1" }}>PTS</span>
-          </PtsCell>
-        </Row>
-
-        {/* ── Data rows ── */}
-        {quinielas.map((q, idx) => {
-          const esPrimero = premios.maxAciertos    !== null && q.aciertos === premios.maxAciertos;
-          const esSegundo = premios.segundoAciertos !== null && q.aciertos === premios.segundoAciertos;
-          const rowBg     = esPrimero ? "#2a2000" : esSegundo ? "#0d2b0d" : idx % 2 === 0 ? "#111827" : "#0f172a";
-
-          return (
-            <Row key={q.id} bg={rowBg} h={FH_DATA}>
-              {/* Name */}
-              <div style={{ width: FLYER_NAME, flexShrink: 0, paddingLeft: 8, paddingRight: 4, overflow: "hidden", display: "flex", alignItems: "center" }}>
-                <span style={{ color: esPrimero ? "#fde047" : esSegundo ? "#86efac" : "#d1d5db", fontSize: 8, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {q.nombreCliente ?? q.folio}
-                </span>
-              </div>
-              {/* Pick badges */}
-              {partidos.map((p) => {
-                const cell  = picksForPartido(q.picks, p.id);
-                const hasR  = p.resultado !== null;
-                const s     = cell ? pickStyle(cell.acertado, hasR) : { bg: "#374151", color: "#6b7280" };
-                const label = cell ? cell.label : "?";
-                return (
-                  <GCell key={`${q.id}-${p.id}`}>
-                    <span style={{ display: "inline-block", background: s.bg, borderRadius: 2, padding: "1px 2px", fontSize: 7, fontWeight: 800, color: s.color, lineHeight: "10px" }}>
-                      {label}
-                    </span>
-                  </GCell>
-                );
-              })}
-              {/* PTS */}
-              <PtsCell>
-                <span style={{ display: "inline-block", background: esPrimero ? "#fbbf24" : esSegundo ? "#86efac" : "#1e2d3d", borderRadius: 2, padding: "1px 2px", fontSize: 8, fontWeight: 900, color: esPrimero ? "#78350f" : esSegundo ? "#14532d" : "#6b7280", lineHeight: "10px" }}>
-                  {q.aciertos ?? "—"}
-                </span>
-              </PtsCell>
-            </Row>
-          );
-        })}
-
-      </div>
-
-    </div>
-  );
-}
 
 // ─── Preview modal ─────────────────────────────────────────────────────────────
 function PreviewModal({ blobUrl, blob, onClose }: { blobUrl: string; blob: Blob; onClose: () => void }) {
@@ -371,10 +198,6 @@ export default function ResultadosPage() {
   const [estadoImg, setEstadoImg] = useState<"idle" | "generando" | "lista">("idle");
   const [blobUrl, setBlobUrl]     = useState<string>("");
   const [blob, setBlob]           = useState<Blob | null>(null);
-  const [mounted, setMounted]     = useState(false);
-  const flyerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     fetch(`/api/resultados/${jornadaId}`)
@@ -395,35 +218,12 @@ export default function ResultadosPage() {
   }, [data, busqueda]);
 
   const generarImagen = useCallback(async () => {
-    if (!flyerRef.current) return;
     setEstadoImg("generando");
     try {
-      const el = flyerRef.current;
-
-      // Esperar a que todos los logos terminen de cargar
-      const imgs = Array.from(el.querySelectorAll("img"));
-      await Promise.all(imgs.map((img) =>
-        img.complete
-          ? Promise.resolve()
-          : new Promise<void>((res) => { img.onload = () => res(); img.onerror = () => res(); })
-      ));
-
-      const fullH = el.scrollHeight;
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(el, {
-        backgroundColor: "#0f172a",
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        width: FLYER_W,
-        height: fullH,
-        windowWidth: FLYER_W,
-        windowHeight: fullH,
-        scrollX: 0,
-        scrollY: 0,
-      });
-      const b = await new Promise<Blob>((res) => canvas.toBlob((x) => res(x!), "image/png"));
+      // Satori genera la imagen en el servidor — solo hay que pedirla
+      const res = await fetch(`/api/resultados/${jornadaId}/imagen`);
+      if (!res.ok) throw new Error(await res.text());
+      const b = await res.blob();
       const url = URL.createObjectURL(b);
       setBlob(b);
       setBlobUrl(url);
@@ -432,7 +232,7 @@ export default function ResultadosPage() {
       console.error(e);
       setEstadoImg("idle");
     }
-  }, []);
+  }, [jornadaId]);
 
   const cerrarPreview = useCallback(() => {
     URL.revokeObjectURL(blobUrl);
@@ -461,14 +261,6 @@ export default function ResultadosPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-
-      {/* Hidden flyer — portal directo a body para evitar overflow clipping */}
-      {mounted && createPortal(
-        <div ref={flyerRef} style={{ position: "absolute", left: -9999, top: 0, width: FLYER_W, pointerEvents: "none" }}>
-          {data && <Flyer jornada={jornada} partidos={partidos} premios={premios} quinielas={data.quinielas} url={pageUrl} />}
-        </div>,
-        document.body
-      )}
 
       {/* Preview modal */}
       {estadoImg === "lista" && blobUrl && blob && (
