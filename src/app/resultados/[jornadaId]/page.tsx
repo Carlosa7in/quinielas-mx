@@ -113,7 +113,6 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
   jornada: Jornada; partidos: Partido[]; premios: Premios; quinielas: Quiniela[]; url: string;
 }) {
   const nombreJornada = jornada.nombre ?? `Jornada ${jornada.numero}`;
-  const labelW = 52; // px for LOCAL/MARCADOR/VISITA label column in compact header
 
   return (
     <div style={{ width: FLYER_W, background: "#0f172a", display: "flex", flexDirection: "column", fontFamily: "system-ui, -apple-system, sans-serif" }}>
@@ -146,9 +145,9 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
           <span style={{ color: WHITE, fontSize: 9, fontWeight: 800, letterSpacing: 2 }}>RESULTADOS</span>
         </div>
 
-        <table style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed", verticalAlign: "middle" }}>
+        <table style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed" }}>
           <colgroup>
-            <col style={{ width: labelW }} />
+            <col style={{ width: FLYER_NAME }} />
             {partidos.map((p) => <col key={p.id} style={{ width: FLYER_COL }} />)}
             <col style={{ width: FLYER_PTS }} />
           </colgroup>
@@ -156,61 +155,75 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
           <thead>
             {/* LOCAL logos */}
             <tr style={{ background: "#e8edf2" }}>
-              <td style={{ padding: "5px 6px", verticalAlign: "middle" }}>
-                <span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span>
+              <td style={{ padding: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", height: 32, paddingLeft: 8 }}>
+                  <span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span>
+                </div>
               </td>
               {partidos.map((p) => (
-                <td key={`fl-${p.id}`} style={{ textAlign: "center", verticalAlign: "middle", padding: "4px 1px" }}>
-                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                <td key={`fl-${p.id}`} style={{ padding: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 32 }}>
                     <TeamLogo logoUrl={p.logoLocal} team={p.equipoLocal} size={24} />
                   </div>
                 </td>
               ))}
-              <td style={{ verticalAlign: "middle" }} />
+              <td />
             </tr>
             {/* MARCADOR */}
             <tr style={{ background: NAVY2 }}>
-              <td style={{ padding: "4px 6px", verticalAlign: "middle" }}>
-                <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>MARCADOR</span>
+              <td style={{ padding: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", height: 22, paddingLeft: 8 }}>
+                  <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>MARCADOR</span>
+                </div>
               </td>
               {partidos.map((p) => {
                 const has = p.golesLocal !== null && p.golesVisita !== null;
                 return (
-                  <td key={`fm-${p.id}`} style={{ textAlign: "center", verticalAlign: "middle", padding: "4px 1px" }}>
-                    <span style={{ color: has ? WHITE : "#4b5563", fontSize: 9, fontWeight: 900 }}>
-                      {has ? `${p.golesLocal}-${p.golesVisita}` : "·"}
-                    </span>
+                  <td key={`fm-${p.id}`} style={{ padding: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 22 }}>
+                      <span style={{ color: has ? WHITE : "#4b5563", fontSize: 9, fontWeight: 900 }}>
+                        {has ? `${p.golesLocal}-${p.golesVisita}` : "·"}
+                      </span>
+                    </div>
                   </td>
                 );
               })}
-              <td style={{ verticalAlign: "middle" }} />
+              <td />
             </tr>
             {/* VISITA logos */}
             <tr style={{ background: "#e8edf2" }}>
-              <td style={{ padding: "5px 6px", verticalAlign: "middle" }}>
-                <span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>VISITA</span>
+              <td style={{ padding: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", height: 32, paddingLeft: 8 }}>
+                  <span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>VISITA</span>
+                </div>
               </td>
               {partidos.map((p) => (
-                <td key={`fv-${p.id}`} style={{ textAlign: "center", verticalAlign: "middle", padding: "4px 1px" }}>
-                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                <td key={`fv-${p.id}`} style={{ padding: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 32 }}>
                     <TeamLogo logoUrl={p.logoVisita} team={p.equipoVisita} size={24} />
                   </div>
                 </td>
               ))}
-              <td style={{ verticalAlign: "middle" }} />
+              <td />
             </tr>
             {/* NOMBRE / # col headers */}
             <tr style={{ background: "#0a1e38" }}>
-              <td style={{ padding: "4px 6px", verticalAlign: "middle" }}>
-                <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span>
+              <td style={{ padding: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", height: 20, paddingLeft: 8 }}>
+                  <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span>
+                </div>
               </td>
               {partidos.map((_, i) => (
-                <td key={i} style={{ textAlign: "center", verticalAlign: "middle", padding: "4px 1px" }}>
-                  <span style={{ color: "#93c5fd", fontSize: 8, fontWeight: 800 }}>{i + 1}</span>
+                <td key={i} style={{ padding: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 20 }}>
+                    <span style={{ color: "#93c5fd", fontSize: 8, fontWeight: 800 }}>{i + 1}</span>
+                  </div>
                 </td>
               ))}
-              <td style={{ textAlign: "center", verticalAlign: "middle" }}>
-                <span style={{ color: WHITE, fontSize: 7, fontWeight: 800 }}>PTS</span>
+              <td style={{ padding: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 20 }}>
+                  <span style={{ color: WHITE, fontSize: 7, fontWeight: 800 }}>PTS</span>
+                </div>
               </td>
             </tr>
           </thead>
@@ -223,25 +236,30 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
 
               return (
                 <tr key={q.id} style={{ background: rowBg }}>
-                  <td style={{ padding: "4px 6px", verticalAlign: "middle", overflow: "hidden" }}>
-                    <span style={{ color: esPrimero ? "#fde047" : esSegundo ? "#86efac" : "#d1d5db", fontSize: 9, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
-                      {q.nombreCliente ?? q.folio}
-                    </span>
+                  {/* Name */}
+                  <td style={{ padding: 0, overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", height: 22, paddingLeft: 8, paddingRight: 4 }}>
+                      <span style={{ color: esPrimero ? "#fde047" : esSegundo ? "#86efac" : "#d1d5db", fontSize: 9, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {q.nombreCliente ?? q.folio}
+                      </span>
+                    </div>
                   </td>
+                  {/* Picks */}
                   {partidos.map((p) => {
                     const cell  = picksForPartido(q.picks, p.id);
                     const hasR  = p.resultado !== null;
                     const s     = cell ? pickStyle(cell.acertado, hasR) : { bg: "#374151", color: "#6b7280" };
                     const label = cell ? cell.label : "?";
                     return (
-                      <td key={`${q.id}-${p.id}`} style={{ textAlign: "center", verticalAlign: "middle", padding: "3px 1px" }}>
-                        <div style={{ background: s.bg, borderRadius: 3, height: 18, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 1px" }}>
+                      <td key={`${q.id}-${p.id}`} style={{ padding: "2px 1px" }}>
+                        <div style={{ background: s.bg, borderRadius: 3, height: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <span style={{ color: s.color, fontSize: 8, fontWeight: 800 }}>{label}</span>
                         </div>
                       </td>
                     );
                   })}
-                  <td style={{ textAlign: "center", verticalAlign: "middle", padding: "3px 2px" }}>
+                  {/* PTS */}
+                  <td style={{ padding: "2px 2px" }}>
                     <div style={{ background: esPrimero ? "#fbbf24" : esSegundo ? "#86efac" : "#1e2d3d", borderRadius: 3, height: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ color: esPrimero ? "#78350f" : esSegundo ? "#14532d" : "#6b7280", fontSize: 9, fontWeight: 900 }}>
                         {q.aciertos ?? "—"}
