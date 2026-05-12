@@ -13,16 +13,16 @@ const W       = 900;
 const NAME_W  = 170;
 const PTS_W   = 54;
 
-const H_HEADER      = 72;
-const H_TITLE       = 48;
-const H_PRIZE       = 46;
-const H_TOTALS      = 36;
-const H_RES_BAR     = 30;
-const H_LOGO_ROW    = 50;
-const H_SCORE_ROW   = 34;
-const H_NUM_ROW     = 28;
-const H_DATA        = 24;
-const H_FOOTER      = 16;
+const H_HEADER      = 56;
+const H_TITLE       = 36;
+const H_PRIZE       = 34;
+const H_TOTALS      = 26;
+const H_RES_BAR     = 22;
+const H_LOGO_ROW    = 44;
+const H_SCORE_ROW   = 28;
+const H_NUM_ROW     = 26;
+const H_DATA        = 22;
+const H_FOOTER      = 8;
 
 const FIXED_H = H_HEADER + H_TITLE + H_PRIZE + H_TOTALS + H_RES_BAR +
                 H_LOGO_ROW * 2 + H_SCORE_ROW + H_NUM_ROW + H_FOOTER;
@@ -131,36 +131,36 @@ export async function GET(
 
           {/* ── Header ── */}
           <div style={{ height: H_HEADER, background: NAVY, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
-            <span style={{ color: "#fbbf24", fontSize: 11, fontWeight: 700, letterSpacing: 4 }}>TABLITAS QUINIELAS</span>
-            <span style={{ color: WHITE, fontSize: 26, fontWeight: 900, marginTop: 4 }}>{jornada.liga} · {jornada.temporada}</span>
+            <span style={{ color: "#fbbf24", fontSize: 10, fontWeight: 700, letterSpacing: 4 }}>TABLITAS QUINIELAS</span>
+            <span style={{ color: WHITE, fontSize: 22, fontWeight: 900, marginTop: 2 }}>{jornada.liga} · {jornada.temporada}</span>
           </div>
 
           {/* ── Título jornada ── */}
           <div style={{ height: H_TITLE, background: RED, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ color: WHITE, fontSize: 24, fontWeight: 900, letterSpacing: 1 }}>
+            <span style={{ color: WHITE, fontSize: 20, fontWeight: 900, letterSpacing: 1 }}>
               {(jornada.nombre ?? `JORNADA ${jornada.numero}`).toUpperCase()}
             </span>
           </div>
 
           {/* ── Premios ── */}
           <div style={{ height: H_PRIZE, background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 19, fontWeight: 700, color: "#111827" }}>1° LUGAR</span>
-            <span style={{ fontSize: 19, fontWeight: 900, color: RED, marginLeft: 8 }}>{fmt(bolsa1)}</span>
-            <span style={{ fontSize: 19, color: "#94a3b8", marginLeft: 24, marginRight: 24 }}>/</span>
-            <span style={{ fontSize: 19, fontWeight: 700, color: "#111827" }}>2° LUGAR</span>
-            <span style={{ fontSize: 19, fontWeight: 900, color: RED, marginLeft: 8 }}>{fmt(bolsa2)}</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>1° LUGAR</span>
+            <span style={{ fontSize: 16, fontWeight: 900, color: RED, marginLeft: 6 }}>{fmt(bolsa1)}</span>
+            <span style={{ fontSize: 16, color: "#94a3b8", marginLeft: 18, marginRight: 18 }}>/</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>2° LUGAR</span>
+            <span style={{ fontSize: 16, fontWeight: 900, color: RED, marginLeft: 6 }}>{fmt(bolsa2)}</span>
           </div>
 
           {/* ── Totales ── */}
           <div style={{ height: H_TOTALS, background: WHITE, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid #e5e7eb" }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>Total de primeros lugares: {primeroCount}</span>
-            <span style={{ width: 40 }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>Total de segundos lugares: {segundoCount}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#111827" }}>Primeros lugares: {primeroCount}</span>
+            <span style={{ width: 32 }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#111827" }}>Segundos lugares: {segundoCount}</span>
           </div>
 
           {/* ── RESULTADOS bar ── */}
           <div style={{ height: H_RES_BAR, background: NAVY, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ color: WHITE, fontSize: 13, fontWeight: 800, letterSpacing: 4 }}>RESULTADOS</span>
+            <span style={{ color: WHITE, fontSize: 11, fontWeight: 800, letterSpacing: 4 }}>RESULTADOS</span>
           </div>
 
           {/* ── LOCAL logos ── */}
@@ -172,8 +172,8 @@ export async function GET(
               <div key={`l-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {p.logoLocal
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={p.logoLocal} width={34} height={34} style={{ objectFit: "contain" }} />
-                  : <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  ? <img src={p.logoLocal} width={30} height={30} style={{ objectFit: "contain" }} />
+                  : <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ color: WHITE, fontSize: 9, fontWeight: 800 }}>{p.equipoLocal.substring(0, 2).toUpperCase()}</span>
                     </div>
                 }
@@ -209,8 +209,8 @@ export async function GET(
               <div key={`v-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {p.logoVisita
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={p.logoVisita} width={34} height={34} style={{ objectFit: "contain" }} />
-                  : <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  ? <img src={p.logoVisita} width={30} height={30} style={{ objectFit: "contain" }} />
+                  : <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ color: WHITE, fontSize: 9, fontWeight: 800 }}>{p.equipoVisita.substring(0, 2).toUpperCase()}</span>
                     </div>
                 }
@@ -219,16 +219,20 @@ export async function GET(
             <div style={{ width: PTS_W }} />
           </div>
 
-          {/* ── Números (NOMBRE) ── */}
+          {/* ── Resultado por partido (NOMBRE) ── */}
           <div style={{ height: H_NUM_ROW, background: "#0a1e38", display: "flex", alignItems: "center" }}>
             <div style={{ width: NAME_W, display: "flex", alignItems: "center", paddingLeft: 14 }}>
               <span style={{ fontSize: 9, fontWeight: 800, color: "#93c5fd", letterSpacing: 1 }}>NOMBRE</span>
             </div>
-            {ps.map((_, i) => (
-              <div key={i} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ color: "#93c5fd", fontSize: 9, fontWeight: 800 }}>{i + 1}</span>
-              </div>
-            ))}
+            {ps.map(p => {
+              const res = p.resultado ? (PRED[p.resultado] ?? p.resultado) : "·";
+              const hasRes = !!p.resultado;
+              return (
+                <div key={`res-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ color: hasRes ? "#fbbf24" : "#4b5563", fontSize: 11, fontWeight: 900 }}>{res}</span>
+                </div>
+              );
+            })}
             <div style={{ width: PTS_W, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span style={{ color: WHITE, fontSize: 9, fontWeight: 800 }}>PTS</span>
             </div>
