@@ -24,7 +24,7 @@ const TIPO_ICON: Record<string, string> = {
 
 const POLL_INTERVAL = 60_000; // re-fetch cada 60 segundos
 
-export default function NotificationBell() {
+export default function NotificationBell({ float = false }: { float?: boolean }) {
   const [data, setData]       = useState<NotifData | null>(null);
   const [abierto, setAbierto] = useState(false);
   const [visto, setVisto]     = useState(false);
@@ -76,30 +76,44 @@ export default function NotificationBell() {
       {/* Bell button */}
       <button
         onClick={handleOpen}
-        style={{ position: "relative", padding: "6px", borderRadius: "50%", background: abierto ? "rgba(255,255,255,0.15)" : "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+        style={{
+          position: "relative",
+          padding: float ? "12px" : "6px",
+          borderRadius: "50%",
+          background: float
+            ? (hayNuevo ? "#1e3a5f" : "#334155")
+            : (abierto ? "rgba(255,255,255,0.15)" : "transparent"),
+          border: "none",
+          cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: float ? "0 4px 16px rgba(0,0,0,.35)" : "none",
+        }}
         title="Notificaciones"
       >
-        <span style={{ fontSize: 22, lineHeight: 1 }}>🔔</span>
+        <span style={{ fontSize: float ? 26 : 22, lineHeight: 1 }}>🔔</span>
         {hayNuevo && (
           <span style={{
-            position: "absolute", top: 2, right: 2,
+            position: "absolute", top: float ? 6 : 2, right: float ? 6 : 2,
             background: "#ef4444", color: "#fff",
             fontSize: 10, fontWeight: 800,
             minWidth: 16, height: 16,
             borderRadius: 999,
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: "0 3px",
-            border: "2px solid #1e3a5f",
+            border: `2px solid ${float ? "#334155" : "#1e3a5f"}`,
           }}>
             {badge > 9 ? "9+" : badge}
           </span>
         )}
       </button>
 
-      {/* Dropdown */}
+      {/* Dropdown — hacia arriba si es flotante, hacia abajo si es header */}
       {abierto && (
         <div style={{
-          position: "absolute", right: 0, top: "calc(100% + 8px)",
+          position: "absolute", right: 0,
+          ...(float
+            ? { bottom: "calc(100% + 8px)" }
+            : { top: "calc(100% + 8px)" }),
           width: 300, background: "#fff",
           borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,.18)",
           border: "1px solid #e5e7eb",
