@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, sql } from "@/lib/prisma";
 
 const COMISION_POR_VENTA = 2;
 const PORC_ADMIN = 0.15;
@@ -16,13 +16,15 @@ export async function GET(req: Request) {
   }
 
   try {
-    const jornada = await prisma.jornada.findUnique({
-      where: { id: jornadaId },
-      select: {
-        id: true, numero: true, nombre: true, temporada: true,
-        liga: true, estado: true, bolsa2Acumulada: true, acumulaciones2: true,
-      },
-    });
+    // sql directo — evita bug {} en campos DateTime con adaptador NeonHTTP
+    const jornadaRows = await sql`
+      SELECT id, numero, nombre, temporada, liga, estado, "bolsa2Acumulada", "acumulaciones2"
+      FROM "Jornada" WHERE id = ${jornadaId}
+    `;
+    const jornada = jornadaRows[0] as {
+      id: string; numero: number; nombre: string | null; temporada: string;
+      liga: string; estado: string; bolsa2Acumulada: number; acumulaciones2: number;
+    } | undefined;
 
     if (!jornada) {
       return NextResponse.json({ error: "Jornada no encontrada" }, { status: 404 });

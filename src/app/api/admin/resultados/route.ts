@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, sql } from "@/lib/prisma";
 
 // POST /api/admin/resultados — guardar resultado de UN partido
 // Body: { jornadaId, partidoId, resultado, golesLocal, golesVisita }
@@ -66,12 +66,10 @@ export async function POST(req: Request) {
     const todosResueltos = resueltos === totalPartidos;
 
     // 6. Si todos están resueltos, finalizar jornada y marcar ganadoras
+    // Nota: usamos sql directo (no prisma ORM) porque el adaptador NeonHTTP
+    // devuelve {} para campos DateTime — sql() los omite y funciona bien.
     if (todosResueltos) {
-      await prisma.jornada.update({
-        where: { id: jornadaId },
-        data: { estado: "finalizada" },
-        select: { id: true },
-      });
+      await sql`UPDATE "Jornada" SET estado = 'finalizada' WHERE id = ${jornadaId}`;
 
       const quinielas = await prisma.quiniela.findMany({
         where: { jornadaId },
@@ -102,11 +100,11 @@ export async function POST(req: Request) {
       const MAX_GANADORES_2 = 20;
       const MAX_ACUMULACIONES = 2;
 
-      // Get jornada with accumulated prize
-      const jornadaData = await prisma.jornada.findUnique({
-        where: { id: jornadaId },
-        select: { bolsa2Acumulada: true, acumulaciones2: true },
-      });
+      // Get jornada with accumulated prize (sql directo — evita bug DateTime de NeonHTTP)
+      const jornadaRows = await sql`
+        SELECT "bolsa2Acumulada", "acumulaciones2" FROM "Jornada" WHERE id = ${jornadaId}
+      `;
+      const jornadaData = jornadaRows[0] as { bolsa2Acumulada: number; acumulaciones2: number } | undefined;
 
       // Prize pool: tienda (cash in hand) + online confirmed
       const todasConfirmadas = await prisma.quiniela.findMany({
@@ -166,27 +164,26 @@ export async function POST(req: Request) {
         }
       }
 
-      // Update current jornada acumulaciones counter
-      await prisma.jornada.update({
-        where: { id: jornadaId },
-        data: { acumulaciones2: acumulaciones2Nuevas },
-      });
+      // Update current jornada acumulaciones counter (sql directo)
+      await sql`UPDATE "Jornada" SET "acumulaciones2" = ${acumulaciones2Nuevas} WHERE id = ${jornadaId}`;
 
       // If 2nd prize accumulates, find the next open jornada and add to it
       if (!segundoDistribuido && bolsa2SiguienteJornada > 0) {
-        const siguienteJornada = await prisma.jornada.findFirst({
-          where: { estado: "abierta", id: { not: jornadaId } },
-          orderBy: { fechaInicio: "asc" },
-          select: { id: true, bolsa2Acumulada: true, acumulaciones2: true },
-        });
+        const sigRows = await sql`
+          SELECT id, "bolsa2Acumulada", "acumulaciones2"
+          FROM "Jornada"
+          WHERE estado = 'abierta' AND id != ${jornadaId}
+          ORDER BY "createdAt" ASC
+          LIMIT 1
+        `;
+        const siguienteJornada = sigRows[0] as { id: string; bolsa2Acumulada: number; acumulaciones2: number } | undefined;
         if (siguienteJornada) {
-          await prisma.jornada.update({
-            where: { id: siguienteJornada.id },
-            data: {
-              bolsa2Acumulada: (siguienteJornada.bolsa2Acumulada ?? 0) + bolsa2SiguienteJornada,
-              acumulaciones2: acumulaciones2Nuevas,
-            },
-          });
+          const nuevaBolsa = (Number(siguienteJornada.bolsa2Acumulada) ?? 0) + bolsa2SiguienteJornada;
+          await sql`
+            UPDATE "Jornada"
+            SET "bolsa2Acumulada" = ${nuevaBolsa}, "acumulaciones2" = ${acumulaciones2Nuevas}
+            WHERE id = ${siguienteJornada.id}
+          `;
         }
       }
 
