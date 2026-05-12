@@ -18,10 +18,10 @@ const H_TITLE       = 36;
 const H_PRIZE       = 34;
 const H_TOTALS      = 26;
 const H_RES_BAR     = 22;
-const H_LOGO_ROW    = 44;
+const H_LOGO_ROW    = 52;
 const H_SCORE_ROW   = 28;
 const H_NUM_ROW     = 26;
-const H_DATA        = 22;
+const H_DATA        = 26;
 const H_FOOTER      = 8;
 
 const FIXED_H = H_HEADER + H_TITLE + H_PRIZE + H_TOTALS + H_RES_BAR +
@@ -172,8 +172,8 @@ export async function GET(
               <div key={`l-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {p.logoLocal
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={p.logoLocal} width={30} height={30} style={{ objectFit: "contain" }} />
-                  : <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  ? <img src={p.logoLocal} width={38} height={38} style={{ objectFit: "contain" }} />
+                  : <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ color: WHITE, fontSize: 9, fontWeight: 800 }}>{p.equipoLocal.substring(0, 2).toUpperCase()}</span>
                     </div>
                 }
@@ -209,8 +209,8 @@ export async function GET(
               <div key={`v-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {p.logoVisita
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={p.logoVisita} width={30} height={30} style={{ objectFit: "contain" }} />
-                  : <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  ? <img src={p.logoVisita} width={38} height={38} style={{ objectFit: "contain" }} />
+                  : <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ color: WHITE, fontSize: 9, fontWeight: 800 }}>{p.equipoVisita.substring(0, 2).toUpperCase()}</span>
                     </div>
                 }
@@ -248,7 +248,7 @@ export async function GET(
               <div key={q.id} style={{ height: H_DATA, background: rowBg, display: "flex", alignItems: "center", borderBottom: "1px solid #f3f4f6" }}>
                 {/* Nombre */}
                 <div style={{ width: NAME_W, display: "flex", alignItems: "center", paddingLeft: 10, paddingRight: 6, overflow: "hidden" }}>
-                  <span style={{ fontSize: 11, fontWeight: es1 || es2 ? 700 : 400, color: "#111827", whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: 14, fontWeight: es1 || es2 ? 700 : 400, color: "#111827", whiteSpace: "nowrap" }}>
                     {es1 ? "🥇 " : es2 ? "🥈 " : ""}{q.nombreCliente ?? q.folio}
                   </span>
                 </div>
@@ -266,8 +266,8 @@ export async function GET(
 
                   return (
                     <div key={`${q.id}-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <div style={{ background: bg, borderRadius: 3, paddingLeft: 3, paddingRight: 3, paddingTop: 1, paddingBottom: 1, display: "flex", alignItems: "center", justifyContent: "center", minWidth: 16 }}>
-                        <span style={{ color: tc, fontSize: 8, fontWeight: 800, lineHeight: "12px" }}>{label}</span>
+                      <div style={{ background: bg, borderRadius: 3, paddingLeft: 3, paddingRight: 3, paddingTop: 1, paddingBottom: 1, display: "flex", alignItems: "center", justifyContent: "center", minWidth: 18 }}>
+                        <span style={{ color: tc, fontSize: 13, fontWeight: 900, lineHeight: "16px" }}>{label}</span>
                       </div>
                     </div>
                   );
@@ -275,7 +275,7 @@ export async function GET(
                 {/* PTS */}
                 <div style={{ width: PTS_W, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <div style={{ background: es1 ? "#eab308" : es2 ? "#86efac" : "#e5e7eb", borderRadius: 3, paddingLeft: 4, paddingRight: 4, paddingTop: 1, paddingBottom: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 11, fontWeight: 900, color: es1 ? "#78350f" : es2 ? "#14532d" : "#6b7280", lineHeight: "14px" }}>
+                    <span style={{ fontSize: 14, fontWeight: 900, color: es1 ? "#78350f" : es2 ? "#14532d" : "#6b7280", lineHeight: "16px" }}>
                       {q.aciertos ?? "—"}
                     </span>
                   </div>
