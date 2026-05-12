@@ -379,14 +379,20 @@ export default function ResultadosPage() {
           : new Promise<void>((res) => { img.onload = () => res(); img.onerror = () => res(); })
       ));
 
-      const fullHeight = el.scrollHeight;
       const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(el, {
-        backgroundColor: "#0f172a", scale: 2, useCORS: true, allowTaint: false, logging: false,
+        backgroundColor: "#0f172a",
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
         width: FLYER_W,
-        height: fullHeight,
-        windowWidth: FLYER_W,
-        windowHeight: fullHeight,
+        windowWidth: FLYER_W + 200,
+        onclone: (_doc, clone) => {
+          clone.style.overflow = "visible";
+          clone.style.height   = "auto";
+          clone.style.maxHeight = "none";
+        },
       });
       const b = await new Promise<Blob>((res) => canvas.toBlob((x) => res(x!), "image/png"));
       const url = URL.createObjectURL(b);
