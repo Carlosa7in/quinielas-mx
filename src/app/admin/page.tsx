@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import NotificationBell from "@/components/NotificationBell";
 
 type JornadaResumen = {
   id: string;
@@ -70,6 +71,7 @@ export default function AdminPage() {
               <p className="text-white text-sm font-medium">{session?.user?.name}</p>
               <p className="text-amber-400 text-xs capitalize">{rol}</p>
             </div>
+            <NotificationBell />
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
               className="text-amber-300 hover:text-white text-sm border border-amber-800 hover:border-amber-500 px-3 py-1.5 rounded-lg transition-colors"
