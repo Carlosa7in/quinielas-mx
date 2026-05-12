@@ -287,9 +287,9 @@ export default function ResultadosPage() {
               <thead>
 
                 {/* LOCAL logos row */}
-                <tr style={{ background: NAVY }}>
+                <tr style={{ background: "#e8edf2" }}>
                   <td style={{ width: NAME_W, minWidth: NAME_W, padding: "6px 10px" }}>
-                    <span style={{ color: WHITE, fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span>
+                    <span style={{ color: NAVY, fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span>
                   </td>
                   {partidos.map((p) => (
                     <td key={`local-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "6px 2px" }}>
@@ -324,9 +324,9 @@ export default function ResultadosPage() {
                 </tr>
 
                 {/* VISITA logos row */}
-                <tr style={{ background: NAVY }}>
+                <tr style={{ background: "#e8edf2" }}>
                   <td style={{ padding: "6px 10px" }}>
-                    <span style={{ color: WHITE, fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>VISITA</span>
+                    <span style={{ color: NAVY, fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>VISITA</span>
                   </td>
                   {partidos.map((p) => (
                     <td key={`visit-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "6px 2px" }}>
