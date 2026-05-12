@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useParams } from "next/navigation";
 
 type Partido = {
@@ -345,7 +346,10 @@ export default function ResultadosPage() {
   const [estadoImg, setEstadoImg] = useState<"idle" | "generando" | "lista">("idle");
   const [blobUrl, setBlobUrl]     = useState<string>("");
   const [blob, setBlob]           = useState<Blob | null>(null);
+  const [mounted, setMounted]     = useState(false);
   const flyerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     fetch(`/api/resultados/${jornadaId}`)
@@ -387,12 +391,9 @@ export default function ResultadosPage() {
         allowTaint: false,
         logging: false,
         width: FLYER_W,
-        windowWidth: FLYER_W + 200,
-        onclone: (_doc, clone) => {
-          clone.style.overflow = "visible";
-          clone.style.height   = "auto";
-          clone.style.maxHeight = "none";
-        },
+        windowWidth: FLYER_W,
+        scrollX: 0,
+        scrollY: 0,
       });
       const b = await new Promise<Blob>((res) => canvas.toBlob((x) => res(x!), "image/png"));
       const url = URL.createObjectURL(b);
@@ -433,12 +434,13 @@ export default function ResultadosPage() {
   return (
     <div className="min-h-screen bg-gray-100">
 
-      {/* Hidden flyer (off-screen, captured by html2canvas) */}
-      <div style={{ position: "absolute", left: -9999, top: 0, width: FLYER_W, overflow: "visible", pointerEvents: "none", zIndex: -1 }}>
-        <div ref={flyerRef}>
+      {/* Hidden flyer — portal directo a body para evitar overflow clipping */}
+      {mounted && createPortal(
+        <div ref={flyerRef} style={{ position: "absolute", left: -9999, top: 0, width: FLYER_W, pointerEvents: "none" }}>
           {data && <Flyer jornada={jornada} partidos={partidos} premios={premios} quinielas={data.quinielas} url={pageUrl} />}
-        </div>
-      </div>
+        </div>,
+        document.body
+      )}
 
       {/* Preview modal */}
       {estadoImg === "lista" && blobUrl && blob && (
