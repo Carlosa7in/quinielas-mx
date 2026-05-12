@@ -129,11 +129,11 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
       </div>
 
       {/* ── Premios en una línea ── */}
-      <div style={{ padding: "8px 18px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid #1e3a5f" }}>
-        <span style={{ color: "#fde047", fontSize: 12, fontWeight: 800 }}>
+      <div style={{ padding: "10px 18px", display: "flex", alignItems: "center", justifyContent: "center", gap: 24, borderBottom: "1px solid #1e3a5f" }}>
+        <span style={{ color: "#fde047", fontSize: 13, fontWeight: 800 }}>
           🥇 {fmt(premios.bolsa1)}{premios.primeroCount > 0 ? ` · ${premios.primeroCount} ganador${premios.primeroCount !== 1 ? "es" : ""}` : ""}
         </span>
-        <span style={{ color: "#a7f3d0", fontSize: 12, fontWeight: 800 }}>
+        <span style={{ color: "#a7f3d0", fontSize: 13, fontWeight: 800 }}>
           🥈 {fmt(premios.bolsa2)}{premios.segundoCount > 0 ? ` · ${premios.segundoCount} ganador${premios.segundoCount !== 1 ? "es" : ""}` : jornada.bolsa2Acumulada > 0 ? " · acumulado" : ""}
         </span>
       </div>
