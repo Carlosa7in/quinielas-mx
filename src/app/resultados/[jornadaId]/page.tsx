@@ -155,36 +155,28 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
           <thead>
             {/* LOCAL logos */}
             <tr style={{ background: "#e8edf2" }}>
-              <td style={{ padding: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", height: 32, paddingLeft: 8 }}>
-                  <span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span>
-                </div>
+              <td style={{ padding: "4px 4px 4px 8px" }}>
+                <span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span>
               </td>
               {partidos.map((p) => (
-                <td key={`fl-${p.id}`} style={{ padding: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 32 }}>
-                    <TeamLogo logoUrl={p.logoLocal} team={p.equipoLocal} size={24} />
-                  </div>
+                <td key={`fl-${p.id}`} style={{ padding: "4px 2px", textAlign: "center" }}>
+                  <TeamLogo logoUrl={p.logoLocal} team={p.equipoLocal} size={24} />
                 </td>
               ))}
               <td />
             </tr>
             {/* MARCADOR */}
             <tr style={{ background: NAVY2 }}>
-              <td style={{ padding: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", height: 22, paddingLeft: 8 }}>
-                  <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>MARCADOR</span>
-                </div>
+              <td style={{ padding: "4px 4px 4px 8px" }}>
+                <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>MARCADOR</span>
               </td>
               {partidos.map((p) => {
                 const has = p.golesLocal !== null && p.golesVisita !== null;
                 return (
-                  <td key={`fm-${p.id}`} style={{ padding: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 22 }}>
-                      <span style={{ color: has ? WHITE : "#4b5563", fontSize: 9, fontWeight: 900 }}>
-                        {has ? `${p.golesLocal}-${p.golesVisita}` : "·"}
-                      </span>
-                    </div>
+                  <td key={`fm-${p.id}`} style={{ padding: "4px 2px", textAlign: "center" }}>
+                    <span style={{ color: has ? WHITE : "#4b5563", fontSize: 9, fontWeight: 900 }}>
+                      {has ? `${p.golesLocal}-${p.golesVisita}` : "·"}
+                    </span>
                   </td>
                 );
               })}
@@ -192,38 +184,28 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
             </tr>
             {/* VISITA logos */}
             <tr style={{ background: "#e8edf2" }}>
-              <td style={{ padding: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", height: 32, paddingLeft: 8 }}>
-                  <span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>VISITA</span>
-                </div>
+              <td style={{ padding: "4px 4px 4px 8px" }}>
+                <span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>VISITA</span>
               </td>
               {partidos.map((p) => (
-                <td key={`fv-${p.id}`} style={{ padding: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 32 }}>
-                    <TeamLogo logoUrl={p.logoVisita} team={p.equipoVisita} size={24} />
-                  </div>
+                <td key={`fv-${p.id}`} style={{ padding: "4px 2px", textAlign: "center" }}>
+                  <TeamLogo logoUrl={p.logoVisita} team={p.equipoVisita} size={24} />
                 </td>
               ))}
               <td />
             </tr>
             {/* NOMBRE / # col headers */}
             <tr style={{ background: "#0a1e38" }}>
-              <td style={{ padding: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", height: 20, paddingLeft: 8 }}>
-                  <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span>
-                </div>
+              <td style={{ padding: "3px 4px 3px 8px" }}>
+                <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span>
               </td>
               {partidos.map((_, i) => (
-                <td key={i} style={{ padding: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 20 }}>
-                    <span style={{ color: "#93c5fd", fontSize: 8, fontWeight: 800 }}>{i + 1}</span>
-                  </div>
+                <td key={i} style={{ padding: "3px 2px", textAlign: "center" }}>
+                  <span style={{ color: "#93c5fd", fontSize: 8, fontWeight: 800 }}>{i + 1}</span>
                 </td>
               ))}
-              <td style={{ padding: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 20 }}>
-                  <span style={{ color: WHITE, fontSize: 7, fontWeight: 800 }}>PTS</span>
-                </div>
+              <td style={{ padding: "3px 2px", textAlign: "center" }}>
+                <span style={{ color: WHITE, fontSize: 7, fontWeight: 800 }}>PTS</span>
               </td>
             </tr>
           </thead>
@@ -236,35 +218,28 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
 
               return (
                 <tr key={q.id} style={{ background: rowBg }}>
-                  {/* Name */}
-                  <td style={{ padding: 0, overflow: "hidden" }}>
-                    <div style={{ display: "flex", alignItems: "center", height: 22, paddingLeft: 8, paddingRight: 4 }}>
-                      <span style={{ color: esPrimero ? "#fde047" : esSegundo ? "#86efac" : "#d1d5db", fontSize: 9, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {q.nombreCliente ?? q.folio}
-                      </span>
-                    </div>
+                  <td style={{ padding: "3px 4px 3px 8px", overflow: "hidden" }}>
+                    <span style={{ color: esPrimero ? "#fde047" : esSegundo ? "#86efac" : "#d1d5db", fontSize: 9, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
+                      {q.nombreCliente ?? q.folio}
+                    </span>
                   </td>
-                  {/* Picks */}
                   {partidos.map((p) => {
                     const cell  = picksForPartido(q.picks, p.id);
                     const hasR  = p.resultado !== null;
                     const s     = cell ? pickStyle(cell.acertado, hasR) : { bg: "#374151", color: "#6b7280" };
                     const label = cell ? cell.label : "?";
                     return (
-                      <td key={`${q.id}-${p.id}`} style={{ padding: "2px 1px" }}>
-                        <div style={{ background: s.bg, borderRadius: 3, height: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <span style={{ color: s.color, fontSize: 8, fontWeight: 800 }}>{label}</span>
-                        </div>
+                      <td key={`${q.id}-${p.id}`} style={{ padding: "3px 1px", textAlign: "center" }}>
+                        <span style={{ display: "inline-block", background: s.bg, borderRadius: 3, padding: "2px 3px", fontSize: 8, fontWeight: 800, color: s.color, minWidth: 14 }}>
+                          {label}
+                        </span>
                       </td>
                     );
                   })}
-                  {/* PTS */}
-                  <td style={{ padding: "2px 2px" }}>
-                    <div style={{ background: esPrimero ? "#fbbf24" : esSegundo ? "#86efac" : "#1e2d3d", borderRadius: 3, height: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ color: esPrimero ? "#78350f" : esSegundo ? "#14532d" : "#6b7280", fontSize: 9, fontWeight: 900 }}>
-                        {q.aciertos ?? "—"}
-                      </span>
-                    </div>
+                  <td style={{ padding: "3px 2px", textAlign: "center" }}>
+                    <span style={{ display: "inline-block", background: esPrimero ? "#fbbf24" : esSegundo ? "#86efac" : "#1e2d3d", borderRadius: 3, padding: "2px 3px", fontSize: 9, fontWeight: 900, color: esPrimero ? "#78350f" : esSegundo ? "#14532d" : "#6b7280", minWidth: 16 }}>
+                      {q.aciertos ?? "—"}
+                    </span>
                   </td>
                 </tr>
               );
