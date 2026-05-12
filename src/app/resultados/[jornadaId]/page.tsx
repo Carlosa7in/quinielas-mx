@@ -390,11 +390,15 @@ export default function ResultadosPage() {
     if (!flyerRef.current) return;
     setEstadoImg("generando");
     try {
+      const el = flyerRef.current;
+      const fullHeight = el.scrollHeight;
       const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(flyerRef.current, {
+      const canvas = await html2canvas(el, {
         backgroundColor: "#0f172a", scale: 2, useCORS: true, allowTaint: false, logging: false,
         width: FLYER_W,
+        height: fullHeight,
         windowWidth: FLYER_W,
+        windowHeight: fullHeight,
       });
       const b = await new Promise<Blob>((res) => canvas.toBlob((x) => res(x!), "image/png"));
       const url = URL.createObjectURL(b);
@@ -436,7 +440,7 @@ export default function ResultadosPage() {
     <div className="min-h-screen bg-gray-100">
 
       {/* Hidden flyer (off-screen, captured by html2canvas) */}
-      <div style={{ position: "fixed", left: -9999, top: 0, zIndex: -1 }}>
+      <div style={{ position: "absolute", left: -9999, top: 0, width: FLYER_W, overflow: "visible", pointerEvents: "none", zIndex: -1 }}>
         <div ref={flyerRef}>
           {data && <Flyer jornada={jornada} partidos={partidos} premios={premios} quinielas={data.quinielas} url={pageUrl} />}
         </div>
