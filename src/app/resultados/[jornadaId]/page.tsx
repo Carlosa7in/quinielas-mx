@@ -123,27 +123,30 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
 }) {
   const nombreJornada = jornada.nombre ?? `Jornada ${jornada.numero}`;
 
-  // Dynamic column width so all games fit within FLYER_W
-  const innerW = FLYER_W - FLYER_MARGIN * 2;
-  const colW   = Math.max(16, Math.floor((innerW - FLYER_NAME - FLYER_PTS) / Math.max(1, partidos.length)));
-
-  // Reusable flex-row builder
+  // Reusable flex-row builder — width:100% ensures it fills the container exactly
   const Row = ({ bg, h, children }: { bg: string; h: number; children: React.ReactNode }) => (
-    <div style={{ display: "flex", alignItems: "center", height: h, background: bg, borderTop: "1px solid rgba(255,255,255,0.03)", overflow: "hidden" }}>
+    <div style={{ display: "flex", alignItems: "center", width: "100%", height: h, background: bg, borderTop: "1px solid rgba(255,255,255,0.03)" }}>
       {children}
     </div>
   );
 
-  // Label cell (left-aligned, name column)
+  // Name label cell (left-aligned, fixed width)
   const LabelCell = ({ children }: { children: React.ReactNode }) => (
     <div style={{ width: FLYER_NAME, flexShrink: 0, paddingLeft: 8, display: "flex", alignItems: "center" }}>
       {children}
     </div>
   );
 
-  // Center cell (game/pts columns)
-  const CenterCell = ({ w, children }: { w: number; children?: React.ReactNode }) => (
-    <div style={{ width: w, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+  // Game column cell — flex:1 so all N columns share remaining space equally
+  const GCell = ({ children }: { children?: React.ReactNode }) => (
+    <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+      {children}
+    </div>
+  );
+
+  // PTS cell — fixed width, right-anchored
+  const PtsCell = ({ children }: { children?: React.ReactNode }) => (
+    <div style={{ width: FLYER_PTS, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
       {children}
     </div>
   );
@@ -184,11 +187,11 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
         <Row bg="#e8edf2" h={FH_LOGO}>
           <LabelCell><span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span></LabelCell>
           {partidos.map((p) => (
-            <CenterCell key={`fl-${p.id}`} w={colW}>
+            <GCell key={`fl-${p.id}`}>
               <TeamLogo logoUrl={p.logoLocal} team={p.equipoLocal} size={22} />
-            </CenterCell>
+            </GCell>
           ))}
-          <CenterCell w={FLYER_PTS} />
+          <PtsCell />
         </Row>
 
         {/* ── MARCADOR row ── */}
@@ -197,38 +200,38 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
           {partidos.map((p) => {
             const has = p.golesLocal !== null && p.golesVisita !== null;
             return (
-              <CenterCell key={`fm-${p.id}`} w={colW}>
+              <GCell key={`fm-${p.id}`}>
                 <span style={{ color: has ? WHITE : "#4b5563", fontSize: 8, fontWeight: 900, lineHeight: "1" }}>
                   {has ? `${p.golesLocal}-${p.golesVisita}` : "·"}
                 </span>
-              </CenterCell>
+              </GCell>
             );
           })}
-          <CenterCell w={FLYER_PTS} />
+          <PtsCell />
         </Row>
 
         {/* ── VISITA logos row ── */}
         <Row bg="#e8edf2" h={FH_LOGO}>
           <LabelCell><span style={{ color: NAVY, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>VISITA</span></LabelCell>
           {partidos.map((p) => (
-            <CenterCell key={`fv-${p.id}`} w={colW}>
+            <GCell key={`fv-${p.id}`}>
               <TeamLogo logoUrl={p.logoVisita} team={p.equipoVisita} size={22} />
-            </CenterCell>
+            </GCell>
           ))}
-          <CenterCell w={FLYER_PTS} />
+          <PtsCell />
         </Row>
 
         {/* ── Numbers header row ── */}
         <Row bg="#0a1e38" h={FH_NUM}>
           <LabelCell><span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span></LabelCell>
           {partidos.map((_, i) => (
-            <CenterCell key={i} w={colW}>
+            <GCell key={i}>
               <span style={{ color: "#93c5fd", fontSize: 7, fontWeight: 800, lineHeight: "1" }}>{i + 1}</span>
-            </CenterCell>
+            </GCell>
           ))}
-          <CenterCell w={FLYER_PTS}>
+          <PtsCell>
             <span style={{ color: WHITE, fontSize: 7, fontWeight: 800, lineHeight: "1" }}>PTS</span>
-          </CenterCell>
+          </PtsCell>
         </Row>
 
         {/* ── Data rows ── */}
@@ -252,19 +255,19 @@ function Flyer({ jornada, partidos, premios, quinielas, url }: {
                 const s     = cell ? pickStyle(cell.acertado, hasR) : { bg: "#374151", color: "#6b7280" };
                 const label = cell ? cell.label : "?";
                 return (
-                  <CenterCell key={`${q.id}-${p.id}`} w={colW}>
+                  <GCell key={`${q.id}-${p.id}`}>
                     <span style={{ display: "inline-block", background: s.bg, borderRadius: 2, padding: "1px 2px", fontSize: 7, fontWeight: 800, color: s.color, lineHeight: "10px" }}>
                       {label}
                     </span>
-                  </CenterCell>
+                  </GCell>
                 );
               })}
               {/* PTS */}
-              <CenterCell w={FLYER_PTS}>
+              <PtsCell>
                 <span style={{ display: "inline-block", background: esPrimero ? "#fbbf24" : esSegundo ? "#86efac" : "#1e2d3d", borderRadius: 2, padding: "1px 2px", fontSize: 8, fontWeight: 900, color: esPrimero ? "#78350f" : esSegundo ? "#14532d" : "#6b7280", lineHeight: "10px" }}>
                   {q.aciertos ?? "—"}
                 </span>
-              </CenterCell>
+              </PtsCell>
             </Row>
           );
         })}
