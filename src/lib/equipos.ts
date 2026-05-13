@@ -49,7 +49,7 @@ const LOGOS: Record<string, string> = {
   "Ipswich Town":          "https://a.espncdn.com/i/teamlogos/soccer/500/373.png",
   "Southampton":           "https://a.espncdn.com/i/teamlogos/soccer/500/376.png",
   "Bournemouth":           "https://a.espncdn.com/i/teamlogos/soccer/500/349.png",
-  "Sunderland":            "https://a.espncdn.com/i/teamlogos/soccer/500/379.png",
+  "Sunderland":            "https://a.espncdn.com/i/teamlogos/soccer/500/405.png",
 
   // ── La Liga ───────────────────────────────────────────────────────
   "Real Madrid":           "https://a.espncdn.com/i/teamlogos/soccer/500/86.png",
@@ -66,7 +66,7 @@ const LOGOS: Record<string, string> = {
   "Celta Vigo":            "https://a.espncdn.com/i/teamlogos/soccer/500/85.png",
   "Rayo Vallecano":        "https://a.espncdn.com/i/teamlogos/soccer/500/101.png",
   "Getafe":                "https://a.espncdn.com/i/teamlogos/soccer/500/3842.png",
-  "Deportivo Alavés":      "https://a.espncdn.com/i/teamlogos/soccer/500/3751.png",
+  "Deportivo Alavés":      "https://a.espncdn.com/i/teamlogos/soccer/500/96.png",
   "Mallorca":              "https://a.espncdn.com/i/teamlogos/soccer/500/84.png",
   "Leganés":               "https://a.espncdn.com/i/teamlogos/soccer/500/17534.png",
   "Espanyol":              "https://a.espncdn.com/i/teamlogos/soccer/500/88.png",
@@ -75,12 +75,12 @@ const LOGOS: Record<string, string> = {
   "Real Valladolid":       "https://a.espncdn.com/i/teamlogos/soccer/500/95.png",
 
   // ── La Liga / Segunda División (equipos adicionales) ──────────────
-  "Levante":               "https://a.espncdn.com/i/teamlogos/soccer/500/728.png",
-  "Levante UD":            "https://a.espncdn.com/i/teamlogos/soccer/500/728.png",
-  "Elche":                 "https://a.espncdn.com/i/teamlogos/soccer/500/7026.png",
-  "Elche CF":              "https://a.espncdn.com/i/teamlogos/soccer/500/7026.png",
-  "Real Oviedo":           "https://a.espncdn.com/i/teamlogos/soccer/500/3749.png",
-  "Oviedo":                "https://a.espncdn.com/i/teamlogos/soccer/500/3749.png",
+  "Levante":               "https://a.espncdn.com/i/teamlogos/soccer/500/1538.png",
+  "Levante UD":            "https://a.espncdn.com/i/teamlogos/soccer/500/1538.png",
+  "Elche":                 "https://a.espncdn.com/i/teamlogos/soccer/500/3751.png",
+  "Elche CF":              "https://a.espncdn.com/i/teamlogos/soccer/500/3751.png",
+  "Real Oviedo":           "https://a.espncdn.com/i/teamlogos/soccer/500/92.png",
+  "Oviedo":                "https://a.espncdn.com/i/teamlogos/soccer/500/92.png",
   "Cádiz":                 "https://a.espncdn.com/i/teamlogos/soccer/500/3756.png",
   "Cádiz CF":              "https://a.espncdn.com/i/teamlogos/soccer/500/3756.png",
   "Granada":               "https://a.espncdn.com/i/teamlogos/soccer/500/746.png",
@@ -242,6 +242,10 @@ const LOGOS: Record<string, string> = {
   "Venezuela":                "https://a.espncdn.com/i/teamlogos/countries/500/ven.png",
   "Bolivia":                  "https://a.espncdn.com/i/teamlogos/countries/500/bol.png",
   "Nueva Zelanda":            "https://a.espncdn.com/i/teamlogos/countries/500/nzl.png",
+
+
+  "Burnley":               "https://a.espncdn.com/i/teamlogos/soccer/500/379.png",
+  "Leeds United":          "https://a.espncdn.com/i/teamlogos/soccer/500/357.png",
 
   // ── UEFA Champions League ─────────────────────────────────────────
   "Bayern Munich":         "https://a.espncdn.com/i/teamlogos/soccer/500/132.png",
