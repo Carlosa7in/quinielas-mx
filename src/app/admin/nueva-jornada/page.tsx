@@ -155,8 +155,15 @@ export default function NuevaJornadaPage() {
       setEspnHasta(toInputDate(dom));
     }
 
-    // Marcar tipo como activo y actualizar nombre con el prefijo
-    setTipoQuiniela(tipo);
+    // Si el tipo cambia, reiniciar partidos (no se pueden mezclar semanas)
+    setTipoQuiniela((prev) => {
+      if (prev !== null && prev !== tipo) {
+        setPartidos(Array.from({ length: MIN_PARTIDOS }, () => PARTIDO_VACIO()));
+        setFechaInicio("");
+        setFechaFin("");
+      }
+      return tipo;
+    });
     setNombre((prev) => conPrefijo(tipo, sinPrefijo(prev)));
 
     // Limpiar lista anterior
