@@ -6,6 +6,10 @@ const LIGA_ESPN: Record<string, { url: string; nombre: string }> = {
   "Champions League": { url: "uefa.champions",  nombre: "Champions League" },
   "Premier League":   { url: "eng.1",           nombre: "Premier League" },
   "La Liga":          { url: "esp.1",           nombre: "La Liga" },
+  "Ligue 1":          { url: "fra.1",           nombre: "Ligue 1" },
+  "Brasileirão":      { url: "bra.1",           nombre: "Brasileirão" },
+  "Liga Argentina":   { url: "arg.1",           nombre: "Liga Argentina" },
+  "Mundial":          { url: "fifa.world",      nombre: "Mundial" },
 };
 
 // Normalizar nombres ESPN → nombres de nuestro sistema

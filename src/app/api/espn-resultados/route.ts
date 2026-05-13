@@ -5,6 +5,10 @@ const LIGA_ESPN: Record<string, string> = {
   "Champions League": "uefa.champions",
   "Premier League":   "eng.1",
   "La Liga":          "esp.1",
+  "Ligue 1":          "fra.1",
+  "Brasileirão":      "bra.1",
+  "Liga Argentina":   "arg.1",
+  "Mundial":          "fifa.world",
 };
 
 const NOMBRE_MAP: Record<string, string> = {
