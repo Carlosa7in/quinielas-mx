@@ -134,7 +134,7 @@ const LOGOS: Record<string, string> = {
   "Rennes":                   "https://a.espncdn.com/i/teamlogos/soccer/500/169.png",
   "Strasbourg":               "https://a.espncdn.com/i/teamlogos/soccer/500/180.png",
   "Nantes":                   "https://a.espncdn.com/i/teamlogos/soccer/500/165.png",
-  "Montpellier":              "https://a.espncdn.com/i/teamlogos/soccer/500/168.png",
+  "Montpellier":              "https://a.espncdn.com/i/teamlogos/soccer/500/274.png",
   "Reims":                    "https://a.espncdn.com/i/teamlogos/soccer/500/171.png",
   "Toulouse FC":              "https://a.espncdn.com/i/teamlogos/soccer/500/179.png",
   "Toulouse":                 "https://a.espncdn.com/i/teamlogos/soccer/500/179.png",
@@ -142,7 +142,7 @@ const LOGOS: Record<string, string> = {
   "Lorient":                  "https://a.espncdn.com/i/teamlogos/soccer/500/273.png",
   "Auxerre":                  "https://a.espncdn.com/i/teamlogos/soccer/500/172.png",
   "Angers":                   "https://a.espncdn.com/i/teamlogos/soccer/500/7868.png",
-  "Saint-Étienne":            "https://a.espncdn.com/i/teamlogos/soccer/500/163.png",
+  "Saint-Étienne":            "https://a.espncdn.com/i/teamlogos/soccer/500/178.png",
 
   // ── Brasileirão ───────────────────────────────────────────────────
   // IDs reales de ESPN soccer
