@@ -20,18 +20,36 @@ const PARTIDO_VACIO = (liga = "Liga MX"): PartidoForm => ({
   fechaHora: "",
 });
 
-
-// Formatear Date → YYYYMMDD usando métodos UTC (input type=date siempre manda YYYY-MM-DD
-// que new Date() interpreta como UTC midnight, así que usamos getUTCxxx para evitar
-// que el offset de México adelante o atrase el día).
 function toYYYYMMDD(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
 }
-// Formatear Date → YYYY-MM-DD (para input type=date)
 function toInputDate(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// Devuelve el lunes de la semana de `d`
+function inicioSemana(d: Date): Date {
+  const r = new Date(d);
+  const dow = r.getDay(); // 0=dom, 1=lun…
+  r.setDate(r.getDate() - (dow === 0 ? 6 : dow - 1));
+  r.setHours(0, 0, 0, 0);
+  return r;
+}
+
+function formatHora(fechaHora: string): string {
+  if (!fechaHora) return "";
+  const [, hora] = fechaHora.split("T");
+  return hora?.slice(0, 5) ?? "";
+}
+function formatDia(fechaHora: string): string {
+  if (!fechaHora) return "";
+  const dias = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+  const [fecha] = fechaHora.split("T");
+  const [y, m, d] = fecha.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${dias[dt.getDay()]} ${d}/${m}`;
 }
 
 export default function NuevaJornadaPage() {
@@ -39,7 +57,7 @@ export default function NuevaJornadaPage() {
 
   // ── Catálogo de equipos desde la DB ───────────────────────────────
   const [equiposPorLiga, setEquiposPorLiga] = useState<Record<string, string[]>>({});
-  const [agregandoEquipo, setAgregandoEquipo] = useState<string | null>(null); // nombre del equipo en proceso
+  const [agregandoEquipo, setAgregandoEquipo] = useState<string | null>(null);
 
   const cargarEquipos = () =>
     fetch("/api/admin/equipos")
@@ -64,7 +82,6 @@ export default function NuevaJornadaPage() {
     });
     await cargarEquipos();
     setAgregandoEquipo(null);
-    // Quitar de la lista de desconocidos
     setEspnDesconocidos((prev) => prev.filter((e) => e !== nombre));
   };
 
@@ -89,20 +106,45 @@ export default function NuevaJornadaPage() {
   const [espnMensaje, setEspnMensaje] = useState<{ tipo: "ok" | "error" | "warn"; texto: string } | null>(null);
   const [espnDesconocidos, setEspnDesconocidos] = useState<string[]>([]);
 
-  const cargarDesdeEspn = async () => {
-    // Leer estado actual con snapshot (evita stale closure)
-    const snapshot = partidos;
-    const existentesSnap = snapshot.filter((p) => p.equipoLocal || p.equipoVisita || p.fechaHora);
-    const slotsLibres = MAX_PARTIDOS - existentesSnap.length;
+  // ── Lista de partidos de ESPN (pendiente de selección) ─────────────
+  const [espnLista, setEspnLista] = useState<PartidoForm[]>([]);
+  const [espnSeleccion, setEspnSeleccion] = useState<Set<number>>(new Set());
+  const [espnNombreSugerido, setEspnNombreSugerido] = useState<string | null>(null);
 
-    if (slotsLibres <= 0) {
-      setEspnMensaje({ tipo: "warn", texto: `Ya tienes ${MAX_PARTIDOS} partidos. Quita alguno para agregar más.` });
-      return;
+  // ── Atajos de fecha por tipo de quiniela ──────────────────────────
+  const aplicarAtajo = (tipo: "media" | "finde" | "domingo") => {
+    const lunes = inicioSemana(hoy);
+    if (tipo === "media") {
+      // Martes a jueves de esta semana
+      const mar = new Date(lunes); mar.setDate(lunes.getDate() + 1);
+      const jue = new Date(lunes); jue.setDate(lunes.getDate() + 3);
+      setEspnDesde(toInputDate(mar));
+      setEspnHasta(toInputDate(jue));
+    } else if (tipo === "finde") {
+      // Viernes a domingo de esta semana
+      const vie = new Date(lunes); vie.setDate(lunes.getDate() + 4);
+      const dom = new Date(lunes); dom.setDate(lunes.getDate() + 6);
+      setEspnDesde(toInputDate(vie));
+      setEspnHasta(toInputDate(dom));
+    } else {
+      // Solo domingo
+      const dom = new Date(lunes); dom.setDate(lunes.getDate() + 6);
+      setEspnDesde(toInputDate(dom));
+      setEspnHasta(toInputDate(dom));
     }
+    // Limpiar lista anterior
+    setEspnLista([]);
+    setEspnSeleccion(new Set());
+    setEspnMensaje(null);
+  };
 
+  // ── Paso 1: Consultar ESPN (solo muestra lista, no agrega) ─────────
+  const consultarEspn = async () => {
     setEspnCargando(true);
     setEspnMensaje(null);
     setEspnDesconocidos([]);
+    setEspnLista([]);
+    setEspnSeleccion(new Set());
     try {
       const desde = toYYYYMMDD(new Date(espnDesde));
       const hasta = toYYYYMMDD(new Date(espnHasta));
@@ -125,7 +167,7 @@ export default function NuevaJornadaPage() {
       );
 
       if (fetchedPartidos.length === 0) {
-        setEspnMensaje({ tipo: "warn", texto: `No se encontraron partidos de ${espnLiga} en ese rango de fechas.` });
+        setEspnMensaje({ tipo: "warn", texto: `No se encontraron partidos de ${espnLiga} en ese rango.` });
         return;
       }
 
@@ -138,47 +180,11 @@ export default function NuevaJornadaPage() {
         return d;
       });
       setEspnDesconocidos([...new Set(desconocidos)]);
-
-      // Fusionar usando el estado MÁS RECIENTE (prev) — evita stale closure
-      const ligaActual = espnLiga;
-      const fetchedCopy = [...fetchedPartidos];
-      let agregados = 0;
-      let totalEncontrados = fetchedCopy.length;
-
-      setPartidos((prev) => {
-        const existentes = prev.filter((p) => p.equipoLocal || p.equipoVisita || p.fechaHora);
-        const libres = MAX_PARTIDOS - existentes.length;
-        const nuevos = fetchedCopy.slice(0, libres);
-        agregados = nuevos.length;
-        const merged = [...existentes, ...nuevos];
-        return merged.length < MIN_PARTIDOS
-          ? [...merged, ...Array.from({ length: MIN_PARTIDOS - merged.length }, () => PARTIDO_VACIO(ligaActual))]
-          : merged;
-      });
-
-      // Auto-rellenar nombre y fechas solo si están vacíos
-      if (data.nombreSugerido && !nombre.trim()) setNombre(data.nombreSugerido);
-
-      // fechaInicio = fecha del primer partido real (no el inicio del rango de búsqueda)
-      // fechaFin    = fecha del último partido real
-      const fechasPartidos = fetchedPartidos
-        .map((p) => p.fechaHora)
-        .filter(Boolean)
-        .sort();
-      const primeraFecha = fechasPartidos[0]?.slice(0, 10); // "YYYY-MM-DD"
-      const ultimaFecha  = fechasPartidos[fechasPartidos.length - 1]?.slice(0, 10);
-
-      if (!fechaInicio) setFechaInicio(primeraFecha ?? espnDesde);
-      if (!fechaFin)    setFechaFin(ultimaFecha ?? espnHasta);
-
-      const recortado = totalEncontrados > slotsLibres
-        ? ` (solo cabían ${slotsLibres} de ${totalEncontrados} encontrados)`
-        : "";
-
-      setEspnMensaje({
-        tipo: desconocidos.length > 0 ? "warn" : "ok",
-        texto: `✅ ${agregados} partido${agregados !== 1 ? "s" : ""} de ${espnLiga} agregado${agregados !== 1 ? "s" : ""}${recortado}`,
-      });
+      setEspnLista(fetchedPartidos);
+      // Pre-seleccionar todos
+      setEspnSeleccion(new Set(fetchedPartidos.map((_, i) => i)));
+      setEspnNombreSugerido(data.nombreSugerido ?? null);
+      setEspnMensaje({ tipo: "ok", texto: `${fetchedPartidos.length} partidos encontrados — selecciona los que quieres agregar` });
     } catch {
       setEspnMensaje({ tipo: "error", texto: "No se pudo conectar con ESPN" });
     } finally {
@@ -186,20 +192,66 @@ export default function NuevaJornadaPage() {
     }
   };
 
+  // ── Paso 2: Agregar los seleccionados ─────────────────────────────
+  const agregarSeleccionados = () => {
+    const seleccionados = espnLista.filter((_, i) => espnSeleccion.has(i));
+    if (seleccionados.length === 0) {
+      setEspnMensaje({ tipo: "warn", texto: "Selecciona al menos un partido." });
+      return;
+    }
+
+    const existentes = partidos.filter((p) => p.equipoLocal || p.equipoVisita || p.fechaHora);
+    const libres = MAX_PARTIDOS - existentes.length;
+    if (libres <= 0) {
+      setEspnMensaje({ tipo: "warn", texto: `Ya tienes ${MAX_PARTIDOS} partidos. Quita alguno primero.` });
+      return;
+    }
+
+    const nuevos = seleccionados.slice(0, libres);
+    const recortado = seleccionados.length > libres;
+    const merged = [...existentes, ...nuevos];
+    const ligaActual = espnLiga;
+
+    setPartidos(
+      merged.length < MIN_PARTIDOS
+        ? [...merged, ...Array.from({ length: MIN_PARTIDOS - merged.length }, () => PARTIDO_VACIO(ligaActual))]
+        : merged
+    );
+
+    // Auto-rellenar nombre y fechas solo si están vacíos
+    if (espnNombreSugerido && !nombre.trim()) setNombre(espnNombreSugerido);
+
+    const fechasPartidos = nuevos.map((p) => p.fechaHora).filter(Boolean).sort();
+    const primeraFecha = fechasPartidos[0]?.slice(0, 10);
+    const ultimaFecha  = fechasPartidos[fechasPartidos.length - 1]?.slice(0, 10);
+    if (!fechaInicio) setFechaInicio(primeraFecha ?? espnDesde);
+    if (!fechaFin)    setFechaFin(ultimaFecha ?? espnHasta);
+
+    setEspnMensaje({
+      tipo: recortado ? "warn" : "ok",
+      texto: recortado
+        ? `⚠️ Solo se agregaron ${nuevos.length} de ${seleccionados.length} (límite ${MAX_PARTIDOS})`
+        : `✅ ${nuevos.length} partido${nuevos.length !== 1 ? "s" : ""} agregados`,
+    });
+    setEspnLista([]);
+    setEspnSeleccion(new Set());
+  };
+
+  const toggleSeleccion = (i: number) => {
+    setEspnSeleccion((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
+  };
+
   const updatePartido = (i: number, campo: keyof PartidoForm, valor: string) => {
     setPartidos((prev) => {
       const nuevo = [...prev];
       const p = { ...nuevo[i], [campo]: valor };
-
-      // Si cambia la liga, limpiar equipos
-      if (campo === "liga") {
-        p.equipoLocal = "";
-        p.equipoVisita = "";
-      }
-      // Evitar mismo equipo en ambos lados
-      if (campo === "equipoLocal" && valor === nuevo[i].equipoVisita) p.equipoVisita = "";
-      if (campo === "equipoVisita" && valor === nuevo[i].equipoLocal) p.equipoLocal = "";
-
+      if (campo === "liga") { p.equipoLocal = ""; p.equipoVisita = ""; }
+      if (campo === "equipoLocal"  && valor === nuevo[i].equipoVisita) p.equipoVisita = "";
+      if (campo === "equipoVisita" && valor === nuevo[i].equipoLocal)  p.equipoLocal  = "";
       nuevo[i] = p;
       return nuevo;
     });
@@ -207,7 +259,6 @@ export default function NuevaJornadaPage() {
 
   const agregarPartido = () => {
     if (partidos.length >= MAX_PARTIDOS) return;
-    // Nueva fila hereda la liga del último partido
     const ultimaLiga = partidos[partidos.length - 1]?.liga ?? "Liga MX";
     setPartidos((prev) => [...prev, PARTIDO_VACIO(ultimaLiga)]);
   };
@@ -220,7 +271,6 @@ export default function NuevaJornadaPage() {
     (p) => p.equipoLocal && p.equipoVisita && p.fechaHora && p.equipoLocal !== p.equipoVisita
   );
 
-  // Detectar la liga global de la jornada automáticamente
   const ligasUsadas = [...new Set(partidosValidos.map((p) => p.liga))];
   const ligaJornada = ligasUsadas.length === 1 ? ligasUsadas[0] : ligasUsadas.length > 1 ? "Mixta" : "Liga MX";
 
@@ -234,23 +284,16 @@ export default function NuevaJornadaPage() {
       setError(`Necesitas al menos ${MIN_PARTIDOS} partidos completos`);
       return;
     }
-    // Validar duplicados por liga — se permiten partidos de vuelta (mismo par, roles invertidos)
-    // Reglas: (1) el partido exacto (local|visita) no puede repetirse; (2) un equipo solo puede
-    // aparecer con un mismo rival (máx. 2 veces: ida + vuelta).
     const porLiga: Record<string, { paresOrdenados: string[]; rivalPorEquipo: Record<string, string> }> = {};
     for (const p of partidosValidos) {
       if (!porLiga[p.liga]) porLiga[p.liga] = { paresOrdenados: [], rivalPorEquipo: {} };
       const { paresOrdenados, rivalPorEquipo } = porLiga[p.liga];
-
-      // Rechazar partido exactamente duplicado
       const parOrdenado = `${p.equipoLocal}|${p.equipoVisita}`;
       if (paresOrdenados.includes(parOrdenado)) {
         setError(`El partido ${p.equipoLocal} vs ${p.equipoVisita} está duplicado en ${p.liga}.`);
         return;
       }
       paresOrdenados.push(parOrdenado);
-
-      // Cada equipo solo puede tener un rival único (puede repetirse como ida+vuelta)
       for (const [equipo, rival] of [[p.equipoLocal, p.equipoVisita], [p.equipoVisita, p.equipoLocal]] as [string, string][]) {
         if (rivalPorEquipo[equipo] !== undefined && rivalPorEquipo[equipo] !== rival) {
           setError(`${equipo} aparece con dos rivales distintos en ${p.liga}. Revísalos.`);
@@ -285,13 +328,11 @@ export default function NuevaJornadaPage() {
       setError(data.error || "Error al crear");
       setEnviando(false);
     } else {
-      if (data.omitidos?.length) {
-        console.warn("[nueva-jornada] Partidos omitidos:", data.omitidos);
-        // Aun así redirige, pero el admin verá 0 partidos y podrá investigar
-      }
       router.push("/admin");
     }
   };
+
+  const slotsLibres = MAX_PARTIDOS - partidos.filter((p) => p.equipoLocal || p.equipoVisita || p.fechaHora).length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -319,7 +360,7 @@ export default function NuevaJornadaPage() {
               <span className="text-lg">📡</span>
               <div className="text-left">
                 <p className="font-semibold text-gray-800 text-sm">Cargar partidos desde ESPN</p>
-                <p className="text-xs text-gray-400">Importa el calendario automáticamente</p>
+                <p className="text-xs text-gray-400">Importa y elige los partidos que quieres</p>
               </div>
             </div>
             <span className="text-gray-400 text-sm">{panelEspn ? "▲" : "▼"}</span>
@@ -329,37 +370,46 @@ export default function NuevaJornadaPage() {
             <div className="border-t border-gray-100 px-4 pb-4 pt-3 space-y-3">
 
               {/* Slots disponibles */}
-              {(() => {
-                const reales = partidos.filter((p) => p.equipoLocal || p.equipoVisita || p.fechaHora).length;
-                const libres = MAX_PARTIDOS - reales;
-                return (
-                  <div className={`text-xs px-3 py-2 rounded-lg font-medium ${
-                    libres === 0 ? "bg-red-50 text-red-600" :
-                    libres <= 3  ? "bg-yellow-50 text-yellow-700" :
-                                   "bg-blue-50 text-blue-600"
-                  }`}>
-                    {reales === 0
-                      ? `Cargará hasta ${MAX_PARTIDOS} partidos`
-                      : libres === 0
-                      ? `⛔ Lleno (${reales}/${MAX_PARTIDOS}) — quita partidos para agregar más`
-                      : `➕ Se agregarán a los ${reales} existentes · quedan ${libres} slot${libres !== 1 ? "s" : ""} libres`}
-                  </div>
-                );
-              })()}
+              <div className={`text-xs px-3 py-2 rounded-lg font-medium ${
+                slotsLibres === 0 ? "bg-red-50 text-red-600" :
+                slotsLibres <= 3  ? "bg-yellow-50 text-yellow-700" :
+                                    "bg-blue-50 text-blue-600"
+              }`}>
+                {slotsLibres === 0
+                  ? `⛔ Lleno (${MAX_PARTIDOS}/${MAX_PARTIDOS}) — quita partidos para agregar más`
+                  : `Slots disponibles: ${slotsLibres} de ${MAX_PARTIDOS}`}
+              </div>
+
+              {/* Atajos de tipo de quiniela */}
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Tipo de quiniela (atajo de fechas)</label>
+                <div className="flex gap-1.5">
+                  <button type="button" onClick={() => aplicarAtajo("media")}
+                    className="flex-1 text-xs py-2 px-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium border border-indigo-100 transition-colors text-center">
+                    🌙 Media semana<br /><span className="text-[10px] font-normal opacity-70">Mar–Jue</span>
+                  </button>
+                  <button type="button" onClick={() => aplicarAtajo("finde")}
+                    className="flex-1 text-xs py-2 px-2 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium border border-green-100 transition-colors text-center">
+                    🎉 Fin de semana<br /><span className="text-[10px] font-normal opacity-70">Vie–Dom</span>
+                  </button>
+                  <button type="button" onClick={() => aplicarAtajo("domingo")}
+                    className="flex-1 text-xs py-2 px-2 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium border border-amber-100 transition-colors text-center">
+                    ⭐ Dominguera<br /><span className="text-[10px] font-normal opacity-70">Solo Dom</span>
+                  </button>
+                </div>
+              </div>
 
               {/* Liga */}
               <div>
-                <label className="text-xs text-gray-500">Liga a importar</label>
+                <label className="text-xs text-gray-500">Liga a consultar</label>
                 <div className="flex gap-1.5 flex-wrap mt-1">
                   {LIGAS.map((liga) => (
                     <button
                       key={liga}
                       type="button"
-                      onClick={() => setEspnLiga(liga)}
+                      onClick={() => { setEspnLiga(liga); setEspnLista([]); setEspnSeleccion(new Set()); }}
                       className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
-                        espnLiga === liga
-                          ? "bg-blue-700 text-white"
-                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                        espnLiga === liga ? "bg-blue-700 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                       }`}
                     >
                       {LIGA_ICON[liga] ?? "⚽"} {liga}
@@ -372,65 +422,100 @@ export default function NuevaJornadaPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs text-gray-500">Desde</label>
-                  <input
-                    type="date"
-                    value={espnDesde}
-                    onChange={(e) => setEspnDesde(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <input type="date" value={espnDesde} onChange={(e) => setEspnDesde(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500">Hasta</label>
-                  <input
-                    type="date"
-                    value={espnHasta}
-                    onChange={(e) => setEspnHasta(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <input type="date" value={espnHasta} onChange={(e) => setEspnHasta(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               </div>
 
-              {/* Botón cargar */}
-              <button
-                type="button"
-                onClick={cargarDesdeEspn}
-                disabled={espnCargando}
-                className="w-full bg-blue-700 hover:bg-blue-600 disabled:bg-blue-300 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
-              >
-                {espnCargando ? (
-                  <>
-                    <span className="animate-spin">⟳</span>
-                    Consultando ESPN...
-                  </>
-                ) : (
-                  <>📥 Cargar partidos</>
-                )}
+              {/* Botón consultar */}
+              <button type="button" onClick={consultarEspn} disabled={espnCargando}
+                className="w-full bg-blue-700 hover:bg-blue-600 disabled:bg-blue-300 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+                {espnCargando ? <><span className="animate-spin">⟳</span> Consultando ESPN…</> : <>🔍 Consultar partidos</>}
               </button>
 
               {/* Mensaje resultado */}
               {espnMensaje && (
                 <div className={`rounded-lg p-3 text-sm ${
-                  espnMensaje.tipo === "ok"    ? "bg-green-50 text-green-700" :
-                  espnMensaje.tipo === "warn"  ? "bg-yellow-50 text-yellow-700" :
-                                                 "bg-red-50 text-red-700"
+                  espnMensaje.tipo === "ok"   ? "bg-green-50 text-green-700" :
+                  espnMensaje.tipo === "warn" ? "bg-yellow-50 text-yellow-700" :
+                                                "bg-red-50 text-red-700"
                 }`}>
                   {espnMensaje.texto}
                 </div>
               )}
 
-              {/* Equipos no reconocidos — se pueden agregar al catálogo con un clic */}
+              {/* ── Lista de partidos para seleccionar ─────────────── */}
+              {espnLista.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-gray-600">
+                      Selecciona los partidos ({espnSeleccion.size}/{espnLista.length})
+                    </p>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setEspnSeleccion(new Set(espnLista.map((_, i) => i)))}
+                        className="text-[10px] text-blue-600 hover:underline">Todo</button>
+                      <button type="button" onClick={() => setEspnSeleccion(new Set())}
+                        className="text-[10px] text-gray-400 hover:underline">Ninguno</button>
+                    </div>
+                  </div>
+
+                  <div className="border border-gray-100 rounded-xl overflow-hidden divide-y divide-gray-50">
+                    {espnLista.map((p, i) => {
+                      const seleccionado = espnSeleccion.has(i);
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => toggleSeleccion(i)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+                            seleccionado ? "bg-blue-50" : "bg-white hover:bg-gray-50"
+                          }`}
+                        >
+                          {/* Checkbox */}
+                          <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors ${
+                            seleccionado ? "bg-blue-600 border-blue-600" : "border-gray-300"
+                          }`}>
+                            {seleccionado && <span className="text-white text-[10px] font-bold">✓</span>}
+                          </div>
+                          {/* Partido */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-gray-800 truncate">
+                              {p.equipoLocal} <span className="text-gray-400 font-normal">vs</span> {p.equipoVisita}
+                            </p>
+                            <p className="text-[10px] text-gray-400">
+                              {formatDia(p.fechaHora)} · {formatHora(p.fechaHora)}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={agregarSeleccionados}
+                    disabled={espnSeleccion.size === 0 || slotsLibres === 0}
+                    className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-300 text-white font-bold py-2.5 rounded-lg text-sm transition-colors"
+                  >
+                    ➕ Agregar {espnSeleccion.size} partido{espnSeleccion.size !== 1 ? "s" : ""} seleccionado{espnSeleccion.size !== 1 ? "s" : ""}
+                  </button>
+                </div>
+              )}
+
+              {/* Equipos no reconocidos */}
               {espnDesconocidos.length > 0 && (
                 <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 text-xs text-orange-700 space-y-2">
                   <p className="font-semibold">⚠️ Equipos nuevos — no están en el catálogo aún:</p>
                   <div className="flex flex-wrap gap-1.5">
                     {espnDesconocidos.map((eq) => (
-                      <button
-                        key={eq}
-                        type="button"
-                        disabled={agregandoEquipo === eq}
+                      <button key={eq} type="button" disabled={agregandoEquipo === eq}
                         onClick={() => agregarEquipoAlSistema(eq, espnLiga)}
-                        className="flex items-center gap-1 bg-orange-100 hover:bg-amber-100 disabled:opacity-50 border border-orange-300 text-orange-800 px-2 py-1 rounded-full transition-colors"
-                      >
+                        className="flex items-center gap-1 bg-orange-100 hover:bg-amber-100 disabled:opacity-50 border border-orange-300 text-orange-800 px-2 py-1 rounded-full transition-colors">
                         {agregandoEquipo === eq ? "Agregando…" : `+ ${eq}`}
                       </button>
                     ))}
@@ -448,30 +533,19 @@ export default function NuevaJornadaPage() {
 
           <div>
             <label className="text-xs text-gray-500">Nombre de la fecha *</label>
-            <input
-              type="text"
-              placeholder="Jornada 12 · Cuartos de Final - Ida · Semifinal Vuelta"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              required
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
+            <input type="text" placeholder="Jornada 12 · Cuartos de Final - Ida · Semifinal Vuelta"
+              value={nombre} onChange={(e) => setNombre(e.target.value)} required
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-500">Temporada *</label>
-              <input
-                type="text"
-                placeholder="Clausura 2026"
-                value={temporada}
-                onChange={(e) => setTemporada(e.target.value)}
-                required
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
+              <input type="text" placeholder="Clausura 2026" value={temporada}
+                onChange={(e) => setTemporada(e.target.value)} required
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             <div className="flex items-end pb-0.5">
-              {/* Liga calculada automáticamente */}
               <div className="flex-1">
                 <label className="text-xs text-gray-400">Liga (automática)</label>
                 <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-500">
@@ -484,23 +558,13 @@ export default function NuevaJornadaPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-500">Fecha inicio *</label>
-              <input
-                type="date"
-                value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
-                required
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
+              <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} required
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             <div>
               <label className="text-xs text-gray-500">Fecha fin *</label>
-              <input
-                type="date"
-                value={fechaFin}
-                onChange={(e) => setFechaFin(e.target.value)}
-                required
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
+              <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} required
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
           </div>
         </div>
@@ -522,13 +586,10 @@ export default function NuevaJornadaPage() {
         <div className="space-y-2">
           {partidos.map((partido, i) => {
             const equiposLiga = equiposPorLiga[partido.liga] ?? [];
-            // Marcar equipos conflictivos: usados en otro partido de la misma liga,
-            // EXCEPTO si ese partido es la vuelta del actual (mismos equipos, roles invertidos).
             const usadosEnOtros = partidos
               .filter((_, idx) => {
                 if (idx === i) return false;
                 if (partidos[idx].liga !== partido.liga) return false;
-                // Si es el partido de vuelta (roles invertidos), no es conflicto
                 const otro = partidos[idx];
                 if (otro.equipoLocal === partido.equipoVisita && otro.equipoVisita === partido.equipoLocal) return false;
                 return true;
@@ -538,7 +599,6 @@ export default function NuevaJornadaPage() {
 
             const opcionesLocal  = equiposLiga.filter((eq) => eq !== partido.equipoVisita);
             const opcionesVisita = equiposLiga.filter((eq) => eq !== partido.equipoLocal);
-
             const esValido = partido.equipoLocal && partido.equipoVisita && partido.fechaHora;
 
             return (
@@ -547,46 +607,28 @@ export default function NuevaJornadaPage() {
               }`}>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-gray-400">Partido {i + 1}</span>
-                  <button
-                    type="button"
-                    onClick={() => quitarPartido(i)}
-                    className="text-red-400 hover:text-red-600 text-xs"
-                  >
+                  <button type="button" onClick={() => quitarPartido(i)} className="text-red-400 hover:text-red-600 text-xs">
                     Quitar
                   </button>
                 </div>
 
-                {/* Selector de liga del partido */}
                 <div className="flex gap-1.5 flex-wrap">
                   {LIGAS.map((liga) => (
-                    <button
-                      key={liga}
-                      type="button"
-                      onClick={() => updatePartido(i, "liga", liga)}
+                    <button key={liga} type="button" onClick={() => updatePartido(i, "liga", liga)}
                       className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
-                        partido.liga === liga
-                          ? "bg-amber-700 text-white"
-                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                      }`}
-                    >
+                        partido.liga === liga ? "bg-amber-700 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      }`}>
                       {LIGA_ICON[liga] ?? "⚽"} {liga}
                     </button>
                   ))}
                 </div>
 
-                {/* Equipos */}
                 <div className="grid grid-cols-2 gap-2">
-                  <select
-                    value={partido.equipoLocal}
-                    onChange={(e) => updatePartido(i, "equipoLocal", e.target.value)}
+                  <select value={partido.equipoLocal} onChange={(e) => updatePartido(i, "equipoLocal", e.target.value)}
                     className={`border rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                      partido.equipoLocal && usadosEnOtros.includes(partido.equipoLocal)
-                        ? "border-red-300 bg-red-50"
-                        : "border-gray-200"
-                    }`}
-                  >
+                      partido.equipoLocal && usadosEnOtros.includes(partido.equipoLocal) ? "border-red-300 bg-red-50" : "border-gray-200"
+                    }`}>
                     <option value="">Local</option>
-                    {/* Si el valor actual no está en la lista (p.ej. cargado de ESPN), mostrarlo igual */}
                     {partido.equipoLocal && !opcionesLocal.includes(partido.equipoLocal) && (
                       <option value={partido.equipoLocal}>{partido.equipoLocal} ⚠️</option>
                     )}
@@ -597,17 +639,11 @@ export default function NuevaJornadaPage() {
                     ))}
                   </select>
 
-                  <select
-                    value={partido.equipoVisita}
-                    onChange={(e) => updatePartido(i, "equipoVisita", e.target.value)}
+                  <select value={partido.equipoVisita} onChange={(e) => updatePartido(i, "equipoVisita", e.target.value)}
                     className={`border rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                      partido.equipoVisita && usadosEnOtros.includes(partido.equipoVisita)
-                        ? "border-red-300 bg-red-50"
-                        : "border-gray-200"
-                    }`}
-                  >
+                      partido.equipoVisita && usadosEnOtros.includes(partido.equipoVisita) ? "border-red-300 bg-red-50" : "border-gray-200"
+                    }`}>
                     <option value="">Visita</option>
-                    {/* Si el valor actual no está en la lista (p.ej. cargado de ESPN), mostrarlo igual */}
                     {partido.equipoVisita && !opcionesVisita.includes(partido.equipoVisita) && (
                       <option value={partido.equipoVisita}>{partido.equipoVisita} ⚠️</option>
                     )}
@@ -619,30 +655,21 @@ export default function NuevaJornadaPage() {
                   </select>
                 </div>
 
-                {/* Fecha/hora */}
-                <input
-                  type="datetime-local"
-                  value={partido.fechaHora}
+                <input type="datetime-local" value={partido.fechaHora}
                   onChange={(e) => updatePartido(i, "fechaHora", e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
               </div>
             );
           })}
         </div>
 
-        {/* Botón agregar */}
         {partidos.length < MAX_PARTIDOS && (
-          <button
-            type="button"
-            onClick={agregarPartido}
-            className="w-full border-2 border-dashed border-gray-300 hover:border-amber-400 text-gray-500 hover:text-amber-600 py-3 rounded-xl text-sm font-medium transition-colors"
-          >
+          <button type="button" onClick={agregarPartido}
+            className="w-full border-2 border-dashed border-gray-300 hover:border-amber-400 text-gray-500 hover:text-amber-600 py-3 rounded-xl text-sm font-medium transition-colors">
             + Agregar partido ({partidos.length}/{MAX_PARTIDOS})
           </button>
         )}
 
-        {/* Resumen de ligas incluidas */}
         {ligasUsadas.length > 1 && (
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm text-blue-700">
             <p className="font-semibold">⚽ Quiniela mixta</p>
@@ -652,15 +679,10 @@ export default function NuevaJornadaPage() {
           </div>
         )}
 
-        {error && (
-          <p className="text-red-600 text-sm bg-red-50 rounded-lg p-3">{error}</p>
-        )}
+        {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg p-3">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={enviando || partidosValidos.length < MIN_PARTIDOS}
-          className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-300 text-white font-bold py-4 rounded-xl transition-colors"
-        >
+        <button type="submit" disabled={enviando || partidosValidos.length < MIN_PARTIDOS}
+          className="w-full bg-amber-700 hover:bg-amber-600 disabled:bg-gray-300 text-white font-bold py-4 rounded-xl transition-colors">
           {enviando
             ? "Creando..."
             : `Crear fecha (${partidosValidos.length} partidos · ${ligaJornada})`}
