@@ -247,7 +247,7 @@ export async function GET(req: NextRequest) {
   // Jornadas con registro aún abierto (estado=abierta + cierre no alcanzado)
   const jornadasCandidatas = await prisma.jornada.findMany({
     where: { estado: "abierta" },
-    select: { id: true, numero: true, nombre: true, liga: true, temporada: true },
+    select: { id: true, numero: true, nombre: true, liga: true, temporada: true, fechaFin: true },
     orderBy: { numero: "desc" },
   });
 

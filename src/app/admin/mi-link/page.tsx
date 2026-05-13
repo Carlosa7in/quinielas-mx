@@ -18,6 +18,7 @@ type JornadaAbierta = {
   nombre: string | null;
   liga: string;
   temporada: string;
+  fechaFin?: string | null;
 };
 
 type Data = {
@@ -225,6 +226,7 @@ export default function MiLinkPage() {
                           liga={j.liga}
                           temporada={j.temporada}
                           refCode={data.codigoRef!}
+                          fechaFin={j.fechaFin ? String(j.fechaFin).slice(0, 10) : null}
                         />
                       </div>
                     );
