@@ -255,9 +255,16 @@ export default function GananciasPage() {
                           <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{q.folio}</td>
                           <td className="px-4 py-2.5 font-medium text-gray-800 truncate max-w-[100px]">{q.nombreCliente}</td>
                           <td className="px-4 py-2.5">
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                              {CANAL_LABEL[q.canal] ?? q.canal}
-                            </span>
+                            <div className="flex flex-wrap gap-1 items-center">
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                {CANAL_LABEL[q.canal] ?? q.canal}
+                              </span>
+                              {q.canal !== "tienda" && (
+                                <span className="text-xs bg-cyan-100 text-cyan-700 px-2 py-0.5 rounded-full font-medium">
+                                  🔗 Ref.
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-2.5 text-right font-semibold text-gray-800">${fmt(q.monto)}</td>
                           <td className="px-4 py-2.5 text-right">
