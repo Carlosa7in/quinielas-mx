@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { LIGA_ICON } from "@/lib/equipos";
 
 export type JornadaResumen = {
   id: string;
@@ -21,14 +22,6 @@ function estaAbierta(j: JornadaResumen): boolean {
   if (!j.primerPartidoFecha) return true; // sin fecha → mostrar
   return new Date() < new Date(j.primerPartidoFecha);
 }
-
-const LIGA_ICON: Record<string, string> = {
-  "Liga MX": "🇲🇽",
-  "Champions League": "⭐",
-  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  "La Liga": "🇪🇸",
-  "Mixta": "⚽",
-};
 
 interface Props {
   onSelect: (jornada: JornadaResumen) => void;

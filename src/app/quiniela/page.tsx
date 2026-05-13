@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { LogoEquipo } from "@/components/LogoEquipo";
 import { RegistroCerrado } from "@/components/RegistroCerrado";
 import { calcularFechaCierre } from "@/lib/fechas";
+import { LIGA_ICON } from "@/lib/equipos";
 
 type Partido = {
   id: string;
@@ -30,14 +31,6 @@ type Jornada = {
 
 // picks por forma: partidoId → opciones seleccionadas
 type FormaPicks = Record<string, string[]>;
-
-const LIGA_ICON: Record<string, string> = {
-  "Liga MX": "🇲🇽",
-  "Champions League": "⭐",
-  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  "La Liga": "🇪🇸",
-  "Mixta": "⚽",
-};
 
 const OPCIONES = ["1", "X", "2"] as const;
 

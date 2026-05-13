@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LIGAS } from "@/lib/equipos";
+import { LIGAS, LIGA_ICON } from "@/lib/equipos";
 
 const MIN_PARTIDOS = 6;
 const MAX_PARTIDOS = 9;
@@ -20,12 +20,6 @@ const PARTIDO_VACIO = (liga = "Liga MX"): PartidoForm => ({
   fechaHora: "",
 });
 
-const LIGA_ICONO: Record<string, string> = {
-  "Liga MX": "🇲🇽",
-  "Champions League": "⭐",
-  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  "La Liga": "🇪🇸",
-};
 
 // Formatear Date → YYYYMMDD usando métodos UTC (input type=date siempre manda YYYY-MM-DD
 // que new Date() interpreta como UTC midnight, así que usamos getUTCxxx para evitar
@@ -368,7 +362,7 @@ export default function NuevaJornadaPage() {
                           : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                       }`}
                     >
-                      {LIGA_ICONO[liga] ?? "⚽"} {liga}
+                      {LIGA_ICON[liga] ?? "⚽"} {liga}
                     </button>
                   ))}
                 </div>
@@ -481,7 +475,7 @@ export default function NuevaJornadaPage() {
               <div className="flex-1">
                 <label className="text-xs text-gray-400">Liga (automática)</label>
                 <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-500">
-                  {LIGA_ICONO[ligaJornada] ?? "⚽"} {ligaJornada}
+                  {LIGA_ICON[ligaJornada] ?? "⚽"} {ligaJornada}
                 </div>
               </div>
             </div>
@@ -575,7 +569,7 @@ export default function NuevaJornadaPage() {
                           : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                       }`}
                     >
-                      {LIGA_ICONO[liga] ?? "⚽"} {liga}
+                      {LIGA_ICON[liga] ?? "⚽"} {liga}
                     </button>
                   ))}
                 </div>
@@ -653,7 +647,7 @@ export default function NuevaJornadaPage() {
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm text-blue-700">
             <p className="font-semibold">⚽ Quiniela mixta</p>
             <p className="text-xs mt-1 text-blue-500">
-              {ligasUsadas.map((l) => `${LIGA_ICONO[l] ?? "⚽"} ${l}`).join(" · ")}
+              {ligasUsadas.map((l) => `${LIGA_ICON[l] ?? "⚽"} ${l}`).join(" · ")}
             </p>
           </div>
         )}

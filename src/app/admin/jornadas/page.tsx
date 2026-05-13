@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { LIGA_ICON } from "@/lib/equipos";
 
 type JornadaResumen = {
   id: string;
@@ -13,14 +14,6 @@ type JornadaResumen = {
   totalPartidos: number;
   recaudado: number;
   ganadoras: number;
-};
-
-const LIGA_ICON: Record<string, string> = {
-  "Liga MX": "🇲🇽",
-  "Champions League": "⭐",
-  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  "La Liga": "🇪🇸",
-  "Mixta": "⚽",
 };
 
 export default function JornadasPage() {

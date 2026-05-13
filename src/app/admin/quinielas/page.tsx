@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { LIGA_ICON } from "@/lib/equipos";
 
 // Detecta si estamos en móvil Android (para usar intent de WA Business)
 function useIsMobile() {
@@ -48,13 +49,6 @@ type Jornada = {
 
 const LABEL = { "1": "L", "X": "E", "2": "V" } as Record<string, string>;
 
-const LIGA_ICON: Record<string, string> = {
-  "Liga MX": "🇲🇽",
-  "Champions League": "⭐",
-  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  "La Liga": "🇪🇸",
-  "Mixta": "⚽",
-};
 
 function estadoColor(estado: string) {
   if (estado === "ganadora") return "bg-green-100 text-green-700";

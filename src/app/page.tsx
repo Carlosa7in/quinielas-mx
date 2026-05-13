@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { LIGA_ICON } from "@/lib/equipos";
 
 type JornadaBolsaItem = {
   id: string;
@@ -12,14 +13,6 @@ type JornadaBolsaItem = {
   recaudado: number;
   bolsa: number;
   primerPartidoFecha: string | null;
-};
-
-const LIGA_ICON: Record<string, string> = {
-  "Liga MX": "🇲🇽",
-  "Champions League": "⭐",
-  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  "La Liga": "🇪🇸",
-  "Mixta": "⚽",
 };
 
 function useCuentaRegresiva(fechaISO: string | null) {
