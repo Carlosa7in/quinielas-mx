@@ -390,6 +390,9 @@ function ScannerQR({ onFolioDetectado }: { onFolioDetectado: (folio: string) => 
   );
 }
 
+const toTitleCase = (str: string) =>
+  str.replace(/\b\w/g, (c) => c.toUpperCase());
+
 const RESULTADO_LABEL: Record<string, string> = { "1": "L", "X": "E", "2": "V" };
 const RESULTADO_COLOR: Record<string, string> = {
   "1": "bg-green-100 text-green-700",
@@ -633,7 +636,7 @@ function ConsultarInner() {
               type="text"
               placeholder="Tu nombre (como te registraste)"
               value={nombreBusqueda}
-              onChange={(e) => setNombreBusqueda(e.target.value)}
+              onChange={(e) => setNombreBusqueda(toTitleCase(e.target.value))}
               className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
               autoFocus
             />
