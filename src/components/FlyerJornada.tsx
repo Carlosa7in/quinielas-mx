@@ -325,7 +325,7 @@ async function dibujarFlyer(
   ctx.font = "bold 19px Arial, sans-serif";
   ctx.textBaseline = "middle";
   ctx.textAlign = "right";
-  ctx.fillText("⏰ CIERRE DE REGISTRO", W - PAD - 26, RR1);
+  ctx.fillText("CIERRE DE REGISTRO", W - PAD - 26, RR1);
   ctx.fillStyle = "#fbbf24";
   ctx.font = "bold 20px Arial, sans-serif";
   const cierreTexto = fechaFin
