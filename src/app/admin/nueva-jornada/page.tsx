@@ -15,11 +15,15 @@ const TIPO_PREFIJOS = Object.values(TIPO_LABEL);
 
 /** Quita el prefijo de tipo de quiniela si ya viene incluido */
 function sinPrefijo(s: string): string {
+  const t = s.trim();
   for (const p of TIPO_PREFIJOS) {
+    // Caso 1: el string ES exactamente el prefijo (sin base todavía)
+    if (t.toLowerCase() === p.toLowerCase()) return "";
+    // Caso 2: el string tiene prefijo + separador + base
     const re = new RegExp(`^${p}\\s*[-–]\\s*`, "i");
-    if (re.test(s)) return s.replace(re, "").trim();
+    if (re.test(t)) return t.replace(re, "").trim();
   }
-  return s.trim();
+  return t;
 }
 /** Construye el nombre completo con el prefijo de tipo */
 function conPrefijo(tipo: string | null, base: string): string {
