@@ -14,13 +14,33 @@ export default function LogosCheckDbPage() {
   const [cargando, setCargando] = useState(true);
   const [ligaActiva, setLigaActiva] = useState("todas");
   const [rotos, setRotos] = useState<Set<string>>(new Set());
+  const [sincronizando, setSincronizando] = useState(false);
+  const [syncMsg, setSyncMsg] = useState("");
 
-  useEffect(() => {
+  const cargarEquipos = () => {
+    setCargando(true);
     fetch("/api/admin/equipos")
       .then((r) => r.json())
       .then((d) => setEquipos(d.equipos ?? []))
       .finally(() => setCargando(false));
-  }, []);
+  };
+
+  useEffect(() => { cargarEquipos(); }, []);
+
+  const sincronizar = async () => {
+    setSincronizando(true);
+    setSyncMsg("");
+    const res = await fetch("/api/admin/equipos-seed", { method: "POST" });
+    const data = await res.json();
+    if (data.ok) {
+      setSyncMsg(`✅ ${data.insertados} equipos sincronizados`);
+      setRotos(new Set());
+      cargarEquipos();
+    } else {
+      setSyncMsg(`❌ ${data.error ?? "Error"}`);
+    }
+    setSincronizando(false);
+  };
 
   const ligas = ["todas", ...Array.from(new Set(equipos.map((e) => e.liga))).sort()];
   const filtrados = ligaActiva === "todas" ? equipos : equipos.filter((e) => e.liga === ligaActiva);
@@ -49,15 +69,25 @@ export default function LogosCheckDbPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gray-900 text-white py-4 px-4">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
+        <div className="max-w-3xl mx-auto flex items-center gap-3 flex-wrap">
           <a href="/admin" className="text-gray-400 hover:text-white text-sm">← Admin</a>
           <h1 className="text-lg font-bold">Logos en Base de Datos</h1>
-          <span className="text-gray-400 text-sm ml-1">({equipos.length} equipos)</span>
+          <span className="text-gray-400 text-sm">({equipos.length} equipos)</span>
           {totalRotos > 0 && (
-            <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-auto">
+            <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
               {totalRotos} roto{totalRotos !== 1 ? "s" : ""}
             </span>
           )}
+          <div className="ml-auto flex items-center gap-2">
+            {syncMsg && <span className="text-xs text-green-300">{syncMsg}</span>}
+            <button
+              onClick={sincronizar}
+              disabled={sincronizando}
+              className="bg-amber-600 hover:bg-amber-500 disabled:bg-gray-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              {sincronizando ? "Sincronizando..." : "🔄 Sincronizar equipos"}
+            </button>
+          </div>
         </div>
       </div>
 
