@@ -6,6 +6,28 @@ import { LIGAS, LIGA_ICON } from "@/lib/equipos";
 const MIN_PARTIDOS = 6;
 const MAX_PARTIDOS = 9;
 
+const TIPO_LABEL: Record<string, string> = {
+  media:   "Media Semana",
+  finde:   "Fin de Semana",
+  domingo: "Dominguera",
+};
+const TIPO_PREFIJOS = Object.values(TIPO_LABEL);
+
+/** Quita el prefijo de tipo de quiniela si ya viene incluido */
+function sinPrefijo(s: string): string {
+  for (const p of TIPO_PREFIJOS) {
+    const re = new RegExp(`^${p}\\s*[-–]\\s*`, "i");
+    if (re.test(s)) return s.replace(re, "").trim();
+  }
+  return s.trim();
+}
+/** Construye el nombre completo con el prefijo de tipo */
+function conPrefijo(tipo: string | null, base: string): string {
+  const label = tipo ? TIPO_LABEL[tipo] : "";
+  if (!label) return base;
+  return base ? `${label} - ${base}` : label;
+}
+
 type PartidoForm = {
   liga: string;
   equipoLocal: string;
@@ -95,6 +117,9 @@ export default function NuevaJornadaPage() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
+  // ── Tipo de quiniela (persiste al cambiar de liga) ────────────────
+  const [tipoQuiniela, setTipoQuiniela] = useState<string | null>(null);
+
   // ── Estado del panel ESPN ──────────────────────────────────────────
   const hoy = new Date();
   const masdiez = new Date(hoy); masdiez.setDate(hoy.getDate() + 10);
@@ -115,23 +140,25 @@ export default function NuevaJornadaPage() {
   const aplicarAtajo = (tipo: "media" | "finde" | "domingo") => {
     const lunes = inicioSemana(hoy);
     if (tipo === "media") {
-      // Martes a jueves de esta semana
       const mar = new Date(lunes); mar.setDate(lunes.getDate() + 1);
       const jue = new Date(lunes); jue.setDate(lunes.getDate() + 3);
       setEspnDesde(toInputDate(mar));
       setEspnHasta(toInputDate(jue));
     } else if (tipo === "finde") {
-      // Viernes a domingo de esta semana
       const vie = new Date(lunes); vie.setDate(lunes.getDate() + 4);
       const dom = new Date(lunes); dom.setDate(lunes.getDate() + 6);
       setEspnDesde(toInputDate(vie));
       setEspnHasta(toInputDate(dom));
     } else {
-      // Solo domingo
       const dom = new Date(lunes); dom.setDate(lunes.getDate() + 6);
       setEspnDesde(toInputDate(dom));
       setEspnHasta(toInputDate(dom));
     }
+
+    // Marcar tipo como activo y actualizar nombre con el prefijo
+    setTipoQuiniela(tipo);
+    setNombre((prev) => conPrefijo(tipo, sinPrefijo(prev)));
+
     // Limpiar lista anterior
     setEspnLista([]);
     setEspnSeleccion(new Set());
@@ -218,8 +245,11 @@ export default function NuevaJornadaPage() {
         : merged
     );
 
-    // Auto-rellenar nombre y fechas solo si están vacíos
-    if (espnNombreSugerido && !nombre.trim()) setNombre(espnNombreSugerido);
+    // Auto-rellenar nombre: si está vacío o es solo el prefijo de tipo, agregar sugerencia ESPN
+    if (espnNombreSugerido) {
+      const base = sinPrefijo(nombre.trim());
+      if (!base) setNombre(conPrefijo(tipoQuiniela, espnNombreSugerido));
+    }
 
     const fechasPartidos = nuevos.map((p) => p.fechaHora).filter(Boolean).sort();
     const primeraFecha = fechasPartidos[0]?.slice(0, 10);
@@ -385,16 +415,28 @@ export default function NuevaJornadaPage() {
                 <label className="text-xs text-gray-500 mb-1 block">Tipo de quiniela (atajo de fechas)</label>
                 <div className="flex gap-1.5">
                   <button type="button" onClick={() => aplicarAtajo("media")}
-                    className="flex-1 text-xs py-2 px-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium border border-indigo-100 transition-colors text-center">
-                    🌙 Media semana<br /><span className="text-[10px] font-normal opacity-70">Mar–Jue</span>
+                    className={`flex-1 text-xs py-2 px-2 rounded-lg font-medium border transition-colors text-center ${
+                      tipoQuiniela === "media"
+                        ? "bg-indigo-600 text-white border-indigo-600"
+                        : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-100"
+                    }`}>
+                    🌙 Media Semana<br /><span className="text-[10px] font-normal opacity-80">Mar–Jue</span>
                   </button>
                   <button type="button" onClick={() => aplicarAtajo("finde")}
-                    className="flex-1 text-xs py-2 px-2 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium border border-green-100 transition-colors text-center">
-                    🎉 Fin de semana<br /><span className="text-[10px] font-normal opacity-70">Vie–Dom</span>
+                    className={`flex-1 text-xs py-2 px-2 rounded-lg font-medium border transition-colors text-center ${
+                      tipoQuiniela === "finde"
+                        ? "bg-green-600 text-white border-green-600"
+                        : "bg-green-50 text-green-700 hover:bg-green-100 border-green-100"
+                    }`}>
+                    🎉 Fin de Semana<br /><span className="text-[10px] font-normal opacity-80">Vie–Dom</span>
                   </button>
                   <button type="button" onClick={() => aplicarAtajo("domingo")}
-                    className="flex-1 text-xs py-2 px-2 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium border border-amber-100 transition-colors text-center">
-                    ⭐ Dominguera<br /><span className="text-[10px] font-normal opacity-70">Solo Dom</span>
+                    className={`flex-1 text-xs py-2 px-2 rounded-lg font-medium border transition-colors text-center ${
+                      tipoQuiniela === "domingo"
+                        ? "bg-amber-600 text-white border-amber-600"
+                        : "bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                    }`}>
+                    ⭐ Dominguera<br /><span className="text-[10px] font-normal opacity-80">Solo Dom</span>
                   </button>
                 </div>
               </div>
