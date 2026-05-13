@@ -40,6 +40,7 @@ export default function MiLinkPage() {
   const [cargando, setCargando] = useState(true);
   const [copiado, setCopiado] = useState(false);
   const [copiadoInstrucciones, setCopiadoInstrucciones] = useState(false);
+  const [generando, setGenerando] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/perfil")
@@ -55,6 +56,18 @@ export default function MiLinkPage() {
       .catch(() => {})
       .finally(() => setCargando(false));
   }, []);
+
+  const generarCodigo = async () => {
+    setGenerando(true);
+    try {
+      const res = await fetch("/api/admin/perfil/generar-codigo", { method: "POST" });
+      const d = await res.json();
+      if (d.codigoRef) {
+        setData((prev) => prev ? { ...prev, codigoRef: d.codigoRef } : prev);
+      }
+    } catch { /* ignore */ }
+    setGenerando(false);
+  };
 
   const copiarLink = () => {
     if (!data?.codigoRef) return;
@@ -110,12 +123,22 @@ export default function MiLinkPage() {
         {cargando ? (
           <div className="bg-white rounded-xl p-8 text-center text-gray-400 shadow-sm">Cargando...</div>
         ) : !data?.codigoRef ? (
-          <div className="text-center py-16 text-gray-400 bg-white rounded-xl shadow-sm">
+          <div className="text-center py-16 text-gray-400 bg-white rounded-xl shadow-sm px-6">
             <p className="text-4xl mb-3">🔗</p>
             <p className="font-semibold text-gray-600">Aún no tienes código de referido</p>
-            <p className="text-sm mt-2 max-w-xs mx-auto">
-              Pídele al administrador que te asigne un código en la sección de Usuarios.
-            </p>
+            {esAdmin ? (
+              <button
+                onClick={generarCodigo}
+                disabled={generando}
+                className="mt-4 bg-amber-700 hover:bg-amber-600 disabled:bg-gray-300 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-colors"
+              >
+                {generando ? "Generando…" : "✨ Generar mi código ahora"}
+              </button>
+            ) : (
+              <p className="text-sm mt-2 max-w-xs mx-auto">
+                Pídele al administrador que te asigne un código en la sección de Usuarios.
+              </p>
+            )}
           </div>
         ) : (
           <>
