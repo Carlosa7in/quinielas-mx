@@ -94,8 +94,7 @@ export async function GET(req: NextRequest) {
     }));
   } catch { /* tabla aún no existe — ignorar */ }
 
-  const COMISION_TIENDA = 2;
-  const COMISION_REFERIDO = 2;
+  const COMISION_PCT = 0.10; // 10% del monto vendido (sencilla=$2, doble=$4, triple=$6…)
   const esRolAdmin = (r: string) => r === "admin" || r === "superadmin";
 
   type QItem = {
@@ -138,8 +137,8 @@ export async function GET(req: NextRequest) {
       const online = qs.filter((q) => q.canal !== "tienda").length;
       const recaudado = qs.reduce((s, q) => s + q.monto, 0);
       const comision = u.rol === "vendedor"
-        ? qs.filter((q) => q.estadoPago === "confirmado").length * COMISION_REFERIDO
-        : tienda * COMISION_TIENDA;
+        ? qs.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto * COMISION_PCT, 0)
+        : qs.filter((q) => q.canal === "tienda").reduce((s, q) => s + q.monto * COMISION_PCT, 0);
       const globalJ = recaudadoGlobalPorJornada.get(jId);
       const comisionAdmin = esRolAdmin(u.rol) && numAdmins > 0 && globalJ
         ? (globalJ.recaudado * 0.15) / numAdmins
@@ -205,8 +204,8 @@ export async function GET(req: NextRequest) {
     const online = misQ.filter((q) => q.canal !== "tienda").length;
     const recaudado = misQ.reduce((s, q) => s + q.monto, 0);
     const comisionTiendaTotal = u.rol === "vendedor"
-      ? misQ.filter((q) => q.estadoPago === "confirmado").length * COMISION_REFERIDO
-      : tienda * COMISION_TIENDA;
+      ? misQ.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto * COMISION_PCT, 0)
+      : misQ.filter((q) => q.canal === "tienda").reduce((s, q) => s + q.monto * COMISION_PCT, 0);
     const comisionAdminTotal = porJornada.reduce((s, j) => s + j.comisionAdmin, 0);
     const ganadoras = misQ.filter((q) => q.estado === "ganadora").length;
     const pendientePago = porJornada
@@ -260,7 +259,7 @@ export async function GET(req: NextRequest) {
       if (u.rol !== "superadmin") continue;
       for (const [jId, qs] of ventasDirectasPorJornada.entries()) {
         const comisionDirecta = numSuperadmins > 0
-          ? (qs.length * COMISION_TIENDA) / numSuperadmins
+          ? (qs.reduce((s, q) => s + q.monto, 0) * COMISION_PCT) / numSuperadmins
           : 0;
         const jornada = qs[0].jornada;
         const jornadaNombre = jornada.nombre ?? `Jornada ${jornada.numero}`;
@@ -335,7 +334,7 @@ export async function GET(req: NextRequest) {
     recaudadoGlobal,
     totalGlobal,
     ventasDirectasConfirmadas: ventasDirectas.length,
-    comisionDirectaTotal: ventasDirectas.length * COMISION_TIENDA,
+    comisionDirectaTotal: ventasDirectas.reduce((s, q) => s + q.monto, 0) * COMISION_PCT,
   });
 }
 

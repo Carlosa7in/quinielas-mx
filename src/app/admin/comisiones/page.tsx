@@ -27,7 +27,7 @@ type VendedorReporte = {
   porJornada: JornadaDesglose[];
 };
 
-const COMISION_TIENDA = 2;
+const COMISION_PCT = 0.10;
 const PCT_DUENOS = 0.15;
 
 const ROL_LABEL: Record<string, string> = {
@@ -109,7 +109,7 @@ export default function ComisionesPage() {
   const totalComisionesReferido = reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.comisionTotal, 0);
   const baseDesglose = recaudadoGlobal > 0 ? recaudadoGlobal : recaudadoGeneral;
   const cutDuenos = baseDesglose * PCT_DUENOS;
-  const cutTienda = totalTiendaAll * COMISION_TIENDA;
+  const cutTienda = reporte.filter((v) => v.rol !== "vendedor").reduce((s, v) => s + v.comisionTotal, 0);
   const bolsaNeta = Math.max(baseDesglose - cutDuenos - cutTienda - totalComisionesReferido - comisionDirectaTotal, 0);
   const totalComisiones = reporte.reduce((s, v) => s + v.comisionTotal, 0);
   const totalPendiente = reporte.reduce((s, v) => s + v.pendientePago, 0);
@@ -190,19 +190,19 @@ export default function ComisionesPage() {
               </div>
               {cutTienda > 0 && (
                 <div className="flex justify-between text-orange-400">
-                  <span>− Comisión tienda ($2 × {totalTiendaAll})</span>
+                  <span>− Comisión tienda (10% ventas)</span>
                   <span className="font-bold">−${fmt(cutTienda)}</span>
                 </div>
               )}
               {totalComisionesReferido > 0 && (
                 <div className="flex justify-between text-cyan-400">
-                  <span>− Comisión referidos ($2 × {reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.total, 0)} confirmadas)</span>
+                  <span>− Comisión referidos (10% de ventas confirmadas)</span>
                   <span className="font-bold">−${fmt(totalComisionesReferido)}</span>
                 </div>
               )}
               {comisionDirectaTotal > 0 && (
                 <div className="flex justify-between text-purple-400">
-                  <span>− Ventas directas 🌐 ($2 × {ventasDirectasConfirmadas} confirmadas)</span>
+                  <span>− Ventas directas 🌐 (10% · {ventasDirectasConfirmadas} confirmadas)</span>
                   <span className="font-bold">−${fmt(comisionDirectaTotal)}</span>
                 </div>
               )}
@@ -342,7 +342,7 @@ export default function ComisionesPage() {
                                   <p className="text-[10px] text-gray-500">
                                     {v.rol === "vendedor" ? "Com. referido" : j.quinielas.some((q) => q.canal === "directa") ? "Com. directas 🌐" : "Com. tienda"}
                                   </p>
-                                  <p className="text-[9px] text-gray-400">$2 × {v.rol === "vendedor" ? j.total : j.tienda || j.quinielas.filter((q) => q.canal === "directa").length}</p>
+                                  <p className="text-[9px] text-gray-400">10% de ${fmt(j.recaudado || j.quinielas.reduce((s, q) => s + q.monto, 0))}</p>
                                 </div>
                               )}
                               {j.comisionAdmin > 0 && (
