@@ -43,18 +43,24 @@ export default function MiLinkPage() {
   const [generando, setGenerando] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/perfil")
+    // Fetch codigoRef desde endpoint mínimo dedicado (más robusto)
+    // y el resto de datos desde perfil (puede fallar sin bloquear codigoRef)
+    const fetchCodigo = fetch("/api/admin/mi-codigo")
       .then((r) => r.json())
-      .then((d) => {
-        setData({
-          codigoRef: d.usuario?.codigoRef ?? null,
-          esVendedor: d.usuario?.rol === "vendedor",
-          stats: d.stats ?? { totalQuinielas: 0, comisionGanada: 0, comisionPendiente: 0 },
-          jornadasAbiertas: d.jornadasAbiertas ?? [],
-        });
-      })
-      .catch(() => {})
-      .finally(() => setCargando(false));
+      .catch(() => ({}));
+
+    const fetchPerfil = fetch("/api/admin/perfil")
+      .then((r) => r.json())
+      .catch(() => ({}));
+
+    Promise.all([fetchCodigo, fetchPerfil]).then(([codigo, perfil]) => {
+      setData({
+        codigoRef: codigo.codigoRef ?? perfil.usuario?.codigoRef ?? null,
+        esVendedor: (codigo.rol ?? perfil.usuario?.rol) === "vendedor",
+        stats: perfil.stats ?? { totalQuinielas: 0, comisionGanada: 0, comisionPendiente: 0 },
+        jornadasAbiertas: perfil.jornadasAbiertas ?? [],
+      });
+    }).finally(() => setCargando(false));
   }, []);
 
   const generarCodigo = async () => {
