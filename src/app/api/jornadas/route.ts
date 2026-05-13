@@ -8,7 +8,6 @@ const JORNADA_SELECT = {
   temporada: true,
   liga: true,
   estado: true,
-  fechaFin: true,
   partidos: {
     select: { id: true, liga: true, equipoLocal: true, equipoVisita: true, orden: true, resultado: true, golesLocal: true, golesVisita: true },
     orderBy: { orden: "asc" } as const,
