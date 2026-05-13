@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   if (!usuario) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
   const esVendedor = usuario.rol === "vendedor";
-  const esAdmin = ["admin", "superadmin"].includes(usuario.rol);
+  const esAdmin = usuario.rol === "superadmin";
 
   // Quinielas propias (todas, para stats + últimas)
   const quinielas = await prisma.quiniela.findMany({
@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
   let pendienteAdmin = 0;
 
   if (esAdmin) {
-    const numAdmins = await prisma.usuario.count({ where: { rol: { in: ["admin", "superadmin"] } } });
+    const numAdmins = await prisma.usuario.count({ where: { rol: "superadmin" } });
     const todasQ = await prisma.quiniela.findMany({
       select: {
         jornadaId: true, monto: true,
