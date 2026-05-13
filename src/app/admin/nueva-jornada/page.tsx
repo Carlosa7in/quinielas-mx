@@ -582,7 +582,13 @@ export default function NuevaJornadaPage() {
 
           <div>
             <label className="text-xs text-gray-500">Nombre de la fecha *</label>
-            <input type="text" placeholder="Jornada 12 · Cuartos de Final - Ida · Semifinal Vuelta"
+            <input type="text"
+              placeholder={
+                tipoQuiniela === "media"   ? "Media Semana - Clausura Jornada 17" :
+                tipoQuiniela === "finde"   ? "Fin de Semana - Clausura Semifinales" :
+                tipoQuiniela === "domingo" ? "Dominguera - Clausura Final" :
+                "Jornada 12 · Cuartos de Final · Semifinal Vuelta"
+              }
               value={nombre} onChange={(e) => setNombre(e.target.value)} required
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500" />
           </div>
