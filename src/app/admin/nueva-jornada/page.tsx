@@ -111,7 +111,7 @@ export default function NuevaJornadaPage() {
     setEspnDesconocidos((prev) => prev.filter((e) => e !== nombre));
   };
 
-  const [nombre, setNombre] = useState("");
+  const [nombreBase, setNombreBase] = useState(""); // parte que escribe el usuario
   const [temporada, setTemporada] = useState("Clausura 2026");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
@@ -123,6 +123,11 @@ export default function NuevaJornadaPage() {
 
   // ── Tipo de quiniela (persiste al cambiar de liga) ────────────────
   const [tipoQuiniela, setTipoQuiniela] = useState<string | null>(null);
+
+  // Nombre completo que se guarda: "Tipo - Base" o solo "Base" si no hay tipo
+  const nombre = tipoQuiniela && TIPO_LABEL[tipoQuiniela]
+    ? nombreBase.trim() ? `${TIPO_LABEL[tipoQuiniela]} - ${nombreBase.trim()}` : TIPO_LABEL[tipoQuiniela]
+    : nombreBase.trim();
 
   // ── Estado del panel ESPN ──────────────────────────────────────────
   const hoy = new Date();
@@ -168,8 +173,6 @@ export default function NuevaJornadaPage() {
       }
       return tipo;
     });
-    setNombre((prev) => conPrefijo(tipo, sinPrefijo(prev)));
-
     // Limpiar lista anterior
     setEspnLista([]);
     setEspnSeleccion(new Set());
@@ -256,10 +259,9 @@ export default function NuevaJornadaPage() {
         : merged
     );
 
-    // Auto-rellenar nombre: si está vacío o es solo el prefijo de tipo, agregar sugerencia ESPN
-    if (espnNombreSugerido) {
-      const base = sinPrefijo(nombre.trim());
-      if (!base) setNombre(conPrefijo(tipoQuiniela, espnNombreSugerido));
+    // Auto-rellenar nombreBase con la sugerencia de ESPN si aún está vacío
+    if (espnNombreSugerido && !nombreBase.trim()) {
+      setNombreBase(espnNombreSugerido);
     }
 
     const fechasPartidos = nuevos.map((p) => p.fechaHora).filter(Boolean).sort();
@@ -586,15 +588,27 @@ export default function NuevaJornadaPage() {
 
           <div>
             <label className="text-xs text-gray-500">Nombre de la fecha *</label>
-            <input type="text"
-              placeholder={
-                tipoQuiniela === "media"   ? "Media Semana - Clausura Jornada 17" :
-                tipoQuiniela === "finde"   ? "Fin de Semana - Clausura Semifinales" :
-                tipoQuiniela === "domingo" ? "Dominguera - Clausura Final" :
-                "Jornada 12 · Cuartos de Final · Semifinal Vuelta"
-              }
-              value={nombre} onChange={(e) => setNombre(e.target.value)} required
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            <div className="flex items-center gap-2 mt-1">
+              {tipoQuiniela && (
+                <span className="shrink-0 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 font-medium whitespace-nowrap">
+                  {TIPO_LABEL[tipoQuiniela]} -
+                </span>
+              )}
+              <input type="text"
+                placeholder={
+                  tipoQuiniela === "media"   ? "Clausura Jornada 17" :
+                  tipoQuiniela === "finde"   ? "Clausura Semifinales" :
+                  tipoQuiniela === "domingo" ? "Clausura Final" :
+                  "Jornada 12 · Cuartos de Final · Semifinal Vuelta"
+                }
+                value={nombreBase} onChange={(e) => setNombreBase(e.target.value)} required
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            {nombre && (
+              <p className="text-[11px] text-gray-400 mt-1 px-1">
+                Se guardará como: <span className="font-medium text-gray-600">{nombre}</span>
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
