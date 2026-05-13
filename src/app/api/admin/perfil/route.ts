@@ -62,8 +62,8 @@ export async function GET(req: NextRequest) {
   const esVendedorReferido = usuario.rol === "vendedor";
   const tiendaQuinielas = quinielas.filter((q) => q.canal === "tienda");
   const comisionGanada = esVendedorReferido
-    ? quinielas.filter((q) => q.estadoPago === "confirmado").length * 2
-    : tiendaQuinielas.length * 2;
+    ? quinielas.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto * 0.10, 0)
+    : tiendaQuinielas.reduce((s, q) => s + q.monto * 0.10, 0);
 
   // PagoComision via sql (DateTime fields)
   let pagosComision: Array<{ usuarioId: string; jornadaId: string; monto: number; pagadoEn: string }> = [];
@@ -115,12 +115,12 @@ export async function GET(req: NextRequest) {
     entry.recaudado += q.monto;
     if (q.canal === "tienda") {
       entry.tienda += 1;
-      if (!esVendedorReferido) entry.comision += 2;
+      if (!esVendedorReferido) entry.comision += q.monto * 0.10;
     } else {
       entry.online += 1;
     }
     if (esVendedorReferido && q.estadoPago === "confirmado") {
-      entry.comision += 2;
+      entry.comision += q.monto * 0.10;
     }
   }
 

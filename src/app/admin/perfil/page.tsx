@@ -592,7 +592,7 @@ function PerfilInner() {
               <>
                 <p className="text-xs text-gray-400 font-medium px-1 uppercase tracking-wider">
                   {porJornada.some((j) => j.tienda > 0)
-                    ? "Comisión por ventas en tienda ($2/quiniela)"
+                    ? "Comisión por ventas en tienda (10% del monto)"
                     : "Ventas por jornada"}
                 </p>
                 <div className="space-y-3">

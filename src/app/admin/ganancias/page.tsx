@@ -180,14 +180,14 @@ export default function GananciasPage() {
                           <div className="px-4 pb-4 space-y-2 bg-gray-50">
                             {j.tienda > 0 && (
                               <div className="flex justify-between text-sm pt-2">
-                                <span className="text-gray-500">🏪 {j.tienda} en tienda × $2</span>
-                                <span className="font-semibold text-amber-700">${fmt(j.tienda * 2)}</span>
+                                <span className="text-gray-500">🏪 {j.tienda} en tienda (10%)</span>
+                                <span className="font-semibold text-amber-700">${fmt(j.comision)}</span>
                               </div>
                             )}
                             {j.online > 0 && (
                               <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">🔗 {j.online} online × $2</span>
-                                <span className="font-semibold text-cyan-700">${fmt(j.online * 2)}</span>
+                                <span className="text-gray-500">🔗 {j.online} online (10% confirmadas)</span>
+                                <span className="font-semibold text-cyan-700">${fmt(j.comision)}</span>
                               </div>
                             )}
                             <div className="flex justify-between text-sm pt-1 border-t border-gray-200">

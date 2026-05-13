@@ -64,10 +64,10 @@ export async function GET(req: NextRequest) {
     e.recaudado += q.monto;
     if (q.canal === "tienda") {
       e.tienda += 1;
-      e.comision += 2; // efectivo en mano → comisión inmediata
+      e.comision += q.monto * 0.10; // 10% del monto → comisión inmediata
     } else {
       e.online += 1;
-      if (q.estadoPago === "confirmado") e.comision += 2; // online → solo al confirmar pago
+      if (q.estadoPago === "confirmado") e.comision += q.monto * 0.10; // online → solo al confirmar pago
     }
   }
 
