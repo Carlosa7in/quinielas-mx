@@ -43,22 +43,18 @@ export default function MiLinkPage() {
   const [generando, setGenerando] = useState(false);
 
   useEffect(() => {
-    // Fetch codigoRef desde endpoint mínimo dedicado (más robusto)
-    // y el resto de datos desde perfil (puede fallar sin bloquear codigoRef)
-    const fetchCodigo = fetch("/api/admin/mi-codigo")
-      .then((r) => r.json())
-      .catch(() => ({}));
+    const get = (url: string) => fetch(url).then((r) => r.json()).catch(() => ({}));
 
-    const fetchPerfil = fetch("/api/admin/perfil")
-      .then((r) => r.json())
-      .catch(() => ({}));
-
-    Promise.all([fetchCodigo, fetchPerfil]).then(([codigo, perfil]) => {
+    Promise.all([
+      get("/api/admin/mi-codigo"),
+      get("/api/admin/jornadas-abiertas"),
+      get("/api/admin/perfil"),
+    ]).then(([codigo, jornadasRes, perfil]) => {
       setData({
-        codigoRef: codigo.codigoRef ?? perfil.usuario?.codigoRef ?? null,
-        esVendedor: (codigo.rol ?? perfil.usuario?.rol) === "vendedor",
-        stats: perfil.stats ?? { totalQuinielas: 0, comisionGanada: 0, comisionPendiente: 0 },
-        jornadasAbiertas: perfil.jornadasAbiertas ?? [],
+        codigoRef:       codigo.codigoRef   ?? perfil.usuario?.codigoRef ?? null,
+        esVendedor:      (codigo.rol ?? perfil.usuario?.rol) === "vendedor",
+        stats:           perfil.stats ?? { totalQuinielas: 0, comisionGanada: 0, comisionPendiente: 0 },
+        jornadasAbiertas: jornadasRes.jornadas ?? perfil.jornadasAbiertas ?? [],
       });
     }).finally(() => setCargando(false));
   }, []);
