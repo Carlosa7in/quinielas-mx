@@ -371,6 +371,8 @@ function EscanearInner() {
     const totalPartidos = jornada?.partidos.length ?? 0;
     const doblesCount  = Object.values(picksDetectados).filter((s) => s.length === 2).length;
     const triplesCount = Object.values(picksDetectados).filter((s) => s.length === 3).length;
+    const combos = Object.values(picksDetectados).reduce((prod, s) => prod * (s.length || 1), 1);
+    const precio = combos * 20;
 
     return (
       <div className="min-h-screen bg-gray-50">
@@ -477,6 +479,26 @@ function EscanearInner() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Precio estimado */}
+          <div className="bg-stone-900 text-white rounded-xl px-4 py-3 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-stone-400 font-semibold uppercase tracking-wide">
+                {combos === 1 ? "Quiniela sencilla" : `${combos} combinaciones`}
+              </p>
+              {combos > 1 && (
+                <p className="text-xs text-stone-400 mt-0.5">
+                  {doblesCount  > 0 && `${doblesCount} doble${doblesCount  > 1 ? "s" : ""}`}
+                  {doblesCount > 0 && triplesCount > 0 && " · "}
+                  {triplesCount > 0 && `${triplesCount} triple${triplesCount > 1 ? "s" : ""}`}
+                </p>
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-black text-amber-400">${precio}</p>
+              {combos > 1 && <p className="text-xs text-stone-500">$20 × {combos}</p>}
             </div>
           </div>
 
