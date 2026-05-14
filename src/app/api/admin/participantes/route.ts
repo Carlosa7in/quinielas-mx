@@ -30,7 +30,6 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  // Calcular stats por cliente
   const resultado = clientes.map((c) => ({
     id: c.id,
     nombre: c.nombre,
@@ -42,8 +41,53 @@ export async function GET(req: NextRequest) {
       : null,
   }));
 
-  // Ordenar por más activos primero
   resultado.sort((a, b) => b.totalQuinielas - a.totalQuinielas);
 
   return NextResponse.json(resultado);
+}
+
+// PATCH /api/admin/participantes — editar nombre y/o teléfono
+export async function PATCH(req: NextRequest) {
+  if (!(await verificarAdmin(req))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+  }
+
+  const { id, nombre, telefono } = await req.json();
+  if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
+
+  const data: { nombre?: string; telefono?: string } = {};
+  if (nombre !== undefined) data.nombre = String(nombre).trim();
+  if (telefono !== undefined) data.telefono = String(telefono).trim();
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
+  }
+
+  const actualizado = await prisma.cliente.update({
+    where: { id },
+    data,
+    select: { id: true, nombre: true, telefono: true },
+  });
+
+  return NextResponse.json(actualizado);
+}
+
+// DELETE /api/admin/participantes — eliminar cliente (y sus quinielas en cascada)
+export async function DELETE(req: NextRequest) {
+  if (!(await verificarAdmin(req))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+  }
+
+  const { id } = await req.json();
+  if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
+
+  // Desvincular quinielas (poner clienteId en null) antes de eliminar el cliente
+  await prisma.quiniela.updateMany({
+    where: { clienteId: id },
+    data: { clienteId: null },
+  });
+
+  await prisma.cliente.delete({ where: { id } });
+
+  return NextResponse.json({ ok: true });
 }
