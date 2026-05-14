@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma, sql } from "@/lib/prisma";
 
-import { PORCENTAJE_DUENOS, COMISION_TIENDA } from "@/lib/config";
+import { PORCENTAJE_DUENOS, COMISION_PCT } from "@/lib/config";
 import { calcularFechaCierre } from "@/lib/fechas";
 
 // GET /api/bolsa — pública, sin auth
@@ -83,10 +83,10 @@ export async function GET() {
   const jornadasResult: JornadaBolsa[] = jornadasAbiertas.map((j) => {
     const qs = quinielas.filter((q) => q.jornadaId === j.id);
     const recaudado = qs.reduce((s, q) => s + q.monto, 0);
-    const tienda = qs.filter((q) => q.canal === "tienda").length;
+    // 10% de comisión sobre cada venta confirmada (tienda, referido y directa)
+    const cutComisiones = qs.reduce((s, q) => s + q.monto * COMISION_PCT, 0);
     const cutDuenos = recaudado * PORCENTAJE_DUENOS;
-    const cutTienda = tienda * COMISION_TIENDA;
-    const bolsa = Math.max(recaudado - cutDuenos - cutTienda, 0);
+    const bolsa = Math.max(recaudado - cutDuenos - cutComisiones, 0);
 
     const base = primerPartidoPorJornada.get(j.id) ?? null;
     const fechaCierre = base ? calcularFechaCierre(base) : null;
@@ -106,10 +106,9 @@ export async function GET() {
 
   // 5. Totales globales
   const totalRecaudado = quinielas.reduce((s, q) => s + q.monto, 0);
-  const quinielasTienda = quinielas.filter((q) => q.canal === "tienda").length;
   const cutDuenosTotal = totalRecaudado * PORCENTAJE_DUENOS;
-  const cutTiendaTotal = quinielasTienda * COMISION_TIENDA;
-  const bolsaTotal = Math.max(totalRecaudado - cutDuenosTotal - cutTiendaTotal, 0);
+  const cutComisionesTotal = quinielas.reduce((s, q) => s + q.monto * COMISION_PCT, 0);
+  const bolsaTotal = Math.max(totalRecaudado - cutDuenosTotal - cutComisionesTotal, 0);
 
   // primerPartidoFecha global (el más próximo entre todas las jornadas) — mantener por compat.
   const todasLasFechas = jornadasResult

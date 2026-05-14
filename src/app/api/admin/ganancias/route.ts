@@ -92,26 +92,36 @@ export async function GET(req: NextRequest) {
     const numAdmins = await prisma.usuario.count({ where: { rol: "superadmin" } });
     const todasQ = await prisma.quiniela.findMany({
       select: {
-        jornadaId: true, monto: true,
+        jornadaId: true, monto: true, canal: true, usuarioId: true, estadoPago: true,
         jornada: { select: { id: true, nombre: true, numero: true, liga: true, temporada: true } },
       },
     });
 
-    const recMap = new Map<string, { recaudado: number; nombre: string; liga: string; temporada: string }>();
+    const recMap = new Map<string, {
+      recaudado: number; comisionDirecta: number;
+      nombre: string; liga: string; temporada: string;
+    }>();
     for (const q of todasQ) {
       if (!recMap.has(q.jornadaId)) {
         recMap.set(q.jornadaId, {
-          recaudado: 0,
+          recaudado: 0, comisionDirecta: 0,
           nombre: q.jornada.nombre ?? `Jornada ${q.jornada.numero}`,
           liga: q.jornada.liga,
           temporada: q.jornada.temporada,
         });
       }
-      recMap.get(q.jornadaId)!.recaudado += q.monto;
+      const entry = recMap.get(q.jornadaId)!;
+      entry.recaudado += q.monto;
+      // Ventas directas (online sin referido, confirmadas) → 10% va a la casa
+      const esDirecta = q.canal !== "tienda" && q.usuarioId === null && q.estadoPago === "confirmado";
+      if (esDirecta) entry.comisionDirecta += q.monto * 0.10;
     }
 
     for (const [jId, d] of recMap) {
-      const miParte = numAdmins > 0 ? (d.recaudado * 0.15) / numAdmins : 0;
+      // Mi parte = 15% del total ÷ superadmins + comisión directa ÷ superadmins
+      const miParte = numAdmins > 0
+        ? (d.recaudado * 0.15 + d.comisionDirecta) / numAdmins
+        : 0;
       const pago = pagosPorJornada.get(jId);
       comisionesAdmin.push({
         jornadaId: jId, jornadaNombre: d.nombre, liga: d.liga, temporada: d.temporada,
