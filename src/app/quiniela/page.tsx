@@ -5,6 +5,7 @@ import { LogoEquipo } from "@/components/LogoEquipo";
 import { RegistroCerrado } from "@/components/RegistroCerrado";
 import { calcularFechaCierre } from "@/lib/fechas";
 import { LIGA_ICON } from "@/lib/equipos";
+import { telefonoFalso } from "@/lib/telefono";
 
 type Partido = {
   id: string;
@@ -376,6 +377,7 @@ function QuinielaInner() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!todasCompletas || !nombreCompleto(nombre) || registroCerrado) return;
+    if (telefono && telefonoFalso(telefono)) { setError("Ingresa un número de teléfono real"); setEnviando(false); return; }
     setEnviando(true);
     setError("");
 
@@ -557,13 +559,17 @@ function QuinielaInner() {
               maxLength={10}
               inputMode="numeric"
               className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                telefono.replace(/\D/g, "").length > 0 && telefono.replace(/\D/g, "").length < 10
+                (telefono.replace(/\D/g, "").length > 0 && telefono.replace(/\D/g, "").length < 10) ||
+                (telefono.replace(/\D/g, "").length === 10 && telefonoFalso(telefono))
                   ? "border-red-300"
                   : "border-gray-200"
               }`}
             />
             {telefono.replace(/\D/g, "").length > 0 && telefono.replace(/\D/g, "").length < 10 && (
               <p className="text-xs text-red-500 mt-1 px-1">El teléfono debe tener 10 dígitos</p>
+            )}
+            {telefono.replace(/\D/g, "").length === 10 && telefonoFalso(telefono) && (
+              <p className="text-xs text-red-500 mt-1 px-1">Ingresa un número de teléfono real</p>
             )}
           </div>
         </div>

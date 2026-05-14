@@ -7,6 +7,7 @@ import { LogoEquipo } from "@/components/LogoEquipo";
 import { JornadaSelector, type JornadaResumen } from "@/components/JornadaSelector";
 import { RegistroCerrado } from "@/components/RegistroCerrado";
 import { calcularFechaCierre } from "@/lib/fechas";
+import { telefonoFalso } from "@/lib/telefono";
 
 type Partido = {
   id: string;
@@ -952,6 +953,9 @@ export default function TiendaPage() {
             />
             {telefono.replace(/\D/g, "").length > 0 && telefono.replace(/\D/g, "").length < 10 && (
               <p className="text-xs text-red-500 mt-1.5 px-1">El teléfono debe tener 10 dígitos</p>
+            )}
+            {telefono.replace(/\D/g, "").length === 10 && telefonoFalso(telefono) && (
+              <p className="text-xs text-orange-500 mt-1.5 px-1">⚠️ Ese número parece inválido</p>
             )}
             {buscandoCliente && telefono.replace(/\D/g, "").length === 10 && (
               <p className="text-xs text-gray-400 mt-1.5 px-1">Buscando...</p>

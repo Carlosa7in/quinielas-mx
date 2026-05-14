@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, use } from "react";
 import { getLogoUrl } from "@/lib/equipos";
+import { telefonoFalso } from "@/lib/telefono";
 
 const PRECIO_BASE = 20;
 
@@ -157,7 +158,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
 
   const todosSeleccionados = picks.length > 0 && picks.every((s) => s.length > 0);
   const nombreValido = nombreCompleto(nombre);
-  const telValido = telefono.replace(/\D/g, "").length === 10;
+  const telValido = telefono.replace(/\D/g, "").length === 10 && !telefonoFalso(telefono);
   const puedeEnviar = todosSeleccionados && nombreValido && telValido;
 
   const combos = combosTotal(picks);
@@ -482,6 +483,9 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
                 className="flex-1 px-3 py-2.5 text-sm focus:outline-none"
               />
             </div>
+            {telefono.length === 10 && telefonoFalso(telefono) && (
+              <p className="text-xs text-red-500 mt-1">Ingresa un número de teléfono real</p>
+            )}
           </div>
         </div>
 

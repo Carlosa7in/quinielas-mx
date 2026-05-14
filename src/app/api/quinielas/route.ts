@@ -3,11 +3,13 @@ import { getToken } from "next-auth/jwt";
 import { prisma, sql } from "@/lib/prisma";
 import { generarFolio } from "@/lib/folio";
 import { calcularFechaCierre } from "@/lib/fechas";
+import { telefonoFalso } from "@/lib/telefono";
 
 // Calcula cuántas combinaciones hay (producto cartesiano de opciones) — para el monto
 function numeroCombinaciones(picks: { predicciones: string[] }[]): number {
   return picks.reduce((prod, p) => prod * Math.max(1, p.predicciones.length), 1);
 }
+
 
 // POST /api/quinielas - registrar quiniela (sencilla, reventado o múltiples boletos)
 export async function POST(req: NextRequest) {
@@ -20,6 +22,9 @@ export async function POST(req: NextRequest) {
 
   if (!jornadaId || !picks || picks.length === 0) {
     return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
+  }
+  if (telefono && telefonoFalso(telefono)) {
+    return NextResponse.json({ error: "Número de teléfono inválido" }, { status: 400 });
   }
 
   // Normalizar picks: aceptar formato viejo {partidoId, prediccion} y nuevo {partidoId, predicciones}
