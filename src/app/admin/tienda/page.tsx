@@ -342,7 +342,13 @@ export default function TiendaPage() {
                 onClick={() => setMostrarQR((v) => !v)}
                 className="bg-white/10 hover:bg-white/20 text-white text-sm px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
               >
-                <span>📲</span> Mi QR
+                <span>📲</span> Ver QR
+              </button>
+              <button
+                onClick={() => window.open(`/kiosko/qr/${usuarioId}`, "_blank")}
+                className="bg-white/10 hover:bg-white/20 text-white text-sm px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <span>🖨️</span> Imprimir
               </button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "36px", objectFit: "contain" }} />

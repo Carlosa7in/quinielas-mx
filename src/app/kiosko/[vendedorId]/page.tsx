@@ -3,6 +3,32 @@ import { useState, useEffect, use } from "react";
 
 const PRECIO_BASE = 20;
 
+// ── Logo helper ──────────────────────────────────────────────────────────────
+function slugify(str: string): string {
+  return str.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
+function buscarLogo(map: Record<string, string>, equipo: string): string | null {
+  return map[equipo] ?? map[slugify(equipo)] ?? null;
+}
+function Iniciales({ nombre, size = 28 }: { nombre: string; size?: number }) {
+  const ini = nombre.split(" ").filter((w) => w.length > 2).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || nombre.slice(0, 2).toUpperCase();
+  return (
+    <div className="rounded-full bg-amber-100 flex items-center justify-center font-bold text-amber-800 shrink-0"
+      style={{ width: size, height: size, fontSize: size * 0.35 }}>
+      {ini}
+    </div>
+  );
+}
+function LogoEquipo({ equipo, logoMap, size = 32 }: { equipo: string; logoMap: Record<string, string>; size?: number }) {
+  const url = buscarLogo(logoMap, equipo);
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [equipo]);
+  if (!url || broken) return <Iniciales nombre={equipo} size={size} />;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt={equipo} width={size} height={size} onError={() => setBroken(true)}
+    style={{ width: size, height: size, objectFit: "contain" }} className="shrink-0" />;
+}
+
 type Partido = {
   id: string;
   equipoLocal: string;
@@ -57,6 +83,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState("");
   const [enviado, setEnviado] = useState(false);
+  const [logoMap, setLogoMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetch(`/api/kiosko?vendedorId=${vendedorId}`)
@@ -65,6 +92,11 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
         if (d.error) { setErrorCarga(d.error); return; }
         setDatos(d);
         setPicks(new Array(d.jornada.partidos.length).fill(null).map(() => []));
+        // Cargar logos de la liga
+        fetch(`/api/logos?liga=${encodeURIComponent(d.jornada.liga)}`)
+          .then((r) => r.json())
+          .then((m) => typeof m === "object" && setLogoMap(m))
+          .catch(() => {});
       })
       .catch(() => setErrorCarga("No se pudo cargar la jornada"));
   }, [vendedorId]);
@@ -258,15 +290,17 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
                 "border-2 border-transparent"
               }`}
             >
-              {/* Número + equipos */}
+              {/* Número + equipos + logos */}
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-5 h-5 bg-gray-100 rounded-full text-[10px] font-bold text-gray-400 flex items-center justify-center shrink-0">
                   {idx + 1}
                 </span>
-                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <LogoEquipo equipo={p.equipoLocal} logoMap={logoMap} size={28} />
                   <span className="font-semibold text-gray-800 text-sm truncate flex-1">{p.equipoLocal}</span>
                   <span className="text-gray-300 text-xs shrink-0">vs</span>
                   <span className="font-semibold text-gray-800 text-sm truncate flex-1 text-right">{p.equipoVisita}</span>
+                  <LogoEquipo equipo={p.equipoVisita} logoMap={logoMap} size={28} />
                 </div>
                 {badgeCombo(sel.length)}
               </div>
