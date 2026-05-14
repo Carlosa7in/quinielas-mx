@@ -121,7 +121,7 @@ export default function TiendaPage() {
 
   const cargarDesdeKiosko = async (pr: PreReg) => {
     // 1. Obtener datos de la jornada
-    const res = await fetch(`/api/admin/jornada?id=${pr.jornadaId}`).catch(() => null);
+    const res = await fetch(`/api/jornadas?id=${pr.jornadaId}`).catch(() => null);
     if (!res?.ok) return;
     const jornadaData = await res.json();
     if (!jornadaData?.id) return;
