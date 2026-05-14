@@ -161,7 +161,7 @@ async function dibujarFlyer(
   // Primero obtenemos el mapa nombre→URL para la liga de esta jornada.
   // Para jornadas Mixtas cargamos todas las ligas soportadas.
   const ligas = liga === "Mixta"
-    ? ["Liga MX", "Champions League", "Premier League", "La Liga", "Serie A"]
+    ? ["Liga MX", "Champions League", "Premier League", "La Liga", "Serie A", "Ligue 1", "Brasileirão"]
     : [liga];
 
   const logoUrlMaps = await Promise.all(

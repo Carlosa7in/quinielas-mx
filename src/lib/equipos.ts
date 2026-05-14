@@ -143,6 +143,7 @@ const LOGOS: Record<string, string> = {
   "Auxerre":                  "https://a.espncdn.com/i/teamlogos/soccer/500/172.png",
   "Angers":                   "https://a.espncdn.com/i/teamlogos/soccer/500/7868.png",
   "Saint-Étienne":            "https://a.espncdn.com/i/teamlogos/soccer/500/178.png",
+  "Paris FC":                 "https://a.espncdn.com/i/teamlogos/soccer/500/5591.png",
 
   // ── Brasileirão ───────────────────────────────────────────────────
   // IDs reales de ESPN soccer

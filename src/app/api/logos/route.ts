@@ -8,6 +8,8 @@ const LIGA_ESPN: Record<string, string> = {
   "Premier League":   "eng.1",
   "La Liga":          "esp.1",
   "Serie A":          "ita.1",
+  "Ligue 1":          "fra.1",
+  "Brasileirão":      "bra.1",
 };
 
 // Quita acentos y pasa a minúsculas para comparación flexible
@@ -62,6 +64,31 @@ const NOMBRE_MAP: Record<string, string> = {
   "Manchester United":           "Manchester United",
   "Manchester City":             "Manchester City",
   "Nottingham Forest":           "Nottingham Forest",
+  // Ligue 1
+  "Olympique Lyonnais":          "Lyon",
+  "RC Lens":                     "Lens",
+  "Stade Rennais FC":            "Rennes",
+  "Stade Brestois 29":           "Brest",
+  "Stade de Reims":              "Reims",
+  "Montpellier HSC":             "Montpellier",
+  "FC Nantes":                   "Nantes",
+  "Toulouse FC":                 "Toulouse",
+  "Le Havre AC":                 "Le Havre",
+  "Olympique de Marseille":      "Olympique de Marseille",
+  "AS Monaco":                   "Monaco",
+  "Paris FC":                    "Paris FC",
+  // Brasileirão
+  "SC Internacional":            "Internacional",
+  "Club de Regatas Vasco da Gama": "Vasco da Gama",
+  "Fluminense FC":               "Fluminense",
+  "São Paulo FC":                "São Paulo",
+  "Sport Club Corinthians Paulista": "Corinthians",
+  "Grêmio FBPA":                 "Grêmio",
+  "Club Athletico Paranaense":   "Athletico Paranaense",
+  "Clube Atlético Mineiro":      "Atlético Mineiro",
+  "Botafogo de Futebol e Regatas": "Botafogo",
+  "Sociedade Esportiva Palmeiras": "Palmeiras",
+  "Clube de Regatas do Flamengo": "Flamengo",
 };
 
 function normalizar(nombre: string): string {
