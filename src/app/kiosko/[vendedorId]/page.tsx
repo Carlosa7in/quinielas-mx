@@ -72,6 +72,15 @@ function badgeCombo(n: number) {
   return null;
 }
 
+// Primera letra de cada palabra en mayúscula
+const toTitleCase = (str: string) => str.replace(/\b\w/g, (c) => c.toUpperCase());
+const nombreCompleto = (str: string) => str.trim().split(/\s+/).length >= 2;
+
+// Rellena picks vacíos con una opción al azar (respeta los ya seleccionados)
+function rellenarAzar(picks: Picks): Picks {
+  return picks.map((sel) => sel.length > 0 ? sel : [OPCIONES[Math.floor(Math.random() * OPCIONES.length)]]);
+}
+
 export default function KioskoPage({ params }: { params: Promise<{ vendedorId: string }> }) {
   const { vendedorId } = use(params);
 
@@ -113,7 +122,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   };
 
   const todosSeleccionados = picks.length > 0 && picks.every((s) => s.length > 0);
-  const nombreValido = nombre.trim().split(/\s+/).length >= 2;
+  const nombreValido = nombreCompleto(nombre);
   const telValido = telefono.replace(/\D/g, "").length === 10;
   const puedeEnviar = todosSeleccionados && nombreValido && telValido;
 
@@ -278,6 +287,21 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
           </div>
         </div>
 
+        {/* Botón rellenar al azar */}
+        <div className="flex items-center justify-between px-1 pt-1">
+          <p className="text-xs text-gray-400">
+            {todosSeleccionados
+              ? `${picks.filter((s) => s.length > 1).length > 0 ? "Con dobles/triples ✓" : "Todos seleccionados ✓"}`
+              : `${picks.filter((s) => s.length > 0).length} de ${picks.length} partidos`}
+          </p>
+          <button
+            onClick={() => setPicks((prev) => rellenarAzar(prev))}
+            className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-700 font-semibold px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
+          >
+            🎲 Rellenar al azar
+          </button>
+        </div>
+
         {jornada.partidos.map((p, idx) => {
           const sel = picks[idx] ?? [];
           return (
@@ -337,12 +361,13 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
             <input
               type="text"
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={(e) => setNombre(toTitleCase(e.target.value))}
               placeholder="Nombre Apellido"
+              autoCapitalize="words"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             {nombre.length > 2 && !nombreValido && (
-              <p className="text-xs text-orange-400 mt-1">Ingresa nombre y apellido</p>
+              <p className="text-xs text-orange-400 mt-1">Ingresa nombre y al menos un apellido</p>
             )}
           </div>
           <div>
