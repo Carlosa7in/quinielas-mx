@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, use } from "react";
+import { getLogoUrl } from "@/lib/equipos";
 
 const PRECIO_BASE = 20;
 
@@ -20,12 +21,14 @@ function Iniciales({ nombre, size = 28 }: { nombre: string; size?: number }) {
   );
 }
 function LogoEquipo({ equipo, logoMap, size = 32 }: { equipo: string; logoMap: Record<string, string>; size?: number }) {
-  const url = buscarLogo(logoMap, equipo);
+  // 1. Dynamic ESPN map (freshest)  2. Static map from equipos.ts (most reliable)
+  const url = buscarLogo(logoMap, equipo) || getLogoUrl(equipo) || "";
   const [broken, setBroken] = useState(false);
-  useEffect(() => setBroken(false), [equipo]);
+  useEffect(() => setBroken(false), [url]);   // reset when url changes (map loaded)
   if (!url || broken) return <Iniciales nombre={equipo} size={size} />;
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={url} alt={equipo} width={size} height={size} onError={() => setBroken(true)}
+  return <img src={url} alt={equipo} width={size} height={size}
+    onError={() => setBroken(true)}
     style={{ width: size, height: size, objectFit: "contain" }} className="shrink-0" />;
 }
 

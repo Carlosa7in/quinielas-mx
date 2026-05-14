@@ -2,6 +2,65 @@
 import { useState, useEffect } from "react";
 import { getLogoUrl } from "@/lib/equipos";
 
+const PAGES_CON_LOGOS = [
+  {
+    pagina: "/admin/tienda",
+    descripcion: "Registro en tienda — selección manual de picks",
+    componente: "LogoEquipo",
+    fuente: "static" as const,
+    ligas: "Jornada activa",
+    nota: "Usa mapa estático de equipos.ts. Falla si el equipo no está en LOGOS{}.",
+  },
+  {
+    pagina: "/admin/escanear",
+    descripcion: "Escaneo de forma en tienda",
+    componente: "LogoEquipo",
+    fuente: "static" as const,
+    ligas: "Jornada activa",
+    nota: "Usa mapa estático de equipos.ts.",
+  },
+  {
+    pagina: "/admin/registrar",
+    descripcion: "Registro de resultados",
+    componente: "LogoEquipo",
+    fuente: "static" as const,
+    ligas: "Jornada activa",
+    nota: "Usa mapa estático de equipos.ts.",
+  },
+  {
+    pagina: "/admin/premiacion",
+    descripcion: "Pantalla de premiación / ganadores",
+    componente: "LogoEquipo",
+    fuente: "static" as const,
+    ligas: "Jornada activa",
+    nota: "Usa mapa estático de equipos.ts.",
+  },
+  {
+    pagina: "/admin/mi-link → FlyerJornada",
+    descripcion: "Generación del flyer (canvas) para compartir",
+    componente: "FlyerJornada (canvas)",
+    fuente: "dynamic" as const,
+    ligas: "Liga MX, Champions, Premier, La Liga, Serie A, Ligue 1, Brasileirão",
+    nota: "Fetch a /api/logos + NOMBRE_MAP. Falla si ESPN cambia el displayName del equipo.",
+  },
+  {
+    pagina: "/kiosko/[vendedorId]",
+    descripcion: "Página del cliente en tienda (pública)",
+    componente: "LogoEquipo inline",
+    fuente: "both" as const,
+    ligas: "Jornada activa",
+    nota: "Fetch a /api/logos (primero) + getLogoUrl de equipos.ts (respaldo).",
+  },
+  {
+    pagina: "/quiniela",
+    descripcion: "Registro público de quiniela (cliente)",
+    componente: "LogoEquipo",
+    fuente: "static" as const,
+    ligas: "Jornada activa",
+    nota: "Usa mapa estático de equipos.ts.",
+  },
+];
+
 type Equipo = {
   id: string;
   nombre: string;
@@ -176,6 +235,43 @@ export default function LogosCheckDbPage() {
             <p>No hay equipos para esta liga en la BD</p>
           </div>
         )}
+
+        {/* ── Registro de páginas con logos ── */}
+        <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-gray-800">📍 Dónde se usan logos en el sitio</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Referencia para saber qué fuente corregir cuando falle un logo
+              </p>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {PAGES_CON_LOGOS.map((p) => (
+              <div key={p.pagina} className="px-4 py-3 flex items-start gap-3">
+                <span className={`mt-0.5 shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  p.fuente === "static"  ? "bg-blue-100 text-blue-700" :
+                  p.fuente === "dynamic" ? "bg-purple-100 text-purple-700" :
+                                           "bg-teal-100 text-teal-700"
+                }`}>
+                  {p.fuente === "static" ? "ESTÁTICO" : p.fuente === "dynamic" ? "ESPN" : "AMBOS"}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-mono text-xs font-bold text-gray-700">{p.pagina}</p>
+                  <p className="text-sm text-gray-600 mt-0.5">{p.descripcion}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{p.nota}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
+            <p className="text-xs text-gray-500">
+              <strong>ESTÁTICO</strong> = corregir en <code className="bg-gray-100 px-1 rounded">src/lib/equipos.ts → LOGOS{"{}"}</code> · {" "}
+              <strong>ESPN</strong> = corregir en <code className="bg-gray-100 px-1 rounded">src/app/api/logos/route.ts → NOMBRE_MAP</code> · {" "}
+              <strong>AMBOS</strong> = ambas fuentes como respaldo
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
