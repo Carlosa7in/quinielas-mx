@@ -114,8 +114,11 @@ export default function ComisionesPage() {
   const totalComisiones = reporte.reduce((s, v) => s + v.comisionTotal, 0);
   const totalPendiente = reporte.reduce((s, v) => s + v.pendientePago, 0);
 
-  const reporteConVentas = reporte.filter((v) => v.total > 0).sort((a, b) => b.total - a.total);
-  const reporteSinVentas = reporte.filter((v) => v.total === 0);
+  const reporteConVentas = reporte
+    .filter((v) => v.total > 0 || v.comisionTotal > 0 || v.comisionAdminTotal > 0)
+    .sort((a, b) => b.total - a.total);
+  const reporteSinVentas = reporte
+    .filter((v) => v.total === 0 && v.comisionTotal === 0 && v.comisionAdminTotal === 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -164,7 +167,7 @@ export default function ComisionesPage() {
         </div>
 
         {/* Desglose financiero — solo superadmin */}
-        {esSuperadmin && recaudadoGeneral > 0 && (
+        {esSuperadmin && baseDesglose > 0 && (
           <div className="bg-stone-900 text-white rounded-2xl p-4 space-y-3">
             <p className="text-xs font-bold tracking-widest text-stone-400 uppercase">Desglose financiero</p>
             <div className="space-y-2 text-sm">
