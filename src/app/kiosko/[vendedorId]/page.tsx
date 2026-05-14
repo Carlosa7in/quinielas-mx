@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, use } from "react";
 
+const PRECIO_BASE = 20;
+
 type Partido = {
   id: string;
   equipoLocal: string;
@@ -21,54 +23,75 @@ type KioskoData = {
   jornada: JornadaInfo;
 };
 
-type Pick = "L" | "E" | "V" | null;
+// picks[i] = array de opciones seleccionadas para el partido i
+// ej. [] = sin selección, ["L"] = simple, ["L","E"] = doble, ["L","E","V"] = triple
+type Picks = string[][];
 
-const PICK_LABELS: Record<string, string> = { L: "L", E: "E", V: "V" };
-const PICK_COLORS: Record<string, string> = {
-  L: "bg-amber-500 text-white border-amber-500",
-  E: "bg-gray-500 text-white border-gray-500",
-  V: "bg-blue-600 text-white border-blue-600",
+const OPCIONES = ["L", "E", "V"] as const;
+
+const OPCION_STYLES: Record<string, { active: string; label: string }> = {
+  L: { active: "bg-amber-500 border-amber-500 text-white shadow-md scale-105", label: "Local" },
+  E: { active: "bg-gray-600 border-gray-600 text-white shadow-md scale-105",   label: "Empate" },
+  V: { active: "bg-blue-600 border-blue-600 text-white shadow-md scale-105",   label: "Visitante" },
 };
-const PICK_IDLE = "bg-white text-gray-600 border-gray-200 hover:border-gray-400";
+const IDLE = "bg-white border-gray-200 text-gray-500 hover:border-gray-400 hover:bg-gray-50";
+
+function combosTotal(picks: Picks): number {
+  return picks.reduce((prod, sel) => prod * (sel.length || 1), 1);
+}
+
+function badgeCombo(n: number) {
+  if (n === 2) return <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full ml-1">2×</span>;
+  if (n === 3) return <span className="text-[10px] font-bold bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-full ml-1">3×</span>;
+  return null;
+}
 
 export default function KioskoPage({ params }: { params: Promise<{ vendedorId: string }> }) {
   const { vendedorId } = use(params);
 
   const [datos, setDatos] = useState<KioskoData | null>(null);
-  const [error, setError] = useState("");
-  const [picks, setPicks] = useState<Pick[]>([]);
+  const [errorCarga, setErrorCarga] = useState("");
+  const [picks, setPicks] = useState<Picks>([]);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [errorEnvio, setErrorEnvio] = useState("");
   const [enviado, setEnviado] = useState(false);
 
   useEffect(() => {
     fetch(`/api/kiosko?vendedorId=${vendedorId}`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.error) { setError(d.error); return; }
+        if (d.error) { setErrorCarga(d.error); return; }
         setDatos(d);
-        setPicks(new Array(d.jornada.partidos.length).fill(null));
+        setPicks(new Array(d.jornada.partidos.length).fill(null).map(() => []));
       })
-      .catch(() => setError("No se pudo cargar la jornada"));
+      .catch(() => setErrorCarga("No se pudo cargar la jornada"));
   }, [vendedorId]);
 
-  const seleccionarPick = (idx: number, pick: Pick) => {
+  const togglePick = (idx: number, opcion: string) => {
     setPicks((prev) => {
-      const next = [...prev];
-      next[idx] = next[idx] === pick ? null : pick;
+      const next = prev.map((s) => [...s]);
+      const sel = next[idx];
+      const i = sel.indexOf(opcion);
+      if (i >= 0) sel.splice(i, 1);
+      else sel.push(opcion);
       return next;
     });
   };
 
-  const todosSeleccionados = picks.length > 0 && picks.every((p) => p !== null);
+  const todosSeleccionados = picks.length > 0 && picks.every((s) => s.length > 0);
   const nombreValido = nombre.trim().split(/\s+/).length >= 2;
   const telValido = telefono.replace(/\D/g, "").length === 10;
   const puedeEnviar = todosSeleccionados && nombreValido && telValido;
 
+  const combos = combosTotal(picks);
+  const precio = combos * PRECIO_BASE;
+
   const handleEnviar = async () => {
     if (!puedeEnviar || !datos) return;
     setEnviando(true);
+    setErrorEnvio("");
     try {
       const res = await fetch("/api/kiosko", {
         method: "POST",
@@ -78,37 +101,42 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
           jornadaId: datos.jornada.id,
           nombre: nombre.trim(),
           telefono: telefono.replace(/\D/g, ""),
-          picks,
+          picks,                   // [["L"], ["L","E"], ["V"], ...]
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al enviar");
       setEnviado(true);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Error al enviar");
+      setErrorEnvio(e instanceof Error ? e.message : "Error al enviar");
     } finally {
       setEnviando(false);
     }
   };
 
-  // ── Estado: enviado ────────────────────────────────────────────────────────
+  const reiniciar = () => {
+    setEnviado(false);
+    setPicks(new Array(datos?.jornada.partidos.length ?? 0).fill(null).map(() => []));
+    setNombre("");
+    setTelefono("");
+    setErrorEnvio("");
+  };
+
+  /* ── Pantalla de confirmación ────────────────────────────────────────────── */
   if (enviado) {
     return (
-      <div className="min-h-screen bg-amber-50 flex flex-col items-center justify-center px-6 text-center">
+      <div className="min-h-screen bg-gradient-to-b from-amber-600 to-amber-800 flex flex-col items-center justify-center px-6 text-center text-white">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "56px", objectFit: "contain" }} className="mb-6 opacity-90" />
         <div className="text-6xl mb-4">🎉</div>
-        <h1 className="text-2xl font-black text-amber-900 mb-2">¡Listo!</h1>
-        <p className="text-amber-800 text-lg font-medium mb-1">Picks enviados</p>
-        <p className="text-amber-700 text-sm mb-6">
-          Acércate al vendedor para confirmar tu quiniela y pagar.
+        <h1 className="text-2xl font-black mb-2">¡Picks enviados!</h1>
+        <p className="text-amber-100 text-lg mb-1">Tu quiniela está lista.</p>
+        <p className="text-amber-200 text-sm mb-8">
+          Acércate al vendedor para confirmar y pagar <strong className="text-white">${precio}</strong>.
         </p>
         <button
-          onClick={() => {
-            setEnviado(false);
-            setPicks(new Array(datos?.jornada.partidos.length ?? 0).fill(null));
-            setNombre("");
-            setTelefono("");
-          }}
-          className="bg-amber-700 hover:bg-amber-600 text-white font-bold px-6 py-3 rounded-xl"
+          onClick={reiniciar}
+          className="bg-white text-amber-800 font-bold px-8 py-3 rounded-2xl shadow-lg hover:bg-amber-50 transition-colors"
         >
           Nueva quiniela
         </button>
@@ -116,86 +144,135 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
     );
   }
 
-  // ── Estado: error ──────────────────────────────────────────────────────────
-  if (error && !datos) {
+  /* ── Pantalla de error de carga ──────────────────────────────────────────── */
+  if (errorCarga) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-6 text-center">
-        <div className="text-5xl mb-4">⚽</div>
-        <p className="text-gray-500 font-medium">{error}</p>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-6 text-center gap-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "48px", objectFit: "contain" }} />
+        <p className="text-4xl">⚽</p>
+        <p className="text-gray-600 font-medium">{errorCarga}</p>
       </div>
     );
   }
 
-  // ── Estado: cargando ───────────────────────────────────────────────────────
+  /* ── Cargando ────────────────────────────────────────────────────────────── */
   if (!datos) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400">Cargando jornada...</p>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "44px", objectFit: "contain" }} />
+        <p className="text-gray-400 text-sm animate-pulse">Cargando jornada...</p>
       </div>
     );
   }
 
   const { jornada, vendedor } = datos;
+  const faltanPicks = picks.filter((s) => s.length === 0).length;
 
-  // ── Render principal ───────────────────────────────────────────────────────
+  /* ── Página principal ────────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-gray-50">
+
       {/* Header */}
-      <div className="bg-brand text-white py-4 px-4">
+      <div className="bg-brand text-white px-4 pt-5 pb-6">
         <div className="max-w-lg mx-auto">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "38px", objectFit: "contain" }} />
+            <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "40px", objectFit: "contain" }} />
             <div className="text-right">
-              <p className="text-xs text-amber-400">{vendedor.puntoVenta ?? vendedor.nombre}</p>
-              <p className="text-sm font-bold">{jornada.liga}</p>
+              <p className="text-amber-400 text-xs font-medium">{vendedor.puntoVenta ?? vendedor.nombre}</p>
+              <p className="text-xs text-white/60">{jornada.liga} · {jornada.temporada}</p>
             </div>
           </div>
-          <div className="mt-2">
-            <p className="text-amber-300 text-xs uppercase tracking-wide font-semibold">Tus picks para</p>
-            <h1 className="text-xl font-black">{jornada.nombre}</h1>
+          <h1 className="text-2xl font-black leading-tight">{jornada.nombre}</h1>
+          <p className="text-amber-300 text-sm mt-1">Elige tu resultado para cada partido</p>
+
+          {/* Precio en vivo */}
+          <div className="mt-4 bg-white/10 rounded-2xl px-4 py-3 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-amber-300 font-semibold uppercase tracking-wide">Tu quiniela</p>
+              <p className="text-white text-sm">
+                {combos === 1
+                  ? "1 combinación"
+                  : <><span className="font-bold text-amber-200">{combos}</span> combinaciones</>}
+                {combos > 1 && (
+                  <span className="ml-2 text-xs text-amber-300/80">
+                    ({picks.filter((s) => s.length === 2).length > 0 && `${picks.filter((s) => s.length === 2).length} doble${picks.filter((s) => s.length === 2).length > 1 ? "s" : ""}`}
+                    {picks.filter((s) => s.length === 2).length > 0 && picks.filter((s) => s.length === 3).length > 0 && ", "}
+                    {picks.filter((s) => s.length === 3).length > 0 && `${picks.filter((s) => s.length === 3).length} triple${picks.filter((s) => s.length === 3).length > 1 ? "s" : ""}`})
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-black text-amber-300">${precio}</p>
+              <p className="text-xs text-white/50">${PRECIO_BASE} × {combos}</p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-4 space-y-3 pb-32">
-        {/* Instrucción */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
-          Selecciona <strong>L</strong> (local), <strong>E</strong> (empate) o <strong>V</strong> (visitante) para cada partido.
-        </div>
+      {/* Partidos */}
+      <div className="max-w-lg mx-auto px-4 py-4 space-y-2.5 pb-40">
 
-        {/* Partidos */}
+        <p className="text-xs text-gray-400 font-medium px-1">
+          Puedes seleccionar <strong>L</strong> (local), <strong>E</strong> (empate) o <strong>V</strong> (visitante).
+          Toca <strong>2 o 3</strong> opciones para jugar doble o triple.
+        </p>
+
         {jornada.partidos.map((p, idx) => {
-          const pick = picks[idx];
+          const sel = picks[idx] ?? [];
           return (
-            <div key={p.id} className="bg-white rounded-xl shadow-sm p-3">
-              {/* Equipos */}
-              <div className="flex items-center justify-between mb-2.5 px-1">
-                <span className="font-semibold text-gray-800 text-sm flex-1 truncate">{p.equipoLocal}</span>
-                <span className="text-gray-400 text-xs mx-2 shrink-0">vs</span>
-                <span className="font-semibold text-gray-800 text-sm flex-1 text-right truncate">{p.equipoVisita}</span>
+            <div
+              key={p.id}
+              className={`bg-white rounded-2xl shadow-sm p-4 transition-all ${
+                sel.length === 0 ? "border-2 border-transparent" :
+                sel.length === 2 ? "border-2 border-purple-300" :
+                sel.length === 3 ? "border-2 border-rose-300" :
+                "border-2 border-transparent"
+              }`}
+            >
+              {/* Número + equipos */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-5 h-5 bg-gray-100 rounded-full text-[10px] font-bold text-gray-400 flex items-center justify-center shrink-0">
+                  {idx + 1}
+                </span>
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <span className="font-semibold text-gray-800 text-sm truncate flex-1">{p.equipoLocal}</span>
+                  <span className="text-gray-300 text-xs shrink-0">vs</span>
+                  <span className="font-semibold text-gray-800 text-sm truncate flex-1 text-right">{p.equipoVisita}</span>
+                </div>
+                {badgeCombo(sel.length)}
               </div>
-              {/* Botones */}
+
+              {/* Botones L / E / V */}
               <div className="grid grid-cols-3 gap-2">
-                {(["L", "E", "V"] as Pick[]).map((opcion) => (
-                  <button
-                    key={opcion}
-                    onClick={() => seleccionarPick(idx, opcion)}
-                    className={`py-2.5 rounded-xl font-bold text-sm border-2 transition-all ${
-                      pick === opcion ? PICK_COLORS[opcion!] : PICK_IDLE
-                    }`}
-                  >
-                    {PICK_LABELS[opcion!]}
-                  </button>
-                ))}
+                {OPCIONES.map((op) => {
+                  const activo = sel.includes(op);
+                  return (
+                    <button
+                      key={op}
+                      onClick={() => togglePick(idx, op)}
+                      className={`py-3 rounded-xl font-black text-base border-2 transition-all duration-100 ${
+                        activo ? OPCION_STYLES[op].active : IDLE
+                      }`}
+                    >
+                      {op}
+                      <span className={`block text-[9px] font-normal mt-0.5 ${activo ? "opacity-80" : "text-gray-400"}`}>
+                        {OPCION_STYLES[op].label}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           );
         })}
 
         {/* Datos del cliente */}
-        <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Tus datos</p>
+        <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3 mt-2">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Tus datos para el ticket</p>
           <div>
             <label className="text-xs text-gray-500 block mb-1">Nombre completo</label>
             <input
@@ -205,14 +282,14 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
               placeholder="Nombre Apellido"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
-            {nombre && !nombreValido && (
-              <p className="text-xs text-red-400 mt-1">Ingresa nombre y apellido</p>
+            {nombre.length > 2 && !nombreValido && (
+              <p className="text-xs text-orange-400 mt-1">Ingresa nombre y apellido</p>
             )}
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">Teléfono (10 dígitos)</label>
             <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-amber-500">
-              <span className="px-3 py-2.5 bg-gray-50 text-gray-500 text-sm border-r border-gray-200">+52</span>
+              <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-sm border-r border-gray-200 shrink-0">+52</span>
               <input
                 type="tel"
                 value={telefono}
@@ -224,38 +301,51 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
           </div>
         </div>
 
-        {/* Resumen de picks */}
-        {todosSeleccionados && (
-          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-            <p className="text-xs text-green-700 font-semibold mb-1">✅ Picks seleccionados</p>
-            <p className="font-mono text-sm text-green-800 tracking-widest">{picks.join(" ")}</p>
-          </div>
-        )}
-
-        {error && (
-          <p className="text-red-500 text-sm text-center">{error}</p>
+        {errorEnvio && (
+          <p className="text-red-500 text-sm text-center bg-red-50 rounded-xl px-4 py-3">{errorEnvio}</p>
         )}
       </div>
 
-      {/* Botón fijo abajo */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
-        <div className="max-w-lg mx-auto">
+      {/* Barra fija inferior */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-2xl px-4 py-3 safe-area-inset-bottom">
+        <div className="max-w-lg mx-auto space-y-2">
+          {/* Resumen precio */}
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <span>{combos === 1 ? "Quiniela sencilla" : `${combos} combinaciones`}</span>
+              {picks.filter((s) => s.length === 2).length > 0 && (
+                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">
+                  {picks.filter((s) => s.length === 2).length} doble{picks.filter((s) => s.length === 2).length > 1 ? "s" : ""}
+                </span>
+              )}
+              {picks.filter((s) => s.length === 3).length > 0 && (
+                <span className="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-semibold">
+                  {picks.filter((s) => s.length === 3).length} triple{picks.filter((s) => s.length === 3).length > 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+            <span className="text-xl font-black text-amber-600">${precio}</span>
+          </div>
+
+          {/* Botón */}
           <button
             onClick={handleEnviar}
             disabled={!puedeEnviar || enviando}
-            className={`w-full py-4 rounded-2xl font-black text-lg transition-all ${
+            className={`w-full py-4 rounded-2xl font-black text-base transition-all ${
               puedeEnviar && !enviando
-                ? "bg-amber-500 hover:bg-amber-600 text-white shadow-lg"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                ? "bg-amber-500 hover:bg-amber-600 text-white shadow-lg active:scale-95"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
           >
-            {enviando ? "Enviando..." : todosSeleccionados && puedeEnviar
-              ? "Enviar mis picks ⚽"
+            {enviando
+              ? "Enviando..."
               : !todosSeleccionados
-              ? `Faltan ${picks.filter((p) => p === null).length} picks`
+              ? `Faltan ${faltanPicks} partido${faltanPicks !== 1 ? "s" : ""}`
               : !nombreValido
               ? "Ingresa tu nombre completo"
-              : "Ingresa tu teléfono"}
+              : !telValido
+              ? "Ingresa tu teléfono"
+              : `Enviar picks · $${precio} ⚽`}
           </button>
         </div>
       </div>

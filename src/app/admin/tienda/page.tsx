@@ -126,7 +126,8 @@ export default function TiendaPage() {
     const jornadaData = await res.json();
     if (!jornadaData?.id) return;
 
-    // 2. Convertir picks ["L","E","V",...] → FormaPicks {partidoId: ["1"|"X"|"2"]}
+    // 2. Convertir picks → FormaPicks {partidoId: ["1"|"X"|"2"]}
+    // Soporta formato nuevo [["L","E"],["V"],...] y formato legado ["L","V",...]
     const MAP: Record<string, string> = { L: "1", E: "X", V: "2" };
     const partidosOrdenados: { id: string }[] = [...(jornadaData.partidos ?? [])].sort(
       (a: { orden: number }, b: { orden: number }) => a.orden - b.orden
@@ -134,7 +135,11 @@ export default function TiendaPage() {
     const formaPicks: FormaPicks = {};
     pr.picks.forEach((pick, i) => {
       const p = partidosOrdenados[i];
-      if (p && MAP[pick]) formaPicks[p.id] = [MAP[pick]];
+      if (!p) return;
+      // pick puede ser string ("L") o array (["L","E"])
+      const opciones = Array.isArray(pick) ? pick : [pick];
+      const mapped = opciones.map((o: string) => MAP[o]).filter(Boolean);
+      if (mapped.length > 0) formaPicks[p.id] = mapped;
     });
 
     // 3. Rellenar estado y navegar al modo manual
@@ -387,18 +392,26 @@ export default function TiendaPage() {
                     <span className="text-xs text-gray-400">{tiempoRelativo(pr.createdAt)}</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {pr.picks.map((p, i) => (
-                      <span
-                        key={i}
-                        className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
-                          p === "L" ? "bg-amber-100 text-amber-700" :
-                          p === "E" ? "bg-gray-100 text-gray-600" :
-                          "bg-blue-100 text-blue-700"
-                        }`}
-                      >
-                        {i + 1}·{p}
-                      </span>
-                    ))}
+                    {pr.picks.map((p, i) => {
+                      // Soporta formato nuevo (array) y legado (string)
+                      const opciones: string[] = Array.isArray(p) ? p : [p];
+                      const esDoble = opciones.length === 2;
+                      const esTriple = opciones.length === 3;
+                      return (
+                        <span
+                          key={i}
+                          className={`text-xs font-bold px-2 py-1 rounded-lg ${
+                            esTriple ? "bg-rose-100 text-rose-700" :
+                            esDoble  ? "bg-purple-100 text-purple-700" :
+                            opciones[0] === "L" ? "bg-amber-100 text-amber-700" :
+                            opciones[0] === "E" ? "bg-gray-100 text-gray-600" :
+                            "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {i + 1}·{opciones.join("/")}
+                        </span>
+                      );
+                    })}
                   </div>
                   <button
                     onClick={() => cargarDesdeKiosko(pr)}
