@@ -44,9 +44,14 @@ type JornadaInfo = {
   partidos: Partido[];
 };
 
+type JornadaResumen = {
+  id: string; nombre: string; liga: string; temporada: string;
+};
+
 type KioskoData = {
   vendedor: { nombre: string; puntoVenta: string | null };
-  jornada: JornadaInfo;
+  jornada: JornadaInfo;        // primera jornada (compat.)
+  jornadas: JornadaInfo[];     // todas las jornadas abiertas
 };
 
 // picks[i] = array de opciones seleccionadas para el partido i
@@ -85,6 +90,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   const { vendedorId } = use(params);
 
   const [datos, setDatos] = useState<KioskoData | null>(null);
+  const [jornadaSeleccionada, setJornadaSeleccionada] = useState<JornadaInfo | null>(null);
   const [errorCarga, setErrorCarga] = useState("");
   const [picks, setPicks] = useState<Picks>([]);
   const [nombre, setNombre] = useState("");
@@ -100,15 +106,22 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
       .then((d) => {
         if (d.error) { setErrorCarga(d.error); return; }
         setDatos(d);
-        setPicks(new Array(d.jornada.partidos.length).fill(null).map(() => []));
-        // Cargar logos de la liga
-        fetch(`/api/logos?liga=${encodeURIComponent(d.jornada.liga)}`)
-          .then((r) => r.json())
-          .then((m) => typeof m === "object" && setLogoMap(m))
-          .catch(() => {});
+        // Si solo hay una jornada, seleccionarla directamente
+        if (d.jornadas?.length === 1) seleccionarJornada(d.jornadas[0]);
       })
       .catch(() => setErrorCarga("No se pudo cargar la jornada"));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendedorId]);
+
+  const seleccionarJornada = (j: JornadaInfo) => {
+    setJornadaSeleccionada(j);
+    setPicks(new Array(j.partidos.length).fill(null).map(() => []));
+    // Cargar logos de la liga
+    fetch(`/api/logos?liga=${encodeURIComponent(j.liga)}`)
+      .then((r) => r.json())
+      .then((m) => typeof m === "object" && setLogoMap(m))
+      .catch(() => {});
+  };
 
   const togglePick = (idx: number, opcion: string) => {
     setPicks((prev) => {
@@ -139,7 +152,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           vendedorId,
-          jornadaId: datos.jornada.id,
+          jornadaId: jornada.id,
           nombre: nombre.trim(),
           telefono: telefono.replace(/\D/g, ""),
           picks,                   // [["L"], ["L","E"], ["V"], ...]
@@ -157,10 +170,13 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
 
   const reiniciar = () => {
     setEnviado(false);
-    setPicks(new Array(datos?.jornada.partidos.length ?? 0).fill(null).map(() => []));
+    setJornadaSeleccionada(null);
+    setPicks([]);
     setNombre("");
     setTelefono("");
     setErrorEnvio("");
+    // Si solo había una jornada, volver a seleccionarla directamente
+    if (datos?.jornadas?.length === 1) seleccionarJornada(datos.jornadas[0]);
   };
 
   /* ── Pantalla de confirmación ────────────────────────────────────────────── */
@@ -208,7 +224,48 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
     );
   }
 
-  const { jornada, vendedor } = datos;
+  /* ── Selección de jornada (cuando hay más de una abierta) ───────────────── */
+  if (!jornadaSeleccionada && datos.jornadas.length > 1) {
+    const LIGA_EMOJI: Record<string, string> = {
+      "Liga MX": "🇲🇽", "Champions League": "⭐", "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+      "La Liga": "🇪🇸", "Serie A": "🇮🇹", "Ligue 1": "🇫🇷", "Brasileirão": "🇧🇷",
+    };
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-brand text-white px-4 pt-5 pb-6">
+          <div className="max-w-lg mx-auto">
+            <div className="flex items-center justify-between mb-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "40px", objectFit: "contain" }} />
+              <p className="text-amber-400 text-xs font-medium">{datos.vendedor.puntoVenta ?? datos.vendedor.nombre}</p>
+            </div>
+            <h1 className="text-2xl font-black">Elige tu quiniela</h1>
+            <p className="text-amber-300 text-sm mt-1">Hay {datos.jornadas.length} jornadas disponibles</p>
+          </div>
+        </div>
+        <div className="max-w-lg mx-auto px-4 py-5 space-y-3">
+          {datos.jornadas.map((j) => (
+            <button
+              key={j.id}
+              onClick={() => seleccionarJornada(j)}
+              className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4 text-left hover:bg-amber-50 hover:shadow-md transition-all active:scale-95"
+            >
+              <span className="text-3xl shrink-0">{LIGA_EMOJI[j.liga] ?? "⚽"}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-gray-800">{j.liga}</p>
+                <p className="text-sm text-gray-500">{j.nombre} · {j.temporada}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{j.partidos.length} partidos</p>
+              </div>
+              <span className="text-amber-500 text-xl shrink-0">›</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const jornada = jornadaSeleccionada!;
+  const { vendedor } = datos;
   const faltanPicks = picks.filter((s) => s.length === 0).length;
 
   /* ── Página principal ────────────────────────────────────────────────────── */
@@ -226,7 +283,17 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
               <p className="text-xs text-white/60">{jornada.liga} · {jornada.temporada}</p>
             </div>
           </div>
-          <h1 className="text-2xl font-black leading-tight">{jornada.nombre}</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-black leading-tight">{jornada.nombre}</h1>
+            {datos.jornadas.length > 1 && (
+              <button
+                onClick={() => { setJornadaSeleccionada(null); setPicks([]); }}
+                className="text-xs text-amber-300 border border-amber-600 hover:bg-white/10 px-2.5 py-1 rounded-lg transition-colors shrink-0 ml-3"
+              >
+                ← Cambiar
+              </button>
+            )}
+          </div>
           <p className="text-amber-300 text-sm mt-1">Elige tu resultado para cada partido</p>
 
           {/* Precio en vivo */}

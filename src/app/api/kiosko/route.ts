@@ -17,11 +17,10 @@ export async function GET(req: NextRequest) {
   });
   if (!vendedor) return NextResponse.json({ error: "Vendedor no encontrado" }, { status: 404 });
 
-  // Obtener la jornada más reciente abierta
+  // Obtener TODAS las jornadas abiertas
   const jornadas = await prisma.jornada.findMany({
     where: { estado: "abierta" },
     orderBy: { numero: "desc" },
-    take: 1,
     select: {
       id: true, numero: true, nombre: true, liga: true, temporada: true,
       partidos: {
@@ -35,17 +34,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No hay jornada abierta en este momento" }, { status: 404 });
   }
 
-  const jornada = jornadas[0];
+  const jornadasMapped = jornadas.map((j) => ({
+    id: j.id,
+    nombre: j.nombre ?? `Jornada ${j.numero}`,
+    liga: j.liga,
+    temporada: j.temporada,
+    partidos: j.partidos,
+  }));
 
   return NextResponse.json({
     vendedor: { nombre: vendedor.nombre, puntoVenta: vendedor.puntoVenta },
-    jornada: {
-      id: jornada.id,
-      nombre: jornada.nombre ?? `Jornada ${jornada.numero}`,
-      liga: jornada.liga,
-      temporada: jornada.temporada,
-      partidos: jornada.partidos,
-    },
+    // Si solo hay una, "jornada" mantiene compatibilidad con la página
+    jornada: jornadasMapped[0],
+    jornadas: jornadasMapped,   // siempre el listado completo
   });
 }
 
