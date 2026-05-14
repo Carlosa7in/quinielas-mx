@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { prisma } from "@/lib/prisma";
+import { prisma, sql } from "@/lib/prisma";
 
 async function verificarAdmin(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -55,24 +55,33 @@ export async function PATCH(req: NextRequest) {
   const { id, nombre, telefono } = await req.json();
   if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
 
-  const data: { nombre?: string; telefono?: string } = {};
-  if (nombre !== undefined) data.nombre = String(nombre).trim();
-  if (telefono !== undefined) data.telefono = String(telefono).trim();
+  const nombreVal = nombre !== undefined ? String(nombre).trim() : undefined;
+  const telefonoVal = telefono !== undefined ? String(telefono).trim() : undefined;
 
-  if (Object.keys(data).length === 0) {
+  if (!nombreVal && !telefonoVal) {
     return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
   }
 
-  const actualizado = await prisma.cliente.update({
-    where: { id },
-    data,
-    select: { id: true, nombre: true, telefono: true },
-  });
-
-  return NextResponse.json(actualizado);
+  try {
+    // SQL directo: NeonHTTP no soporta transacciones implícitas de Prisma
+    if (nombreVal && telefonoVal) {
+      await sql`UPDATE "Cliente" SET nombre = ${nombreVal}, telefono = ${telefonoVal} WHERE id = ${id}`;
+    } else if (nombreVal) {
+      await sql`UPDATE "Cliente" SET nombre = ${nombreVal} WHERE id = ${id}`;
+    } else if (telefonoVal) {
+      await sql`UPDATE "Cliente" SET telefono = ${telefonoVal} WHERE id = ${id}`;
+    }
+    return NextResponse.json({ ok: true, id, nombre: nombreVal, telefono: telefonoVal });
+  } catch (err) {
+    console.error("PATCH /api/admin/participantes error:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Error interno" },
+      { status: 500 }
+    );
+  }
 }
 
-// DELETE /api/admin/participantes — eliminar cliente (y sus quinielas en cascada)
+// DELETE /api/admin/participantes — eliminar cliente (desvincula sus quinielas)
 export async function DELETE(req: NextRequest) {
   if (!(await verificarAdmin(req))) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
@@ -88,13 +97,11 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
 
   try {
-    // Desvincular quinielas antes de eliminar el cliente
-    await prisma.quiniela.updateMany({
-      where: { clienteId: id },
-      data: { clienteId: null },
-    });
-
-    await prisma.cliente.delete({ where: { id } });
+    // SQL directo: NeonHTTP no soporta transacciones implícitas de Prisma
+    // 1. Desvincular quinielas (clienteId → null)
+    await sql`UPDATE "Quiniela" SET "clienteId" = NULL WHERE "clienteId" = ${id}`;
+    // 2. Eliminar el cliente
+    await sql`DELETE FROM "Cliente" WHERE id = ${id}`;
 
     return NextResponse.json({ ok: true });
   } catch (err) {
