@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { sql } from "@/lib/prisma";
+import { calcularFechaCierre } from "@/lib/fechas";
 
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -33,11 +34,15 @@ export async function GET(req: NextRequest) {
       liga:               String(r.liga),
       temporada:          String(r.temporada),
       fechaFin:           r.fechaFin ? String(r.fechaFin) : null,
-      primerPartidoFecha: r.primerPartidoFecha
-        ? (r.primerPartidoFecha instanceof Date
-            ? r.primerPartidoFecha.toISOString()
-            : String(r.primerPartidoFecha))
-        : null,
+      primerPartidoFecha: (() => {
+        if (!r.primerPartidoFecha) return null;
+        const d = r.primerPartidoFecha instanceof Date
+          ? r.primerPartidoFecha
+          : new Date(String(r.primerPartidoFecha));
+        if (isNaN(d.getTime())) return null;
+        // Igual que el homepage: cierre = día anterior a las 23:00 CDMX
+        return calcularFechaCierre(d).toISOString();
+      })(),
     })),
   });
 }
