@@ -185,12 +185,16 @@ function ModalEliminar({
   onCerrar: () => void;
 }) {
   const [eliminando, setEliminando] = useState(false);
+  const [error, setError] = useState("");
 
   const handleEliminar = async () => {
     setEliminando(true);
+    setError("");
     try {
       await onConfirmar(cliente.id);
       onCerrar();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error al eliminar");
     } finally {
       setEliminando(false);
     }
@@ -209,6 +213,9 @@ function ModalEliminar({
             <p className="text-orange-600 text-xs mt-2 bg-orange-50 rounded-lg px-3 py-2">
               ⚠️ Tiene {cliente.totalQuinielas} quiniela{cliente.totalQuinielas !== 1 ? "s" : ""} registrada{cliente.totalQuinielas !== 1 ? "s" : ""}. Se desvinculará del cliente pero no se borrarán.
             </p>
+          )}
+          {error && (
+            <p className="text-red-500 text-xs mt-2 bg-red-50 rounded-lg px-3 py-2">{error}</p>
           )}
         </div>
 
@@ -277,7 +284,8 @@ export default function ParticipantesPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
-    if (!res.ok) throw new Error("Error al eliminar");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error ?? "Error al eliminar");
     setClientes((prev) => prev.filter((c) => c.id !== id));
   };
 

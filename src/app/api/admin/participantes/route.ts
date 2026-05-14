@@ -78,16 +78,30 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  const { id } = await req.json();
+  let id: string | undefined;
+  try {
+    const body = await req.json();
+    id = body.id;
+  } catch {
+    return NextResponse.json({ error: "Body inválido" }, { status: 400 });
+  }
   if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
 
-  // Desvincular quinielas (poner clienteId en null) antes de eliminar el cliente
-  await prisma.quiniela.updateMany({
-    where: { clienteId: id },
-    data: { clienteId: null },
-  });
+  try {
+    // Desvincular quinielas antes de eliminar el cliente
+    await prisma.quiniela.updateMany({
+      where: { clienteId: id },
+      data: { clienteId: null },
+    });
 
-  await prisma.cliente.delete({ where: { id } });
+    await prisma.cliente.delete({ where: { id } });
 
-  return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("DELETE /api/admin/participantes error:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Error interno" },
+      { status: 500 }
+    );
+  }
 }
