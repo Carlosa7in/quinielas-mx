@@ -21,6 +21,15 @@ type AdminRow = {
   jornadaId: string; jornadaNombre: string; liga: string; temporada: string;
   recaudadoTotal: number; numAdmins: number; miParte: number;
   pagado: boolean; pagadoEn: string | null;
+  fondoAdmin: number; comisionTienda: number; comisionReferido: number;
+  comisionDirecta: number; bolsaNeta: number;
+  ventasTienda: number; ventasReferido: number; ventasDirectas: number;
+};
+
+type DesgloseGlobal = {
+  recaudado: number; fondoAdmin: number; comisionTienda: number;
+  comisionReferido: number; comisionDirecta: number; bolsaNeta: number;
+  numAdmins: number; miParteTotal: number;
 };
 
 type Totales = {
@@ -43,9 +52,75 @@ const ESTADO_STYLE: Record<string, string> = {
   cancelado:  "bg-red-100 text-red-600",
 };
 
+// ── Bloque de desglose financiero por jornada (superadmin) ──────────────────
+function DesgloseJornada({ j }: { j: AdminRow }) {
+  const pct = (n: number) =>
+    j.recaudadoTotal > 0 ? `${((n / j.recaudadoTotal) * 100).toFixed(1)}%` : "—";
+
+  return (
+    <div className="bg-stone-900 text-white rounded-xl p-4 space-y-2.5 text-sm">
+      <p className="text-[10px] font-bold tracking-widest text-stone-400 uppercase">Desglose financiero</p>
+
+      <div className="flex justify-between">
+        <span className="text-stone-300">Total recaudado</span>
+        <span className="font-bold">${fmt(j.recaudadoTotal)}</span>
+      </div>
+
+      {(j.ventasTienda > 0 || j.ventasReferido > 0 || j.ventasDirectas > 0) && (
+        <div className="flex gap-3 text-stone-500 text-xs flex-wrap">
+          {j.ventasTienda   > 0 && <span>🏪 {j.ventasTienda} tienda</span>}
+          {j.ventasReferido > 0 && <span>🔗 {j.ventasReferido} referido</span>}
+          {j.ventasDirectas > 0 && <span>🌐 {j.ventasDirectas} directas</span>}
+        </div>
+      )}
+
+      <div className="flex justify-between text-blue-400">
+        <span>
+          − 15% fondo admin
+          {j.numAdmins > 1 && (
+            <span className="text-blue-500 text-xs ml-2">
+              (${fmt(j.fondoAdmin / j.numAdmins)} × {j.numAdmins})
+            </span>
+          )}
+        </span>
+        <span className="font-bold">−${fmt(j.fondoAdmin)} <span className="text-xs opacity-60">{pct(j.fondoAdmin)}</span></span>
+      </div>
+
+      {j.comisionTienda > 0 && (
+        <div className="flex justify-between text-orange-400">
+          <span>− Com. tienda (10%)</span>
+          <span className="font-bold">−${fmt(j.comisionTienda)}</span>
+        </div>
+      )}
+      {j.comisionReferido > 0 && (
+        <div className="flex justify-between text-cyan-400">
+          <span>− Com. referidos (10%)</span>
+          <span className="font-bold">−${fmt(j.comisionReferido)}</span>
+        </div>
+      )}
+      {j.comisionDirecta > 0 && (
+        <div className="flex justify-between text-purple-400">
+          <span>− Ventas directas 🌐 (10%)</span>
+          <span className="font-bold">−${fmt(j.comisionDirecta)}</span>
+        </div>
+      )}
+
+      <div className="border-t border-stone-700 pt-2 flex justify-between text-green-400">
+        <span className="font-bold">💰 Bolsa para premios</span>
+        <span className="font-black text-base">${fmt(j.bolsaNeta)}</span>
+      </div>
+
+      <div className="border-t border-stone-700 pt-2 flex justify-between text-indigo-300">
+        <span className="text-xs">👤 Mi parte del fondo admin</span>
+        <span className="font-bold">${fmt(j.miParte)}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function GananciasPage() {
   const { data: session } = useSession();
-  const rol = (session?.user as { role?: string })?.role ?? "";
+  const rol    = (session?.user as { role?: string })?.role ?? "";
   const nombre = session?.user?.name ?? "";
   const esAdminNav = ["admin", "superadmin"].includes(rol);
 
@@ -53,6 +128,7 @@ export default function GananciasPage() {
   const [comisionesAdmin, setComisionesAdmin] = useState<AdminRow[]>([]);
   const [totales, setTotales]                 = useState<Totales | null>(null);
   const [ultimasQ, setUltimasQ]               = useState<UltimaQuiniela[]>([]);
+  const [desgloseGlobal, setDesgloseGlobal]   = useState<DesgloseGlobal | null>(null);
   const [esAdmin, setEsAdmin]                 = useState(false);
   const [cargando, setCargando]               = useState(true);
   const [jornadaAbierta, setJornadaAbierta]   = useState<string | null>(null);
@@ -65,6 +141,7 @@ export default function GananciasPage() {
         setComisionesAdmin(data.comisionesAdmin ?? []);
         setTotales(data.totales ?? null);
         setUltimasQ(data.ultimasQuinielas ?? []);
+        setDesgloseGlobal(data.desgloseGlobal ?? null);
         setEsAdmin(data.esAdmin ?? false);
       })
       .catch(() => {})
@@ -145,11 +222,108 @@ export default function GananciasPage() {
               </div>
             </div>
 
-            {/* ── Ventas por jornada ── */}
+            {/* ── Desglose global — solo superadmin ── */}
+            {esAdmin && desgloseGlobal && desgloseGlobal.recaudado > 0 && (
+              <div className="bg-stone-900 text-white rounded-2xl p-4 space-y-3">
+                <p className="text-xs font-bold tracking-widest text-stone-400 uppercase">Desglose global (todas las jornadas)</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-stone-300">Total recaudado</span>
+                    <span className="font-bold">${fmt(desgloseGlobal.recaudado)}</span>
+                  </div>
+                  <div className="flex justify-between text-blue-400">
+                    <span>
+                      − 15% fondo admin
+                      {desgloseGlobal.numAdmins > 1 && (
+                        <span className="text-blue-500 text-xs ml-2">
+                          (${fmt(desgloseGlobal.fondoAdmin / desgloseGlobal.numAdmins)} × {desgloseGlobal.numAdmins})
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-bold">−${fmt(desgloseGlobal.fondoAdmin)}</span>
+                  </div>
+                  {desgloseGlobal.comisionTienda > 0 && (
+                    <div className="flex justify-between text-orange-400">
+                      <span>− Com. tienda (10%)</span>
+                      <span className="font-bold">−${fmt(desgloseGlobal.comisionTienda)}</span>
+                    </div>
+                  )}
+                  {desgloseGlobal.comisionReferido > 0 && (
+                    <div className="flex justify-between text-cyan-400">
+                      <span>− Com. referidos (10%)</span>
+                      <span className="font-bold">−${fmt(desgloseGlobal.comisionReferido)}</span>
+                    </div>
+                  )}
+                  {desgloseGlobal.comisionDirecta > 0 && (
+                    <div className="flex justify-between text-purple-400">
+                      <span>− Ventas directas 🌐 (10%)</span>
+                      <span className="font-bold">−${fmt(desgloseGlobal.comisionDirecta)}</span>
+                    </div>
+                  )}
+                  <div className="border-t border-stone-700 pt-2 flex justify-between text-green-400">
+                    <span className="font-bold">💰 Bolsa total para premios</span>
+                    <span className="font-black text-base">${fmt(desgloseGlobal.bolsaNeta)}</span>
+                  </div>
+                  <div className="border-t border-stone-700 pt-2 flex justify-between text-indigo-300">
+                    <span className="text-xs">👤 Mi parte total del fondo admin</span>
+                    <span className="font-bold">${fmt(desgloseGlobal.miParteTotal)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Fondo admin por jornada — solo superadmin ── */}
+            {esAdmin && comisionesAdmin.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <h3 className="font-bold text-gray-800">Fondo de administración por jornada</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">15% del recaudado ÷ {comisionesAdmin[0]?.numAdmins} admin{comisionesAdmin[0]?.numAdmins !== 1 ? "s" : ""}</p>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {comisionesAdmin.map((j) => {
+                    const abierta = jornadaAbierta === `admin_${j.jornadaId}`;
+                    return (
+                      <div key={j.jornadaId}>
+                        <button
+                          onClick={() => setJornadaAbierta(abierta ? null : `admin_${j.jornadaId}`)}
+                          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+                        >
+                          <div>
+                            <p className="font-medium text-gray-800 text-sm">{j.liga} · {j.jornadaNombre}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">${fmt(j.recaudadoTotal)} recaudado total</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                              j.pagado ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-600"
+                            }`}>
+                              ${fmt(j.miParte)} {j.pagado ? "✓" : "pend."}
+                            </span>
+                            <span className="text-gray-400 text-xs">{abierta ? "▲" : "▼"}</span>
+                          </div>
+                        </button>
+
+                        {abierta && (
+                          <div className="px-4 pb-4">
+                            <DesgloseJornada j={j} />
+                            {j.pagado && j.pagadoEn && (
+                              <p className="text-xs text-green-600 mt-2 text-right">
+                                Cobrado el {fmtFecha(j.pagadoEn)}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── Ventas por jornada — vendedores/tienda ── */}
             {porJornada.length > 0 && (
               <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100">
-                  <h3 className="font-bold text-gray-800">Ventas por jornada</h3>
+                  <h3 className="font-bold text-gray-800">Mis ventas por jornada</h3>
                 </div>
                 <div className="divide-y divide-gray-50">
                   {porJornada.map((j) => {
@@ -202,32 +376,6 @@ export default function GananciasPage() {
                       </div>
                     );
                   })}
-                </div>
-              </div>
-            )}
-
-            {/* ── Fondo admin ── */}
-            {esAdmin && comisionesAdmin.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <h3 className="font-bold text-gray-800">Fondo de administración</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">15% del total ÷ {comisionesAdmin[0]?.numAdmins} admins</p>
-                </div>
-                <div className="divide-y divide-gray-50">
-                  {comisionesAdmin.map((j) => (
-                    <div key={j.jornadaId} className="px-4 py-3 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">{j.jornadaNombre}</p>
-                        <p className="text-xs text-gray-400">{j.liga} · ${fmt(j.recaudadoTotal)} total</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-indigo-600">${fmt(j.miParte)}</p>
-                        <p className={`text-xs ${j.pagado ? "text-green-600" : "text-orange-500"}`}>
-                          {j.pagado ? `Cobrado ${j.pagadoEn ? fmtFecha(j.pagadoEn) : ""}` : "Pendiente"}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             )}
