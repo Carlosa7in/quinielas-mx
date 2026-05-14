@@ -146,8 +146,8 @@ export async function GET(req: NextRequest) {
     let gRecaudado = 0, gFondo = 0, gTienda = 0, gReferido = 0, gDirecta = 0, gMiParte = 0;
 
     for (const [jId, d] of recMap) {
-      const fondoAdmin   = d.recaudado * PCT_ADMIN + d.comisionDirecta;
-      const bolsaNeta    = Math.max(d.recaudado - fondoAdmin - d.comisionTienda - d.comisionReferido, 0);
+      const fondoAdmin   = d.recaudado * PCT_ADMIN;   // solo el 15% base
+      const bolsaNeta    = Math.max(d.recaudado - fondoAdmin - d.comisionTienda - d.comisionReferido - d.comisionDirecta, 0);
       const miParte      = numAdmins > 0 ? fondoAdmin / numAdmins : 0;
       const pago         = pagosPorJornada.get(jId);
 
@@ -179,7 +179,7 @@ export async function GET(req: NextRequest) {
       comisionTienda:   gTienda,
       comisionReferido: gReferido,
       comisionDirecta:  gDirecta,
-      bolsaNeta:        Math.max(gRecaudado - gFondo - gTienda - gReferido, 0),
+      bolsaNeta:        Math.max(gRecaudado - gFondo - gTienda - gReferido - gDirecta, 0),
       numAdmins,
       miParteTotal:     gMiParte,
     };

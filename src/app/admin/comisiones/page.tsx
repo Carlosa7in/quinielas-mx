@@ -109,7 +109,9 @@ export default function ComisionesPage() {
   const totalComisionesReferido = reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.comisionTotal, 0);
   const baseDesglose = recaudadoGlobal > 0 ? recaudadoGlobal : recaudadoGeneral;
   const cutDuenos = baseDesglose * PCT_DUENOS;
-  const cutTienda = reporte.filter((v) => v.rol !== "vendedor").reduce((s, v) => s + v.comisionTotal, 0);
+  // comisionTotal de admins/superadmin incluye el 10% de directas (inyectado vía superadmin),
+  // que ya está contado en comisionDirectaTotal → se resta para no doble-descontar
+  const cutTienda = reporte.filter((v) => v.rol !== "vendedor").reduce((s, v) => s + v.comisionTotal, 0) - comisionDirectaTotal;
   const bolsaNeta = Math.max(baseDesglose - cutDuenos - cutTienda - totalComisionesReferido - comisionDirectaTotal, 0);
   const totalComisiones = reporte.reduce((s, v) => s + v.comisionTotal, 0);
   const totalPendiente = reporte.reduce((s, v) => s + v.pendientePago, 0);
