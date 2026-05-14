@@ -216,10 +216,35 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
       {/* Partidos */}
       <div className="max-w-lg mx-auto px-4 py-4 space-y-2.5 pb-40">
 
-        <p className="text-xs text-gray-400 font-medium px-1">
-          Puedes seleccionar <strong>L</strong> (local), <strong>E</strong> (empate) o <strong>V</strong> (visitante).
-          Toca <strong>2 o 3</strong> opciones para jugar doble o triple.
-        </p>
+        {/* Instrucciones */}
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-amber-50 px-4 py-3 border-b border-amber-100">
+            <p className="text-sm font-bold text-amber-800">📋 ¿Cómo funciona?</p>
+          </div>
+          <div className="px-4 py-3 space-y-2.5">
+            {[
+              { n: "1", icon: "⚽", text: "Elige el resultado de cada partido: **L** (gana local), **E** (empate) o **V** (gana visitante)." },
+              { n: "2", icon: "2️⃣", text: "¿No estás seguro? Toca **2 opciones** en un partido para jugar un **doble** (+$20)." },
+              { n: "3", icon: "3️⃣", text: "Toca las **3 opciones** para cubrir todos los resultados con un **triple** (+$40)." },
+              { n: "4", icon: "👤", text: "Escribe tu **nombre completo** y **teléfono** para recibir tu ticket." },
+              { n: "5", icon: "✅", text: "Toca **Enviar picks** y muéstrale la confirmación al vendedor para pagar." },
+            ].map(({ n, icon, text }) => (
+              <div key={n} className="flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
+                  {n}
+                </span>
+                <p className="text-sm text-gray-600 leading-snug">
+                  {icon}{" "}
+                  {text.split("**").map((part, i) =>
+                    i % 2 === 1
+                      ? <strong key={i} className="text-gray-800">{part}</strong>
+                      : part
+                  )}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {jornada.partidos.map((p, idx) => {
           const sel = picks[idx] ?? [];
