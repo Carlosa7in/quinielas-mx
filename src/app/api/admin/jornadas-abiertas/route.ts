@@ -13,21 +13,31 @@ export async function GET(req: NextRequest) {
 
   // Usamos SQL directo para evitar problemas de serialización de DateTime con Prisma
   const rows = await sql`
-    SELECT id, numero, nombre, liga, temporada,
-           TO_CHAR("fechaFin", 'YYYY-MM-DD') AS "fechaFin"
-    FROM "Jornada"
-    WHERE estado = 'abierta'
-    ORDER BY numero DESC
+    SELECT j.id, j.numero, j.nombre, j.liga, j.temporada,
+           TO_CHAR(j."fechaFin", 'YYYY-MM-DD') AS "fechaFin",
+           (SELECT p."fechaHora"
+            FROM "Partido" p
+            WHERE p."jornadaId" = j.id AND p."fechaHora" IS NOT NULL
+            ORDER BY p."fechaHora" ASC
+            LIMIT 1) AS "primerPartidoFecha"
+    FROM "Jornada" j
+    WHERE j.estado = 'abierta'
+    ORDER BY j.numero DESC
   `;
 
   return NextResponse.json({
     jornadas: rows.map((r) => ({
-      id:        String(r.id),
-      numero:    Number(r.numero),
-      nombre:    r.nombre ? String(r.nombre) : null,
-      liga:      String(r.liga),
-      temporada: String(r.temporada),
-      fechaFin:  r.fechaFin ? String(r.fechaFin) : null,
+      id:                 String(r.id),
+      numero:             Number(r.numero),
+      nombre:             r.nombre ? String(r.nombre) : null,
+      liga:               String(r.liga),
+      temporada:          String(r.temporada),
+      fechaFin:           r.fechaFin ? String(r.fechaFin) : null,
+      primerPartidoFecha: r.primerPartidoFecha
+        ? (r.primerPartidoFecha instanceof Date
+            ? r.primerPartidoFecha.toISOString()
+            : String(r.primerPartidoFecha))
+        : null,
     })),
   });
 }

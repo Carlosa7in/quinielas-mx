@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma, sql } from "@/lib/prisma";
 
-const COMISION_POR_VENTA = 2;
+const COMISION_PCT = 0.10; // 10% del monto por venta
 const PORC_ADMIN = 0.15;
 const PORC_PRIMERO = 0.60;
 const PORC_SEGUNDO = 0.25;
@@ -47,20 +47,26 @@ export async function GET(req: Request) {
     const totalRecaudado = todasQuinielas.reduce((s, q) => s + q.monto, 0);
 
     // Comisiones por tipo de venta
-    const tiendaCount    = todasQuinielas.filter((q) => q.canal === "tienda").length;
-    const referidoCount  = todasQuinielas.filter((q) => q.canal !== "tienda" && q.usuarioId !== null && q.estadoPago === "confirmado").length;
-    const directaCount   = todasQuinielas.filter((q) => q.canal !== "tienda" && q.usuarioId === null && q.estadoPago === "confirmado").length;
+    const qTienda    = todasQuinielas.filter((q) => q.canal === "tienda");
+    const qReferido  = todasQuinielas.filter((q) => q.canal !== "tienda" && q.usuarioId !== null && q.estadoPago === "confirmado");
+    const qDirecta   = todasQuinielas.filter((q) => q.canal !== "tienda" && q.usuarioId === null && q.estadoPago === "confirmado");
 
-    const comisionTienda   = tiendaCount   * COMISION_POR_VENTA;
-    const comisionReferido = referidoCount * COMISION_POR_VENTA;
-    const comisionDirecta  = directaCount  * COMISION_POR_VENTA;
+    const tiendaCount   = qTienda.length;
+    const referidoCount = qReferido.length;
+    const directaCount  = qDirecta.length;
+
+    // Comisión 10% del monto por cada venta
+    const comisionTienda   = qTienda.reduce((s, q) => s + q.monto * COMISION_PCT, 0);
+    const comisionReferido = qReferido.reduce((s, q) => s + q.monto * COMISION_PCT, 0);
+    // Directas: 10% también va a la casa (no a ningún vendedor externo)
+    const comisionDirecta  = qDirecta.reduce((s, q) => s + q.monto * COMISION_PCT, 0);
     const totalComisiones  = comisionTienda + comisionReferido + comisionDirecta;
 
-    // Fondo admin (15% del total)
-    const fondoAdmin = totalRecaudado * PORC_ADMIN;
+    // Fondo admin: 15% del total + comisión directa (ventas sin referido → van a la casa)
+    const fondoAdmin = totalRecaudado * PORC_ADMIN + comisionDirecta;
 
-    // Bolsa neta para premios (total − admin − comisiones)
-    const bolsaNeta = Math.max(totalRecaudado - fondoAdmin - totalComisiones, 0);
+    // Bolsa neta para premios (total − fondo admin − com. tienda − com. referido)
+    const bolsaNeta = Math.max(totalRecaudado - fondoAdmin - comisionTienda - comisionReferido, 0);
 
     // Bolsas de 1° y 2° lugar sobre la bolsa neta
     const bolsa1     = bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO)); // 60/85

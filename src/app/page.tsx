@@ -246,20 +246,37 @@ function BannerPagosPendientes({ t }: { t: HomeT }) {
           const boletos = p.totalBoletos ?? 1;
           const monto = p.montoTotal ?? p.monto;
           const params = new URLSearchParams({ total: String(boletos), formas: String(boletos), montoTotal: String(monto) });
+          const cancelar = (e: React.MouseEvent) => {
+            e.preventDefault();
+            const nuevos = pendientes.filter((x) => x.folio !== p.folio);
+            setPendientes(nuevos);
+            try {
+              if (nuevos.length === 0) localStorage.removeItem("quinielasPendientes");
+              else localStorage.setItem("quinielasPendientes", JSON.stringify(nuevos));
+            } catch { /* sin localStorage */ }
+          };
           return (
-            <a
-              key={p.folio}
-              href={`/ticket/${p.folio}?${params.toString()}`}
-              className="flex items-center justify-between bg-white/10 hover:bg-white/20 rounded-xl px-3 py-2.5 transition-colors"
-            >
-              <div>
-                <p className="text-white font-semibold text-sm font-mono">{p.folio}</p>
-                <p className="text-amber-300/70 text-xs">
-                  {p.jornada}{boletos > 1 ? ` · ${boletos} boletos · $${monto.toFixed(2)}` : ""}
-                </p>
-              </div>
-              <span className="text-amber-300 text-sm font-bold">{t.verInstrucciones}</span>
-            </a>
+            <div key={p.folio} className="flex items-center gap-2">
+              <a
+                href={`/ticket/${p.folio}?${params.toString()}`}
+                className="flex-1 flex items-center justify-between bg-white/10 hover:bg-white/20 rounded-xl px-3 py-2.5 transition-colors"
+              >
+                <div>
+                  <p className="text-white font-semibold text-sm font-mono">{p.folio}</p>
+                  <p className="text-amber-300/70 text-xs">
+                    {p.jornada}{boletos > 1 ? ` · ${boletos} boletos · $${monto.toFixed(2)}` : ""}
+                  </p>
+                </div>
+                <span className="text-amber-300 text-sm font-bold">{t.verInstrucciones}</span>
+              </a>
+              <button
+                onClick={cancelar}
+                title="Cancelar compra"
+                className="shrink-0 bg-white/10 hover:bg-red-500/40 text-white/50 hover:text-white rounded-xl px-2.5 py-2.5 transition-colors text-xs font-bold"
+              >
+                ✕
+              </button>
+            </div>
           );
         })}
       </div>

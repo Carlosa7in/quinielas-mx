@@ -220,6 +220,19 @@ export default function AdminPage() {
                 </div>
               </Link>
             )}
+
+            {rol === "superadmin" && (
+              <Link
+                href="/admin/logos-check-db"
+                className="bg-slate-700 hover:bg-slate-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">🖼️</span>
+                <div>
+                  <p className="font-bold">Verificar Logos</p>
+                  <p className="text-slate-300 text-sm">Revisar y reparar logos de equipos</p>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
 

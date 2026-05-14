@@ -16,7 +16,8 @@ type FlyerProps = {
   liga: string;
   temporada: string;
   refCode: string;
-  fechaFin?: string | null;
+  /** ISO datetime del primer partido = cuando cierran las ventas al público */
+  fechaCierre?: string | null;
   locale?: Locale;
 };
 
@@ -110,7 +111,7 @@ async function dibujarFlyer(
   liga: string,
   _refCode: string,
   _origen: string,
-  fechaFin?: string | null,
+  fechaCierre?: string | null,
   locale: Locale = "es"
 ) {
   const tf = translations[locale].flyer;
@@ -332,8 +333,12 @@ async function dibujarFlyer(
   ctx.fillText(tf.cierre, W - PAD - 26, RR1);
   ctx.fillStyle = "#fbbf24";
   ctx.font = "bold 20px Arial, sans-serif";
-  const cierreTexto = fechaFin
-    ? new Date(fechaFin + "T06:00:00").toLocaleDateString(tf.bcp47, { weekday: "long", day: "numeric", month: "long" }).toUpperCase()
+  const cierreTexto = fechaCierre
+    ? new Date(fechaCierre).toLocaleDateString(tf.bcp47, {
+        weekday: "long", day: "numeric", month: "long",
+        hour: "2-digit", minute: "2-digit",
+        timeZone: "America/Mexico_City",
+      }).toUpperCase()
     : tf.verFecha;
   ctx.fillText(cierreTexto, W - PAD - 26, RR2);
   ctx.textBaseline = "alphabetic";
@@ -355,7 +360,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.fill();
 }
 
-export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCode, fechaFin, locale = "es" }: FlyerProps) {
+export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCode, fechaCierre, locale = "es" }: FlyerProps) {
   const [estado, setEstado] = useState<"idle" | "cargando" | "listo">("idle");
   const [blob, setBlob] = useState<Blob | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -369,8 +374,7 @@ export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCod
 
       const canvas = canvasRef.current!;
       const origen = window.location.origin;
-      const fechaFinFlyer = fechaFin ?? (data.fechaFin ? String(data.fechaFin).slice(0, 10) : null);
-      await dibujarFlyer(canvas, partidos, jornadaNombre, liga, refCode, origen, fechaFinFlyer, locale);
+      await dibujarFlyer(canvas, partidos, jornadaNombre, liga, refCode, origen, fechaCierre ?? null, locale);
 
       canvas.toBlob((b) => {
         if (b) setBlob(b);
@@ -379,7 +383,7 @@ export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCod
     } catch {
       setEstado("idle");
     }
-  }, [jornadaId, jornadaNombre, liga, refCode, locale, fechaFin]);
+  }, [jornadaId, jornadaNombre, liga, refCode, locale, fechaCierre]);
 
   const descargar = () => {
     if (!blob) return;
