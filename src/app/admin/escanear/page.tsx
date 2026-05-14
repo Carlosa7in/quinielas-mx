@@ -16,7 +16,7 @@ type Jornada = {
   partidos: Partido[];
 };
 
-type PicksDetectados = Record<string, string>;
+type PicksDetectados = Record<string, string[]>;
 
 // Calcula el porcentaje de píxeles oscuros en una región del canvas
 function porcentajeOscuro(
@@ -142,6 +142,13 @@ function EscanearInner() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [camaraError, setCamaraError] = useState("");
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!aviso) return;
+    const t = setTimeout(() => setAviso(null), 2500);
+    return () => clearTimeout(t);
+  }, [aviso]);
 
   useEffect(() => {
     const url = jornadaId ? `/api/jornadas?id=${jornadaId}` : "/api/jornadas";
@@ -197,7 +204,7 @@ function EscanearInner() {
       const picksVacios: PicksDetectados = {};
       const confianzaVacia: Record<string, boolean> = {};
       jornada.partidos.forEach((p) => {
-        picksVacios[p.id] = "";
+        picksVacios[p.id] = [];
         confianzaVacia[p.id] = false;
       });
       setPicksDetectados(picksVacios);
@@ -229,7 +236,7 @@ function EscanearInner() {
     const confianzaMap: Record<string, boolean> = {};
 
     jornada.partidos.forEach((partido, i) => {
-      picksMap[partido.id] = picks[i] || "";
+      picksMap[partido.id] = picks[i] ? [picks[i]] : [];
       confianzaMap[partido.id] = picks[i] !== "";
     });
 
@@ -243,11 +250,28 @@ function EscanearInner() {
   }, [jornada]);
 
   const cambiarPick = (partidoId: string, valor: string) => {
-    setPicksDetectados((prev) => ({ ...prev, [partidoId]: valor }));
+    setPicksDetectados((prev) => {
+      const current = prev[partidoId] ?? [];
+
+      // Validar antes de agregar (no al quitar)
+      if (!current.includes(valor)) {
+        const newLen = current.length + 1;
+        const otros = Object.entries(prev).filter(([id]) => id !== partidoId);
+        const dobles  = otros.filter(([, s]) => s.length === 2).length;
+        const triples = otros.filter(([, s]) => s.length === 3).length;
+        if (newLen === 2 && dobles  >= 3) { setAviso("Máximo 3 dobles por quiniela");  return prev; }
+        if (newLen === 3 && triples >= 2) { setAviso("Máximo 2 triples por quiniela"); return prev; }
+      }
+
+      const newSel = current.includes(valor)
+        ? current.filter((o) => o !== valor)
+        : [...current, valor];
+      return { ...prev, [partidoId]: newSel };
+    });
     setConfianza((prev) => ({ ...prev, [partidoId]: true }));
   };
 
-  const todosConfirmados = jornada?.partidos.every((p) => picksDetectados[p.id]) ?? false;
+  const todosConfirmados = jornada?.partidos.every((p) => (picksDetectados[p.id]?.length ?? 0) > 0) ?? false;
 
   const registrar = async () => {
     if (!jornada || !nombre || !todosConfirmados) return;
@@ -259,9 +283,9 @@ function EscanearInner() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         jornadaId: jornada.id,
-        picks: Object.entries(picksDetectados).map(([partidoId, prediccion]) => ({
+        picks: Object.entries(picksDetectados).map(([partidoId, predicciones]) => ({
           partidoId,
-          prediccion,
+          predicciones,
         })),
         nombre,
         telefono,
@@ -343,11 +367,22 @@ function EscanearInner() {
 
   // ── FASE: CONFIRMACIÓN DE PICKS ───────────────────────────────
   if (fase === "confirmacion") {
-    const totalDetectados = jornada?.partidos.filter((p) => picksDetectados[p.id]).length ?? 0;
+    const totalDetectados = jornada?.partidos.filter((p) => (picksDetectados[p.id]?.length ?? 0) > 0).length ?? 0;
     const totalPartidos = jornada?.partidos.length ?? 0;
+    const doblesCount  = Object.values(picksDetectados).filter((s) => s.length === 2).length;
+    const triplesCount = Object.values(picksDetectados).filter((s) => s.length === 3).length;
 
     return (
       <div className="min-h-screen bg-gray-50">
+
+        {/* Aviso límite dobles/triples */}
+        {aviso && (
+          <div className="fixed top-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
+            <div className="bg-orange-500 text-white text-sm font-bold px-5 py-2.5 rounded-2xl shadow-lg">
+              ⚠️ {aviso}
+            </div>
+          </div>
+        )}
         <div className="bg-brand text-white py-3 px-4 flex items-center justify-between">
           <button
             onClick={() => setFase("camara")}
@@ -373,6 +408,14 @@ function EscanearInner() {
               : `⚠️ ${totalDetectados}/${totalPartidos} detectados — corrige los marcados en amarillo`}
           </div>
 
+          {/* Contador dobles/triples */}
+          {(doblesCount > 0 || triplesCount > 0) && (
+            <div className="flex gap-2 justify-center">
+              {doblesCount  > 0 && <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-semibold">{doblesCount}/3 dobles</span>}
+              {triplesCount > 0 && <span className="text-xs bg-rose-100 text-rose-700 px-3 py-1 rounded-full font-semibold">{triplesCount}/2 triples</span>}
+            </div>
+          )}
+
           {/* Imagen capturada (miniatura) */}
           {imagenCapturada && (
             <div className="flex justify-center">
@@ -389,7 +432,9 @@ function EscanearInner() {
             <div className="divide-y divide-gray-100">
               {jornada?.partidos.map((partido) => {
                 const detectado = confianza[partido.id];
-                const pick = picksDetectados[partido.id];
+                const sel = picksDetectados[partido.id] ?? [];
+                const esDoble  = sel.length === 2;
+                const esTriple = sel.length === 3;
 
                 return (
                   <div
@@ -397,15 +442,17 @@ function EscanearInner() {
                     className={`p-3 ${!detectado ? "bg-yellow-50" : ""}`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-gray-800">
-                        {partido.equipoLocal}{" "}
-                        <span className="text-gray-400 font-normal text-xs">vs</span>{" "}
-                        {partido.equipoVisita}
-                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium text-gray-800">
+                          {partido.equipoLocal}{" "}
+                          <span className="text-gray-400 font-normal text-xs">vs</span>{" "}
+                          {partido.equipoVisita}
+                        </p>
+                        {esDoble  && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-bold">DOBLE</span>}
+                        {esTriple && <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-full font-bold">TRIPLE</span>}
+                      </div>
                       {!detectado && (
-                        <span className="text-yellow-600 text-xs font-bold">
-                          Sin detectar
-                        </span>
+                        <span className="text-yellow-600 text-xs font-bold shrink-0">Sin detectar</span>
                       )}
                     </div>
                     <div className="flex gap-2">
@@ -414,8 +461,8 @@ function EscanearInner() {
                           key={op}
                           onClick={() => cambiarPick(partido.id, op)}
                           className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
-                            pick === op
-                              ? "bg-green-600 text-white shadow"
+                            sel.includes(op)
+                              ? "bg-amber-700 text-white shadow"
                               : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                           }`}
                         >
@@ -463,12 +510,17 @@ function EscanearInner() {
             Picks confirmados
           </h3>
           <div className="flex flex-wrap gap-2">
-            {jornada?.partidos.map((p) => (
-              <div key={p.id} className="text-xs bg-green-50 rounded-lg px-2 py-1">
-                <span className="text-gray-500">{p.equipoLocal.split(" ")[0]} vs {p.equipoVisita.split(" ")[0]}</span>
-                <span className="font-bold text-green-700 ml-1">{picksDetectados[p.id]}</span>
-              </div>
-            ))}
+            {jornada?.partidos.map((p) => {
+              const sel = picksDetectados[p.id] ?? [];
+              return (
+                <div key={p.id} className="text-xs bg-green-50 rounded-lg px-2 py-1">
+                  <span className="text-gray-500">{p.equipoLocal.split(" ")[0]} vs {p.equipoVisita.split(" ")[0]}</span>
+                  <span className={`font-bold ml-1 ${sel.length > 1 ? "text-purple-700" : "text-green-700"}`}>
+                    {sel.join("/")}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
