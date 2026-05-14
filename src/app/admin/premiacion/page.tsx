@@ -1,6 +1,9 @@
 "use client";
 import { useState } from "react";
 import { JornadaSelector, type JornadaResumen } from "@/components/JornadaSelector";
+import { useLocale } from "@/hooks/useLocale";
+import { translations } from "@/lib/i18n";
+import { LocaleToggle } from "@/components/LocaleToggle";
 
 type Ganador = {
   folio: string;
@@ -43,19 +46,21 @@ function formatMXN(amount: number): string {
   return amount.toLocaleString("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
 }
 
-function buildWhatsAppMsg(nombre: string | null, aciertos: number | null, jornadaNombre: string, lugar: "1.°" | "2.°", premio: number | null): string {
-  const lines = [
-    `🏆 ¡Felicidades ${nombre ?? "ganador/a"}!`,
-    ``,
-    `Obtuviste ${aciertos ?? 0} aciertos en la jornada ${jornadaNombre} y ganaste el ${lugar} lugar.`,
-    ``,
-    `💰 Tu premio: ${formatMXN(premio ?? 0)}`,
-    ``,
-    `Tienes 7 días para reclamarlo. ¡Contáctanos para recibirlo!`,
-    ``,
-    `Tablitas Quinielas 🎯`,
-  ];
-  return lines.join("\n");
+function buildWhatsAppMsg(
+  nombre: string | null,
+  aciertos: number | null,
+  jornadaNombre: string,
+  lugar: "1.°" | "2.°",
+  premio: number | null,
+  locale: "es" | "en" = "es"
+): string {
+  return translations[locale].wa.ganador(
+    nombre,
+    aciertos ?? 0,
+    jornadaNombre,
+    lugar,
+    formatMXN(premio ?? 0),
+  );
 }
 
 function whatsappUrl(telefono: string | null, msg: string): string {
@@ -65,8 +70,8 @@ function whatsappUrl(telefono: string | null, msg: string): string {
   return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 }
 
-function GanadorCard({ ganador, lugar, jornadaNombre }: { ganador: Ganador; lugar: "1.°" | "2.°"; jornadaNombre: string }) {
-  const msg = buildWhatsAppMsg(ganador.nombre, ganador.aciertos, jornadaNombre, lugar, ganador.premio);
+function GanadorCard({ ganador, lugar, jornadaNombre, locale = "es" }: { ganador: Ganador; lugar: "1.°" | "2.°"; jornadaNombre: string; locale?: "es" | "en" }) {
+  const msg = buildWhatsAppMsg(ganador.nombre, ganador.aciertos, jornadaNombre, lugar, ganador.premio, locale);
   const url = whatsappUrl(ganador.telefono, msg);
 
   return (
@@ -102,6 +107,7 @@ export default function PremiacionPage() {
   const [datos, setDatos] = useState<PremiacionData | null>(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
+  const [locale, setLocale] = useLocale();
 
   const cargarPremiacion = async (j: JornadaResumen) => {
     // Only allow finalized jornadas
@@ -158,8 +164,11 @@ export default function PremiacionPage() {
             <h1 className="text-xl font-bold mt-1">Premiación</h1>
             <p className="text-amber-400 text-xs">{jornadaNombre} · {jornadaSeleccionada.temporada}</p>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "44px", objectFit: "contain", flexShrink: 0 }} />
+          <div className="flex items-center gap-3">
+            <LocaleToggle locale={locale} onChange={setLocale} dark />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "44px", objectFit: "contain", flexShrink: 0 }} />
+          </div>
         </div>
       </div>
 
@@ -260,7 +269,7 @@ export default function PremiacionPage() {
               ) : (
                 <div className="space-y-3">
                   {datos.ganadores1.map((g) => (
-                    <GanadorCard key={g.folio} ganador={g} lugar="1.°" jornadaNombre={jornadaNombre} />
+                    <GanadorCard key={g.folio} ganador={g} lugar="1.°" jornadaNombre={jornadaNombre} locale={locale} />
                   ))}
                 </div>
               )}
@@ -280,7 +289,7 @@ export default function PremiacionPage() {
                 ) : (
                   <div className="space-y-3">
                     {datos.ganadores2.map((g) => (
-                      <GanadorCard key={g.folio} ganador={g} lugar="2.°" jornadaNombre={jornadaNombre} />
+                      <GanadorCard key={g.folio} ganador={g} lugar="2.°" jornadaNombre={jornadaNombre} locale={locale} />
                     ))}
                   </div>
                 )}

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useCallback } from "react";
+import { translations, type Locale } from "@/lib/i18n";
 
 type Partido = {
   id: string;
@@ -16,6 +17,7 @@ type FlyerProps = {
   temporada: string;
   refCode: string;
   fechaFin?: string | null;
+  locale?: Locale;
 };
 
 const PRECIO = 20;
@@ -108,8 +110,10 @@ async function dibujarFlyer(
   liga: string,
   _refCode: string,
   _origen: string,
-  fechaFin?: string | null
+  fechaFin?: string | null,
+  locale: Locale = "es"
 ) {
+  const tf = translations[locale].flyer;
   // ── Dimensiones 9:16 ─────────────────────────────────────────────────
   const W = 810;
   const H = Math.round(W * 16 / 9); // 1440
@@ -243,9 +247,9 @@ async function dibujarFlyer(
   ctx.font = "bold 18px Arial, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("L",          PAD + 26,          curY + 24);
-  ctx.fillText("LOCAL",      (PAD + localNameX) / 2 + PAD / 2, curY + 24);
+  ctx.fillText(tf.local,     (PAD + localNameX) / 2 + PAD / 2, curY + 24);
   ctx.fillText("E",          W / 2,             curY + 24);
-  ctx.fillText("VISITANTE",  (awayNameX + W - PAD) / 2, curY + 24);
+  ctx.fillText(tf.visitante, (awayNameX + W - PAD) / 2, curY + 24);
   ctx.fillText("V",          W - PAD - 26,      curY + 24);
   curY += COL_H + GAP_COL_ROWS;
 
@@ -310,8 +314,8 @@ async function dibujarFlyer(
   ctx.textAlign = "left";
   ctx.font = "bold 20px Arial, sans-serif";
   ctx.fillStyle = "#ffffff";
-  const labelW = ctx.measureText("PRECIO: ").width;
-  ctx.fillText("PRECIO: ", PAD + 26, priceY);
+  const labelW = ctx.measureText(tf.precio).width;
+  ctx.fillText(tf.precio, PAD + 26, priceY);
   ctx.font = "bold 38px Arial, sans-serif";
   ctx.fillStyle = "#fbbf24";
   ctx.fillText(`$${PRECIO}`, PAD + 26 + labelW, priceY);
@@ -325,12 +329,12 @@ async function dibujarFlyer(
   ctx.font = "bold 19px Arial, sans-serif";
   ctx.textBaseline = "middle";
   ctx.textAlign = "right";
-  ctx.fillText("CIERRE DE REGISTRO", W - PAD - 26, RR1);
+  ctx.fillText(tf.cierre, W - PAD - 26, RR1);
   ctx.fillStyle = "#fbbf24";
   ctx.font = "bold 20px Arial, sans-serif";
   const cierreTexto = fechaFin
-    ? new Date(fechaFin + "T06:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }).toUpperCase()
-    : "VER FECHA EN APP";
+    ? new Date(fechaFin + "T06:00:00").toLocaleDateString(tf.bcp47, { weekday: "long", day: "numeric", month: "long" }).toUpperCase()
+    : tf.verFecha;
   ctx.fillText(cierreTexto, W - PAD - 26, RR2);
   ctx.textBaseline = "alphabetic";
 }
@@ -351,7 +355,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.fill();
 }
 
-export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCode, fechaFin }: FlyerProps) {
+export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCode, fechaFin, locale = "es" }: FlyerProps) {
   const [estado, setEstado] = useState<"idle" | "cargando" | "listo">("idle");
   const [blob, setBlob] = useState<Blob | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -366,7 +370,7 @@ export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCod
       const canvas = canvasRef.current!;
       const origen = window.location.origin;
       const fechaFinFlyer = fechaFin ?? (data.fechaFin ? String(data.fechaFin).slice(0, 10) : null);
-      await dibujarFlyer(canvas, partidos, jornadaNombre, liga, refCode, origen, fechaFinFlyer);
+      await dibujarFlyer(canvas, partidos, jornadaNombre, liga, refCode, origen, fechaFinFlyer, locale);
 
       canvas.toBlob((b) => {
         if (b) setBlob(b);
@@ -375,7 +379,7 @@ export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCod
     } catch {
       setEstado("idle");
     }
-  }, [jornadaId, jornadaNombre, liga, refCode]);
+  }, [jornadaId, jornadaNombre, liga, refCode, locale, fechaFin]);
 
   const descargar = () => {
     if (!blob) return;
@@ -392,17 +396,7 @@ export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCod
     const file = new File([blob], "quiniela-flyer.png", { type: "image/png" });
     const origen = typeof window !== "undefined" ? window.location.origin : "";
     const link = `${origen}/quiniela${refCode ? `?ref=${refCode}` : ""}`;
-    const texto = [
-      `🏆 ¡Ya están abiertas las quinielas!`,
-      ``,
-      `⚽ ${liga} · ${jornadaNombre}`,
-      `💰 Solo $${PRECIO} por boleto — ¡gana premios en efectivo!`,
-      ``,
-      `Registra la tuya aquí 👇`,
-      link,
-      ``,
-      `¡No te quedes sin la tuya! 🔥`,
-    ].join("\n");
+    const texto = translations[locale].wa.promo(liga, jornadaNombre, link);
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({

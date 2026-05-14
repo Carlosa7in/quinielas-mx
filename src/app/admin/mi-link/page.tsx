@@ -2,6 +2,9 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { FlyerJornada } from "@/components/FlyerJornada";
+import { useLocale } from "@/hooks/useLocale";
+import { translations } from "@/lib/i18n";
+import { LocaleToggle } from "@/components/LocaleToggle";
 
 const fmt = (n: number) =>
   n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -41,6 +44,7 @@ export default function MiLinkPage() {
   const [copiado, setCopiado] = useState(false);
   const [copiadoInstrucciones, setCopiadoInstrucciones] = useState(false);
   const [generando, setGenerando] = useState(false);
+  const [locale, setLocale] = useLocale();
 
   useEffect(() => {
     const get = (url: string) => fetch(url).then((r) => r.json()).catch(() => ({}));
@@ -116,8 +120,11 @@ export default function MiLinkPage() {
             <a href={backHref} className="text-amber-400 text-sm">← {backLabel}</a>
             <h1 className="text-xl font-bold mt-1">Mi Link de Ventas</h1>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "40px", objectFit: "contain" }} />
+          <div className="flex items-center gap-3">
+            <LocaleToggle locale={locale} onChange={setLocale} dark />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "40px", objectFit: "contain" }} />
+          </div>
         </div>
       </div>
 
@@ -202,10 +209,10 @@ export default function MiLinkPage() {
                     const nombreJornada = j.nombre ?? `Jornada ${j.numero}`;
                     const origin = typeof window !== "undefined" ? window.location.origin : "";
                     const link = `${origin}/quiniela?ref=${data.codigoRef}`;
-                    const mensaje = `🏆 ¡Ya están abiertas las quinielas!\n\n⚽ ${j.liga} · ${nombreJornada}\n💰 Solo $20 por boleto — ¡gana premios en efectivo!\n\nRegistra la tuya aquí 👇\n${link}\n\n¡No te quedes sin la tuya! 🔥`;
+                    const mensaje = translations[locale].wa.promo(j.liga, nombreJornada, link);
                     const waUrl = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
-                    const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(`🏆 ¡Ya están abiertas las quinielas! ⚽ ${j.liga} · ${nombreJornada} — Solo $20. ¡Regístra la tuya! 🔥`)}`;
-                    const twUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`🏆 ¡Ya están abiertas las quinielas de ${j.liga} · ${nombreJornada}! Solo $20. ¡Regístra la tuya! 🔥`)}&url=${encodeURIComponent(link)}`;
+                    const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(translations[locale].wa.promo(j.liga, nombreJornada, link))}`;
+                    const twUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(translations[locale].wa.promo(j.liga, nombreJornada, ""))}&url=${encodeURIComponent(link)}`;
                     const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
                     const puedeCompartirNativo = typeof navigator !== "undefined" && !!navigator.share;
 
@@ -252,6 +259,7 @@ export default function MiLinkPage() {
                           temporada={j.temporada}
                           refCode={data.codigoRef!}
                           fechaFin={j.fechaFin ? String(j.fechaFin).slice(0, 10) : null}
+                          locale={locale}
                         />
                       </div>
                     );
