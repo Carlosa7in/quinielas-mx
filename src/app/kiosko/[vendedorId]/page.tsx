@@ -102,6 +102,13 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   const [errorEnvio, setErrorEnvio] = useState("");
   const [enviado, setEnviado] = useState(false);
   const [logoMap, setLogoMap] = useState<Record<string, string>>({});
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!aviso) return;
+    const t = setTimeout(() => setAviso(null), 2500);
+    return () => clearTimeout(t);
+  }, [aviso]);
 
   useEffect(() => {
     fetch(`/api/kiosko?vendedorId=${vendedorId}`)
@@ -131,8 +138,19 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
       const next = prev.map((s) => [...s]);
       const sel = next[idx];
       const i = sel.indexOf(opcion);
-      if (i >= 0) sel.splice(i, 1);
-      else sel.push(opcion);
+
+      if (i < 0) {
+        // Validar antes de agregar
+        const newLen = sel.length + 1;
+        const otros = next.filter((_, j) => j !== idx);
+        const dobles  = otros.filter((s) => s.length === 2).length;
+        const triples = otros.filter((s) => s.length === 3).length;
+        if (newLen === 2 && dobles  >= 3) { setAviso("Máximo 3 dobles por quiniela");  return prev; }
+        if (newLen === 3 && triples >= 2) { setAviso("Máximo 2 triples por quiniela"); return prev; }
+        sel.push(opcion);
+      } else {
+        sel.splice(i, 1);
+      }
       return next;
     });
   };
@@ -272,8 +290,20 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   const faltanPicks = picks.filter((s) => s.length === 0).length;
 
   /* ── Página principal ────────────────────────────────────────────────────── */
+  const doblesCount  = picks.filter((s) => s.length === 2).length;
+  const triplesCount = picks.filter((s) => s.length === 3).length;
+
   return (
     <div className="min-h-screen bg-gray-50">
+
+      {/* Aviso límite dobles/triples */}
+      {aviso && (
+        <div className="fixed top-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
+          <div className="bg-orange-500 text-white text-sm font-bold px-5 py-2.5 rounded-2xl shadow-lg">
+            ⚠️ {aviso}
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-brand text-white px-4 pt-5 pb-6">
@@ -309,9 +339,9 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
                   : <><span className="font-bold text-amber-200">{combos}</span> combinaciones</>}
                 {combos > 1 && (
                   <span className="ml-2 text-xs text-amber-300/80">
-                    ({picks.filter((s) => s.length === 2).length > 0 && `${picks.filter((s) => s.length === 2).length} doble${picks.filter((s) => s.length === 2).length > 1 ? "s" : ""}`}
-                    {picks.filter((s) => s.length === 2).length > 0 && picks.filter((s) => s.length === 3).length > 0 && ", "}
-                    {picks.filter((s) => s.length === 3).length > 0 && `${picks.filter((s) => s.length === 3).length} triple${picks.filter((s) => s.length === 3).length > 1 ? "s" : ""}`})
+                    ({doblesCount  > 0 && `${doblesCount}/3 doble${doblesCount  > 1 ? "s" : ""}`}
+                    {doblesCount > 0 && triplesCount > 0 && ", "}
+                    {triplesCount > 0 && `${triplesCount}/2 triple${triplesCount > 1 ? "s" : ""}`})
                   </span>
                 )}
               </p>
@@ -467,14 +497,14 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span>{combos === 1 ? "Quiniela sencilla" : `${combos} combinaciones`}</span>
-              {picks.filter((s) => s.length === 2).length > 0 && (
+              {doblesCount > 0 && (
                 <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">
-                  {picks.filter((s) => s.length === 2).length} doble{picks.filter((s) => s.length === 2).length > 1 ? "s" : ""}
+                  {doblesCount}/3 doble{doblesCount > 1 ? "s" : ""}
                 </span>
               )}
-              {picks.filter((s) => s.length === 3).length > 0 && (
+              {triplesCount > 0 && (
                 <span className="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-semibold">
-                  {picks.filter((s) => s.length === 3).length} triple{picks.filter((s) => s.length === 3).length > 1 ? "s" : ""}
+                  {triplesCount}/2 triple{triplesCount > 1 ? "s" : ""}
                 </span>
               )}
             </div>

@@ -267,6 +267,7 @@ function QuinielaInner() {
   const [metodoPago, setMetodoPago] = useState<"transferencia" | "oxxo">("transferencia");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
+  const [aviso, setAviso] = useState<string | null>(null);
 
   // Fecha de cierre usando la función canónica
   const fechaCierreObj = jornada
@@ -282,6 +283,12 @@ function QuinielaInner() {
   const primerPartidoISO = fechaCierreObj ? fechaCierreObj.toISOString() : null;
   const cuentaRegresiva = useCuentaRegresiva(primerPartidoISO);
   const registroCerrado = fechaCierreObj ? new Date() >= fechaCierreObj : false;
+
+  useEffect(() => {
+    if (!aviso) return;
+    const t = setTimeout(() => setAviso(null), 2500);
+    return () => clearTimeout(t);
+  }, [aviso]);
 
   if (!jornada) return <SelectorJornada onSelect={setJornada} />;
 
@@ -317,6 +324,17 @@ function QuinielaInner() {
     setFormas((prev) => {
       const next = [...prev];
       const current = next[formaIdx][partidoId] ?? [];
+
+      // Validate limits only when ADDING (not removing)
+      if (!current.includes(opcion)) {
+        const newLen = current.length + 1;
+        const otros = Object.entries(next[formaIdx]).filter(([id]) => id !== partidoId);
+        const dobles  = otros.filter(([, s]) => s.length === 2).length;
+        const triples = otros.filter(([, s]) => s.length === 3).length;
+        if (newLen === 2 && dobles  >= 3) { setAviso("Máximo 3 dobles por quiniela");  return prev; }
+        if (newLen === 3 && triples >= 2) { setAviso("Máximo 2 triples por quiniela"); return prev; }
+      }
+
       const newSel = current.includes(opcion)
         ? current.filter((o) => o !== opcion)
         : [...current, opcion];
@@ -437,6 +455,14 @@ function QuinielaInner() {
   /* ── Render ── */
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Aviso límite dobles/triples */}
+      {aviso && (
+        <div className="fixed top-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
+          <div className="bg-orange-500 text-white text-sm font-bold px-5 py-2.5 rounded-2xl shadow-lg">
+            ⚠️ {aviso}
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="bg-brand text-white py-5 px-4">
         <div className="max-w-lg mx-auto">
@@ -602,15 +628,28 @@ function QuinielaInner() {
         <div className="bg-white rounded-xl shadow-sm">
           {/* Cabecera */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-700">
-              {formas.length > 1 ? `Boleto ${formaActiva + 1}` : "Pronósticos"}{" "}
-              <span className="text-amber-600 font-normal text-sm">
-                ({Object.keys(picks).filter(k => (picks[k]?.length ?? 0) > 0).length}/{partidos.length})
-              </span>
-              {combosActiva > 1 && (
-                <span className="ml-2 text-xs font-bold text-orange-600">{combosActiva} combos</span>
-              )}
-            </h2>
+            <div>
+              <h2 className="font-semibold text-gray-700">
+                {formas.length > 1 ? `Boleto ${formaActiva + 1}` : "Pronósticos"}{" "}
+                <span className="text-amber-600 font-normal text-sm">
+                  ({Object.keys(picks).filter(k => (picks[k]?.length ?? 0) > 0).length}/{partidos.length})
+                </span>
+                {combosActiva > 1 && (
+                  <span className="ml-2 text-xs font-bold text-orange-600">{combosActiva} combos</span>
+                )}
+              </h2>
+              {/* Counter dobles/triples */}
+              {(() => {
+                const d = Object.values(picks).filter(s => s.length === 2).length;
+                const t = Object.values(picks).filter(s => s.length === 3).length;
+                return (d > 0 || t > 0) ? (
+                  <div className="flex gap-1.5 mt-1">
+                    {d > 0 && <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">{d}/3 dobles</span>}
+                    {t > 0 && <span className="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-semibold">{t}/2 triples</span>}
+                  </div>
+                ) : null;
+              })()}
+            </div>
             {!registroCerrado && (
               <div className="flex gap-2">
                 <button type="button" onClick={() => rellenarForma(formaActiva)}

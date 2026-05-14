@@ -105,6 +105,13 @@ export default function TiendaPage() {
   const [preregistros, setPreregistros] = useState<PreReg[]>([]);
   const [preRegistroId, setPreRegistroId] = useState<string | null>(null); // el que se está procesando
   const [mostrarQR, setMostrarQR] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!aviso) return;
+    const t = setTimeout(() => setAviso(null), 2500);
+    return () => clearTimeout(t);
+  }, [aviso]);
 
   // Polling cada 8 segundos cuando la bandeja está abierta
   useEffect(() => {
@@ -572,6 +579,17 @@ export default function TiendaPage() {
     setFormas((prev) => {
       const next = [...prev];
       const current = next[formaIdx][partidoId] ?? [];
+
+      // Validar antes de agregar (no al quitar)
+      if (!current.includes(opcion)) {
+        const newLen = current.length + 1;
+        const otros = Object.entries(next[formaIdx]).filter(([id]) => id !== partidoId);
+        const dobles  = otros.filter(([, s]) => s.length === 2).length;
+        const triples = otros.filter(([, s]) => s.length === 3).length;
+        if (newLen === 2 && dobles  >= 3) { setAviso("Máximo 3 dobles por quiniela");  return prev; }
+        if (newLen === 3 && triples >= 2) { setAviso("Máximo 2 triples por quiniela"); return prev; }
+      }
+
       const newSel = current.includes(opcion)
         ? current.filter((o) => o !== opcion)
         : [...current, opcion];
@@ -671,8 +689,20 @@ export default function TiendaPage() {
   };
 
   /* ── Render manual ───────────────────────────────────────────── */
+  const doblesActiva  = Object.values(picks).filter((s) => s.length === 2).length;
+  const triplesActiva = Object.values(picks).filter((s) => s.length === 3).length;
+
   return (
     <div className="min-h-screen bg-gray-100">
+
+      {/* Aviso límite dobles/triples */}
+      {aviso && (
+        <div className="fixed top-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
+          <div className="bg-orange-500 text-white text-sm font-bold px-5 py-2.5 rounded-2xl shadow-lg">
+            ⚠️ {aviso}
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="bg-brand text-white py-4 px-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
@@ -782,18 +812,26 @@ export default function TiendaPage() {
         <div className="bg-white rounded-xl p-4">
           {/* Título forma + acciones */}
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-700">
-              {formas.length > 1 ? `Forma ${formaActiva + 1}` : "Pronósticos"}
-              <span className="ml-2 text-amber-600 font-normal text-sm">
-                {Object.keys(picks).filter((k) => (picks[k]?.length ?? 0) > 0).length}/
-                {partidos.length}
-              </span>
-              {combosActiva > 1 && (
-                <span className="ml-2 text-xs font-bold text-orange-600">
-                  {combosActiva} combos
+            <div>
+              <h2 className="font-semibold text-gray-700">
+                {formas.length > 1 ? `Forma ${formaActiva + 1}` : "Pronósticos"}
+                <span className="ml-2 text-amber-600 font-normal text-sm">
+                  {Object.keys(picks).filter((k) => (picks[k]?.length ?? 0) > 0).length}/
+                  {partidos.length}
                 </span>
+                {combosActiva > 1 && (
+                  <span className="ml-2 text-xs font-bold text-orange-600">
+                    {combosActiva} combos
+                  </span>
+                )}
+              </h2>
+              {(doblesActiva > 0 || triplesActiva > 0) && (
+                <div className="flex gap-1.5 mt-0.5">
+                  {doblesActiva  > 0 && <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">{doblesActiva}/3 dobles</span>}
+                  {triplesActiva > 0 && <span className="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-semibold">{triplesActiva}/2 triples</span>}
+                </div>
               )}
-            </h2>
+            </div>
             <div className="flex gap-2">
               <button
                 type="button"
