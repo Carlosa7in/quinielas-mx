@@ -125,3 +125,14 @@ model PagoComision {
 
   @@unique([usuarioId, jornadaId])
 }
+
+model PreRegistro {
+  id         String   @id @default(cuid())
+  vendedorId String   // usuario.id del vendedor de tienda
+  jornadaId  String
+  nombre     String
+  telefono   String
+  picks      String   // JSON array: ["L","E","V",...] uno por partido en orden
+  createdAt  DateTime @default(now())
+  usado      Boolean  @default(false)
+}

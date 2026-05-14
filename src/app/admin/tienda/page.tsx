@@ -63,7 +63,7 @@ export default function TiendaPage() {
   const rol = (session?.user as { role?: string })?.role ?? "";
   const esAdmin = ["admin", "superadmin"].includes(rol);
 
-  type Modo = "home" | "vender" | "selector" | "seleccion" | "manual";
+  type Modo = "home" | "vender" | "selector" | "seleccion" | "manual" | "bandeja";
   const [modo, setModo] = useState<Modo>("home");
 
   // Navegar entre modos registrando historial para que el botón atrás funcione
@@ -78,7 +78,7 @@ export default function TiendaPage() {
       setModo((prev) => {
         if (prev === "seleccion" || prev === "manual") { setJornada(null); return "selector"; }
         if (prev === "selector") return esAdmin ? "home" : "vender";
-        if (prev === "vender") return "home";
+        if (prev === "vender" || prev === "bandeja") return "home";
         return "home";
       });
     };
@@ -99,6 +99,61 @@ export default function TiendaPage() {
   const [error, setError] = useState("");
   const [clienteEncontrado, setClienteEncontrado] = useState<{ nombre: string } | null>(null);
   const [buscandoCliente, setBuscandoCliente] = useState(false);
+
+  // ── Kiosko / Bandeja ───────────────────────────────────────────
+  type PreReg = { id: string; nombre: string; telefono: string; picks: string[]; jornadaId: string; createdAt: string };
+  const [preregistros, setPreregistros] = useState<PreReg[]>([]);
+  const [preRegistroId, setPreRegistroId] = useState<string | null>(null); // el que se está procesando
+  const [mostrarQR, setMostrarQR] = useState(false);
+
+  // Polling cada 8 segundos cuando la bandeja está abierta
+  useEffect(() => {
+    if (modo !== "bandeja" || !usuarioId) return;
+    const cargarBandeja = () =>
+      fetch(`/api/admin/preregistros?vendedorId=${usuarioId}`)
+        .then((r) => r.json())
+        .then((d) => Array.isArray(d) && setPreregistros(d))
+        .catch(() => {});
+    cargarBandeja();
+    const t = setInterval(cargarBandeja, 8000);
+    return () => clearInterval(t);
+  }, [modo, usuarioId]);
+
+  const cargarDesdeKiosko = async (pr: PreReg) => {
+    // 1. Obtener datos de la jornada
+    const res = await fetch(`/api/admin/jornada?id=${pr.jornadaId}`).catch(() => null);
+    if (!res?.ok) return;
+    const jornadaData = await res.json();
+    if (!jornadaData?.id) return;
+
+    // 2. Convertir picks ["L","E","V",...] → FormaPicks {partidoId: ["1"|"X"|"2"]}
+    const MAP: Record<string, string> = { L: "1", E: "X", V: "2" };
+    const partidosOrdenados: { id: string }[] = [...(jornadaData.partidos ?? [])].sort(
+      (a: { orden: number }, b: { orden: number }) => a.orden - b.orden
+    );
+    const formaPicks: FormaPicks = {};
+    pr.picks.forEach((pick, i) => {
+      const p = partidosOrdenados[i];
+      if (p && MAP[pick]) formaPicks[p.id] = [MAP[pick]];
+    });
+
+    // 3. Rellenar estado y navegar al modo manual
+    setJornada(jornadaData);
+    setNombre(pr.nombre);
+    setTelefono(pr.telefono);
+    setFormas([formaPicks]);
+    setFormaActiva(0);
+    setPreRegistroId(pr.id);
+    irA("manual");
+  };
+
+  const tiempoRelativo = (iso: string) => {
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return "hace un momento";
+    if (m === 1) return "hace 1 min";
+    return `hace ${m} min`;
+  };
 
   /* ── Búsqueda de cliente por teléfono (debounced 500ms) ─────── */
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -221,6 +276,18 @@ export default function TiendaPage() {
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-3">
 
           <button
+            onClick={() => irA("bandeja")}
+            className="w-full bg-teal-700 hover:bg-teal-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left relative"
+          >
+            <span className="text-2xl">📲</span>
+            <div className="flex-1">
+              <p className="font-bold">Bandeja Kiosko</p>
+              <p className="text-teal-200 text-sm">Clientes que llenaron sus picks desde el QR</p>
+            </div>
+            <span className="text-teal-400 text-lg">›</span>
+          </button>
+
+          <button
             onClick={() => irA("selector")}
             className="w-full bg-amber-700 hover:bg-amber-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors text-left"
           >
@@ -250,6 +317,104 @@ export default function TiendaPage() {
   }
 
   /* ── Jornada selector ─────────────────────────────────────────── */
+  /* ── Modo bandeja kiosko ─────────────────────────────────────── */
+  if (modo === "bandeja") {
+    const kioskUrl = typeof window !== "undefined"
+      ? `${window.location.origin}/kiosko/${usuarioId}`
+      : "";
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(kioskUrl)}&bgcolor=ffffff&color=000000&margin=10`;
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-brand text-white py-4 px-4">
+          <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
+            <div>
+              <button onClick={() => setModo("vender")} className="text-amber-400 text-sm">← Vender</button>
+              <h1 className="text-xl font-bold mt-1">Bandeja Kiosko</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setMostrarQR((v) => !v)}
+                className="bg-white/10 hover:bg-white/20 text-white text-sm px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <span>📲</span> Mi QR
+              </button>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "36px", objectFit: "contain" }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
+
+          {/* QR de la tienda */}
+          {mostrarQR && (
+            <div className="bg-white rounded-2xl shadow-sm p-5 text-center space-y-3">
+              <p className="font-bold text-gray-800">QR de tu Kiosko</p>
+              <p className="text-xs text-gray-500">Ponlo en un lugar visible de tu tienda. Los clientes lo escanean para llenar sus picks.</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={qrUrl} alt="QR Kiosko" className="mx-auto rounded-xl border border-gray-100" width={200} height={200} />
+              <p className="text-xs text-gray-400 break-all">{kioskUrl}</p>
+              <button
+                onClick={() => window.open(kioskUrl, "_blank")}
+                className="text-xs text-amber-600 underline"
+              >
+                Ver página del cliente →
+              </button>
+            </div>
+          )}
+
+          {/* Lista de picks pendientes */}
+          {preregistros.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center space-y-2">
+              <p className="text-3xl">📭</p>
+              <p className="font-medium text-gray-500">Sin picks pendientes</p>
+              <p className="text-xs text-gray-400">Cuando un cliente llene sus picks con el QR, aparecerán aquí.</p>
+              <p className="text-xs text-teal-500 mt-2 animate-pulse">Actualizando automáticamente…</p>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-teal-600 font-semibold pl-1">
+                {preregistros.length} cliente{preregistros.length !== 1 ? "s" : ""} esperando · Actualizando automáticamente
+              </p>
+              {preregistros.map((pr) => (
+                <div key={pr.id} className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-gray-800">{pr.nombre}</p>
+                      <p className="text-sm text-gray-500">+52 {pr.telefono}</p>
+                    </div>
+                    <span className="text-xs text-gray-400">{tiempoRelativo(pr.createdAt)}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {pr.picks.map((p, i) => (
+                      <span
+                        key={i}
+                        className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
+                          p === "L" ? "bg-amber-100 text-amber-700" :
+                          p === "E" ? "bg-gray-100 text-gray-600" :
+                          "bg-blue-100 text-blue-700"
+                        }`}
+                      >
+                        {i + 1}·{p}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => cargarDesdeKiosko(pr)}
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-xl transition-colors"
+                  >
+                    Cargar en formulario →
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const seleccionarJornada = async (j: JornadaResumen) => {
     const res = await fetch(`/api/jornadas?id=${j.id}`);
     const data = await res.json();
@@ -467,6 +632,16 @@ export default function TiendaPage() {
         return;
       }
       foliosTodos.push(...(data.folios ?? [data.folio]));
+    }
+
+    // Marcar preregistro de kiosko como usado (si aplica)
+    if (preRegistroId) {
+      fetch("/api/admin/preregistros", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: preRegistroId }),
+      }).catch(() => {});
+      setPreRegistroId(null);
     }
 
     sessionStorage.setItem("lastRegistro", JSON.stringify({
