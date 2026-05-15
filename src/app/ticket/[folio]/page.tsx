@@ -1149,6 +1149,18 @@ export default function TicketPage() {
                     {waIcon} Business
                   </a>
                 </div>
+                {/* Sin WhatsApp — copiar mensaje para enviarlo por otra vía */}
+                <button
+                  onClick={(e) => {
+                    navigator.clipboard.writeText(msg);
+                    const btn = e.currentTarget;
+                    btn.innerText = "✓ Mensaje copiado";
+                    setTimeout(() => { btn.innerText = "📋 Sin WhatsApp — copiar mensaje"; }, 2000);
+                  }}
+                  className="w-full text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-100 py-2 rounded-xl transition-colors"
+                >
+                  📋 Sin WhatsApp — copiar mensaje
+                </button>
               </div>
             );
           })()}
