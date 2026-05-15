@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { getLogoUrl } from "@/lib/equipos";
 
 type Partido = {
   id: string;
@@ -65,8 +66,21 @@ function initials(name: string): string {
 }
 
 function TeamLogo({ logoUrl, team, size = 32 }: { logoUrl: string; team: string; size?: number }) {
+  const staticUrl = getLogoUrl(team);
+  const initial   = logoUrl || staticUrl;
+  const [src, setSrc]     = useState(initial);
   const [failed, setFailed] = useState(false);
-  if (!logoUrl || failed) {
+
+  const handleError = () => {
+    // Intento 1 fallido → probar URL estática de equipos.ts
+    if (src !== staticUrl && staticUrl) {
+      setSrc(staticUrl);
+    } else {
+      setFailed(true);
+    }
+  };
+
+  if (!initial || failed) {
     return (
       <div style={{ width: size, height: size, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <span style={{ color: "#fff", fontSize: size * 0.32, fontWeight: 800, lineHeight: 1 }}>{initials(team)}</span>
@@ -75,7 +89,7 @@ function TeamLogo({ logoUrl, team, size = 32 }: { logoUrl: string; team: string;
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={logoUrl} alt={team} onError={() => setFailed(true)} crossOrigin="anonymous"
+    <img src={src} alt={team} onError={handleError} crossOrigin="anonymous"
       style={{ width: size, height: size, objectFit: "contain", display: "block", flexShrink: 0 }} />
   );
 }

@@ -59,6 +59,14 @@ const PAGES_CON_LOGOS = [
     ligas: "Jornada activa",
     nota: "Usa mapa estático de equipos.ts.",
   },
+  {
+    pagina: "/resultados/[jornadaId]",
+    descripcion: "Tabla pública de resultados por jornada",
+    componente: "TeamLogo (inline)",
+    fuente: "both" as const,
+    ligas: "Jornada activa",
+    nota: "Intenta logoUrl de BD primero; si falla usa getLogoUrl de equipos.ts; si ambos fallan muestra iniciales.",
+  },
 ];
 
 type Equipo = {
