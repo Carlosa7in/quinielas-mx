@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
   // Recaudado TOTAL por jornada (TODAS las quinielas, de todos los usuarios)
   // Necesario para calcular el 15% de admins
   const todasLasQ = await prisma.quiniela.findMany({
-    where: jornadaId ? { jornadaId } : {},
+    where: { estadoPago: "confirmado", ...(jornadaId ? { jornadaId } : {}) },
     select: {
       jornadaId: true,
       monto: true,
@@ -135,7 +135,7 @@ export async function GET(req: NextRequest) {
       const jornada = qs[0].jornada;
       const tienda = qs.filter((q) => q.canal === "tienda").length;
       const online = qs.filter((q) => q.canal !== "tienda").length;
-      const recaudado = qs.reduce((s, q) => s + q.monto, 0);
+      const recaudado = qs.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto, 0);
       const comision = u.rol === "vendedor"
         ? qs.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto * COMISION_PCT, 0)
         : qs.filter((q) => q.canal === "tienda").reduce((s, q) => s + q.monto * COMISION_PCT, 0);
@@ -202,7 +202,7 @@ export async function GET(req: NextRequest) {
     const total = misQ.length;
     const tienda = misQ.filter((q) => q.canal === "tienda").length;
     const online = misQ.filter((q) => q.canal !== "tienda").length;
-    const recaudado = misQ.reduce((s, q) => s + q.monto, 0);
+    const recaudado = misQ.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto, 0);
     const comisionTiendaTotal = u.rol === "vendedor"
       ? misQ.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto * COMISION_PCT, 0)
       : misQ.filter((q) => q.canal === "tienda").reduce((s, q) => s + q.monto * COMISION_PCT, 0);

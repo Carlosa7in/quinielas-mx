@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     }
     const e = porJornadaMap.get(jId)!;
     e.total += 1;
-    e.recaudado += q.monto;
+    if (q.estadoPago === "confirmado") e.recaudado += q.monto;
     if (q.canal === "tienda") {
       e.tienda += 1;
       e.comision += q.monto * COMISION_PCT;
@@ -125,7 +125,7 @@ export async function GET(req: NextRequest) {
         });
       }
       const e = recMap.get(q.jornadaId)!;
-      e.recaudado += q.monto;
+      if (q.estadoPago === "confirmado") e.recaudado += q.monto;
 
       if (q.canal === "tienda") {
         // Venta en tienda: comisión inmediata al vendedor

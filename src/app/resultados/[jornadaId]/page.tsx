@@ -198,6 +198,14 @@ export default function ResultadosPage() {
   const [estadoImg, setEstadoImg] = useState<"idle" | "generando" | "lista">("idle");
   const [blobUrl, setBlobUrl]     = useState<string>("");
   const [blob, setBlob]           = useState<Blob | null>(null);
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 800
+  );
+  useEffect(() => {
+    const onResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     fetch(`/api/resultados/${jornadaId}`)
@@ -258,6 +266,20 @@ export default function ResultadosPage() {
   const { jornada, partidos, premios } = data;
   const nombreJornada = jornada.nombre ?? `Jornada ${jornada.numero}`;
   const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+
+  // Dimensiones responsive — sin scroll horizontal en mobile
+  const isMobile = windowWidth < 640;
+  const availW   = windowWidth - 12; // px-3 = 6px c/lado
+  const rPtsW    = isMobile ? 30 : 44;
+  const rNameW   = isMobile ? 80 : 140;
+  const rColW    = isMobile
+    ? Math.max(24, Math.floor((availW - rNameW - rPtsW) / (partidos.length || 1)))
+    : 50;
+  const rLogoSz  = isMobile ? 22 : 34;
+  const rCellH   = isMobile ? 22 : 28;
+  const rFontXS  = isMobile ? 8 : 10;
+  const rFontSM  = isMobile ? 9 : 11;
+  const rFontNm  = isMobile ? 10 : 12;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -334,33 +356,33 @@ export default function ResultadosPage() {
             <span style={{ color: WHITE, fontSize: 11, fontWeight: 800, letterSpacing: 2 }}>RESULTADOS</span>
           </div>
 
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ borderCollapse: "collapse", width: "100%", minWidth: NAME_W + partidos.length * COL_W + PTS_W }}>
+          <div>
+            <table style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed" }}>
               <thead>
                 {/* LOCAL */}
                 <tr style={{ background: "#e8edf2" }}>
-                  <td style={{ width: NAME_W, minWidth: NAME_W, padding: "6px 10px" }}>
-                    <span style={{ color: NAVY, fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span>
+                  <td style={{ width: rNameW, padding: "6px 10px" }}>
+                    <span style={{ color: NAVY, fontSize: rFontSM, fontWeight: 800, letterSpacing: 1 }}>LOCAL</span>
                   </td>
                   {partidos.map((p) => (
-                    <td key={`local-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "6px 2px" }}>
+                    <td key={`local-${p.id}`} style={{ width: rColW, textAlign: "center", padding: "4px 1px" }}>
                       <div style={{ display: "flex", justifyContent: "center" }}>
-                        <TeamLogo logoUrl={p.logoLocal} team={p.equipoLocal} size={34} />
+                        <TeamLogo logoUrl={p.logoLocal} team={p.equipoLocal} size={rLogoSz} />
                       </div>
                     </td>
                   ))}
-                  <td style={{ width: PTS_W }} />
+                  <td style={{ width: rPtsW }} />
                 </tr>
                 {/* MARCADOR — plain score, no green box */}
                 <tr style={{ background: "#0f2a47" }}>
-                  <td style={{ padding: "6px 10px" }}>
-                    <span style={{ color: "#93c5fd", fontSize: 10, fontWeight: 800, letterSpacing: 1 }}>MARCADOR</span>
+                  <td style={{ padding: "4px 10px" }}>
+                    <span style={{ color: "#93c5fd", fontSize: rFontXS, fontWeight: 800, letterSpacing: 1 }}>MARCADOR</span>
                   </td>
                   {partidos.map((p) => {
                     const has = p.golesLocal !== null && p.golesVisita !== null;
                     return (
-                      <td key={`marc-${p.id}`} style={{ textAlign: "center", padding: "6px 2px" }}>
-                        <span style={{ color: has ? WHITE : "#4b5563", fontSize: 13, fontWeight: 900 }}>
+                      <td key={`marc-${p.id}`} style={{ textAlign: "center", padding: "4px 1px" }}>
+                        <span style={{ color: has ? WHITE : "#4b5563", fontSize: rFontSM + 2, fontWeight: 900 }}>
                           {has ? `${p.golesLocal}-${p.golesVisita}` : "·"}
                         </span>
                       </td>
@@ -370,13 +392,13 @@ export default function ResultadosPage() {
                 </tr>
                 {/* VISITA */}
                 <tr style={{ background: "#e8edf2" }}>
-                  <td style={{ padding: "6px 10px" }}>
-                    <span style={{ color: NAVY, fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>VISITA</span>
+                  <td style={{ padding: "4px 10px" }}>
+                    <span style={{ color: NAVY, fontSize: rFontSM, fontWeight: 800, letterSpacing: 1 }}>VISITA</span>
                   </td>
                   {partidos.map((p) => (
-                    <td key={`visit-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "6px 2px" }}>
+                    <td key={`visit-${p.id}`} style={{ width: rColW, textAlign: "center", padding: "4px 1px" }}>
                       <div style={{ display: "flex", justifyContent: "center" }}>
-                        <TeamLogo logoUrl={p.logoVisita} team={p.equipoVisita} size={34} />
+                        <TeamLogo logoUrl={p.logoVisita} team={p.equipoVisita} size={rLogoSz} />
                       </div>
                     </td>
                   ))}
@@ -384,16 +406,16 @@ export default function ResultadosPage() {
                 </tr>
                 {/* Column numbers */}
                 <tr style={{ background: NAVY2 }}>
-                  <td style={{ padding: "5px 10px" }}>
-                    <span style={{ color: WHITE, fontSize: 10, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span>
+                  <td style={{ padding: "4px 10px" }}>
+                    <span style={{ color: WHITE, fontSize: rFontXS, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span>
                   </td>
                   {partidos.map((p, i) => (
-                    <td key={`num-${p.id}`} style={{ textAlign: "center", padding: "5px 2px" }}>
-                      <span style={{ color: "#93c5fd", fontSize: 10, fontWeight: 800 }}>{i + 1}</span>
+                    <td key={`num-${p.id}`} style={{ textAlign: "center", padding: "4px 1px" }}>
+                      <span style={{ color: "#93c5fd", fontSize: rFontXS, fontWeight: 800 }}>{i + 1}</span>
                     </td>
                   ))}
                   <td style={{ textAlign: "center" }}>
-                    <span style={{ color: WHITE, fontSize: 10, fontWeight: 800, letterSpacing: 1 }}>PTS</span>
+                    <span style={{ color: WHITE, fontSize: rFontXS, fontWeight: 800, letterSpacing: 1 }}>PTS</span>
                   </td>
                 </tr>
               </thead>
@@ -411,11 +433,11 @@ export default function ResultadosPage() {
                   const rowBg     = esPrimero ? "#fef9c3" : esSegundo ? "#f0fdf4" : idx % 2 === 0 ? WHITE : LGRAY;
                   return (
                     <tr key={q.id} style={{ background: rowBg, borderBottom: `1px solid ${LGRAY2}` }}>
-                      <td style={{ padding: "5px 10px", width: NAME_W, minWidth: NAME_W }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                          {esPrimero && <span style={{ fontSize: 12 }}>🥇</span>}
-                          {esSegundo && <span style={{ fontSize: 12 }}>🥈</span>}
-                          <span style={{ color: "#111827", fontSize: 12, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", maxWidth: NAME_W - 36 }}>
+                      <td style={{ padding: "4px 6px", width: rNameW, overflow: "hidden" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                          {esPrimero && <span style={{ fontSize: rFontNm, flexShrink: 0 }}>🥇</span>}
+                          {esSegundo && <span style={{ fontSize: rFontNm, flexShrink: 0 }}>🥈</span>}
+                          <span style={{ color: "#111827", fontSize: rFontNm, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
                             {q.nombreCliente ?? q.folio}
                           </span>
                         </div>
@@ -426,16 +448,16 @@ export default function ResultadosPage() {
                         const s     = cell && hayResultados ? pickStyle(cell.acertado, hasR) : { bg: "#d1d5db", color: "#6b7280" };
                         const label = cell && hayResultados ? cell.label : "?";
                         return (
-                          <td key={`${q.id}-${p.id}`} style={{ width: COL_W, minWidth: COL_W, textAlign: "center", padding: "5px 2px" }}>
-                            <div style={{ background: s.bg, borderRadius: 6, height: 28, width: COL_W - 6, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <span style={{ color: s.color, fontSize: 11, fontWeight: 800 }}>{label}</span>
+                          <td key={`${q.id}-${p.id}`} style={{ width: rColW, textAlign: "center", padding: "3px 1px" }}>
+                            <div style={{ background: s.bg, borderRadius: 4, height: rCellH, width: rColW - 4, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <span style={{ color: s.color, fontSize: rFontSM, fontWeight: 800 }}>{label}</span>
                             </div>
                           </td>
                         );
                       })}
-                      <td style={{ width: PTS_W, textAlign: "center", padding: "5px 3px" }}>
-                        <div style={{ background: esPrimero ? "#fbbf24" : esSegundo ? "#86efac" : LGRAY2, borderRadius: 6, height: 28, width: PTS_W - 8, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <span style={{ color: esPrimero ? "#78350f" : esSegundo ? "#14532d" : "#6b7280", fontSize: 13, fontWeight: 900 }}>
+                      <td style={{ width: rPtsW, textAlign: "center", padding: "3px 2px" }}>
+                        <div style={{ background: esPrimero ? "#fbbf24" : esSegundo ? "#86efac" : LGRAY2, borderRadius: 4, height: rCellH, width: rPtsW - 6, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ color: esPrimero ? "#78350f" : esSegundo ? "#14532d" : "#6b7280", fontSize: rFontSM + 2, fontWeight: 900 }}>
                             {q.aciertos ?? "—"}
                           </span>
                         </div>
