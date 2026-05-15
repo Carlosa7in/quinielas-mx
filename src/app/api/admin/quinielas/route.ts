@@ -16,6 +16,7 @@ export async function GET() {
           id: true,
           folio: true,
           usuarioId: true,
+          vendedorId: true,
           nombreCliente: true,
           telefonoCliente: true,
           canal: true,
@@ -24,6 +25,8 @@ export async function GET() {
           estadoPago: true,
           aciertos: true,
           referenciaPago: true,
+          usuario: { select: { nombre: true } },
+          vendedor: { select: { nombre: true, codigo: true } },
           picks: {
             select: { prediccion: true, acertado: true, partidoId: true, partido: { select: { orden: true } } },
             orderBy: { partido: { orden: "asc" } },

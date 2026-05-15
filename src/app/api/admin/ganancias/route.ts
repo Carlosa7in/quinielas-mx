@@ -46,7 +46,8 @@ export async function GET(req: NextRequest) {
   // Ventas personales agrupadas por jornada
   const porJornadaMap = new Map<string, {
     jornadaId: string; jornadaNombre: string; liga: string;
-    total: number; tienda: number; online: number; recaudado: number; comision: number;
+    total: number; tienda: number; online: number; recaudado: number;
+    comisionTienda: number; comisionReferido: number; comision: number;
   }>();
 
   for (const q of quinielas) {
@@ -56,7 +57,8 @@ export async function GET(req: NextRequest) {
         jornadaId: jId,
         jornadaNombre: q.jornada.nombre ?? `Jornada ${q.jornada.numero}`,
         liga: q.jornada.liga,
-        total: 0, tienda: 0, online: 0, recaudado: 0, comision: 0,
+        total: 0, tienda: 0, online: 0, recaudado: 0,
+        comisionTienda: 0, comisionReferido: 0, comision: 0,
       });
     }
     const e = porJornadaMap.get(jId)!;
@@ -64,11 +66,12 @@ export async function GET(req: NextRequest) {
     if (q.estadoPago === "confirmado") e.recaudado += q.monto;
     if (q.canal === "tienda") {
       e.tienda += 1;
-      e.comision += q.monto * COMISION_PCT;
+      e.comisionTienda += q.monto * COMISION_PCT;
     } else {
       e.online += 1;
-      if (q.estadoPago === "confirmado") e.comision += q.monto * COMISION_PCT;
+      if (q.estadoPago === "confirmado") e.comisionReferido += q.monto * COMISION_PCT;
     }
+    e.comision = e.comisionTienda + e.comisionReferido;
   }
 
   const porJornada = Array.from(porJornadaMap.values()).map((j) => {

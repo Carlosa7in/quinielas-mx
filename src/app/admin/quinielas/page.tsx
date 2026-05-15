@@ -24,6 +24,7 @@ type Quiniela = {
   id: string;
   folio: string;
   usuarioId: string | null;
+  vendedorId: string | null;
   nombreCliente: string | null;
   telefonoCliente: string | null;
   canal: string;
@@ -32,6 +33,8 @@ type Quiniela = {
   monto: number;
   aciertos: number | null;
   referenciaPago: string | null;
+  usuario: { nombre: string } | null;
+  vendedor: { nombre: string; codigo: string } | null;
   picks: Pick[];
 };
 
@@ -74,6 +77,19 @@ const PAGO_LABEL: Record<string, { label: string; cls: string }> = {
   pendiente:    { label: "⏳ Pendiente", cls: "bg-yellow-100 text-yellow-700" },
   no_realizado: { label: "✗ No pagó",   cls: "bg-red-100 text-red-600" },
 };
+
+function getOrigenPago(q: Quiniela): { origen: string; pago: string; origenColor: string } {
+  if (q.canal === "tienda")  return { origen: "Tienda",     pago: "Efectivo",      origenColor: "bg-amber-100 text-amber-700" };
+  if (q.canal === "kiosko")  return { origen: "Kiosko",     pago: "Efectivo",      origenColor: "bg-amber-100 text-amber-700" };
+  const esReferido = !!(q.usuarioId || q.vendedorId);
+  const origen      = esReferido ? "Referencia" : "Directa";
+  const origenColor = esReferido ? "bg-cyan-100 text-cyan-700" : "bg-purple-100 text-purple-700";
+  const pago =
+    q.canal === "transferencia" ? "Transferencia" :
+    q.canal === "oxxo"          ? "OXXO"          :
+    q.canal === "online"        ? "Online"         : q.canal;
+  return { origen, pago, origenColor };
+}
 
 function usePagoCambio(quiniela: Quiniela, onUpdate: (id: string, ep: string) => void) {
   const [cargando, setCargando] = useState(false);
@@ -517,20 +533,31 @@ function JornadaCard({ jornada, busqueda, usuarios }: { jornada: Jornada; busque
                       {/* Info principal */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-sm">{CANAL_ICON[q.canal] ?? "💻"}</span>
+                          {/* Chip origen/pago */}
+                          {(() => {
+                            const { origen, pago, origenColor } = getOrigenPago(q);
+                            return (
+                              <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${origenColor}`}>
+                                {origen}
+                                <span className="text-[10px] font-normal ml-0.5 opacity-70">/{pago}</span>
+                              </span>
+                            );
+                          })()}
                           <span className="font-semibold text-sm text-gray-800 truncate">
                             {q.nombreCliente ?? "Sin nombre"}
                           </span>
                           {q.telefonoCliente && (
                             <span className="text-gray-400 text-xs">{q.telefonoCliente}</span>
                           )}
-                          {q.canal === "transferencia" && (
-                            <span className="text-xs text-blue-500 font-medium">Transferencia</span>
-                          )}
-                          {q.canal === "oxxo" && (
-                            <span className="text-xs text-orange-500 font-medium">OXXO</span>
-                          )}
                         </div>
+                        {/* Vendedor / usuario referido */}
+                        {(q.vendedor || q.usuario) && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            🔗 {q.vendedor
+                              ? `${q.vendedor.nombre} [${q.vendedor.codigo}]`
+                              : q.usuario?.nombre}
+                          </p>
+                        )}
                         <p className="font-mono text-xs text-gray-400 mt-0.5">{q.folio}</p>
                         {q.referenciaPago && (
                           <p className="text-xs text-blue-600 font-semibold mt-0.5">

@@ -14,7 +14,8 @@ const fmtFecha = (iso: string) =>
 type JornadaRow = {
   jornadaId: string; jornadaNombre: string; liga: string;
   total: number; tienda: number; online: number; recaudado: number;
-  comision: number; pagado: boolean; pagadoEn: string | null;
+  comisionTienda: number; comisionReferido: number; comision: number;
+  pagado: boolean; pagadoEn: string | null;
 };
 
 type AdminRow = {
@@ -379,25 +380,44 @@ export default function GananciasPage() {
                         </button>
 
                         {abierta && (
-                          <div className="px-4 pb-4 space-y-2 bg-gray-50">
-                            {j.tienda > 0 && (
-                              <div className="flex justify-between text-sm pt-2">
-                                <span className="text-gray-500">🏪 {j.tienda} en tienda (10%)</span>
-                                <span className="font-semibold text-amber-700">${fmt(j.comision)}</span>
+                          <div className="px-4 pb-4 space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="bg-green-50 rounded-lg p-2 text-center">
+                                <p className="font-bold text-green-700">{j.total}</p>
+                                <p className="text-[10px] text-gray-500">Quinielas</p>
+                                {(j.tienda > 0 || j.online > 0) && (
+                                  <p className="text-[9px] text-gray-400">
+                                    {j.tienda > 0 && `${j.tienda}T`}{j.tienda > 0 && j.online > 0 && " · "}{j.online > 0 && `${j.online}O`}
+                                  </p>
+                                )}
                               </div>
-                            )}
-                            {j.online > 0 && (
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">🔗 {j.online} online (10% confirmadas)</span>
-                                <span className="font-semibold text-cyan-700">${fmt(j.comision)}</span>
+                              <div className="bg-yellow-50 rounded-lg p-2 text-center">
+                                <p className="font-bold text-yellow-600">${fmt(j.recaudado)}</p>
+                                <p className="text-[10px] text-gray-500">Recaudado</p>
                               </div>
-                            )}
-                            <div className="flex justify-between text-sm pt-1 border-t border-gray-200">
-                              <span className="text-gray-400">Total recaudado</span>
-                              <span className="text-gray-600 font-medium">${fmt(j.recaudado)}</span>
+                              {(j.comisionTienda ?? 0) > 0 && (
+                                <div className="bg-orange-50 rounded-lg p-2 text-center">
+                                  <p className="font-bold text-orange-600">${fmt(j.comisionTienda)}</p>
+                                  <p className="text-[10px] text-gray-500">Com. tienda 🏪</p>
+                                  <p className="text-[9px] text-gray-400">10% de ${fmt(j.tienda * 20)}</p>
+                                </div>
+                              )}
+                              {(j.comisionReferido ?? 0) > 0 && (
+                                <div className="bg-cyan-50 rounded-lg p-2 text-center">
+                                  <p className="font-bold text-cyan-700">${fmt(j.comisionReferido)}</p>
+                                  <p className="text-[10px] text-gray-500">Com. referido 🔗</p>
+                                  <p className="text-[9px] text-gray-400">10% confirmadas</p>
+                                </div>
+                              )}
                             </div>
+                            {j.comision > 0 && (
+                              <div className="bg-blue-50 rounded-lg p-2 flex items-center justify-between px-3">
+                                <p className="text-[10px] text-gray-500">Total comisión a cobrar</p>
+                                <p className="font-black text-blue-700">${fmt(j.comision)}</p>
+                              </div>
+                            )}
                             {j.pagado && j.pagadoEn && (
-                              <p className="text-xs text-green-600">Cobrado el {fmtFecha(j.pagadoEn)}</p>
+                              <p className="text-xs text-green-600 text-right">Cobrado el {fmtFecha(j.pagadoEn)}</p>
                             )}
                           </div>
                         )}
