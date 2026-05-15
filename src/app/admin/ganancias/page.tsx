@@ -124,9 +124,21 @@ function DesgloseJornada({ j }: { j: AdminRow }) {
         <span className="font-black text-base">${fmt(j.bolsaNeta)}</span>
       </div>
 
-      <div className="border-t border-stone-700 pt-2 flex justify-between text-indigo-300">
-        <span className="text-xs">👤 Mi parte del fondo admin</span>
-        <span className="font-bold">${fmt(j.miParte)}</span>
+      <div className="border-t border-stone-700 pt-2 space-y-1">
+        <div className="flex justify-between text-indigo-300">
+          <span className="text-xs">👤 Mi parte fondo admin (15%)</span>
+          <span className="font-bold">${fmt(j.fondoAdmin / j.numAdmins)}</span>
+        </div>
+        {j.comisionDirecta > 0 && (
+          <div className="flex justify-between text-purple-300">
+            <span className="text-xs">🌐 Mi parte ventas directas (10%)</span>
+            <span className="font-bold">${fmt(j.comisionDirecta / j.numAdmins)}</span>
+          </div>
+        )}
+        <div className="flex justify-between text-white pt-1 border-t border-stone-600">
+          <span className="text-xs font-bold">Total a cobrar</span>
+          <span className="font-black">${fmt(j.miParte)}</span>
+        </div>
       </div>
     </div>
   );
@@ -278,9 +290,21 @@ export default function GananciasPage() {
                     <span className="font-bold">💰 Bolsa total para premios</span>
                     <span className="font-black text-base">${fmt(desgloseGlobal.bolsaNeta)}</span>
                   </div>
-                  <div className="border-t border-stone-700 pt-2 flex justify-between text-indigo-300">
-                    <span className="text-xs">👤 Mi parte total del fondo admin</span>
-                    <span className="font-bold">${fmt(desgloseGlobal.miParteTotal)}</span>
+                  <div className="border-t border-stone-700 pt-2 space-y-1">
+                    <div className="flex justify-between text-indigo-300">
+                      <span className="text-xs">👤 Mi parte fondo admin (15%)</span>
+                      <span className="font-bold">${fmt(desgloseGlobal.fondoAdmin / desgloseGlobal.numAdmins)}</span>
+                    </div>
+                    {desgloseGlobal.comisionDirecta > 0 && (
+                      <div className="flex justify-between text-purple-300">
+                        <span className="text-xs">🌐 Mi parte ventas directas (10%)</span>
+                        <span className="font-bold">${fmt(desgloseGlobal.comisionDirecta / desgloseGlobal.numAdmins)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-white pt-1 border-t border-stone-600">
+                      <span className="text-xs font-bold">Total a cobrar</span>
+                      <span className="font-black">${fmt(desgloseGlobal.miParteTotal)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
