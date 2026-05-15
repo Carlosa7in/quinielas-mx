@@ -1123,9 +1123,13 @@ export default function TicketPage() {
               `¡Buena suerte! 🍀`,
               `— Tablitas Quinielas`,
             ].join("\n");
+            const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+            const waHref = isMobile
+              ? `intent://send?phone=${waPhone}&text=${encodeURIComponent(msg)}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`
+              : `https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`;
             return (
               <a
-                href={`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`}
+                href={waHref}
                 target="_blank" rel="noopener noreferrer"
                 className="w-full bg-[#25D366] hover:bg-[#20b858] text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
               >

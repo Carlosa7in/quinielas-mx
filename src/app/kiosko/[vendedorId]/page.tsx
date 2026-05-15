@@ -81,8 +81,9 @@ function badgeCombo(n: number) {
   return null;
 }
 
-// Primera letra de cada palabra en mayúscula
-const toTitleCase = (str: string) => str.replace(/\b\w/g, (c) => c.toUpperCase());
+// Primera letra de cada palabra en mayúscula (tras espacio, no tras acento)
+const toTitleCase = (str: string) =>
+  str.replace(/(^|\s)\S/g, (c) => c.toUpperCase());
 const nombreCompleto = (str: string) => str.trim().split(/\s+/).length >= 2;
 
 // Rellena picks vacíos con una opción al azar (respeta los ya seleccionados)
@@ -464,7 +465,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
               value={nombre}
               onChange={(e) => setNombre(toTitleCase(e.target.value))}
               placeholder="Nombre Apellido"
-              autoCapitalize="words"
+              autoCapitalize="off"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             {nombre.length > 2 && !nombreValido && (
