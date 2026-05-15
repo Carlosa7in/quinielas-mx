@@ -22,10 +22,9 @@ function Iniciales({ nombre, size = 28 }: { nombre: string; size?: number }) {
   );
 }
 function LogoEquipo({ equipo, logoMap, size = 32 }: { equipo: string; logoMap: Record<string, string>; size?: number }) {
-  // 1. Dynamic ESPN map (freshest)  2. Static map from equipos.ts (most reliable)
   const url = buscarLogo(logoMap, equipo) || getLogoUrl(equipo) || "";
   const [broken, setBroken] = useState(false);
-  useEffect(() => setBroken(false), [url]);   // reset when url changes (map loaded)
+  useEffect(() => setBroken(false), [url]);
   if (!url || broken) return <Iniciales nombre={equipo} size={size} />;
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={url} alt={equipo} width={size} height={size}
@@ -33,37 +32,19 @@ function LogoEquipo({ equipo, logoMap, size = 32 }: { equipo: string; logoMap: R
     style={{ width: size, height: size, objectFit: "contain" }} className="shrink-0" />;
 }
 
-type Partido = {
-  id: string;
-  equipoLocal: string;
-  equipoVisita: string;
-  orden: number;
-};
-
-type JornadaInfo = {
-  id: string;
-  nombre: string;
-  liga: string;
-  temporada: string;
-  partidos: Partido[];
-};
-
-type JornadaResumen = {
-  id: string; nombre: string; liga: string; temporada: string;
-};
-
+type Partido = { id: string; equipoLocal: string; equipoVisita: string; orden: number };
+type JornadaInfo = { id: string; nombre: string; liga: string; temporada: string; partidos: Partido[] };
+type JornadaResumen = { id: string; nombre: string; liga: string; temporada: string };
 type KioskoData = {
   vendedor: { nombre: string; puntoVenta: string | null };
-  jornada: JornadaInfo;        // primera jornada (compat.)
-  jornadas: JornadaInfo[];     // todas las jornadas abiertas
+  jornada: JornadaInfo;
+  jornadas: JornadaInfo[];
 };
 
 // picks[i] = array de opciones seleccionadas para el partido i
-// ej. [] = sin selección, ["L"] = simple, ["L","E"] = doble, ["L","E","V"] = triple
 type Picks = string[][];
 
 const OPCIONES = ["L", "E", "V"] as const;
-
 const OPCION_STYLES: Record<string, { active: string; label: string }> = {
   L: { active: "bg-amber-500 border-amber-500 text-white shadow-md scale-105", label: "Local" },
   E: { active: "bg-gray-600 border-gray-600 text-white shadow-md scale-105",   label: "Empate" },
@@ -74,7 +55,6 @@ const IDLE = "bg-white border-gray-200 text-gray-500 hover:border-gray-400 hover
 function combosTotal(picks: Picks): number {
   return picks.reduce((prod, sel) => prod * (sel.length || 1), 1);
 }
-
 function badgeCombo(n: number) {
   if (n === 2) return <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full ml-1">2×</span>;
   if (n === 3) return <span className="text-[10px] font-bold bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-full ml-1">3×</span>;
@@ -86,10 +66,15 @@ const toTitleCase = (str: string) =>
   str.replace(/(^|\s)\S/g, (c) => c.toUpperCase());
 const nombreCompleto = (str: string) => str.trim().split(/\s+/).length >= 2;
 
-// Rellena picks vacíos con una opción al azar (respeta los ya seleccionados)
 function rellenarAzar(picks: Picks): Picks {
   return picks.map((sel) => sel.length > 0 ? sel : [OPCIONES[Math.floor(Math.random() * OPCIONES.length)]]);
 }
+
+function picksVacias(n: number): Picks {
+  return new Array(n).fill(null).map(() => []);
+}
+
+const MAX_FORMAS = 5;
 
 export default function KioskoPage({ params }: { params: Promise<{ vendedorId: string }> }) {
   const { vendedorId } = use(params);
@@ -97,12 +82,17 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   const [datos, setDatos] = useState<KioskoData | null>(null);
   const [jornadaSeleccionada, setJornadaSeleccionada] = useState<JornadaInfo | null>(null);
   const [errorCarga, setErrorCarga] = useState("");
-  const [picks, setPicks] = useState<Picks>([]);
+
+  // Multi-forma
+  const [formas, setFormas] = useState<Picks[]>([[]]);
+  const [formaActiva, setFormaActiva] = useState(0);
+
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState("");
   const [enviado, setEnviado] = useState(false);
+  const [precioEnviado, setPrecioEnviado] = useState(0);
   const [logoMap, setLogoMap] = useState<Record<string, string>>({});
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -118,7 +108,6 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
       .then((d) => {
         if (d.error) { setErrorCarga(d.error); return; }
         setDatos(d);
-        // Si solo hay una jornada, seleccionarla directamente
         if (d.jornadas?.length === 1) seleccionarJornada(d.jornadas[0]);
       })
       .catch(() => setErrorCarga("No se pudo cargar la jornada"));
@@ -127,24 +116,36 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
 
   const seleccionarJornada = (j: JornadaInfo) => {
     setJornadaSeleccionada(j);
-    setPicks(new Array(j.partidos.length).fill(null).map(() => []));
-    // Cargar logos de la liga
+    setFormas([picksVacias(j.partidos.length)]);
+    setFormaActiva(0);
     fetch(`/api/logos?liga=${encodeURIComponent(j.liga)}`)
       .then((r) => r.json())
       .then((m) => typeof m === "object" && setLogoMap(m))
       .catch(() => {});
   };
 
-  const togglePick = (idx: number, opcion: string) => {
-    setPicks((prev) => {
-      const next = prev.map((s) => [...s]);
-      const sel = next[idx];
-      const i = sel.indexOf(opcion);
+  const agregarForma = () => {
+    if (!jornadaSeleccionada || formas.length >= MAX_FORMAS) return;
+    const nueva = picksVacias(jornadaSeleccionada.partidos.length);
+    setFormas((prev) => [...prev, nueva]);
+    setFormaActiva(formas.length);
+  };
 
+  const quitarForma = () => {
+    if (formas.length <= 1) return;
+    setFormas((prev) => prev.slice(0, -1));
+    setFormaActiva((prev) => Math.min(prev, formas.length - 2));
+  };
+
+  const togglePick = (idx: number, opcion: string) => {
+    setFormas((prev) => {
+      const newFormas = prev.map((f) => f.map((s) => [...s]));
+      const picks = newFormas[formaActiva];
+      const sel = picks[idx];
+      const i = sel.indexOf(opcion);
       if (i < 0) {
-        // Validar antes de agregar
         const newLen = sel.length + 1;
-        const otros = next.filter((_, j) => j !== idx);
+        const otros = picks.filter((_, j) => j !== idx);
         const dobles  = otros.filter((s) => s.length === 2).length;
         const triples = otros.filter((s) => s.length === 3).length;
         if (newLen === 2 && dobles  >= 3) { setAviso("Máximo 3 dobles por quiniela");  return prev; }
@@ -153,36 +154,52 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
       } else {
         sel.splice(i, 1);
       }
-      return next;
+      return newFormas;
     });
   };
 
-  const todosSeleccionados = picks.length > 0 && picks.every((s) => s.length > 0);
-  const nombreValido = nombreCompleto(nombre);
-  const telValido = telefono.replace(/\D/g, "").length === 10 && !telefonoFalso(telefono);
-  const puedeEnviar = todosSeleccionados && nombreValido && telValido;
+  // Picks de la forma activa
+  const picks = formas[formaActiva] ?? [];
+  const todosSeleccionadosActiva = picks.length > 0 && picks.every((s) => s.length > 0);
+  const todasFormasCompletas = formas.every((f) => f.length > 0 && f.every((s) => s.length > 0));
 
   const combos = combosTotal(picks);
-  const precio = combos * PRECIO_BASE;
+  const precioFormaActiva = combos * PRECIO_BASE;
+  const precioTotal = formas.reduce((sum, f) => sum + combosTotal(f) * PRECIO_BASE, 0);
+
+  const nombreValido = nombreCompleto(nombre);
+  const telValido = telefono.replace(/\D/g, "").length === 10 && !telefonoFalso(telefono);
+  const puedeEnviar = todasFormasCompletas && nombreValido && telValido;
+
+  const faltanPicks = picks.filter((s) => s.length === 0).length;
+  const formasIncompletas = formas.filter((f) => !f.every((s) => s.length > 0)).length;
+
+  const doblesCount  = picks.filter((s) => s.length === 2).length;
+  const triplesCount = picks.filter((s) => s.length === 3).length;
 
   const handleEnviar = async () => {
     if (!puedeEnviar || !datos) return;
     setEnviando(true);
     setErrorEnvio("");
     try {
-      const res = await fetch("/api/kiosko", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          vendedorId,
-          jornadaId: jornada.id,
-          nombre: nombre.trim(),
-          telefono: telefono.replace(/\D/g, ""),
-          picks,                   // [["L"], ["L","E"], ["V"], ...]
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Error al enviar");
+      const resultados = await Promise.all(
+        formas.map((picksForma) =>
+          fetch("/api/kiosko", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              vendedorId,
+              jornadaId: jornada.id,
+              nombre: nombre.trim(),
+              telefono: telefono.replace(/\D/g, ""),
+              picks: picksForma,
+            }),
+          })
+        )
+      );
+      const errores = resultados.filter((r) => !r.ok);
+      if (errores.length > 0) throw new Error("Error al enviar");
+      setPrecioEnviado(precioTotal);
       setEnviado(true);
     } catch (e: unknown) {
       setErrorEnvio(e instanceof Error ? e.message : "Error al enviar");
@@ -194,11 +211,11 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   const reiniciar = () => {
     setEnviado(false);
     setJornadaSeleccionada(null);
-    setPicks([]);
+    setFormas([[]]);
+    setFormaActiva(0);
     setNombre("");
     setTelefono("");
     setErrorEnvio("");
-    // Si solo había una jornada, volver a seleccionarla directamente
     if (datos?.jornadas?.length === 1) seleccionarJornada(datos.jornadas[0]);
   };
 
@@ -210,9 +227,12 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
         <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "56px", objectFit: "contain" }} className="mb-6 opacity-90" />
         <div className="text-6xl mb-4">🎉</div>
         <h1 className="text-2xl font-black mb-2">¡Picks enviados!</h1>
+        {formas.length > 1 && (
+          <p className="text-amber-200 text-base mb-1">{formas.length} quinielas registradas</p>
+        )}
         <p className="text-amber-100 text-lg mb-1">Tu quiniela está lista.</p>
         <p className="text-amber-200 text-sm mb-8">
-          Acércate al vendedor para confirmar y pagar <strong className="text-white">${precio}</strong>.
+          Acércate al vendedor para confirmar y pagar <strong className="text-white">${precioEnviado}</strong>.
         </p>
         <button
           onClick={reiniciar}
@@ -247,7 +267,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
     );
   }
 
-  /* ── Selección de jornada (cuando hay más de una abierta) ───────────────── */
+  /* ── Selección de jornada ────────────────────────────────────────────────── */
   if (!jornadaSeleccionada && datos.jornadas.length > 1) {
     const LIGA_EMOJI: Record<string, string> = {
       "Liga MX": "🇲🇽", "Champions League": "⭐", "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
@@ -268,11 +288,8 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
         </div>
         <div className="max-w-lg mx-auto px-4 py-5 space-y-3">
           {datos.jornadas.map((j) => (
-            <button
-              key={j.id}
-              onClick={() => seleccionarJornada(j)}
-              className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4 text-left hover:bg-amber-50 hover:shadow-md transition-all active:scale-95"
-            >
+            <button key={j.id} onClick={() => seleccionarJornada(j)}
+              className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4 text-left hover:bg-amber-50 hover:shadow-md transition-all active:scale-95">
               <span className="text-3xl shrink-0">{LIGA_EMOJI[j.liga] ?? "⚽"}</span>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-gray-800">{j.liga}</p>
@@ -289,12 +306,8 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
 
   const jornada = jornadaSeleccionada!;
   const { vendedor } = datos;
-  const faltanPicks = picks.filter((s) => s.length === 0).length;
 
   /* ── Página principal ────────────────────────────────────────────────────── */
-  const doblesCount  = picks.filter((s) => s.length === 2).length;
-  const triplesCount = picks.filter((s) => s.length === 3).length;
-
   return (
     <div className="min-h-screen bg-gray-50">
 
@@ -321,36 +334,62 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-black leading-tight">{jornada.nombre}</h1>
             {datos.jornadas.length > 1 && (
-              <button
-                onClick={() => { setJornadaSeleccionada(null); setPicks([]); }}
-                className="text-xs text-amber-300 border border-amber-600 hover:bg-white/10 px-2.5 py-1 rounded-lg transition-colors shrink-0 ml-3"
-              >
+              <button onClick={() => { setJornadaSeleccionada(null); setFormas([[]]); setFormaActiva(0); }}
+                className="text-xs text-amber-300 border border-amber-600 hover:bg-white/10 px-2.5 py-1 rounded-lg transition-colors shrink-0 ml-3">
                 ← Cambiar
               </button>
             )}
           </div>
           <p className="text-amber-300 text-sm mt-1">Elige tu resultado para cada partido</p>
 
-          {/* Precio en vivo */}
-          <div className="mt-4 bg-white/10 rounded-2xl px-4 py-3 flex items-center justify-between">
-            <div>
-              <p className="text-xs text-amber-300 font-semibold uppercase tracking-wide">Tu quiniela</p>
-              <p className="text-white text-sm">
-                {combos === 1
-                  ? "1 combinación"
-                  : <><span className="font-bold text-amber-200">{combos}</span> combinaciones</>}
-                {combos > 1 && (
-                  <span className="ml-2 text-xs text-amber-300/80">
-                    ({doblesCount  > 0 && `${doblesCount}/3 doble${doblesCount  > 1 ? "s" : ""}`}
-                    {doblesCount > 0 && triplesCount > 0 && ", "}
-                    {triplesCount > 0 && `${triplesCount}/2 triple${triplesCount > 1 ? "s" : ""}`})
-                  </span>
+          {/* Precio + controles +/- quinielas */}
+          <div className="mt-4 bg-white/10 rounded-2xl px-4 py-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-amber-300 font-semibold uppercase tracking-wide">
+                  {formas.length > 1 ? `Quiniela ${formaActiva + 1} de ${formas.length}` : "Tu quiniela"}
+                </p>
+                <p className="text-white text-sm">
+                  {combos === 1
+                    ? "1 combinación"
+                    : <><span className="font-bold text-amber-200">{combos}</span> combinaciones</>}
+                  {combos > 1 && (
+                    <span className="ml-2 text-xs text-amber-300/80">
+                      ({doblesCount  > 0 && `${doblesCount}/3 doble${doblesCount  > 1 ? "s" : ""}`}
+                      {doblesCount > 0 && triplesCount > 0 && ", "}
+                      {triplesCount > 0 && `${triplesCount}/2 triple${triplesCount > 1 ? "s" : ""}`})
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-black text-amber-300">${precioFormaActiva}</p>
+                {formas.length > 1 && (
+                  <p className="text-xs text-amber-400">Total: ${precioTotal}</p>
                 )}
-              </p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-black text-amber-300">${precio}</p>
-              <p className="text-xs text-white/50">${PRECIO_BASE} × {combos}</p>
+
+            {/* Controles de quinielas */}
+            <div className="flex items-center justify-between pt-1 border-t border-white/10">
+              <p className="text-xs text-amber-300/80">Número de quinielas</p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={quitarForma}
+                  disabled={formas.length <= 1}
+                  className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 text-white font-black text-lg flex items-center justify-center disabled:opacity-30 transition-colors"
+                >
+                  −
+                </button>
+                <span className="text-white font-black text-lg w-6 text-center">{formas.length}</span>
+                <button
+                  onClick={agregarForma}
+                  disabled={formas.length >= MAX_FORMAS}
+                  className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 text-white font-black text-lg flex items-center justify-center disabled:opacity-30 transition-colors"
+                >
+                  +
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -358,6 +397,31 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
 
       {/* Partidos */}
       <div className="max-w-lg mx-auto px-4 py-4 space-y-2.5 pb-40">
+
+        {/* Tabs de formas — solo si hay más de una */}
+        {formas.length > 1 && (
+          <div className="flex gap-1.5 flex-wrap">
+            {formas.map((f, i) => {
+              const completa = f.length > 0 && f.every((s) => s.length > 0);
+              return (
+                <button
+                  key={i}
+                  onClick={() => setFormaActiva(i)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1 ${
+                    i === formaActiva
+                      ? "bg-amber-500 text-white shadow-sm"
+                      : "bg-white text-gray-500 hover:bg-amber-50"
+                  }`}
+                >
+                  Q{i + 1}
+                  {completa
+                    ? <span className="text-[10px]">✓</span>
+                    : <span className="text-[10px] opacity-60">○</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Instrucciones */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -373,15 +437,11 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
               { n: "5", icon: "✅", text: "Toca **Enviar picks** y muéstrale la confirmación al vendedor para pagar." },
             ].map(({ n, icon, text }) => (
               <div key={n} className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
-                  {n}
-                </span>
+                <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-black flex items-center justify-center shrink-0 mt-0.5">{n}</span>
                 <p className="text-sm text-gray-600 leading-snug">
                   {icon}{" "}
                   {text.split("**").map((part, i) =>
-                    i % 2 === 1
-                      ? <strong key={i} className="text-gray-800">{part}</strong>
-                      : part
+                    i % 2 === 1 ? <strong key={i} className="text-gray-800">{part}</strong> : part
                   )}
                 </p>
               </div>
@@ -392,12 +452,16 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
         {/* Botón rellenar al azar */}
         <div className="flex items-center justify-between px-1 pt-1">
           <p className="text-xs text-gray-400">
-            {todosSeleccionados
+            {todosSeleccionadosActiva
               ? `${picks.filter((s) => s.length > 1).length > 0 ? "Con dobles/triples ✓" : "Todos seleccionados ✓"}`
               : `${picks.filter((s) => s.length > 0).length} de ${picks.length} partidos`}
           </p>
           <button
-            onClick={() => setPicks((prev) => rellenarAzar(prev))}
+            onClick={() => setFormas((prev) => {
+              const next = prev.map((f) => [...f.map((s) => [...s])]);
+              next[formaActiva] = rellenarAzar(next[formaActiva]);
+              return next;
+            })}
             className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-700 font-semibold px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
           >
             🎲 Rellenar al azar
@@ -407,20 +471,13 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
         {jornada.partidos.map((p, idx) => {
           const sel = picks[idx] ?? [];
           return (
-            <div
-              key={p.id}
-              className={`bg-white rounded-2xl shadow-sm p-4 transition-all ${
-                sel.length === 0 ? "border-2 border-transparent" :
-                sel.length === 2 ? "border-2 border-purple-300" :
-                sel.length === 3 ? "border-2 border-rose-300" :
-                "border-2 border-transparent"
-              }`}
-            >
-              {/* Número + equipos + logos */}
+            <div key={p.id} className={`bg-white rounded-2xl shadow-sm p-4 transition-all ${
+              sel.length === 2 ? "border-2 border-purple-300" :
+              sel.length === 3 ? "border-2 border-rose-300" :
+              "border-2 border-transparent"
+            }`}>
               <div className="flex items-center gap-2 mb-3">
-                <span className="w-5 h-5 bg-gray-100 rounded-full text-[10px] font-bold text-gray-400 flex items-center justify-center shrink-0">
-                  {idx + 1}
-                </span>
+                <span className="w-5 h-5 bg-gray-100 rounded-full text-[10px] font-bold text-gray-400 flex items-center justify-center shrink-0">{idx + 1}</span>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <LogoEquipo equipo={p.equipoLocal} logoMap={logoMap} size={28} />
                   <span className="font-semibold text-gray-800 text-sm truncate flex-1">{p.equipoLocal}</span>
@@ -430,19 +487,12 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
                 </div>
                 {badgeCombo(sel.length)}
               </div>
-
-              {/* Botones L / E / V */}
               <div className="grid grid-cols-3 gap-2">
                 {OPCIONES.map((op) => {
                   const activo = sel.includes(op);
                   return (
-                    <button
-                      key={op}
-                      onClick={() => togglePick(idx, op)}
-                      className={`py-3 rounded-xl font-black text-base border-2 transition-all duration-100 ${
-                        activo ? OPCION_STYLES[op].active : IDLE
-                      }`}
-                    >
+                    <button key={op} onClick={() => togglePick(idx, op)}
+                      className={`py-3 rounded-xl font-black text-base border-2 transition-all duration-100 ${activo ? OPCION_STYLES[op].active : IDLE}`}>
                       {op}
                       <span className={`block text-[9px] font-normal mt-0.5 ${activo ? "opacity-80" : "text-gray-400"}`}>
                         {OPCION_STYLES[op].label}
@@ -460,9 +510,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Tus datos para el ticket</p>
           <div>
             <label className="text-xs text-gray-500 block mb-1">Nombre completo</label>
-            <input
-              type="text"
-              value={nombre}
+            <input type="text" value={nombre}
               onChange={(e) => setNombre(toTitleCase(e.target.value))}
               placeholder="Nombre Apellido"
               autoCapitalize="off"
@@ -476,9 +524,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
             <label className="text-xs text-gray-500 block mb-1">Teléfono (10 dígitos)</label>
             <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-amber-500">
               <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-sm border-r border-gray-200 shrink-0">+52</span>
-              <input
-                type="tel"
-                value={telefono}
+              <input type="tel" value={telefono}
                 onChange={(e) => setTelefono(e.target.value.replace(/\D/g, "").slice(0, 10))}
                 placeholder="5512345678"
                 className="flex-1 px-3 py-2.5 text-sm focus:outline-none"
@@ -498,10 +544,13 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
       {/* Barra fija inferior */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-2xl px-4 py-3 safe-area-inset-bottom">
         <div className="max-w-lg mx-auto space-y-2">
-          {/* Resumen precio */}
           <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>{combos === 1 ? "Quiniela sencilla" : `${combos} combinaciones`}</span>
+            <div className="flex items-center gap-2 text-sm text-gray-500 flex-wrap">
+              {formas.length > 1 ? (
+                <span>{formas.length} quinielas</span>
+              ) : (
+                <span>{combos === 1 ? "Quiniela sencilla" : `${combos} combinaciones`}</span>
+              )}
               {doblesCount > 0 && (
                 <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">
                   {doblesCount}/3 doble{doblesCount > 1 ? "s" : ""}
@@ -513,10 +562,9 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
                 </span>
               )}
             </div>
-            <span className="text-xl font-black text-amber-600">${precio}</span>
+            <span className="text-xl font-black text-amber-600">${precioTotal}</span>
           </div>
 
-          {/* Botón */}
           <button
             onClick={handleEnviar}
             disabled={!puedeEnviar || enviando}
@@ -528,13 +576,17 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
           >
             {enviando
               ? "Enviando..."
-              : !todosSeleccionados
-              ? `Faltan ${faltanPicks} partido${faltanPicks !== 1 ? "s" : ""}`
+              : !todasFormasCompletas
+              ? formasIncompletas > 1
+                ? `Faltan picks en ${formasIncompletas} quinielas`
+                : `Faltan ${faltanPicks} partido${faltanPicks !== 1 ? "s" : ""}`
               : !nombreValido
               ? "Ingresa tu nombre completo"
               : !telValido
               ? "Ingresa tu teléfono"
-              : `Enviar picks · $${precio} ⚽`}
+              : formas.length > 1
+              ? `Enviar ${formas.length} quinielas · $${precioTotal} ⚽`
+              : `Enviar picks · $${precioTotal} ⚽`}
           </button>
         </div>
       </div>
