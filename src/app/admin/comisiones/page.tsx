@@ -120,7 +120,10 @@ export default function ComisionesPage() {
   const totalGeneral = reporte.reduce((s, v) => s + v.total, 0);
   const recaudadoGeneral = reporte.reduce((s, v) => s + v.recaudado, 0);
   const totalTiendaAll = reporte.filter((v) => v.rol !== "vendedor").reduce((s, v) => s + v.tienda, 0);
-  const totalReferidoAll = reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.total, 0);
+  // Referidas = online de admins/superadmins (via su propio link) + todos los vendedores (modelo Vendedor o rol vendedor)
+  const totalReferidoAll =
+    reporte.filter((v) => ["admin", "superadmin"].includes(v.rol)).reduce((s, v) => s + v.online, 0) +
+    reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.total, 0);
   const totalDirectasAll = Math.max(0, (totalGlobal || totalGeneral) - totalGeneral - sinAsignar);
   const totalComisionesReferido = reporte.filter((v) => v.rol === "vendedor").reduce((s, v) => s + v.comisionTotal, 0);
   const baseDesglose = recaudadoGlobal > 0 ? recaudadoGlobal : recaudadoGeneral;
@@ -211,7 +214,7 @@ export default function ComisionesPage() {
               </div>
               {cutTienda > 0 && (
                 <div className="flex justify-between text-orange-400">
-                  <span>− Comisión tienda (10% ventas)</span>
+                  <span>− Comisión vendedores (10% tienda + referidos)</span>
                   <span className="font-bold">−${fmt(cutTienda)}</span>
                 </div>
               )}
