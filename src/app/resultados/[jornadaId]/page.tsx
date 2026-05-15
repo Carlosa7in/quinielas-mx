@@ -335,8 +335,8 @@ export default function ResultadosPage() {
           </div>
         )}
 
-        {/* ── Results grid ── */}
-        <div style={{ background: WHITE, borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 6px rgba(0,0,0,.10)" }}>
+        {/* ── Results grid — full bleed (negates px-3 of parent) ── */}
+        <div style={{ background: WHITE, overflow: "hidden", boxShadow: "0 1px 6px rgba(0,0,0,.10)", marginLeft: "-0.75rem", marginRight: "-0.75rem" }}>
           {/* Grid header */}
           <div style={{ background: NAVY, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
@@ -404,16 +404,29 @@ export default function ResultadosPage() {
                   ))}
                   <td />
                 </tr>
-                {/* Column numbers */}
+                {/* Resultado por partido: L/E/V si ya jugó, número si aún no */}
                 <tr style={{ background: NAVY2 }}>
                   <td style={{ padding: "4px 10px" }}>
                     <span style={{ color: WHITE, fontSize: rFontXS, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span>
                   </td>
-                  {partidos.map((p, i) => (
-                    <td key={`num-${p.id}`} style={{ textAlign: "center", padding: "4px 1px" }}>
-                      <span style={{ color: "#93c5fd", fontSize: rFontXS, fontWeight: 800 }}>{i + 1}</span>
-                    </td>
-                  ))}
+                  {partidos.map((p, i) => {
+                    const res = p.resultado ? (PRED_LABEL[p.resultado] ?? p.resultado) : null;
+                    const resBg = p.resultado === "1" ? "#16a34a"
+                      : p.resultado === "2" ? "#dc2626"
+                      : p.resultado === "X" ? "#ca8a04"
+                      : "transparent";
+                    return (
+                      <td key={`num-${p.id}`} style={{ textAlign: "center", padding: "3px 1px" }}>
+                        {res ? (
+                          <div style={{ background: resBg, borderRadius: 4, height: rCellH, width: rColW - 4, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <span style={{ color: WHITE, fontSize: rFontSM, fontWeight: 900 }}>{res}</span>
+                          </div>
+                        ) : (
+                          <span style={{ color: "#93c5fd", fontSize: rFontXS, fontWeight: 800 }}>{i + 1}</span>
+                        )}
+                      </td>
+                    );
+                  })}
                   <td style={{ textAlign: "center" }}>
                     <span style={{ color: WHITE, fontSize: rFontXS, fontWeight: 800, letterSpacing: 1 }}>PTS</span>
                   </td>
