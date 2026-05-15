@@ -10,7 +10,21 @@ type JornadaOpcion = {
 type QuinielaItem = {
   id: string; folio: string; monto: number; canal: string;
   estado: string; estadoPago: string; nombreCliente: string | null;
+  usuarioId?: string | null; vendedorId?: string | null;
 };
+
+function getOrigenPago(q: QuinielaItem): { origen: string; pago: string; origenColor: string } {
+  if (q.canal === "tienda")  return { origen: "Tienda",     pago: "Efectivo",       origenColor: "bg-amber-100 text-amber-700"  };
+  if (q.canal === "kiosko")  return { origen: "Kiosko",     pago: "Efectivo",       origenColor: "bg-amber-100 text-amber-700"  };
+  const esReferido = !!(q.usuarioId || q.vendedorId);
+  const origen     = esReferido ? "Referencia" : "Directa";
+  const origenColor = esReferido ? "bg-cyan-100 text-cyan-700" : "bg-purple-100 text-purple-700";
+  const pago = q.canal === "transferencia" ? "Transferencia"
+    : q.canal === "oxxo"  ? "OXXO"
+    : q.canal === "online" ? "Online"
+    : q.canal;
+  return { origen, pago, origenColor };
+}
 
 type JornadaDesglose = {
   jornadaId: string; jornadaNombre: string; liga: string; temporada: string;
@@ -405,9 +419,15 @@ export default function ComisionesPage() {
                                         {q.nombreCliente ?? "—"}
                                       </td>
                                       <td className="px-2 py-2 text-center">
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${q.canal === "tienda" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
-                                          {CANAL_LABEL[q.canal] ?? q.canal}
-                                        </span>
+                                        {(() => {
+                                          const { origen, pago, origenColor } = getOrigenPago(q);
+                                          return (
+                                            <div className="flex flex-col items-center gap-0.5">
+                                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${origenColor}`}>{origen}</span>
+                                              <span className="text-[9px] text-gray-400">{pago}</span>
+                                            </div>
+                                          );
+                                        })()}
                                       </td>
                                       <td className="px-3 py-2 text-right font-semibold text-gray-700">
                                         ${fmt(q.monto)}

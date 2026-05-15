@@ -39,8 +39,22 @@ type Totales = {
 
 type UltimaQuiniela = {
   folio: string; nombreCliente: string; canal: string;
+  usuarioId?: string | null; vendedorId?: string | null;
   monto: number; estadoPago: string; jornada: string;
 };
+
+function getOrigenPago(q: UltimaQuiniela): { origen: string; pago: string; color: string } {
+  if (q.canal === "tienda")  return { origen: "Tienda",     pago: "Efectivo",       color: "bg-amber-100 text-amber-700"  };
+  if (q.canal === "kiosko")  return { origen: "Kiosko",     pago: "Efectivo",       color: "bg-amber-100 text-amber-700"  };
+  const esReferido = !!(q.usuarioId || q.vendedorId);
+  const origen     = esReferido ? "Referencia" : "Directa";
+  const color      = esReferido ? "bg-cyan-100 text-cyan-700" : "bg-purple-100 text-purple-700";
+  const pago = q.canal === "transferencia" ? "Transferencia"
+    : q.canal === "oxxo"  ? "OXXO"
+    : q.canal === "online" ? "Online"
+    : q.canal;
+  return { origen, pago, color };
+}
 
 const CANAL_LABEL: Record<string, string> = {
   tienda: "Tienda", online: "Online", transferencia: "Transfer.", oxxo: "OXXO",
@@ -403,16 +417,15 @@ export default function GananciasPage() {
                           <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{q.folio}</td>
                           <td className="px-4 py-2.5 font-medium text-gray-800 truncate max-w-[100px]">{q.nombreCliente}</td>
                           <td className="px-4 py-2.5">
-                            <div className="flex flex-wrap gap-1 items-center">
-                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                {CANAL_LABEL[q.canal] ?? q.canal}
-                              </span>
-                              {q.canal !== "tienda" && (
-                                <span className="text-xs bg-cyan-100 text-cyan-700 px-2 py-0.5 rounded-full font-medium">
-                                  🔗 Ref.
-                                </span>
-                              )}
-                            </div>
+                            {(() => {
+                              const { origen, pago, color } = getOrigenPago(q);
+                              return (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium w-fit ${color}`}>{origen}</span>
+                                  <span className="text-[10px] text-gray-400">{pago}</span>
+                                </div>
+                              );
+                            })()}
                           </td>
                           <td className="px-4 py-2.5 text-right font-semibold text-gray-800">${fmt(q.monto)}</td>
                           <td className="px-4 py-2.5 text-right">

@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
       estadoPago: true,
       canal: true,
       usuarioId: true,
+      vendedorId: true,
       jornadaId: true,
       nombreCliente: true,
       jornada: { select: { id: true, numero: true, nombre: true, liga: true, temporada: true } },
@@ -100,6 +101,7 @@ export async function GET(req: NextRequest) {
   type QItem = {
     id: string; folio: string; monto: number; canal: string;
     estado: string; estadoPago: string; nombreCliente: string | null;
+    usuarioId: string | null; vendedorId: string | null;
   };
 
   const reporte = usuarios.map((u) => {
@@ -175,6 +177,8 @@ export async function GET(req: NextRequest) {
           estado: q.estado,
           estadoPago: q.estadoPago,
           nombreCliente: q.nombreCliente,
+          usuarioId: q.usuarioId,
+          vendedorId: q.vendedorId,
         })),
       });
     }
@@ -299,8 +303,9 @@ export async function GET(req: NextRequest) {
           existente.comisionDirecta += comisionDirecta;
           existente.comisionTotal += comisionDirecta;
           existente.quinielas.push(...qs.map((q) => ({
-            id: q.id, folio: q.folio, monto: q.monto, canal: "directa",
+            id: q.id, folio: q.folio, monto: q.monto, canal: q.canal,
             estado: q.estado, estadoPago: q.estadoPago, nombreCliente: q.nombreCliente,
+            usuarioId: null, vendedorId: null,
           })));
         } else {
           const pago = pagos.find((p) => p.usuarioId === u.id && p.jornadaId === jId);
@@ -323,8 +328,9 @@ export async function GET(req: NextRequest) {
             pagadoEn: pago ? (pago.pagadoEn instanceof Date ? pago.pagadoEn.toISOString() : String(pago.pagadoEn)) : null,
             montoPagado: pago?.monto ?? null,
             quinielas: qs.map((q) => ({
-              id: q.id, folio: q.folio, monto: q.monto, canal: "directa",
+              id: q.id, folio: q.folio, monto: q.monto, canal: q.canal,
               estado: q.estado, estadoPago: q.estadoPago, nombreCliente: q.nombreCliente,
+              usuarioId: null, vendedorId: null,
             })),
           });
         }
@@ -395,6 +401,7 @@ export async function GET(req: NextRequest) {
           quinielas: qs.map((q) => ({
             id: q.id, folio: q.folio, monto: q.monto, canal: q.canal,
             estado: q.estado, estadoPago: q.estadoPago, nombreCliente: q.nombreCliente,
+            usuarioId: null, vendedorId: q.vendedorId ?? null,
           })),
         });
       }

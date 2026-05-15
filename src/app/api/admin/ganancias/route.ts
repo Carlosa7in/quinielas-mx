@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
     where: { usuarioId: userId },
     select: {
       folio: true, monto: true, canal: true,
+      usuarioId: true, vendedorId: true,
       estadoPago: true, jornadaId: true, nombreCliente: true,
       jornada: { select: { id: true, nombre: true, numero: true, liga: true, temporada: true } },
     },
@@ -191,6 +192,8 @@ export async function GET(req: NextRequest) {
     folio: q.folio,
     nombreCliente: q.nombreCliente ?? "—",
     canal: q.canal,
+    usuarioId: q.usuarioId,
+    vendedorId: q.vendedorId,
     monto: q.monto,
     estadoPago: q.estadoPago,
     jornada: q.jornada.nombre ?? `Jornada ${q.jornada.numero}`,
