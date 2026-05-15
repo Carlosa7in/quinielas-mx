@@ -9,29 +9,64 @@ export async function GET(req: NextRequest) {
   }
   const userId = token.id as string;
 
+  // Usuario actual (para codigoRef y nombre)
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: userId },
+    select: { codigoRef: true, nombre: true },
+  });
+
+  // Jornada activa
+  const jornadaActiva = await prisma.jornada.findFirst({
+    where: { estado: "abierta" },
+    orderBy: { numero: "desc" },
+    select: { id: true, nombre: true, numero: true, liga: true },
+  });
+
+  // Todas las quinielas del usuario
   const quinielas = await prisma.quiniela.findMany({
     where: { usuarioId: userId },
     select: {
       clienteId: true,
       nombreCliente: true,
       telefonoCliente: true,
+      jornadaId: true,
+      folio: true,
+      estadoPago: true,
     },
   });
 
-  const map = new Map<string, { nombre: string; telefono: string | null; totalQuinielas: number }>();
+  // Agrupa por nombre para construir apostadores
+  const map = new Map<string, {
+    nombre: string;
+    telefono: string | null;
+    totalQuinielas: number;
+    folioActivo: string | null;
+    estadoPagoActivo: string | null;
+  }>();
+
   for (const q of quinielas) {
-    // Agrupar por nombre (normalizado) para que cada persona aparezca por separado
-    // aunque compartan teléfono o clienteId
     const nombre = q.nombreCliente?.trim() ?? "Sin nombre";
     const key = nombre.toLowerCase();
     const telefono = q.telefonoCliente ?? null;
+
     if (!map.has(key)) {
-      map.set(key, { nombre, telefono, totalQuinielas: 0 });
+      map.set(key, { nombre, telefono, totalQuinielas: 0, folioActivo: null, estadoPagoActivo: null });
     }
-    map.get(key)!.totalQuinielas += 1;
+    const entry = map.get(key)!;
+    entry.totalQuinielas += 1;
+
+    // Si esta quiniela pertenece a la jornada activa, guarda folio y estadoPago
+    if (jornadaActiva && q.jornadaId === jornadaActiva.id) {
+      entry.folioActivo = q.folio;
+      entry.estadoPagoActivo = q.estadoPago;
+    }
   }
 
   const apostadores = Array.from(map.values()).sort((a, b) => b.totalQuinielas - a.totalQuinielas);
 
-  return NextResponse.json({ apostadores });
+  return NextResponse.json({
+    apostadores,
+    jornadaActiva,
+    codigoRef: usuario?.codigoRef ?? null,
+  });
 }
