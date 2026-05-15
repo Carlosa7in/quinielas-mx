@@ -251,22 +251,17 @@ export default function ClasificacionPage() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-        {/* Tabs de liga — scroll horizontal */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
+        {/* Selector de liga — dropdown */}
+        <select
+          value={ligaActiva}
+          onChange={(e) => { setLigaActiva(e.target.value); setExpandido(null); }}
+          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 appearance-none"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}
+        >
           {LIGAS.map((l) => (
-            <button
-              key={l.id}
-              onClick={() => { setLigaActiva(l.id); setExpandido(null); }}
-              className={`shrink-0 py-2 px-3 rounded-xl text-sm font-semibold transition-colors shadow-sm ${
-                ligaActiva === l.id
-                  ? "bg-amber-700 text-white"
-                  : "bg-white text-gray-500 hover:bg-gray-50"
-              }`}
-            >
-              {l.label}
-            </button>
+            <option key={l.id} value={l.id}>{l.label}</option>
           ))}
-        </div>
+        </select>
 
         {cargando && (
           <div className="text-center py-12">
