@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { getLogoUrl } from "@/lib/equipos";
 
 type Partido = {
@@ -205,6 +206,8 @@ function PreviewModal({ blobUrl, blob, onClose }: { blobUrl: string; blob: Blob;
 export default function ResultadosPage() {
   const params = useParams();
   const jornadaId = params.jornadaId as string;
+  const { data: session } = useSession();
+  const esAdmin = ["admin", "superadmin"].includes((session?.user as { role?: string })?.role ?? "");
 
   const [data, setData]           = useState<ResultadosData | null>(null);
   const [error, setError]         = useState("");
@@ -325,23 +328,25 @@ export default function ResultadosPage() {
 
       <div className="max-w-screen-lg mx-auto px-3 py-3 space-y-3">
 
-        {/* Search + generate button */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="🔍 Buscar participante"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-sm"
-          />
-          <button
-            onClick={estadoImg === "idle" ? generarImagen : cerrarPreview}
-            disabled={estadoImg === "generando" || !hayResultados}
-            className="bg-amber-700 hover:bg-amber-600 disabled:opacity-40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors shrink-0 flex items-center gap-1.5 whitespace-nowrap"
-          >
-            {estadoImg === "generando" ? "⏳ Generando..." : "🖼️ Generar imagen"}
-          </button>
-        </div>
+        {/* Search + generate button — solo admin */}
+        {esAdmin && (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="🔍 Buscar participante"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-sm"
+            />
+            <button
+              onClick={estadoImg === "idle" ? generarImagen : cerrarPreview}
+              disabled={estadoImg === "generando" || !hayResultados}
+              className="bg-amber-700 hover:bg-amber-600 disabled:opacity-40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors shrink-0 flex items-center gap-1.5 whitespace-nowrap"
+            >
+              {estadoImg === "generando" ? "⏳ Generando..." : "🖼️ Generar imagen"}
+            </button>
+          </div>
+        )}
 
         {!hayResultados && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-800 text-center">
