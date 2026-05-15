@@ -32,7 +32,7 @@ export async function GET() {
             orderBy: { partido: { orden: "asc" } },
           },
         },
-        orderBy: { folio: "desc" },
+        orderBy: { createdAt: "desc" },
       },
     },
     orderBy: { numero: "desc" },
