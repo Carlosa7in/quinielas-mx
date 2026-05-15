@@ -226,11 +226,12 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  // Ventas directas (homepage, sin código de referido) — $2 por quiniela confirmada → superadmin
+  // Ventas directas (homepage, sin código de referido, sin vendedor) — $2 por quiniela confirmada → superadmin
   const ventasDirectas = esSuperadmin
     ? await prisma.quiniela.findMany({
         where: {
           usuarioId: null,
+          vendedorId: null,          // excluir referidos de Vendedor (modelo separado)
           canal: { not: "tienda" },  // tienda sin usuario = error de captura, no venta directa
           estadoPago: "confirmado",
           ...(jornadaId ? { jornadaId } : {}),
@@ -240,6 +241,24 @@ export async function GET(req: NextRequest) {
           canal: true, nombreCliente: true, jornadaId: true,
           jornada: { select: { id: true, numero: true, nombre: true, liga: true, temporada: true } },
         },
+      })
+    : [];
+
+  // Ventas referidas por Vendedor (modelo separado — no tienen usuarioId)
+  const quinielasVendedor = esSuperadmin
+    ? await prisma.quiniela.findMany({
+        where: {
+          vendedorId: { not: null },
+          usuarioId: null,
+          ...(jornadaId ? { jornadaId } : {}),
+        },
+        select: {
+          id: true, folio: true, monto: true, estado: true, estadoPago: true,
+          canal: true, nombreCliente: true, jornadaId: true, vendedorId: true,
+          vendedor: { select: { id: true, nombre: true, codigo: true } },
+          jornada: { select: { id: true, numero: true, nombre: true, liga: true, temporada: true } },
+        },
+        orderBy: { folio: "desc" },
       })
     : [];
 
@@ -300,6 +319,87 @@ export async function GET(req: NextRequest) {
           .reduce((s, j) => s + j.comisionTotal, 0);
       }
       u.porJornada.sort((a, b) => b.jornadaNombre.localeCompare(a.jornadaNombre));
+    }
+  }
+
+  // ── Inyectar comisiones de Vendedores (modelo separado) al reporte ──────────
+  if (esSuperadmin && quinielasVendedor.length > 0) {
+    // Agrupar por vendedorId
+    const vendedoresMap = new Map<string, {
+      vendedor: { id: string; nombre: string; codigo: string };
+      quinielas: typeof quinielasVendedor;
+    }>();
+    for (const q of quinielasVendedor) {
+      if (!q.vendedor || !q.vendedorId) continue;
+      if (!vendedoresMap.has(q.vendedorId)) {
+        vendedoresMap.set(q.vendedorId, { vendedor: q.vendedor, quinielas: [] });
+      }
+      vendedoresMap.get(q.vendedorId)!.quinielas.push(q);
+    }
+
+    for (const [vendedorId, { vendedor, quinielas: vqs }] of vendedoresMap) {
+      // Agrupar por jornada
+      const jornadasMap = new Map<string, typeof vqs>();
+      for (const q of vqs) {
+        if (!jornadasMap.has(q.jornadaId)) jornadasMap.set(q.jornadaId, []);
+        jornadasMap.get(q.jornadaId)!.push(q);
+      }
+
+      const porJornada: Array<{
+        jornadaId: string; jornadaNombre: string; liga: string; temporada: string;
+        total: number; tienda: number; online: number; recaudado: number;
+        comision: number; comisionAdmin: number; comisionTotal: number;
+        pagado: boolean; pagadoEn: string | null; montoPagado: number | null;
+        quinielas: QItem[];
+      }> = [];
+
+      for (const [jId, qs] of jornadasMap.entries()) {
+        const jornada = qs[0].jornada;
+        const recaudado = qs.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto, 0);
+        const comision = qs.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto * COMISION_PCT, 0);
+        const pago = pagos.find((p) => p.usuarioId === vendedorId && p.jornadaId === jId);
+        porJornada.push({
+          jornadaId: jId,
+          jornadaNombre: jornada.nombre ?? `Jornada ${jornada.numero}`,
+          liga: jornada.liga,
+          temporada: jornada.temporada,
+          total: qs.length,
+          tienda: 0,
+          online: qs.length,
+          recaudado,
+          comision,
+          comisionAdmin: 0,
+          comisionTotal: comision,
+          pagado: !!pago,
+          pagadoEn: pago ? (pago.pagadoEn instanceof Date ? pago.pagadoEn.toISOString() : String(pago.pagadoEn)) : null,
+          montoPagado: pago?.monto ?? null,
+          quinielas: qs.map((q) => ({
+            id: q.id, folio: q.folio, monto: q.monto, canal: q.canal,
+            estado: q.estado, estadoPago: q.estadoPago, nombreCliente: q.nombreCliente,
+          })),
+        });
+      }
+
+      const totalVendedor = vqs.length;
+      const recaudadoVendedor = vqs.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto, 0);
+      const comisionVendedor = vqs.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto * COMISION_PCT, 0);
+      const pendientePago = porJornada.filter((j) => !j.pagado && j.comisionTotal > 0).reduce((s, j) => s + j.comisionTotal, 0);
+
+      reporte.push({
+        id: vendedorId,
+        nombre: `${vendedor.nombre} [${vendedor.codigo}]`,
+        rol: "vendedor",
+        puntoVenta: null,
+        total: totalVendedor,
+        tienda: 0,
+        online: totalVendedor,
+        recaudado: recaudadoVendedor,
+        ganadoras: vqs.filter((q) => q.estado === "ganadora").length,
+        comisionTotal: comisionVendedor,
+        comisionAdminTotal: 0,
+        pendientePago,
+        porJornada: porJornada.sort((a, b) => b.jornadaNombre.localeCompare(a.jornadaNombre)),
+      });
     }
   }
 

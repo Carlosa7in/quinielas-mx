@@ -148,7 +148,8 @@ export async function GET(req: NextRequest) {
     for (const [jId, d] of recMap) {
       const fondoAdmin   = d.recaudado * PCT_ADMIN;   // solo el 15% base
       const bolsaNeta    = Math.max(d.recaudado - fondoAdmin - d.comisionTienda - d.comisionReferido - d.comisionDirecta, 0);
-      const miParte      = numAdmins > 0 ? fondoAdmin / numAdmins : 0;
+      // miParte = fondo admin (15%) + comisión directa (10% ventas sin referido) — todo va al superadmin
+      const miParte      = numAdmins > 0 ? (fondoAdmin + d.comisionDirecta) / numAdmins : 0;
       const pago         = pagosPorJornada.get(jId);
 
       comisionesAdmin.push({
