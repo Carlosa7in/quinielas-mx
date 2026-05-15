@@ -68,76 +68,66 @@ const ESTADO_STYLE: Record<string, string> = {
 
 // ── Bloque de desglose financiero por jornada (superadmin) ──────────────────
 function DesgloseJornada({ j }: { j: AdminRow }) {
-  const pct = (n: number) =>
-    j.recaudadoTotal > 0 ? `${((n / j.recaudadoTotal) * 100).toFixed(1)}%` : "—";
-
   return (
-    <div className="bg-stone-900 text-white rounded-xl p-4 space-y-2.5 text-sm">
-      <p className="text-[10px] font-bold tracking-widest text-stone-400 uppercase">Desglose financiero</p>
-
-      <div className="flex justify-between">
-        <span className="text-stone-300">Total recaudado</span>
-        <span className="font-bold">${fmt(j.recaudadoTotal)}</span>
-      </div>
-
+    <div className="space-y-2">
+      {/* Resumen de ventas */}
       {(j.ventasTienda > 0 || j.ventasReferido > 0 || j.ventasDirectas > 0) && (
-        <div className="flex gap-3 text-stone-500 text-xs flex-wrap">
+        <div className="flex gap-2 text-xs text-gray-500 flex-wrap">
           {j.ventasTienda   > 0 && <span>🏪 {j.ventasTienda} tienda</span>}
           {j.ventasReferido > 0 && <span>🔗 {j.ventasReferido} referido</span>}
           {j.ventasDirectas > 0 && <span>🌐 {j.ventasDirectas} directas</span>}
         </div>
       )}
 
-      <div className="flex justify-between text-blue-400">
-        <span>
-          − 15% fondo admin
-          {j.numAdmins > 1 && (
-            <span className="text-blue-500 text-xs ml-2">
-              (${fmt(j.fondoAdmin / j.numAdmins)} × {j.numAdmins})
-            </span>
-          )}
-        </span>
-        <span className="font-bold">−${fmt(j.fondoAdmin)} <span className="text-xs opacity-60">{pct(j.fondoAdmin)}</span></span>
-      </div>
-
-      {j.comisionTienda > 0 && (
-        <div className="flex justify-between text-orange-400">
-          <span>− Com. tienda (10%)</span>
-          <span className="font-bold">−${fmt(j.comisionTienda)}</span>
-        </div>
-      )}
-      {j.comisionReferido > 0 && (
-        <div className="flex justify-between text-cyan-400">
-          <span>− Com. referidos (10%)</span>
-          <span className="font-bold">−${fmt(j.comisionReferido)}</span>
-        </div>
-      )}
-      {j.comisionDirecta > 0 && (
-        <div className="flex justify-between text-purple-400">
-          <span>− Ventas directas 🌐 (10%)</span>
-          <span className="font-bold">−${fmt(j.comisionDirecta)}</span>
-        </div>
-      )}
-
-      <div className="border-t border-stone-700 pt-2 flex justify-between text-green-400">
-        <span className="font-bold">💰 Bolsa para premios</span>
-        <span className="font-black text-base">${fmt(j.bolsaNeta)}</span>
-      </div>
-
-      <div className="border-t border-stone-700 pt-2 space-y-1">
-        <div className="flex justify-between text-indigo-300">
-          <span className="text-xs">👤 Mi parte fondo admin (15%)</span>
-          <span className="font-bold">${fmt(j.fondoAdmin / j.numAdmins)}</span>
-        </div>
-        {j.comisionDirecta > 0 && (
-          <div className="flex justify-between text-purple-300">
-            <span className="text-xs">🌐 Mi parte ventas directas (10%)</span>
-            <span className="font-bold">${fmt(j.comisionDirecta / j.numAdmins)}</span>
+      {/* Cajas de deducción */}
+      <div className="grid grid-cols-2 gap-2">
+        {j.comisionTienda > 0 && (
+          <div className="bg-orange-50 rounded-lg p-2 text-center">
+            <p className="font-bold text-orange-600">−${fmt(j.comisionTienda)}</p>
+            <p className="text-[10px] text-gray-500">Com. tienda 🏪</p>
+            <p className="text-[9px] text-gray-400">10% de ventas</p>
           </div>
         )}
-        <div className="flex justify-between text-white pt-1 border-t border-stone-600">
-          <span className="text-xs font-bold">Total a cobrar</span>
-          <span className="font-black">${fmt(j.miParte)}</span>
+        {j.comisionReferido > 0 && (
+          <div className="bg-cyan-50 rounded-lg p-2 text-center">
+            <p className="font-bold text-cyan-700">−${fmt(j.comisionReferido)}</p>
+            <p className="text-[10px] text-gray-500">Com. referidos 🔗</p>
+            <p className="text-[9px] text-gray-400">10% confirmadas</p>
+          </div>
+        )}
+        {j.comisionDirecta > 0 && (
+          <div className="bg-purple-50 rounded-lg p-2 text-center">
+            <p className="font-bold text-purple-600">−${fmt(j.comisionDirecta)}</p>
+            <p className="text-[10px] text-gray-500">Ventas directas 🌐</p>
+            <p className="text-[9px] text-gray-400">10% sin código</p>
+          </div>
+        )}
+        <div className="bg-green-50 rounded-lg p-2 text-center">
+          <p className="font-bold text-green-700">${fmt(j.bolsaNeta)}</p>
+          <p className="text-[10px] text-gray-500">💰 Bolsa premios</p>
+          <p className="text-[9px] text-gray-400">${fmt(j.recaudadoTotal)} total</p>
+        </div>
+      </div>
+
+      {/* Mi parte — misma estructura que comisiones */}
+      <div className="bg-blue-50 rounded-lg p-2 text-center col-span-full">
+        <div className="flex items-center justify-between px-1">
+          <div className="text-left space-y-0.5">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-[10px] text-gray-500">👤 Fondo admin (15%){j.numAdmins > 1 ? ` ÷ ${j.numAdmins}` : ""}</p>
+              <p className="font-bold text-blue-700">${fmt(j.fondoAdmin / j.numAdmins)}</p>
+            </div>
+            {j.comisionDirecta > 0 && (
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-[10px] text-gray-500">🌐 Ventas directas (10%){j.numAdmins > 1 ? ` ÷ ${j.numAdmins}` : ""}</p>
+                <p className="font-bold text-purple-600">${fmt(j.comisionDirecta / j.numAdmins)}</p>
+              </div>
+            )}
+          </div>
+          <div className="text-right border-l border-blue-200 pl-3 ml-3">
+            <p className="font-black text-indigo-700 text-base">${fmt(j.miParte)}</p>
+            <p className="text-[10px] text-gray-500">Total a cobrar</p>
+          </div>
         </div>
       </div>
     </div>
