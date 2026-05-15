@@ -18,8 +18,13 @@ type Datos = {
 };
 
 const LIGAS = [
-  { id: "mx",        label: "🇲🇽 Liga MX"   },
-  { id: "champions", label: "⭐ Champions"   },
+  { id: "mx",          label: "🇲🇽 Liga MX"    },
+  { id: "champions",   label: "⭐ Champions"    },
+  { id: "premier",     label: "🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier"     },
+  { id: "laliga",      label: "🇪🇸 La Liga"     },
+  { id: "ligue1",      label: "🇫🇷 Ligue 1"     },
+  { id: "brasileirao", label: "🇧🇷 Brasileirão" },
+  { id: "argentina",   label: "🇦🇷 Argentina"   },
 ];
 
 function zonaDePos(pos: number, zonas: Zona[]): Zona {
@@ -209,6 +214,26 @@ export default function ClasificacionPage() {
       title: "📋 Champions League — Liga Phase",
       text: "36 equipos juegan 8 partidos. Top 8 pasan directo a Octavos. Del 9° al 24° juegan un Playoff. Del 25° al 36° quedan eliminados.",
     },
+    premier: {
+      title: "📋 Premier League 2024-25",
+      text: "Top 4 → Champions League · 5° → Europa League · 6° → Conference League · 18°-20° descienden.",
+    },
+    laliga: {
+      title: "📋 La Liga 2024-25",
+      text: "Top 4 → Champions League · 5° → Europa League · 6° → Conference League · 18°-20° descienden.",
+    },
+    ligue1: {
+      title: "📋 Ligue 1 2024-25",
+      text: "Top 3 → Champions League · 4°-5° → Europa/Conference · 16° juega Playoff · 17°-18° descienden.",
+    },
+    brasileirao: {
+      title: "📋 Brasileirão 2025",
+      text: "Top 6 → Copa Libertadores · 7°-8° → Copa Sudamericana · 17°-20° descienden.",
+    },
+    argentina: {
+      title: "📋 Liga Argentina 2025",
+      text: "El descenso se decide por promedio de puntos de las últimas 3 temporadas, no solo por la posición actual.",
+    },
   };
 
   return (
@@ -226,14 +251,16 @@ export default function ClasificacionPage() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-        {/* Tabs de liga */}
-        <div className="flex bg-white rounded-xl shadow-sm overflow-hidden">
+        {/* Tabs de liga — scroll horizontal */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
           {LIGAS.map((l) => (
             <button
               key={l.id}
               onClick={() => { setLigaActiva(l.id); setExpandido(null); }}
-              className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-                ligaActiva === l.id ? "bg-amber-700 text-white" : "text-gray-500 hover:bg-gray-50"
+              className={`shrink-0 py-2 px-3 rounded-xl text-sm font-semibold transition-colors shadow-sm ${
+                ligaActiva === l.id
+                  ? "bg-amber-700 text-white"
+                  : "bg-white text-gray-500 hover:bg-gray-50"
               }`}
             >
               {l.label}

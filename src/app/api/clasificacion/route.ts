@@ -18,6 +18,57 @@ const LIGAS: Record<string, { url: string; nombre: string; zonas: { limite: numb
       { limite: 36, label: "Eliminado",         color: "gray"   },
     ],
   },
+  premier: {
+    url: "https://site.api.espn.com/apis/v2/sports/soccer/eng.1/standings",
+    nombre: "Premier League",
+    zonas: [
+      { limite: 4,  label: "Champions League",   color: "green"  },
+      { limite: 6,  label: "Europa / Conference", color: "yellow" },
+      { limite: 17, label: "Permanencia",         color: "white"  },
+      { limite: 20, label: "Descenso",            color: "gray"   },
+    ],
+  },
+  laliga: {
+    url: "https://site.api.espn.com/apis/v2/sports/soccer/esp.1/standings",
+    nombre: "La Liga",
+    zonas: [
+      { limite: 4,  label: "Champions League",   color: "green"  },
+      { limite: 6,  label: "Europa / Conference", color: "yellow" },
+      { limite: 17, label: "Permanencia",         color: "white"  },
+      { limite: 20, label: "Descenso",            color: "gray"   },
+    ],
+  },
+  ligue1: {
+    url: "https://site.api.espn.com/apis/v2/sports/soccer/fra.1/standings",
+    nombre: "Ligue 1",
+    zonas: [
+      { limite: 3,  label: "Champions League",   color: "green"  },
+      { limite: 5,  label: "Europa / Conference", color: "yellow" },
+      { limite: 15, label: "Permanencia",         color: "white"  },
+      { limite: 16, label: "Playoff",             color: "yellow" },
+      { limite: 18, label: "Descenso",            color: "gray"   },
+    ],
+  },
+  brasileirao: {
+    url: "https://site.api.espn.com/apis/v2/sports/soccer/bra.1/standings",
+    nombre: "Brasileirão",
+    zonas: [
+      { limite: 6,  label: "Libertadores",  color: "green"  },
+      { limite: 8,  label: "Sudamericana",  color: "yellow" },
+      { limite: 16, label: "Permanencia",   color: "white"  },
+      { limite: 20, label: "Descenso",      color: "gray"   },
+    ],
+  },
+  argentina: {
+    url: "https://site.api.espn.com/apis/v2/sports/soccer/arg.1/standings",
+    nombre: "Liga Argentina",
+    zonas: [
+      { limite: 4,  label: "Libertadores",  color: "green"  },
+      { limite: 6,  label: "Sudamericana",  color: "yellow" },
+      { limite: 24, label: "Permanencia",   color: "white"  },
+      { limite: 28, label: "Descenso",      color: "gray"   },
+    ],
+  },
 };
 
 export async function GET(req: NextRequest) {
