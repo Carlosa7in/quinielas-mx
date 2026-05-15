@@ -122,9 +122,12 @@ export async function GET(req: NextRequest) {
       tienda: number;
       online: number;
       recaudado: number;
-      comision: number;        // comisión tienda ($2/quiniela)
-      comisionAdmin: number;   // parte del 15% (solo para admin/superadmin)
-      comisionTotal: number;   // suma de ambas
+      comisionTienda: number;   // 10% de ventas en tienda
+      comisionReferido: number; // 10% de ventas online confirmadas
+      comision: number;         // tienda + referido (compat.)
+      comisionAdmin: number;    // parte del 15% (solo para admin/superadmin)
+      comisionDirecta: number;  // 10% de ventas directas inyectadas (superadmin)
+      comisionTotal: number;    // suma de todos
       pagado: boolean;
       pagadoEn: string | null;
       montoPagado: number | null;
@@ -136,9 +139,11 @@ export async function GET(req: NextRequest) {
       const tienda = qs.filter((q) => q.canal === "tienda").length;
       const online = qs.filter((q) => q.canal !== "tienda").length;
       const recaudado = qs.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto, 0);
-      const comision = u.rol === "vendedor"
-        ? qs.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto * COMISION_PCT, 0)
-        : qs.filter((q) => q.canal === "tienda").reduce((s, q) => s + q.monto * COMISION_PCT, 0);
+      // Tienda: comisión inmediata (no requiere estadoPago=confirmado pues se cobra en caja)
+      const comisionTienda = qs.filter((q) => q.canal === "tienda").reduce((s, q) => s + q.monto * COMISION_PCT, 0);
+      // Referido (online): comisión solo cuando pago confirmado — aplica a TODOS los roles
+      const comisionReferido = qs.filter((q) => q.canal !== "tienda" && q.estadoPago === "confirmado").reduce((s, q) => s + q.monto * COMISION_PCT, 0);
+      const comision = comisionTienda + comisionReferido;
       const globalJ = recaudadoGlobalPorJornada.get(jId);
       const comisionAdmin = esRolAdmin(u.rol) && numAdmins > 0 && globalJ
         ? (globalJ.recaudado * 0.15) / numAdmins
@@ -153,8 +158,11 @@ export async function GET(req: NextRequest) {
         tienda,
         online,
         recaudado,
+        comisionTienda,
+        comisionReferido,
         comision,
         comisionAdmin,
+        comisionDirecta: 0,
         comisionTotal: comision + comisionAdmin,
         pagado: !!pago,
         pagadoEn: pago ? (pago.pagadoEn instanceof Date ? pago.pagadoEn.toISOString() : String(pago.pagadoEn)) : null,
@@ -186,8 +194,11 @@ export async function GET(req: NextRequest) {
             tienda: 0,
             online: 0,
             recaudado: 0,
+            comisionTienda: 0,
+            comisionReferido: 0,
             comision: 0,
             comisionAdmin,
+            comisionDirecta: 0,
             comisionTotal: comisionAdmin,
             pagado: !!pago,
             pagadoEn: pago ? (pago.pagadoEn instanceof Date ? pago.pagadoEn.toISOString() : String(pago.pagadoEn)) : null,
@@ -203,9 +214,10 @@ export async function GET(req: NextRequest) {
     const tienda = misQ.filter((q) => q.canal === "tienda").length;
     const online = misQ.filter((q) => q.canal !== "tienda").length;
     const recaudado = misQ.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto, 0);
-    const comisionTiendaTotal = u.rol === "vendedor"
-      ? misQ.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto * COMISION_PCT, 0)
-      : misQ.filter((q) => q.canal === "tienda").reduce((s, q) => s + q.monto * COMISION_PCT, 0);
+    // Tienda: siempre; online/referido: solo confirmados — aplica a todos los roles
+    const comisionTiendaTotal = misQ
+      .filter((q) => q.canal === "tienda" || q.estadoPago === "confirmado")
+      .reduce((s, q) => s + q.monto * COMISION_PCT, 0);
     const comisionAdminTotal = porJornada.reduce((s, j) => s + j.comisionAdmin, 0);
     const ganadoras = misQ.filter((q) => q.estado === "ganadora").length;
     const pendientePago = porJornada
@@ -284,7 +296,7 @@ export async function GET(req: NextRequest) {
         const jornadaNombre = jornada.nombre ?? `Jornada ${jornada.numero}`;
         const existente = u.porJornada.find((j) => j.jornadaId === jId);
         if (existente) {
-          existente.comision += comisionDirecta;
+          existente.comisionDirecta += comisionDirecta;
           existente.comisionTotal += comisionDirecta;
           existente.quinielas.push(...qs.map((q) => ({
             id: q.id, folio: q.folio, monto: q.monto, canal: "directa",
@@ -301,8 +313,11 @@ export async function GET(req: NextRequest) {
             tienda: 0,
             online: 0,
             recaudado: 0,
-            comision: comisionDirecta,
+            comisionTienda: 0,
+            comisionReferido: 0,
+            comision: 0,
             comisionAdmin: 0,
+            comisionDirecta,
             comisionTotal: comisionDirecta,
             pagado: !!pago,
             pagadoEn: pago ? (pago.pagadoEn instanceof Date ? pago.pagadoEn.toISOString() : String(pago.pagadoEn)) : null,
@@ -348,7 +363,8 @@ export async function GET(req: NextRequest) {
       const porJornada: Array<{
         jornadaId: string; jornadaNombre: string; liga: string; temporada: string;
         total: number; tienda: number; online: number; recaudado: number;
-        comision: number; comisionAdmin: number; comisionTotal: number;
+        comisionTienda: number; comisionReferido: number; comision: number;
+        comisionAdmin: number; comisionDirecta: number; comisionTotal: number;
         pagado: boolean; pagadoEn: string | null; montoPagado: number | null;
         quinielas: QItem[];
       }> = [];
@@ -356,7 +372,7 @@ export async function GET(req: NextRequest) {
       for (const [jId, qs] of jornadasMap.entries()) {
         const jornada = qs[0].jornada;
         const recaudado = qs.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto, 0);
-        const comision = qs.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto * COMISION_PCT, 0);
+        const comisionReferido = qs.filter((q) => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto * COMISION_PCT, 0);
         const pago = pagos.find((p) => p.usuarioId === vendedorId && p.jornadaId === jId);
         porJornada.push({
           jornadaId: jId,
@@ -367,9 +383,12 @@ export async function GET(req: NextRequest) {
           tienda: 0,
           online: qs.length,
           recaudado,
-          comision,
+          comisionTienda: 0,
+          comisionReferido,
+          comision: comisionReferido,
           comisionAdmin: 0,
-          comisionTotal: comision,
+          comisionDirecta: 0,
+          comisionTotal: comisionReferido,
           pagado: !!pago,
           pagadoEn: pago ? (pago.pagadoEn instanceof Date ? pago.pagadoEn.toISOString() : String(pago.pagadoEn)) : null,
           montoPagado: pago?.monto ?? null,

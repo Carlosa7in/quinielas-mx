@@ -15,7 +15,9 @@ type QuinielaItem = {
 type JornadaDesglose = {
   jornadaId: string; jornadaNombre: string; liga: string; temporada: string;
   total: number; tienda: number; online: number;
-  recaudado: number; comision: number; comisionAdmin: number; comisionTotal: number;
+  recaudado: number;
+  comisionTienda: number; comisionReferido: number;
+  comision: number; comisionAdmin: number; comisionDirecta: number; comisionTotal: number;
   pagado: boolean; pagadoEn: string | null; montoPagado: number | null;
   quinielas: QuinielaItem[];
 };
@@ -323,7 +325,7 @@ export default function ComisionesPage() {
                             </div>
 
                             {/* Stats de la jornada */}
-                            <div className={`grid gap-2 ${j.comisionAdmin > 0 ? "grid-cols-2" : "grid-cols-3"}`}>
+                            <div className="grid gap-2 grid-cols-2">
                               {j.total > 0 && (
                                 <div className="bg-green-50 rounded-lg p-2 text-center">
                                   <p className="font-bold text-green-700">{j.total}</p>
@@ -341,13 +343,28 @@ export default function ComisionesPage() {
                                   <p className="text-[10px] text-gray-500">Recaudado</p>
                                 </div>
                               )}
-                              {j.comision > 0 && (
-                                <div className={`rounded-lg p-2 text-center ${v.rol === "vendedor" ? "bg-cyan-50" : "bg-orange-50"}`}>
-                                  <p className={`font-bold ${v.rol === "vendedor" ? "text-cyan-700" : "text-orange-600"}`}>${fmt(j.comision)}</p>
-                                  <p className="text-[10px] text-gray-500">
-                                    {v.rol === "vendedor" ? "Com. referido" : j.quinielas.some((q) => q.canal === "directa") ? "Com. directas 🌐" : "Com. tienda"}
-                                  </p>
-                                  <p className="text-[9px] text-gray-400">10% de ${fmt(j.recaudado || j.quinielas.reduce((s, q) => s + q.monto, 0))}</p>
+                              {/* Comisión tienda — separada */}
+                              {(j.comisionTienda ?? 0) > 0 && (
+                                <div className="bg-orange-50 rounded-lg p-2 text-center">
+                                  <p className="font-bold text-orange-600">${fmt(j.comisionTienda)}</p>
+                                  <p className="text-[10px] text-gray-500">Com. tienda 🏪</p>
+                                  <p className="text-[9px] text-gray-400">10% de ${fmt(j.tienda * (j.recaudado / (j.total || 1)))}</p>
+                                </div>
+                              )}
+                              {/* Comisión referido — separada */}
+                              {(j.comisionReferido ?? 0) > 0 && (
+                                <div className="bg-cyan-50 rounded-lg p-2 text-center">
+                                  <p className="font-bold text-cyan-700">${fmt(j.comisionReferido)}</p>
+                                  <p className="text-[10px] text-gray-500">Com. referido 🔗</p>
+                                  <p className="text-[9px] text-gray-400">10% confirmadas</p>
+                                </div>
+                              )}
+                              {/* Comisión directa (solo superadmin) — separada */}
+                              {(j.comisionDirecta ?? 0) > 0 && (
+                                <div className="bg-purple-50 rounded-lg p-2 text-center">
+                                  <p className="font-bold text-purple-600">${fmt(j.comisionDirecta)}</p>
+                                  <p className="text-[10px] text-gray-500">Com. directas 🌐</p>
+                                  <p className="text-[9px] text-gray-400">10% sin código</p>
                                 </div>
                               )}
                               {j.comisionAdmin > 0 && (
@@ -357,7 +374,7 @@ export default function ComisionesPage() {
                                       <p className="font-bold text-blue-700">${fmt(j.comisionAdmin)}</p>
                                       <p className="text-[10px] text-gray-500">Fondo admin (15%)</p>
                                     </div>
-                                    {j.comision > 0 && (
+                                    {j.comisionTotal > j.comisionAdmin && (
                                       <div className="text-right border-l border-blue-200 pl-3">
                                         <p className="font-bold text-indigo-700">${fmt(j.comisionTotal)}</p>
                                         <p className="text-[10px] text-gray-500">Total a pagar</p>
