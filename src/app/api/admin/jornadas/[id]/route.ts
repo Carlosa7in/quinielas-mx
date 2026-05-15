@@ -1,5 +1,83 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, sql } from "@/lib/prisma";
+
+// GET /api/admin/jornadas/:id — detalle completo: partidos, picks, stats
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  const jornada = await prisma.jornada.findUnique({
+    where: { id },
+    select: {
+      id: true, numero: true, nombre: true, temporada: true, liga: true, estado: true,
+      partidos: {
+        select: {
+          id: true, equipoLocal: true, equipoVisita: true,
+          resultado: true, golesLocal: true, golesVisita: true, orden: true,
+          picks: { select: { prediccion: true } },
+        },
+        orderBy: { orden: "asc" },
+      },
+      quinielas: {
+        select: { monto: true, estado: true, estadoPago: true, canal: true },
+      },
+    },
+  });
+
+  if (!jornada) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+
+  // fechaHora via SQL (NeonDB bug con DateTime en Prisma ORM)
+  let fechaHorasMap: Record<string, string> = {};
+  try {
+    const rows = await sql`SELECT id, "fechaHora" FROM "Partido" WHERE "jornadaId" = ${id}`;
+    for (const r of rows) {
+      if (r.fechaHora) fechaHorasMap[r.id] = r.fechaHora instanceof Date
+        ? r.fechaHora.toISOString() : String(r.fechaHora);
+    }
+  } catch { /* ignorar */ }
+
+  // Stats de quinielas
+  const totalQuinielas  = jornada.quinielas.length;
+  const recaudado       = jornada.quinielas.filter(q => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto, 0);
+  const pendientes      = jornada.quinielas.filter(q => q.estadoPago === "pendiente").length;
+  const ganadoras       = jornada.quinielas.filter(q => q.estado === "ganadora").length;
+  const porCanal = {
+    tienda: jornada.quinielas.filter(q => q.canal === "tienda").length,
+    online:  jornada.quinielas.filter(q => q.canal !== "tienda").length,
+  };
+
+  // Distribución de picks por partido
+  const partidos = jornada.partidos.map((p) => {
+    const total = p.picks.length;
+    const L = p.picks.filter(pk => pk.prediccion === "L").length;
+    const E = p.picks.filter(pk => pk.prediccion === "E").length;
+    const V = p.picks.filter(pk => pk.prediccion === "V").length;
+    return {
+      id: p.id,
+      equipoLocal: p.equipoLocal,
+      equipoVisita: p.equipoVisita,
+      resultado: p.resultado,
+      golesLocal: p.golesLocal,
+      golesVisita: p.golesVisita,
+      orden: p.orden,
+      fechaHora: fechaHorasMap[p.id] ?? null,
+      picks: { total, L, E, V,
+        pctL: total > 0 ? Math.round(L / total * 100) : 0,
+        pctE: total > 0 ? Math.round(E / total * 100) : 0,
+        pctV: total > 0 ? Math.round(V / total * 100) : 0,
+      },
+    };
+  });
+
+  return NextResponse.json({
+    id: jornada.id, numero: jornada.numero, nombre: jornada.nombre,
+    temporada: jornada.temporada, liga: jornada.liga, estado: jornada.estado,
+    partidos,
+    stats: { totalQuinielas, recaudado, pendientes, ganadoras, porCanal },
+  });
+}
 
 // PATCH /api/admin/jornadas/:id — editar nombre y/o estado
 export async function PATCH(

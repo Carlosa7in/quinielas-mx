@@ -113,7 +113,7 @@ export default function JornadasPage() {
         ) : (
           <div className="space-y-3">
             {mostrar.map((j) => (
-              <div key={j.id} className="bg-white rounded-xl shadow-sm p-4">
+              <div key={j.id} className="bg-white rounded-xl shadow-sm p-4 relative">
                 {/* Título */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -151,8 +151,8 @@ export default function JornadasPage() {
                             {j.liga} · {j.nombre ?? `Jornada ${j.numero}`}
                           </p>
                           <button
-                            onClick={() => iniciarEdicion(j)}
-                            className="text-gray-300 hover:text-blue-500 text-xs shrink-0"
+                            onClick={(e) => { e.preventDefault(); iniciarEdicion(j); }}
+                            className="text-gray-300 hover:text-blue-500 text-xs shrink-0 relative z-10"
                             title="Editar nombre"
                           >
                             ✏️
@@ -168,6 +168,9 @@ export default function JornadasPage() {
                     {j.estado}
                   </span>
                 </div>
+
+                {/* Link a detalle — cubre toda la card excepto el botón editar */}
+                <Link href={`/admin/jornadas/${j.id}`} className="absolute inset-0 rounded-xl" aria-label={`Ver detalle ${j.nombre ?? `Jornada ${j.numero}`}`} />
 
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-2">
