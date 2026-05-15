@@ -4,7 +4,7 @@ export const translations = {
   es: {
     home: {
       subtitle: "Registra tus Quinielas",
-      bolsa: "💰 Bolsa acumulada",
+      bolsa: "💰 Bolsa aproximada",
       quinielasOne: "quiniela registrada",
       quinielasOther: "quinielas registradas",
       cerrado: "🔒 Registro cerrado",

@@ -73,10 +73,6 @@ function JornadaCard({ jornada, t }: { jornada: JornadaBolsaItem; t: HomeT }) {
         >
           ${fmt(jornada.bolsa)}
         </span>
-        <p className="text-amber-200/30 text-xs mt-0.5">
-          {jornada.totalQuinielas}{" "}
-          {jornada.totalQuinielas !== 1 ? t.quinielasOther : t.quinielasOne}
-        </p>
       </div>
 
       {/* Fecha de cierre */}
