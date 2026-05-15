@@ -251,17 +251,40 @@ export default function ClasificacionPage() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-        {/* Selector de liga — dropdown */}
-        <select
-          value={ligaActiva}
-          onChange={(e) => { setLigaActiva(e.target.value); setExpandido(null); }}
-          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 appearance-none"
-          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}
-        >
-          {LIGAS.map((l) => (
-            <option key={l.id} value={l.id}>{l.label}</option>
-          ))}
-        </select>
+        {/* Selector de liga — burbujas flotantes */}
+        <div className="space-y-3">
+          <div className="flex justify-center gap-3 flex-wrap">
+            {LIGAS.map((l) => {
+              const activo = ligaActiva === l.id;
+              const emoji = l.label.split(" ")[0];
+              return (
+                <button
+                  key={l.id}
+                  onClick={() => { setLigaActiva(l.id); setExpandido(null); }}
+                  title={l.label.split(" ").slice(1).join(" ")}
+                  className="transition-all duration-150"
+                  style={{
+                    width: 48, height: 48, borderRadius: "50%",
+                    fontSize: 24,
+                    background: activo ? "#92400e" : "#ffffff",
+                    boxShadow: activo
+                      ? "0 0 0 3px #fbbf24, 0 4px 12px rgba(0,0,0,0.18)"
+                      : "0 4px 10px rgba(0,0,0,0.12)",
+                    border: "none", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transform: activo ? "scale(1.15)" : "scale(1)",
+                  }}
+                >
+                  {emoji}
+                </button>
+              );
+            })}
+          </div>
+          {/* Nombre de la liga activa */}
+          <p className="text-center text-sm font-bold text-amber-800">
+            {LIGAS.find((l) => l.id === ligaActiva)?.label.split(" ").slice(1).join(" ")}
+          </p>
+        </div>
 
         {cargando && (
           <div className="text-center py-12">
