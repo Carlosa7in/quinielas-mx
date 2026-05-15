@@ -66,6 +66,8 @@ export default function AdminJornadaPage() {
   const [guardado, setGuardado] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<Record<string, string>>({});
   const [cargando, setCargando] = useState(true);
+  const [posponiendo, setPosponiendo] = useState(false);
+  const [msgPosponer, setMsgPosponer] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/jornada")
@@ -145,6 +147,27 @@ export default function AdminJornadaPage() {
     }
   };
 
+  const posponer = async (dias: number) => {
+    if (!jornada || !esSuperadmin) return;
+    setPosponiendo(true);
+    setMsgPosponer("");
+    const res = await fetch("/api/admin/jornada", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jornadaId: jornada.id, shiftDias: dias }),
+    });
+    if (res.ok) {
+      // Recargar jornadas para reflejar las nuevas fechas
+      const d = await fetch("/api/admin/jornada").then((r) => r.json());
+      setJornadas(d.jornadas ?? []);
+      setMsgPosponer(`✅ Todos los partidos movidos +${dias} día${dias !== 1 ? "s" : ""}`);
+    } else {
+      const data = await res.json();
+      setMsgPosponer(`❌ ${data.error ?? "Error al posponer"}`);
+    }
+    setPosponiendo(false);
+  };
+
   if (cargando) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -201,9 +224,9 @@ export default function AdminJornadaPage() {
           <>
             {/* Estado del registro */}
             <div className={`rounded-xl p-4 border ${cerrado ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{cerrado ? "🔒" : "🟢"}</span>
-                <div>
+              <div className="flex items-start gap-2">
+                <span className="text-xl shrink-0">{cerrado ? "🔒" : "🟢"}</span>
+                <div className="flex-1 min-w-0">
                   <p className={`font-bold text-sm ${cerrado ? "text-red-700" : "text-green-700"}`}>
                     {cerrado ? "Registro CERRADO" : "Registro ABIERTO"}
                   </p>
@@ -216,10 +239,29 @@ export default function AdminJornadaPage() {
                       })}
                     </p>
                   )}
-                  {cerrado && esSuperadmin && (
-                    <p className="text-xs text-red-500 mt-0.5 font-medium">
-                      ⚠️ Pospón la fecha del primer partido para reabrir el registro
-                    </p>
+
+                  {/* Botón posponer — solo superadmin */}
+                  {esSuperadmin && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs text-gray-500 font-medium">Mover todos los partidos:</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {[1, 7, 14].map((d) => (
+                          <button
+                            key={d}
+                            disabled={posponiendo}
+                            onClick={() => posponer(d)}
+                            className="bg-white border border-gray-300 hover:bg-amber-50 hover:border-amber-400 disabled:opacity-40 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                          >
+                            {posponiendo ? "..." : `+${d === 1 ? "1 día" : d === 7 ? "1 semana" : "2 semanas"}`}
+                          </button>
+                        ))}
+                      </div>
+                      {msgPosponer && (
+                        <p className={`text-xs font-medium ${msgPosponer.startsWith("✅") ? "text-green-600" : "text-red-500"}`}>
+                          {msgPosponer}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

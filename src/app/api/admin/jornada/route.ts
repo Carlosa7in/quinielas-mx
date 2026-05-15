@@ -50,6 +50,7 @@ export async function GET() {
 }
 
 // PATCH /api/admin/jornada — actualiza fechaHora de un partido (solo superadmin)
+// También acepta { jornadaId, shiftDias } para posponer todos los partidos N días
 export async function PATCH(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (token?.role !== "superadmin") {
@@ -57,8 +58,24 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { partidoId, fechaHora } = body;
+  const { partidoId, fechaHora, jornadaId, shiftDias } = body;
 
+  // ── Modo posponer: mover todos los partidos de la jornada N días ──
+  if (jornadaId && shiftDias) {
+    const dias = Number(shiftDias);
+    if (!Number.isInteger(dias) || dias < 1 || dias > 30) {
+      return NextResponse.json({ error: "shiftDias debe ser entre 1 y 30" }, { status: 400 });
+    }
+    await sql`
+      UPDATE "Partido"
+      SET "fechaHora" = "fechaHora" + (${dias} || ' days')::INTERVAL
+      WHERE "jornadaId" = ${jornadaId}
+        AND "fechaHora" IS NOT NULL
+    `;
+    return NextResponse.json({ ok: true, shiftDias: dias });
+  }
+
+  // ── Modo normal: actualizar un partido individual ──
   if (!partidoId || !fechaHora) {
     return NextResponse.json({ error: "partidoId y fechaHora requeridos" }, { status: 400 });
   }
@@ -68,7 +85,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Fecha inválida" }, { status: 400 });
   }
 
-  // Usar raw SQL para evitar el bug de NeonDB con DateTime en Prisma ORM
   await sql`UPDATE "Partido" SET "fechaHora" = ${fecha.toISOString()} WHERE id = ${partidoId}`;
 
   return NextResponse.json({ ok: true, fechaHora: fecha.toISOString() });
