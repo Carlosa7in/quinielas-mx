@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { LayoutGrid, CalendarDays, Shield, MapPin } from "lucide-react";
 import { SEDES, EQUIPOS_DESTACADOS, MUNDIAL_FECHAS, FORMATO, type EquipoDestacado } from "@/lib/mundial2026";
 
 /* ─── Countdown ─────────────────────────────────────────────────────────── */
@@ -53,29 +54,41 @@ function CountdownBox({ n, label }: { n: number; label: string }) {
 function TeamCard({ eq }: { eq: EquipoDestacado }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={`rounded-2xl overflow-hidden shadow-sm border border-white/10`}>
+    <div className="rounded-2xl overflow-hidden shadow-sm border border-white/10">
       <button
         onClick={() => setOpen(!open)}
         className={`w-full flex items-center gap-3 px-4 py-3 ${eq.color} text-white text-left`}
       >
-        <span className="text-3xl">{eq.bandera}</span>
-        <div className="flex-1">
+        <span className="text-3xl leading-none">{eq.bandera}</span>
+        <div className="flex-1 min-w-0">
           <p className="font-black text-lg leading-tight">{eq.pais}</p>
-          <p className="text-xs opacity-70">DT: {eq.dt} · {eq.confederation}</p>
+          <p className="text-xs text-white/60">DT: {eq.dt} · {eq.confederation}</p>
         </div>
-        <span className="text-white/60 text-sm">{open ? "▲" : "▼"}</span>
+        {eq.mundiales > 0 && (
+          <span className="text-xs bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full shrink-0">
+            🏆 ×{eq.mundiales}
+          </span>
+        )}
+        <span className="text-white/40 ml-1 shrink-0">{open ? "▲" : "▼"}</span>
       </button>
       {open && (
         <div className="bg-gray-900 px-4 py-3 space-y-2">
           <p className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Jugadores clave</p>
-          {eq.jugadores.map((j) => (
+          {eq.jugadores.slice(0, 4).map((j) => (
             <div key={j.nombre} className="flex items-center justify-between text-sm">
               <span className="text-white font-semibold">{j.nombre}</span>
               <span className="text-gray-400 text-xs">{j.posicion} · {j.club}</span>
             </div>
           ))}
-          <div className="mt-2 pt-2 border-t border-white/10">
-            <p className="text-xs text-amber-300/70 italic">💡 {eq.curiosidad}</p>
+          <div className="pt-2 border-t border-white/10">
+            <p className="text-xs text-amber-300/70 italic mb-3">💡 {eq.curiosidad}</p>
+            <Link
+              href={`/mundial/equipo/${eq.slug}`}
+              className="flex items-center justify-center gap-2 w-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-sm py-2.5 rounded-xl transition-colors"
+            >
+              <Shield size={14} />
+              Ver todo sobre {eq.pais}
+            </Link>
           </div>
         </div>
       )}
@@ -208,21 +221,21 @@ export default function MundialPage() {
       <div className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur border-b border-white/5">
         <div className="max-w-xl mx-auto flex overflow-x-auto">
           {([
-            { key: "grupos",   label: "📊 Grupos" },
-            { key: "partidos", label: "📅 Partidos" },
-            { key: "equipos",  label: "🌍 Equipos" },
-            { key: "sedes",    label: "🏟️ Sedes" },
-          ] as const).map(({ key, label }) => (
+            { key: "grupos",   label: "Grupos",   icon: <LayoutGrid  size={16} /> },
+            { key: "partidos", label: "Partidos", icon: <CalendarDays size={16} /> },
+            { key: "equipos",  label: "Equipos",  icon: <Shield       size={16} /> },
+            { key: "sedes",    label: "Sedes",    icon: <MapPin       size={16} /> },
+          ] as const).map(({ key, label, icon }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`flex-1 whitespace-nowrap px-4 py-3 text-sm font-semibold transition-colors border-b-2 ${
+              className={`flex-1 whitespace-nowrap flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-semibold transition-colors border-b-2 ${
                 tab === key
                   ? "border-amber-500 text-amber-400"
                   : "border-transparent text-gray-500 hover:text-gray-300"
               }`}
             >
-              {label}
+              {icon}{label}
             </button>
           ))}
         </div>
