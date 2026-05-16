@@ -63,6 +63,45 @@ function norm(s: string): string {
     .trim();
 }
 
+// Cache de logos por liga (dura toda la instancia serverless)
+const logoCache: Record<string, Map<string, string>> = {};
+
+async function getLogoMap(ligaSlug: string): Promise<Map<string, string>> {
+  if (logoCache[ligaSlug]) return logoCache[ligaSlug];
+  const map = new Map<string, string>();
+  try {
+    const res = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/${ligaSlug}/teams`,
+    );
+    if (!res.ok) return map;
+    type TeamEntry = { team: { name?: string; shortDisplayName?: string; abbreviation?: string; logos?: { href: string }[] } };
+    const data = await res.json() as { sports?: { leagues?: { teams?: TeamEntry[] }[] }[] };
+    const teams = data.sports?.[0]?.leagues?.[0]?.teams ?? [];
+    for (const t of teams) {
+      const logo = t.team.logos?.[0]?.href ?? "";
+      if (!logo) continue;
+      for (const name of [t.team.name, t.team.shortDisplayName, t.team.abbreviation]) {
+        if (name) map.set(norm(name), logo);
+      }
+    }
+    logoCache[ligaSlug] = map;
+  } catch { /* ignorar */ }
+  return map;
+}
+
+function findLogo(logoMap: Map<string, string>, nombre: string): string {
+  const n = norm(nombre);
+  if (logoMap.has(n)) return logoMap.get(n)!;
+  for (const [key, logo] of logoMap) {
+    if (!key || !n) continue;
+    if (key.includes(n) || n.includes(key)) return logo;
+    const wa = n.split(" ").filter(w => w.length >= 4);
+    const wb = key.split(" ").filter(w => w.length >= 4);
+    if (wa.some(w => wb.includes(w))) return logo;
+  }
+  return "";
+}
+
 function teamsMatch(dbName: string, espnName: string): boolean {
   const a = norm(dbName);
   const b = norm(espnName);
@@ -175,6 +214,14 @@ export async function GET() {
     }),
   );
 
+  // Cargar mapas de logos en paralelo para cada liga
+  const logoMapPorLiga: Record<string, Map<string, string>> = {};
+  await Promise.all(
+    ligasSlugs.map(async (slug) => {
+      logoMapPorLiga[slug] = await getLogoMap(slug);
+    }),
+  );
+
   // 3. Para cada partido en DB, buscar su par en ESPN
   const nuevosGoles: { partido: string; jugador?: string; minuto?: string }[] = [];
 
@@ -182,6 +229,7 @@ export async function GET() {
     jornadas.map(async (j) => {
       const slug = LIGA_ESPN[j.liga];
       const espnEvents = slug ? (espnEventosPorLiga[slug] ?? []) : [];
+      const logoMap = slug ? (logoMapPorLiga[slug] ?? new Map()) : new Map();
 
       const partidos = await Promise.all(
         j.partidos.map(async (p) => {
@@ -205,9 +253,9 @@ export async function GET() {
           let periodo = 0;
           let golesLocal: string | null = p.goles_local !== null ? String(p.goles_local) : null;
           let golesVisita: string | null = p.goles_visita !== null ? String(p.goles_visita) : null;
-          // Logos: primero BD, luego ESPN los sobreescribe si encuentra el partido
-          let logoLocal = p.logo_local ?? "";
-          let logoVisita = p.logo_visita ?? "";
+          // Logos: BD > ESPN teams endpoint > vacío
+          let logoLocal  = p.logo_local  ?? findLogo(logoMap, p.equipo_local);
+          let logoVisita = p.logo_visita ?? findLogo(logoMap, p.equipo_visita);
           let eventos: unknown[] = [];
 
           if (espnEv) {
@@ -227,8 +275,8 @@ export async function GET() {
 
             if (localEspn?.score != null) golesLocal = localEspn.score;
             if (visitaEspn?.score != null) golesVisita = visitaEspn.score;
-            logoLocal = localEspn?.team?.logo ?? "";
-            logoVisita = visitaEspn?.team?.logo ?? "";
+            if (localEspn?.team?.logo)  logoLocal  = localEspn.team.logo;
+            if (visitaEspn?.team?.logo) logoVisita = visitaEspn.team.logo;
 
             if (estado === "in" && slug) {
               const kms = await fetchKeyMoments(slug, espnEv.id);
