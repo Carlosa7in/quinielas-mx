@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { sql } from "@/lib/prisma";
 
 // Siempre dinamico - nunca cachear en build time
 export const dynamic = "force-dynamic";
@@ -99,15 +99,53 @@ function tipoEvento(km: EspnKeyMoment): string {
 
 export async function GET() {
   try {
-  // 1. Obtener jornadas activas con todos sus partidos
-  // "abierta" = registro abierto | "cerrada" = registro cerrado pero partidos jugandose | "en_curso" = alias
-  const jornadas = await prisma.jornada.findMany({
-    where: { estado: { in: ["abierta", "cerrada", "en_curso"] } },
-    include: {
-      partidos: { orderBy: { orden: "asc" } },
-    },
-    orderBy: { fechaInicio: "asc" },
-  });
+  // 1. Obtener jornadas activas con sus partidos usando SQL directo
+  // (el adaptador NeonDB HTTP no convierte DateTime correctamente en el ORM)
+  type RawRow = {
+    jornada_id: string; jornada_numero: number; jornada_nombre: string | null;
+    jornada_liga: string; jornada_estado: string;
+    partido_id: string; equipo_local: string; equipo_visita: string;
+    fecha_hora: string; resultado: string | null;
+    goles_local: number | null; goles_visita: number | null; orden: number;
+  };
+
+  const rows = (await sql`
+    SELECT
+      j.id            AS jornada_id,
+      j.numero        AS jornada_numero,
+      j.nombre        AS jornada_nombre,
+      j.liga          AS jornada_liga,
+      j.estado        AS jornada_estado,
+      p.id            AS partido_id,
+      p."equipoLocal"  AS equipo_local,
+      p."equipoVisita" AS equipo_visita,
+      p."fechaHora"::text AS fecha_hora,
+      p.resultado,
+      p."golesLocal"   AS goles_local,
+      p."golesVisita"  AS goles_visita,
+      p.orden
+    FROM "Jornada" j
+    LEFT JOIN "Partido" p ON p."jornadaId" = j.id
+    WHERE j.estado IN ('abierta', 'cerrada', 'en_curso')
+    ORDER BY j."fechaInicio", p.orden
+  `) as RawRow[];
+
+  // Agrupar filas por jornada
+  const jornadaMap = new Map<string, {
+    id: string; numero: number; nombre: string | null; liga: string; estado: string;
+    partidos: RawRow[];
+  }>();
+  for (const row of rows) {
+    if (!jornadaMap.has(row.jornada_id)) {
+      jornadaMap.set(row.jornada_id, {
+        id: row.jornada_id, numero: row.jornada_numero,
+        nombre: row.jornada_nombre, liga: row.jornada_liga,
+        estado: row.jornada_estado, partidos: [],
+      });
+    }
+    if (row.partido_id) jornadaMap.get(row.jornada_id)!.partidos.push(row);
+  }
+  const jornadas = [...jornadaMap.values()];
 
   if (jornadas.length === 0) {
     return NextResponse.json({ jornadas: [], hayEnVivo: false, actualizado: new Date().toISOString() });
@@ -148,11 +186,11 @@ export async function GET() {
             const home = comps.find(c => c.homeAway === "home");
             const away = comps.find(c => c.homeAway === "away");
             return (
-              teamsMatch(p.equipoLocal, home?.team?.name ?? "") &&
-              teamsMatch(p.equipoVisita, away?.team?.name ?? "")
+              teamsMatch(p.equipo_local, home?.team?.name ?? "") &&
+              teamsMatch(p.equipo_visita, away?.team?.name ?? "")
             ) || (
-              teamsMatch(p.equipoLocal, away?.team?.name ?? "") &&
-              teamsMatch(p.equipoVisita, home?.team?.name ?? "")
+              teamsMatch(p.equipo_local, away?.team?.name ?? "") &&
+              teamsMatch(p.equipo_visita, home?.team?.name ?? "")
             );
           });
 
@@ -160,8 +198,8 @@ export async function GET() {
           let detalle = "";
           let reloj = "";
           let periodo = 0;
-          let golesLocal: string | null = p.golesLocal !== null ? String(p.golesLocal) : null;
-          let golesVisita: string | null = p.golesVisita !== null ? String(p.golesVisita) : null;
+          let golesLocal: string | null = p.goles_local !== null ? String(p.goles_local) : null;
+          let golesVisita: string | null = p.goles_visita !== null ? String(p.goles_visita) : null;
           let logoLocal = "";
           let logoVisita = "";
           let eventos: unknown[] = [];
@@ -177,8 +215,7 @@ export async function GET() {
             const home = comps.find(c => c.homeAway === "home");
             const away = comps.find(c => c.homeAway === "away");
 
-            // Detectar si el orden ESPN coincide o esta invertido
-            const ordenNormal = teamsMatch(p.equipoLocal, home?.team?.name ?? "");
+            const ordenNormal = teamsMatch(p.equipo_local, home?.team?.name ?? "");
             const localEspn = ordenNormal ? home : away;
             const visitaEspn = ordenNormal ? away : home;
 
@@ -187,7 +224,6 @@ export async function GET() {
             logoLocal = localEspn?.team?.logo ?? "";
             logoVisita = visitaEspn?.team?.logo ?? "";
 
-            // Eventos solo si está en vivo
             if (estado === "in" && slug) {
               const kms = await fetchKeyMoments(slug, espnEv.id);
               eventos = kms.map(km => {
@@ -196,14 +232,13 @@ export async function GET() {
                 if (tipo === "gol" && km.id && !notifiedGoals.has(goalKey)) {
                   notifiedGoals.add(goalKey);
                   nuevosGoles.push({
-                    partido: `${p.equipoLocal} vs ${p.equipoVisita}`,
+                    partido: `${p.equipo_local} vs ${p.equipo_visita}`,
                     jugador: km.athletesInvolved?.[0]?.displayName,
                     minuto: km.clock?.displayValue,
                   });
                 }
                 return {
-                  id: km.id,
-                  tipo,
+                  id: km.id, tipo,
                   texto: km.text ?? km.type?.text ?? "",
                   minuto: km.clock?.displayValue,
                   jugador: km.athletesInvolved?.[0]?.displayName,
@@ -212,19 +247,16 @@ export async function GET() {
               });
             }
 
-            // Si ESPN dice terminado, usar resultado de DB si ya está guardado
-            if (estado === "post" && p.resultado) {
-              detalle = p.resultado;
-            }
+            if (estado === "post" && p.resultado) detalle = p.resultado;
           } else {
-            // Sin ESPN: determinar estado por fecha
+            // Sin ESPN: estado por fecha
             const ahora = Date.now();
-            const fechaMs = new Date(p.fechaHora).getTime();
+            const fechaMs = new Date(p.fecha_hora).getTime();
             if (p.resultado) {
               estado = "post";
               detalle = p.resultado;
             } else if (fechaMs <= ahora && ahora - fechaMs < 2 * 60 * 60 * 1000) {
-              estado = "in"; // probablemente en curso
+              estado = "in";
             } else if (fechaMs > ahora) {
               estado = "pre";
             } else {
@@ -233,15 +265,12 @@ export async function GET() {
           }
 
           return {
-            id: p.id,
+            id: p.partido_id,
             orden: p.orden,
-            fechaHora: p.fechaHora,
-            estado,
-            detalle,
-            reloj,
-            periodo,
-            local: { nombre: p.equipoLocal, logo: logoLocal, goles: golesLocal },
-            visita: { nombre: p.equipoVisita, logo: logoVisita, goles: golesVisita },
+            fechaHora: p.fecha_hora,
+            estado, detalle, reloj, periodo,
+            local:  { nombre: p.equipo_local,  logo: logoLocal,  goles: golesLocal  },
+            visita: { nombre: p.equipo_visita, logo: logoVisita, goles: golesVisita },
             resultadoDB: p.resultado ?? null,
             eventos,
             tieneEspn: !!espnEv,
