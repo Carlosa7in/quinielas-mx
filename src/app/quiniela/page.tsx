@@ -15,6 +15,31 @@ type Partido = {
   orden: number;
 };
 
+type CuentaBancaria = {
+  id: string;
+  banco: string;
+  titular: string;
+  clabe: string | null;
+  numero: string | null;
+  tipo: string;
+  usuarioId: string;
+};
+
+const BANCO_EMOJI: Record<string, string> = {
+  BBVA: "🔵",
+  Banorte: "🟠",
+  Santander: "🔴",
+  HSBC: "🟥",
+  "Banamex / Citibanamex": "🔵",
+  Scotiabank: "🟡",
+  "OXXO Pay": "🟡",
+  "Spin by OXXO": "🟣",
+  "Mercado Pago": "🔵",
+  "Nu (Nubank)": "🟣",
+  "Hey Banco": "🟢",
+};
+const getBancoEmoji = (banco: string) => BANCO_EMOJI[banco] ?? "🏦";
+
 type Jornada = {
   id: string;
   numero: number;
@@ -266,9 +291,26 @@ function QuinielaInner() {
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [metodoPago, setMetodoPago] = useState<"transferencia" | "oxxo">("transferencia");
+  const [cuentas, setCuentas] = useState<CuentaBancaria[]>([]);
+  const [cuentaDestinoId, setCuentaDestinoId] = useState<string>("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState<string | null>(null);
+
+  // Cargar cuentas bancarias activas
+  useEffect(() => {
+    fetch("/api/cuentas")
+      .then((r) => r.json())
+      .then((data: CuentaBancaria[]) => {
+        if (Array.isArray(data)) {
+          setCuentas(data);
+          // Auto-seleccionar la primera cuenta de transferencia
+          const primera = data.find((c) => c.tipo === "transferencia");
+          if (primera) setCuentaDestinoId(primera.id);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Fecha de cierre usando la función canónica
   const fechaCierreObj = jornada
@@ -399,6 +441,7 @@ function QuinielaInner() {
           telefono,
           canal: metodoPago,
           ...(refCode ? { vendedorCodigo: refCode } : {}),
+          ...(cuentaDestinoId ? { cuentaDestinoId } : {}),
         }),
       });
 
@@ -720,8 +763,8 @@ function QuinielaInner() {
 
         {/* ── Método de pago ── */}
         {!registroCerrado && (
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <h2 className="font-semibold text-gray-700 mb-3">¿Cómo vas a pagar?</h2>
+          <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+            <h2 className="font-semibold text-gray-700">¿Cómo vas a pagar?</h2>
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setMetodoPago("transferencia")}
                 className={`rounded-xl p-3 text-center border-2 transition-colors ${
@@ -740,9 +783,93 @@ function QuinielaInner() {
                 <p className="text-xs text-gray-400">Efectivo en cualquier OXXO</p>
               </button>
             </div>
-            <p className="text-xs text-gray-400 mt-2 text-center">
-              Recibirás los datos bancarios en el ticket
-            </p>
+
+            {/* Selección de cuenta — solo cuando es transferencia */}
+            {metodoPago === "transferencia" && cuentas.filter((c) => c.tipo === "transferencia").length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-gray-600">¿A qué cuenta vas a transferir?</p>
+                <div className="space-y-2">
+                  {cuentas
+                    .filter((c) => c.tipo === "transferencia")
+                    .map((cuenta) => (
+                      <button
+                        key={cuenta.id}
+                        type="button"
+                        onClick={() => setCuentaDestinoId(cuenta.id)}
+                        className={`w-full rounded-xl p-3 text-left border-2 transition-colors flex items-center gap-3 ${
+                          cuentaDestinoId === cuenta.id
+                            ? "border-amber-500 bg-amber-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <span className="text-xl shrink-0">{getBancoEmoji(cuenta.banco)}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800">{cuenta.banco}</p>
+                          <p className="text-xs text-gray-500">{cuenta.titular}</p>
+                          {cuenta.clabe && (
+                            <p className="text-xs text-gray-400 font-mono">
+                              CLABE: {"*".repeat(14)}{cuenta.clabe.slice(-4)}
+                            </p>
+                          )}
+                        </div>
+                        {cuentaDestinoId === cuenta.id && (
+                          <span className="text-amber-600 font-bold shrink-0">✓</span>
+                        )}
+                      </button>
+                    ))}
+                </div>
+                <p className="text-xs text-gray-400 text-center">
+                  Recibirás la CLABE completa en el ticket
+                </p>
+              </div>
+            )}
+
+            {/* Cuentas OXXO si existe y se seleccionó oxxo */}
+            {metodoPago === "oxxo" && cuentas.filter((c) => c.tipo === "oxxo").length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-gray-600">Punto de depósito</p>
+                <div className="space-y-2">
+                  {cuentas
+                    .filter((c) => c.tipo === "oxxo")
+                    .map((cuenta) => (
+                      <button
+                        key={cuenta.id}
+                        type="button"
+                        onClick={() => setCuentaDestinoId(cuenta.id)}
+                        className={`w-full rounded-xl p-3 text-left border-2 transition-colors flex items-center gap-3 ${
+                          cuentaDestinoId === cuenta.id
+                            ? "border-amber-500 bg-amber-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <span className="text-xl shrink-0">{getBancoEmoji(cuenta.banco)}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800">{cuenta.banco}</p>
+                          <p className="text-xs text-gray-500">{cuenta.titular}</p>
+                        </div>
+                        {cuentaDestinoId === cuenta.id && (
+                          <span className="text-amber-600 font-bold shrink-0">✓</span>
+                        )}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sin cuentas configuradas */}
+            {((metodoPago === "transferencia" && cuentas.filter((c) => c.tipo === "transferencia").length === 0) ||
+              (metodoPago === "oxxo" && cuentas.filter((c) => c.tipo === "oxxo").length === 0)) &&
+              cuentas.length > 0 && (
+              <p className="text-xs text-gray-400 text-center">
+                Recibirás los datos de pago en el ticket
+              </p>
+            )}
+
+            {cuentas.length === 0 && (
+              <p className="text-xs text-gray-400 text-center">
+                Recibirás los datos bancarios en el ticket
+              </p>
+            )}
           </div>
         )}
 

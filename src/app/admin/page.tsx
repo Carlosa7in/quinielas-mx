@@ -227,6 +227,19 @@ export default function AdminPage() {
 
             {rol === "superadmin" && (
               <Link
+                href="/admin/cuentas"
+                className="bg-teal-900 hover:bg-teal-800 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">🏦</span>
+                <div>
+                  <p className="font-bold">Cuentas Bancarias</p>
+                  <p className="text-teal-300 text-sm">Gestionar cuentas para recibir transferencias</p>
+                </div>
+              </Link>
+            )}
+
+            {rol === "superadmin" && (
+              <Link
                 href="/admin/logos-check-db"
                 className="bg-slate-700 hover:bg-slate-600 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
               >

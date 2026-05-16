@@ -76,7 +76,11 @@ export default function ComisionesPage() {
   const [comisionDirectaTotal, setComisionDirectaTotal] = useState(0);
   const [recaudadoGlobal, setRecaudadoGlobal] = useState(0);
   const [totalGlobal, setTotalGlobal] = useState(0);
-  const [flujo, setFlujo] = useState<{ efectivo: number; transferencias: number } | null>(null);
+  const [flujo, setFlujo] = useState<{
+    efectivo: number;
+    transferencias: number;
+    porCuenta?: { banco: string; titular: string; usuarioId: string; monto: number; count: number }[];
+  } | null>(null);
   const [jornadas, setJornadas] = useState<JornadaOpcion[]>([]);
   const [jornadaId, setJornadaId] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -258,6 +262,24 @@ export default function ComisionesPage() {
                 <span className="font-black text-base">${fmt(flujo.efectivo + flujo.transferencias)}</span>
               </div>
             </div>
+            {/* Desglose por cuenta bancaria */}
+            {flujo.porCuenta && flujo.porCuenta.length > 0 && (
+              <div className="border-t border-blue-800 pt-3 space-y-1.5">
+                <p className="text-xs font-bold tracking-wider text-blue-400 uppercase">Por cuenta</p>
+                {flujo.porCuenta.map((c, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-blue-200 font-medium">{c.banco}</span>
+                      {c.titular !== "—" && (
+                        <span className="text-blue-500 ml-1">· {c.titular}</span>
+                      )}
+                      <span className="text-blue-600 ml-1">({c.count} pago{c.count !== 1 ? "s" : ""})</span>
+                    </div>
+                    <span className="font-bold text-blue-200">${fmt(c.monto)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             {flujo.transferencias > 0 && (
               <p className="text-xs text-blue-400 border-t border-blue-800 pt-2">
                 ⚠️ Las transferencias incluyen ventas de referidos (Elias y otros). Recuerda pagarles su comisión.

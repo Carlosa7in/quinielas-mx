@@ -460,6 +460,36 @@ export async function GET(req: NextRequest) {
   const efectivo       = todasConfirmadasConCanal.filter(q => q.canal === "tienda").reduce((s, q) => s + q.monto, 0);
   const transferencias = todasConfirmadasConCanal.filter(q => q.canal !== "tienda").reduce((s, q) => s + q.monto, 0);
 
+  // Desglose por cuenta bancaria via SQL (evita error de Prisma client no regenerado)
+  let porCuenta: { banco: string; titular: string; usuarioId: string; monto: number; count: number }[] = [];
+  try {
+    const rowsCuenta = await sql`
+      SELECT
+        COALESCE(cb."banco", 'Sin cuenta asignada') AS banco,
+        COALESCE(cb."titular", '—') AS titular,
+        COALESCE(cb."usuarioId", '') AS "usuarioId",
+        SUM(q."monto")::float AS monto,
+        COUNT(*)::int AS count
+      FROM "Quiniela" q
+      LEFT JOIN "CuentaBancaria" cb ON cb."id" = q."cuentaDestinoId"
+      WHERE q."estadoPago" = 'confirmado'
+        AND q."canal" != 'tienda'
+        ${jornadaId ? sql`AND q."jornadaId" = ${jornadaId}` : sql``}
+      GROUP BY cb."banco", cb."titular", cb."usuarioId"
+      ORDER BY monto DESC
+    `;
+    porCuenta = rowsCuenta.map((r) => ({
+      banco: String(r.banco),
+      titular: String(r.titular),
+      usuarioId: String(r.usuarioId),
+      monto: Number(r.monto),
+      count: Number(r.count),
+    }));
+  } catch {
+    // Tabla CuentaBancaria aún no existe (antes de db push) — ignorar
+    porCuenta = [];
+  }
+
   // Comisiones que el superadmin debe pagar a otros (vendedores/referidos)
   const comisionesAPagar = reporte
     .filter(v => v.rol === "vendedor" || (v.rol !== "vendedor" && !["admin","superadmin"].includes(v.rol)))
@@ -480,7 +510,7 @@ export async function GET(req: NextRequest) {
     totalGlobal,
     ventasDirectasConfirmadas: ventasDirectas.length,
     comisionDirectaTotal: ventasDirectas.reduce((s, q) => s + q.monto, 0) * COMISION_PCT,
-    flujo: { efectivo, transferencias },
+    flujo: { efectivo, transferencias, porCuenta },
   });
 }
 

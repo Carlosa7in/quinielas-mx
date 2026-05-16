@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const esAdminSesion = ["admin", "superadmin"].includes(rolSesion);
 
   const body = await req.json();
-  const { jornadaId, picks, nombre, telefono, canal = "online", usuarioId, cantidad = 1, vendedorCodigo } = body;
+  const { jornadaId, picks, nombre, telefono, canal = "online", usuarioId, cantidad = 1, vendedorCodigo, cuentaDestinoId } = body;
 
   if (!jornadaId || !picks || picks.length === 0) {
     return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
@@ -135,19 +135,23 @@ export async function POST(req: NextRequest) {
 
     // Una sola quiniela con múltiples picks por partido (doble/triple)
     const folioQ = generarFolio(jornada.numero);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const quinielaData: any = {
+      folio: folioQ,
+      jornadaId,
+      usuarioId: refUsuarioId || usuarioId || null,
+      clienteId,
+      nombreCliente: nombre || null,
+      telefonoCliente: telefono || null,
+      canal,
+      estadoPago,
+      monto,
+      vendedorId,
+    };
+    if (cuentaDestinoId) quinielaData.cuentaDestinoId = cuentaDestinoId;
+
     const quiniela = await prisma.quiniela.create({
-      data: {
-        folio: folioQ,
-        jornadaId,
-        usuarioId: refUsuarioId || usuarioId || null,
-        clienteId,
-        nombreCliente: nombre || null,
-        telefonoCliente: telefono || null,
-        canal,
-        estadoPago,
-        monto,
-        vendedorId,
-      },
+      data: quinielaData,
       select: { id: true, folio: true },
     });
 

@@ -10,17 +10,18 @@ datasource db {
 }
 
 model Usuario {
-  id          String     @id @default(cuid())
-  nombre      String
-  username    String?    @unique
-  email       String     @unique
-  telefono    String?
-  password    String
-  rol         String     @default("user")
-  puntoVenta  String?
-  codigoRef   String?    @unique  // link de referido: /quiniela?ref=CODIGO
-  createdAt   DateTime   @default(now())
-  quinielas   Quiniela[]
+  id               String           @id @default(cuid())
+  nombre           String
+  username         String?          @unique
+  email            String           @unique
+  telefono         String?
+  password         String
+  rol              String           @default("user")
+  puntoVenta       String?
+  codigoRef        String?          @unique  // link de referido: /quiniela?ref=CODIGO
+  createdAt        DateTime         @default(now())
+  quinielas        Quiniela[]
+  cuentasBancarias CuentaBancaria[]
 }
 
 model Jornada {
@@ -71,28 +72,45 @@ model Vendedor {
 }
 
 model Quiniela {
-  id              String    @id @default(cuid())
-  folio           String    @unique
+  id              String          @id @default(cuid())
+  folio           String          @unique
   usuarioId       String?
-  usuario         Usuario?  @relation(fields: [usuarioId], references: [id])
+  usuario         Usuario?        @relation(fields: [usuarioId], references: [id])
   clienteId       String?
-  cliente         Cliente?  @relation(fields: [clienteId], references: [id])
+  cliente         Cliente?        @relation(fields: [clienteId], references: [id])
   jornadaId       String
-  jornada         Jornada   @relation(fields: [jornadaId], references: [id])
+  jornada         Jornada         @relation(fields: [jornadaId], references: [id])
   vendedorId      String?
-  vendedor        Vendedor? @relation(fields: [vendedorId], references: [id])
+  vendedor        Vendedor?       @relation(fields: [vendedorId], references: [id])
+  cuentaDestinoId String?
+  cuentaDestino   CuentaBancaria? @relation(fields: [cuentaDestinoId], references: [id])
   nombreCliente   String?
   telefonoCliente String?
-  canal           String    @default("online")
-  monto           Float     @default(20.0)
-  estado          String    @default("pendiente")
-  estadoPago      String    @default("pendiente") // "pendiente" | "confirmado" | "no_realizado"
+  canal           String          @default("online")
+  monto           Float           @default(20.0)
+  estado          String          @default("pendiente")
+  estadoPago      String          @default("pendiente") // "pendiente" | "confirmado" | "no_realizado"
   referenciaPago  String?
   puntos          Int?
   aciertos        Int?
   premio          Float?
-  createdAt       DateTime  @default(now())
+  createdAt       DateTime        @default(now())
   picks           Pick[]
+}
+
+model CuentaBancaria {
+  id        String     @id @default(cuid())
+  usuarioId String
+  usuario   Usuario    @relation(fields: [usuarioId], references: [id])
+  banco     String     // "BBVA", "Banorte", "OXXO Pay", etc.
+  titular   String
+  clabe     String?    // CLABE 18 dígitos
+  numero    String?    // últimos 4 dígitos (opcional, para mostrar)
+  tipo      String     @default("transferencia") // "transferencia" | "oxxo"
+  activa    Boolean    @default(true)
+  orden     Int        @default(0)
+  createdAt DateTime   @default(now())
+  quinielas Quiniela[]
 }
 
 model Pick {
