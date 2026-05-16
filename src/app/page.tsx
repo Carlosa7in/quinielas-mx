@@ -291,54 +291,62 @@ function MundialBanner() {
       d: Math.floor(diff / 86_400_000),
       h: Math.floor((diff % 86_400_000) / 3_600_000),
       m: Math.floor((diff % 3_600_000) / 60_000),
+      s: Math.floor((diff % 60_000) / 1_000),
     };
   };
   const [t, setT] = useState(calcular);
-  useEffect(() => { const id = setInterval(() => setT(calcular()), 60_000); return () => clearInterval(id); });
+  useEffect(() => { const id = setInterval(() => setT(calcular()), 1_000); return () => clearInterval(id); });
 
   return (
     <Link
       href="/mundial"
       className="block w-full rounded-2xl overflow-hidden relative group"
-      style={{ background: "linear-gradient(135deg, #0c1445 0%, #1e3a5f 40%, #7c2d12 100%)" }}
+      style={{ background: "linear-gradient(160deg, #0c1445 0%, #1a306b 45%, #6b1f0a 100%)" }}
     >
-      {/* Patrón sutil */}
-      <div className="absolute inset-0 opacity-10" style={{
-        backgroundImage: "repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 14px)",
-        backgroundSize: "20px 20px"
+      <div className="absolute inset-0 opacity-[0.07]" style={{
+        backgroundImage: "repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 16px)",
+        backgroundSize: "22px 22px"
       }} />
-      <div className="relative px-4 pt-4 pb-3">
-        {/* Top row */}
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest">
-            FIFA World Cup 2026™
-          </span>
-          <div className="flex gap-1">
-            <span className="text-lg">🇲🇽</span>
-            <span className="text-lg">🇺🇸</span>
-            <span className="text-lg">🇨🇦</span>
-          </div>
+      <div className="relative px-5 py-4 text-center">
+        {/* Banderas */}
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <span className="text-2xl">🇲🇽</span>
+          <span className="text-amber-400/50 font-thin text-lg">·</span>
+          <span className="text-2xl">🇺🇸</span>
+          <span className="text-amber-400/50 font-thin text-lg">·</span>
+          <span className="text-2xl">🇨🇦</span>
         </div>
+        {/* Badge */}
+        <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.2em] mb-1">
+          FIFA World Cup 2026™
+        </p>
         {/* Título */}
-        <p className="text-white font-black text-xl leading-tight mb-1">
-          🏆 Nos preparamos<br />para el Mundial
+        <p className="text-white font-black text-2xl leading-tight mb-3">
+          🏆 ¡Nos preparamos<br />para el Mundial!
         </p>
-        <p className="text-amber-200/60 text-xs mb-3">
-          Grupos · Equipos · Sedes · Noticias
-        </p>
-        {/* Countdown */}
-        {t && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-amber-300/70 text-[10px] uppercase tracking-wider mr-1">Faltan</span>
-            <span className="bg-white/10 text-white font-black text-sm px-2 py-0.5 rounded-lg tabular-nums">{t.d}d</span>
-            <span className="bg-white/10 text-white font-black text-sm px-2 py-0.5 rounded-lg tabular-nums">{pad(t.h)}h</span>
-            <span className="bg-white/10 text-white font-black text-sm px-2 py-0.5 rounded-lg tabular-nums">{pad(t.m)}m</span>
-            <span className="ml-auto text-amber-400 text-base group-hover:translate-x-1 transition-transform">→</span>
+        {/* Countdown o En curso */}
+        {t ? (
+          <div className="flex items-stretch justify-center gap-2 mb-3">
+            {[
+              { n: t.d,      label: "días" },
+              { n: t.h,      label: "hrs"  },
+              { n: t.m,      label: "min"  },
+              { n: t.s,      label: "seg"  },
+            ].map(({ n, label }) => (
+              <div key={label} className="bg-white/10 rounded-xl px-3 py-2 min-w-[52px]">
+                <p className="text-white font-black text-xl tabular-nums leading-none">{pad(n)}</p>
+                <p className="text-amber-300/50 text-[9px] uppercase tracking-widest mt-0.5">{label}</p>
+              </div>
+            ))}
           </div>
+        ) : (
+          <p className="text-green-400 font-bold text-sm mb-3">¡El Mundial está en curso!</p>
         )}
-        {!t && (
-          <p className="text-green-400 font-bold text-sm">¡El Mundial está en curso! →</p>
-        )}
+        {/* CTA link */}
+        <div className="inline-flex items-center gap-1.5 text-amber-400 text-xs font-bold group-hover:gap-2.5 transition-all">
+          <span>Grupos · Equipos · Sedes · Noticias</span>
+          <span className="group-hover:translate-x-1 transition-transform">→</span>
+        </div>
       </div>
     </Link>
   );

@@ -1,5 +1,5 @@
 "use client";
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { EQUIPOS_DESTACADOS } from "@/lib/mundial2026";
 import { ArrowLeft, Trophy, Users, Star, MapPin, ChevronDown, ChevronUp } from "lucide-react";
@@ -29,6 +29,14 @@ export default function EquipoPage({ params }: { params: Promise<{ slug: string 
   const { slug } = use(params);
   const equipo = EQUIPOS_DESTACADOS.find(e => e.slug === slug);
   const [showAllPlayers, setShowAllPlayers] = useState(false);
+  const [quinielasActivas, setQuinielasActivas] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/mundial")
+      .then(r => r.json())
+      .then(d => { if (typeof d.quinielasActivas === "number") setQuinielasActivas(d.quinielasActivas); })
+      .catch(() => {});
+  }, []);
 
   if (!equipo) {
     return (
@@ -205,12 +213,20 @@ export default function EquipoPage({ params }: { params: Promise<{ slug: string 
               ¿Crees que {equipo.pais} llegará lejos?
             </p>
             <p className="text-white/60 text-sm">Apuesta en la quiniela del Mundial</p>
-            <Link
-              href="/quiniela"
-              className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-gray-950 font-black px-7 py-3 rounded-xl transition-colors"
-            >
-              ⚽ Hacer mi quiniela
-            </Link>
+            {quinielasActivas === null ? (
+              <div className="h-12 w-44 mx-auto bg-white/10 rounded-xl animate-pulse" />
+            ) : quinielasActivas > 0 ? (
+              <Link
+                href="/quiniela"
+                className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-gray-950 font-black px-7 py-3 rounded-xl transition-colors"
+              >
+                ⚽ Hacer mi quiniela
+              </Link>
+            ) : (
+              <div className="inline-flex items-center gap-2 bg-white/10 text-white/50 font-bold px-7 py-3 rounded-xl cursor-not-allowed border border-white/10 text-sm">
+                🕐 Quinielas próximamente
+              </div>
+            )}
           </div>
         </div>
 

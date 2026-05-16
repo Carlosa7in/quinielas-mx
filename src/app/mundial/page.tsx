@@ -253,28 +253,44 @@ export default function MundialPage() {
         </div>
       </div>
 
-      {/* -- TABS -- */}
+      {/* -- TABS -- grid 3+2, sin scroll horizontal */}
       <div className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur border-b border-white/5">
-        <div className="max-w-xl mx-auto flex overflow-x-auto">
-          {([
-            { key: "grupos",   label: "Grupos",   icon: <LayoutGrid   size={15} /> },
-            { key: "partidos", label: "Partidos", icon: <CalendarDays size={15} /> },
-            { key: "equipos",  label: "Equipos",  icon: <Shield       size={15} /> },
-            { key: "sedes",    label: "Sedes",    icon: <MapPin       size={15} /> },
-            { key: "noticias", label: "Noticias", icon: <Newspaper    size={15} /> },
-          ] as const).map(({ key, label, icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex-1 whitespace-nowrap flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-semibold transition-colors border-b-2 ${
-                tab === key
-                  ? "border-amber-500 text-amber-400"
-                  : "border-transparent text-gray-500 hover:text-gray-300"
-              }`}
-            >
-              {icon}{label}
-            </button>
-          ))}
+        <div className="max-w-xl mx-auto px-2 py-2 space-y-1">
+          {/* Fila 1: 3 tabs */}
+          <div className="flex gap-1">
+            {([
+              { key: "grupos",   label: "Grupos",   icon: <LayoutGrid   size={14} /> },
+              { key: "partidos", label: "Partidos", icon: <CalendarDays size={14} /> },
+              { key: "equipos",  label: "Equipos",  icon: <Shield       size={14} /> },
+            ] as const).map(({ key, label, icon }) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                  tab === key ? "bg-amber-500/20 text-amber-400" : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                }`}
+              >
+                {icon}{label}
+              </button>
+            ))}
+          </div>
+          {/* Fila 2: 2 tabs centrados */}
+          <div className="flex gap-1 justify-center">
+            {([
+              { key: "sedes",    label: "Sedes",    icon: <MapPin    size={14} /> },
+              { key: "noticias", label: "Noticias", icon: <Newspaper size={14} /> },
+            ] as const).map(({ key, label, icon }) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={`w-[calc(33.33%-2px)] flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                  tab === key ? "bg-amber-500/20 text-amber-400" : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                }`}
+              >
+                {icon}{label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
