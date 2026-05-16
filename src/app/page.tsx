@@ -369,15 +369,16 @@ export default function Home() {
           <p className="mt-2 text-amber-300/80 text-lg font-medium">{t.subtitle}</p>
         </div>
 
-        {/* Badge EN VIVO */}
-        <LiveBadge />
-
-        {/* Banner Mundial 2026 */}
-        <MundialBanner />
-
         <BannerPagosPendientes t={t} />
 
+        {/* 1. Bolsa activa */}
         <BolsaSection t={t} />
+
+        {/* 2. En Vivo (con countdown o en vivo) */}
+        <LiveBadge />
+
+        {/* 3. Banner Mundial 2026 */}
+        <MundialBanner />
 
         <ResultadosRecientes t={t} />
 
