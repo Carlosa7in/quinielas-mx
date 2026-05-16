@@ -30,6 +30,7 @@ const BANCOS_MX = [
   "HSBC",
   "Banamex / Citibanamex",
   "Scotiabank",
+  "Kapital Bank",
   "OXXO Pay",
   "Spin by OXXO",
   "Mercado Pago",
@@ -38,21 +39,52 @@ const BANCOS_MX = [
   "Otro",
 ];
 
-const BANCO_EMOJI: Record<string, string> = {
-  BBVA: "🔵",
-  Banorte: "🟠",
-  Santander: "🔴",
-  HSBC: "🟥",
-  "Banamex / Citibanamex": "🔵",
-  Scotiabank: "🟡",
-  "OXXO Pay": "🟡",
-  "Spin by OXXO": "🟣",
-  "Mercado Pago": "🔵",
-  "Nu (Nubank)": "🟣",
-  "Hey Banco": "🟢",
+type BancoConfig = { bg: string; text: string; label: string };
+
+const BANCO_CONFIG: Record<string, BancoConfig> = {
+  BBVA:                    { bg: "#004481", text: "#ffffff", label: "BBVA" },
+  Banorte:                 { bg: "#8B0000", text: "#ffffff", label: "BAN" },
+  Santander:               { bg: "#EC0000", text: "#ffffff", label: "SAN" },
+  HSBC:                    { bg: "#DB0011", text: "#ffffff", label: "HSBC" },
+  "Banamex / Citibanamex": { bg: "#003087", text: "#ffffff", label: "BAM" },
+  Scotiabank:              { bg: "#C8002A", text: "#ffffff", label: "SCO" },
+  "Kapital Bank":          { bg: "#FF4D00", text: "#ffffff", label: "KAP" },
+  "OXXO Pay":              { bg: "#E8000B", text: "#FFD700", label: "OXXO" },
+  "Spin by OXXO":          { bg: "#6B21A8", text: "#ffffff", label: "SPIN" },
+  "Mercado Pago":          { bg: "#009EE3", text: "#ffffff", label: "MP" },
+  "Nu (Nubank)":           { bg: "#820AD1", text: "#ffffff", label: "NU" },
+  "Hey Banco":             { bg: "#00A859", text: "#ffffff", label: "HEY" },
 };
 
-const getBancoEmoji = (banco: string) => BANCO_EMOJI[banco] ?? "🏦";
+function BancoLogo({ banco, size = 36 }: { banco: string; size?: number }) {
+  const cfg = BANCO_CONFIG[banco];
+  if (!cfg) {
+    return (
+      <span style={{ fontSize: size * 0.6, lineHeight: 1 }}>🏦</span>
+    );
+  }
+  const fontSize = size <= 28 ? 9 : size <= 36 ? 10 : 12;
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 8,
+        background: cfg.bg,
+        color: cfg.text,
+        fontSize,
+        fontWeight: 800,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        letterSpacing: cfg.label.length >= 4 ? "-0.5px" : "0px",
+        flexShrink: 0,
+      }}
+    >
+      {cfg.label}
+    </div>
+  );
+}
 
 function maskClabe(clabe: string | null): string {
   if (!clabe) return "—";
@@ -263,7 +295,7 @@ export default function CuentasPage() {
                 >
                   <option value="">Seleccionar...</option>
                   {BANCOS_MX.map((b) => (
-                    <option key={b} value={b}>{getBancoEmoji(b)} {b}</option>
+                    <option key={b} value={b}>{b}</option>
                   ))}
                 </select>
               </div>
@@ -374,7 +406,7 @@ export default function CuentasPage() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-lg">{getBancoEmoji(cuenta.banco)}</span>
+                              <BancoLogo banco={cuenta.banco} size={36} />
                               <p className="font-bold text-gray-800">{cuenta.banco}</p>
                               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cuenta.tipo === "oxxo" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"}`}>
                                 {cuenta.tipo === "oxxo" ? "OXXO" : "SPEI"}

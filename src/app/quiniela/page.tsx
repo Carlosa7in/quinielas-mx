@@ -25,20 +25,32 @@ type CuentaBancaria = {
   usuarioId: string;
 };
 
-const BANCO_EMOJI: Record<string, string> = {
-  BBVA: "🔵",
-  Banorte: "🟠",
-  Santander: "🔴",
-  HSBC: "🟥",
-  "Banamex / Citibanamex": "🔵",
-  Scotiabank: "🟡",
-  "OXXO Pay": "🟡",
-  "Spin by OXXO": "🟣",
-  "Mercado Pago": "🔵",
-  "Nu (Nubank)": "🟣",
-  "Hey Banco": "🟢",
+const BANCO_CONFIG: Record<string, { bg: string; text: string; label: string }> = {
+  BBVA:                    { bg: "#004481", text: "#ffffff", label: "BBVA" },
+  Banorte:                 { bg: "#8B0000", text: "#ffffff", label: "BAN" },
+  Santander:               { bg: "#EC0000", text: "#ffffff", label: "SAN" },
+  HSBC:                    { bg: "#DB0011", text: "#ffffff", label: "HSBC" },
+  "Banamex / Citibanamex": { bg: "#003087", text: "#ffffff", label: "BAM" },
+  Scotiabank:              { bg: "#C8002A", text: "#ffffff", label: "SCO" },
+  "Kapital Bank":          { bg: "#FF4D00", text: "#ffffff", label: "KAP" },
+  "OXXO Pay":              { bg: "#E8000B", text: "#FFD700", label: "OXXO" },
+  "Spin by OXXO":          { bg: "#6B21A8", text: "#ffffff", label: "SPIN" },
+  "Mercado Pago":          { bg: "#009EE3", text: "#ffffff", label: "MP" },
+  "Nu (Nubank)":           { bg: "#820AD1", text: "#ffffff", label: "NU" },
+  "Hey Banco":             { bg: "#00A859", text: "#ffffff", label: "HEY" },
 };
-const getBancoEmoji = (banco: string) => BANCO_EMOJI[banco] ?? "🏦";
+function BancoLogo({ banco }: { banco: string }) {
+  const cfg = BANCO_CONFIG[banco];
+  if (!cfg) return <span className="text-xl shrink-0">🏦</span>;
+  return (
+    <div style={{ width: 36, height: 36, borderRadius: 8, background: cfg.bg, color: cfg.text,
+      fontSize: cfg.label.length >= 4 ? 9 : 11, fontWeight: 800, display: "flex",
+      alignItems: "center", justifyContent: "center", letterSpacing: cfg.label.length >= 4 ? "-0.5px" : "0px",
+      flexShrink: 0 }}>
+      {cfg.label}
+    </div>
+  );
+}
 
 type Jornada = {
   id: string;
@@ -802,7 +814,7 @@ function QuinielaInner() {
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
-                        <span className="text-xl shrink-0">{getBancoEmoji(cuenta.banco)}</span>
+                        <BancoLogo banco={cuenta.banco} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-800">{cuenta.banco}</p>
                           <p className="text-xs text-gray-500">{cuenta.titular}</p>
@@ -842,7 +854,7 @@ function QuinielaInner() {
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
-                        <span className="text-xl shrink-0">{getBancoEmoji(cuenta.banco)}</span>
+                        <BancoLogo banco={cuenta.banco} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-800">{cuenta.banco}</p>
                           <p className="text-xs text-gray-500">{cuenta.titular}</p>
