@@ -68,11 +68,31 @@ type GrupoInfo = {
 
 async function fetchProximosPartidos() {
   try {
-    const r = await fetch(`${ESPN_BASE}/scoreboard`, { next: { revalidate: 300 } });
-    if (!r.ok) return [];
-    const data = await r.json() as Record<string, unknown>;
-    const events = (data.events as Record<string, unknown>[]) ?? [];
-    return events.slice(0, 16).map((ev) => {
+    // Rango completo del Mundial: 11 jun – 19 jul 2026
+    // ESPN acepta ?dates=YYYYMMDD-YYYYMMDD para rangos
+    const hoy = new Date();
+    const fin  = new Date("2026-07-20");
+    const fmtDate = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
+    const desde = fmtDate(hoy < new Date("2026-06-11") ? new Date("2026-06-11") : hoy);
+    const hasta = fmtDate(fin);
+
+    // Intentar con rango completo; si falla, sin parámetros
+    let events: Record<string, unknown>[] = [];
+    for (const url of [
+      `${ESPN_BASE}/scoreboard?dates=${desde}-${hasta}&limit=200`,
+      `${ESPN_BASE}/scoreboard?dates=${desde}&limit=50`,
+      `${ESPN_BASE}/scoreboard`,
+    ]) {
+      const r = await fetch(url, { next: { revalidate: 300 } });
+      if (!r.ok) continue;
+      const data = await r.json() as Record<string, unknown>;
+      events = (data.events as Record<string, unknown>[]) ?? [];
+      if (events.length > 0) break;
+    }
+
+    // Ordenar por fecha y tomar los próximos 32
+    events.sort((a, b) => new Date(a.date as string).getTime() - new Date(b.date as string).getTime());
+    return events.slice(0, 32).map((ev) => {
       const comps = (ev.competitions as Record<string, unknown>[])?.[0];
       const competitors = (comps?.competitors as Record<string, unknown>[]) ?? [];
       const home = competitors.find((c) => (c as Record<string, string>).homeAway === "home");

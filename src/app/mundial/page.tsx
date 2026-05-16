@@ -358,15 +358,25 @@ export default function MundialPage() {
             {cargando ? (
               <div className="text-center py-10 text-gray-500 animate-pulse">Cargando partidos…</div>
             ) : partidos.length > 0 ? (
-              <div className="space-y-2">
-                {partidos.map(p => {
+              <div className="space-y-4">
+                {/* Agrupar por día */}
+                {Object.entries(
+                  partidos.reduce<Record<string, typeof partidos>>((acc, p) => {
+                    const dia = new Date(p.fecha).toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Mexico_City" });
+                    acc[dia] = acc[dia] ?? [];
+                    acc[dia].push(p);
+                    return acc;
+                  }, {})
+                ).map(([dia, ps]) => (
+                  <div key={dia}>
+                    <p className="text-xs font-bold text-amber-400 uppercase tracking-widest px-1 mb-2 capitalize">{dia}</p>
+                    <div className="space-y-2">
+                      {ps.map(p => {
                   const fecha = new Date(p.fecha);
                   return (
                     <div key={p.id} className="bg-gray-900 rounded-2xl px-4 py-3">
                       <p className="text-[10px] text-gray-500 mb-2 text-center">
-                        {fecha.toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short", timeZone: "America/Mexico_City" })}
-                        {" · "}
-                        {fecha.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })}
+                        {fecha.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })} hrs (CDMX)
                       </p>
                       <div className="flex items-center gap-3">
                         <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
@@ -388,6 +398,9 @@ export default function MundialPage() {
                     </div>
                   );
                 })}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="bg-gray-900 rounded-2xl p-6 text-center space-y-3">
