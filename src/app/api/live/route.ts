@@ -1,26 +1,24 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { sendPushToAll } from "@/lib/push";
 
-// Mapeo de nombres de liga (DB) -> slug ESPN
+// Mapeo liga DB -> slug ESPN
 const LIGA_ESPN: Record<string, string> = {
-  "Liga MX":              "mex.1",
-  "Liga MX Femenil":      "mex.w.1",
-  "Champions League":     "uefa.champions",
-  "UEFA Champions League":"uefa.champions",
-  "UEFA Europa League":   "uefa.europa",
-  "Premier League":       "eng.1",
-  "La Liga":              "esp.1",
-  "Serie A":              "ita.1",
-  "Bundesliga":           "ger.1",
-  "Ligue 1":              "fra.1",
-  "MLS":                  "usa.1",
-  "Mundial":              "fifa.world",
-  "FIFA World Cup":       "fifa.world",
-  "World Cup 2026":       "fifa.world",
+  "Liga MX":               "mex.1",
+  "Liga MX Femenil":       "mex.w.1",
+  "Champions League":      "uefa.champions",
+  "UEFA Champions League": "uefa.champions",
+  "UEFA Europa League":    "uefa.europa",
+  "Premier League":        "eng.1",
+  "La Liga":               "esp.1",
+  "Serie A":               "ita.1",
+  "Bundesliga":            "ger.1",
+  "Ligue 1":               "fra.1",
+  "MLS":                   "usa.1",
+  "Mundial":               "fifa.world",
+  "FIFA World Cup":        "fifa.world",
+  "World Cup 2026":        "fifa.world",
 };
-
-// Ligas que siempre se monitorean (aunque no haya jornada activa)
-const LIGAS_DEFAULT = ["mex.1", "fifa.world"];
 
 type EspnCompetitor = {
   homeAway: string;
@@ -37,10 +35,7 @@ type EspnEvent = {
     displayClock?: string;
     period?: number;
   };
-  competitions?: {
-    competitors?: EspnCompetitor[];
-  }[];
-  league?: { slug?: string };
+  competitions?: { competitors?: EspnCompetitor[] }[];
 };
 
 type EspnKeyMoment = {
@@ -48,20 +43,41 @@ type EspnKeyMoment = {
   type?: { id?: string; text?: string };
   text?: string;
   clock?: { displayValue?: string };
-  period?: { number?: number };
   athletesInvolved?: { displayName?: string }[];
-  team?: { id?: string; name?: string };
-  scoreValue?: number;
+  team?: { id?: string };
 };
 
-// Cache 30 segundos
+// Cache 30 s
 let cache: { data: unknown; ts: number } | null = null;
-const TTL = 30 * 1000;
+const TTL = 30_000;
 
-// Goals ya notificados (evita enviar push duplicados)
+// Goles ya notificados
 const notifiedGoals = new Set<string>();
 
-async function fetchEventos(ligaSlug: string, eventId: string): Promise<EspnKeyMoment[]> {
+// Normaliza nombre de equipo para comparar entre DB y ESPN
+function norm(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/\b(fc|cf|cd|sd|rc|sc|ac|as|atletico|athletic|deportivo|club|real|sporting|ciudad|city)\b/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function teamsMatch(dbName: string, espnName: string): boolean {
+  const a = norm(dbName);
+  const b = norm(espnName);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (a.includes(b) || b.includes(a)) return true;
+  // Comparar palabra por palabra (min 4 letras)
+  const wordsA = a.split(" ").filter(w => w.length >= 4);
+  const wordsB = b.split(" ").filter(w => w.length >= 4);
+  return wordsA.some(w => wordsB.includes(w));
+}
+
+async function fetchKeyMoments(ligaSlug: string, eventId: string): Promise<EspnKeyMoment[]> {
   try {
     const res = await fetch(
       `https://site.api.espn.com/apis/site/v2/sports/soccer/${ligaSlug}/summary?event=${eventId}`,
@@ -69,20 +85,18 @@ async function fetchEventos(ligaSlug: string, eventId: string): Promise<EspnKeyM
     if (!res.ok) return [];
     const data = await res.json() as { keyMoments?: EspnKeyMoment[] };
     return data.keyMoments ?? [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 function tipoEvento(km: EspnKeyMoment): string {
-  const id = km.type?.id?.toLowerCase() ?? "";
-  const texto = (km.text ?? "").toLowerCase();
-  if (id === "goal" || id === "score" || texto.includes("goal") || texto.includes("gol")) return "gol";
-  if (id === "yellowcard" || texto.includes("yellow")) return "amarilla";
-  if (id === "redcard" || texto.includes("red card") || texto.includes("roja")) return "roja";
-  if (id === "substitution" || texto.includes("substitut")) return "cambio";
-  if (id === "halftime" || texto.includes("half")) return "medio_tiempo";
-  return km.type?.id ?? "evento";
+  const id = (km.type?.id ?? "").toLowerCase();
+  const txt = (km.text ?? "").toLowerCase();
+  if (id.includes("goal") || id === "score" || txt.includes("goal") || txt.includes("gol")) return "gol";
+  if (id.includes("yellow")) return "amarilla";
+  if (id.includes("red")) return "roja";
+  if (id.includes("substitut")) return "cambio";
+  if (id.includes("half")) return "medio_tiempo";
+  return id || "evento";
 }
 
 export async function GET() {
@@ -90,126 +104,185 @@ export async function GET() {
     return NextResponse.json(cache.data);
   }
 
-  const ligasSet = new Set<string>(LIGAS_DEFAULT);
+  // 1. Obtener jornadas activas con todos sus partidos
+  const jornadas = await prisma.jornada.findMany({
+    where: { estado: { in: ["abierta", "en_curso"] } },
+    include: {
+      partidos: { orderBy: { orden: "asc" } },
+    },
+    orderBy: { fechaInicio: "asc" },
+  });
 
-  // Agregar ligas de jornadas activas
-  try {
-    const { prisma } = await import("@/lib/prisma");
-    const jornadas = await prisma.jornada.findMany({
-      where: { estado: { in: ["abierta", "en_curso"] } },
-      select: { liga: true },
-    });
-    for (const j of jornadas) {
+  if (jornadas.length === 0) {
+    const resultado = { jornadas: [], hayEnVivo: false, actualizado: new Date().toISOString() };
+    cache = { data: resultado, ts: Date.now() };
+    return NextResponse.json(resultado);
+  }
+
+  // 2. Cargar scoreboard ESPN por liga unica
+  const ligasSlugs = [...new Set(
+    jornadas.map(j => LIGA_ESPN[j.liga]).filter(Boolean)
+  )] as string[];
+
+  const espnEventosPorLiga: Record<string, EspnEvent[]> = {};
+  await Promise.all(
+    ligasSlugs.map(async (slug) => {
+      try {
+        const res = await fetch(
+          `https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/scoreboard`,
+        );
+        if (!res.ok) return;
+        const data = await res.json() as { events?: EspnEvent[] };
+        espnEventosPorLiga[slug] = data.events ?? [];
+      } catch { /* ignorar si falla ESPN */ }
+    }),
+  );
+
+  // 3. Para cada partido en DB, buscar su par en ESPN
+  const nuevosGoles: { partido: string; jugador?: string; minuto?: string }[] = [];
+
+  const jornadasResult = await Promise.all(
+    jornadas.map(async (j) => {
       const slug = LIGA_ESPN[j.liga];
-      if (slug) ligasSet.add(slug);
-    }
-  } catch { /* no bloquear */ }
+      const espnEvents = slug ? (espnEventosPorLiga[slug] ?? []) : [];
 
-  const partidos: unknown[] = [];
-  const nuevosGoles: { partido: string; jugador?: string; minuto?: string; equipo?: string }[] = [];
+      const partidos = await Promise.all(
+        j.partidos.map(async (p) => {
+          // Buscar evento ESPN que coincida con los equipos
+          const espnEv = espnEvents.find(ev => {
+            const comps = ev.competitions?.[0]?.competitors ?? [];
+            const home = comps.find(c => c.homeAway === "home");
+            const away = comps.find(c => c.homeAway === "away");
+            return (
+              teamsMatch(p.equipoLocal, home?.team?.name ?? "") &&
+              teamsMatch(p.equipoVisita, away?.team?.name ?? "")
+            ) || (
+              teamsMatch(p.equipoLocal, away?.team?.name ?? "") &&
+              teamsMatch(p.equipoVisita, home?.team?.name ?? "")
+            );
+          });
 
-  for (const ligaSlug of ligasSet) {
-    try {
-      const res = await fetch(
-        `https://site.api.espn.com/apis/site/v2/sports/soccer/${ligaSlug}/scoreboard`,
-      );
-      if (!res.ok) continue;
-      const data = await res.json() as { events?: EspnEvent[] };
+          let estado = "pre";
+          let detalle = "";
+          let reloj = "";
+          let periodo = 0;
+          let golesLocal: string | null = p.golesLocal !== null ? String(p.golesLocal) : null;
+          let golesVisita: string | null = p.golesVisita !== null ? String(p.golesVisita) : null;
+          let logoLocal = "";
+          let logoVisita = "";
+          let eventos: unknown[] = [];
 
-      for (const ev of data.events ?? []) {
-        const status = ev.status?.type;
-        const estado = status?.state ?? "pre"; // "pre" | "in" | "post"
-        const comps = ev.competitions?.[0];
-        const competitors = comps?.competitors ?? [];
-        const home = competitors.find(c => c.homeAway === "home");
-        const away = competitors.find(c => c.homeAway === "away");
+          if (espnEv) {
+            const status = espnEv.status?.type;
+            estado = status?.state ?? "pre";
+            detalle = status?.detail ?? status?.shortDetail ?? "";
+            reloj = espnEv.status?.displayClock ?? "";
+            periodo = espnEv.status?.period ?? 0;
 
-        let eventos: unknown[] = [];
+            const comps = espnEv.competitions?.[0]?.competitors ?? [];
+            const home = comps.find(c => c.homeAway === "home");
+            const away = comps.find(c => c.homeAway === "away");
 
-        if (estado === "in") {
-          const kms = await fetchEventos(ligaSlug, ev.id);
-          eventos = kms.map(km => {
-            const tipo = tipoEvento(km);
-            const goalKey = `${ev.id}-${km.id ?? km.clock?.displayValue ?? ""}`;
+            // Detectar si el orden ESPN coincide o esta invertido
+            const ordenNormal = teamsMatch(p.equipoLocal, home?.team?.name ?? "");
+            const localEspn = ordenNormal ? home : away;
+            const visitaEspn = ordenNormal ? away : home;
 
-            // Notificar gol nuevo
-            if (tipo === "gol" && km.id && !notifiedGoals.has(goalKey)) {
-              notifiedGoals.add(goalKey);
-              nuevosGoles.push({
-                partido: ev.name ?? "",
-                jugador: km.athletesInvolved?.[0]?.displayName,
-                minuto: km.clock?.displayValue,
-                equipo: km.team?.name,
+            if (localEspn?.score != null) golesLocal = localEspn.score;
+            if (visitaEspn?.score != null) golesVisita = visitaEspn.score;
+            logoLocal = localEspn?.team?.logo ?? "";
+            logoVisita = visitaEspn?.team?.logo ?? "";
+
+            // Eventos solo si está en vivo
+            if (estado === "in" && slug) {
+              const kms = await fetchKeyMoments(slug, espnEv.id);
+              eventos = kms.map(km => {
+                const tipo = tipoEvento(km);
+                const goalKey = `${espnEv.id}-${km.id ?? km.clock?.displayValue}`;
+                if (tipo === "gol" && km.id && !notifiedGoals.has(goalKey)) {
+                  notifiedGoals.add(goalKey);
+                  nuevosGoles.push({
+                    partido: `${p.equipoLocal} vs ${p.equipoVisita}`,
+                    jugador: km.athletesInvolved?.[0]?.displayName,
+                    minuto: km.clock?.displayValue,
+                  });
+                }
+                return {
+                  id: km.id,
+                  tipo,
+                  texto: km.text ?? km.type?.text ?? "",
+                  minuto: km.clock?.displayValue,
+                  jugador: km.athletesInvolved?.[0]?.displayName,
+                  equipoId: km.team?.id,
+                };
               });
             }
 
-            return {
-              id: km.id,
-              tipo,
-              texto: km.text ?? km.type?.text ?? "",
-              minuto: km.clock?.displayValue,
-              jugador: km.athletesInvolved?.[0]?.displayName,
-              equipo: km.team?.id,
-            };
-          });
-        }
+            // Si ESPN dice terminado, usar resultado de DB si ya está guardado
+            if (estado === "post" && p.resultado) {
+              detalle = p.resultado;
+            }
+          } else {
+            // Sin ESPN: determinar estado por fecha
+            const ahora = Date.now();
+            const fechaMs = new Date(p.fechaHora).getTime();
+            if (p.resultado) {
+              estado = "post";
+              detalle = p.resultado;
+            } else if (fechaMs <= ahora && ahora - fechaMs < 2 * 60 * 60 * 1000) {
+              estado = "in"; // probablemente en curso
+            } else if (fechaMs > ahora) {
+              estado = "pre";
+            } else {
+              estado = "post";
+            }
+          }
 
-        partidos.push({
-          id: ev.id,
-          liga: ligaSlug,
-          nombre: ev.name ?? "",
-          fecha: ev.date ?? "",
-          estado,
-          detalle: status?.detail ?? status?.shortDetail ?? "",
-          completado: status?.completed ?? false,
-          reloj: ev.status?.displayClock ?? "",
-          periodo: ev.status?.period ?? 0,
-          local: {
-            nombre: home?.team?.name ?? "",
-            abrev: home?.team?.abbreviation ?? "",
-            logo: home?.team?.logo ?? "",
-            goles: home?.score ?? null,
-          },
-          visita: {
-            nombre: away?.team?.name ?? "",
-            abrev: away?.team?.abbreviation ?? "",
-            logo: away?.team?.logo ?? "",
-            goles: away?.score ?? null,
-          },
-          eventos,
-        });
-      }
-    } catch { continue; }
+          return {
+            id: p.id,
+            orden: p.orden,
+            fechaHora: p.fechaHora,
+            estado,
+            detalle,
+            reloj,
+            periodo,
+            local: { nombre: p.equipoLocal, logo: logoLocal, goles: golesLocal },
+            visita: { nombre: p.equipoVisita, logo: logoVisita, goles: golesVisita },
+            resultadoDB: p.resultado ?? null,
+            eventos,
+            tieneEspn: !!espnEv,
+          };
+        }),
+      );
+
+      // Ordenar: en vivo > pre (por fecha) > post
+      const orden: Record<string, number> = { in: 0, pre: 1, post: 2 };
+      partidos.sort((a, b) => {
+        const d = (orden[a.estado] ?? 3) - (orden[b.estado] ?? 3);
+        if (d !== 0) return d;
+        return new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime();
+      });
+
+      return {
+        id: j.id,
+        nombre: j.nombre ?? `Jornada ${j.numero}`,
+        numero: j.numero,
+        liga: j.liga,
+        partidos,
+      };
+    }),
+  );
+
+  // Enviar push por goles nuevos
+  for (const g of nuevosGoles) {
+    const titulo = g.jugador
+      ? `Gol de ${g.jugador}${g.minuto ? ` (${g.minuto})` : ""}`
+      : `Gol!${g.minuto ? ` ${g.minuto}` : ""}`;
+    sendPushToAll({ title: titulo, body: g.partido, icon: "/logo-tablitas.png", url: "/en-vivo", tag: `gol-${g.partido}-${g.minuto}` }).catch(() => {});
   }
 
-  // Ordenar: en vivo > por jugar > terminados
-  const orden: Record<string, number> = { in: 0, pre: 1, post: 2 };
-  partidos.sort((a, b) => {
-    const aa = a as { estado: string; fecha: string };
-    const bb = b as { estado: string; fecha: string };
-    const diff = (orden[aa.estado] ?? 3) - (orden[bb.estado] ?? 3);
-    if (diff !== 0) return diff;
-    return new Date(aa.fecha).getTime() - new Date(bb.fecha).getTime();
-  });
-
-  // Enviar push por cada gol nuevo (fuera del lock)
-  if (nuevosGoles.length > 0) {
-    for (const g of nuevosGoles) {
-      const titulo = g.jugador
-        ? `Gol de ${g.jugador} ${g.minuto ? `(${g.minuto})` : ""}`
-        : `Gol! ${g.minuto ? g.minuto : ""}`;
-      sendPushToAll({
-        title: titulo,
-        body: g.partido,
-        icon: "/logo-tablitas.png",
-        url: "/en-vivo",
-        tag: `gol-${g.partido}-${g.minuto}`,
-      }).catch(() => {});
-    }
-  }
-
-  const hayEnVivo = partidos.some(p => (p as { estado: string }).estado === "in");
-  const resultado = { partidos, hayEnVivo, actualizado: new Date().toISOString() };
+  const hayEnVivo = jornadasResult.some(j => j.partidos.some(p => p.estado === "in"));
+  const resultado = { jornadas: jornadasResult, hayEnVivo, actualizado: new Date().toISOString() };
   cache = { data: resultado, ts: Date.now() };
   return NextResponse.json(resultado);
 }
