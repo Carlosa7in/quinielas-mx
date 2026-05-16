@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world";
 const ESPN_V2   = "https://site.api.espn.com/apis/v2/sports/soccer/fifa.world";
@@ -122,9 +123,18 @@ export async function GET() {
 
     const partidos = partRes.status === "fulfilled" ? partRes.value : [];
 
+    // Verificar si hay jornadas abiertas de Mundial
+    let quinielasActivas = 0;
+    try {
+      quinielasActivas = await prisma.jornada.count({
+        where: { liga: { in: ["Mundial", "FIFA World Cup", "World Cup 2026"] }, estado: "abierta" },
+      });
+    } catch { /* no bloquear si falla */ }
+
     const resultado = {
       grupos,
       partidos,
+      quinielasActivas,
       fuente: "ESPN",
       actualizado: new Date().toISOString(),
     };

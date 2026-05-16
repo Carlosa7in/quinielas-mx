@@ -1,8 +1,17 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { LayoutGrid, CalendarDays, Shield, MapPin } from "lucide-react";
+import { LayoutGrid, CalendarDays, Shield, MapPin, Newspaper, ExternalLink, Clock } from "lucide-react";
 import { SEDES, EQUIPOS_DESTACADOS, MUNDIAL_FECHAS, FORMATO, type EquipoDestacado } from "@/lib/mundial2026";
+
+type Noticia = {
+  titulo: string;
+  descripcion: string;
+  imagen: string | null;
+  url: string;
+  fecha: string | null;
+  autor: string | null;
+};
 
 /* --- Countdown ----------------------------------------------------------- */
 function useCuentaRegresiva() {
@@ -138,8 +147,11 @@ export default function MundialPage() {
   const cuenta = useCuentaRegresiva();
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [partidos, setPartidos] = useState<Partido[]>([]);
+  const [quinielasActivas, setQuinielasActivas] = useState<number | null>(null);
+  const [noticias, setNoticias] = useState<Noticia[]>([]);
+  const [cargandoNoticias, setCargandoNoticias] = useState(false);
   const [cargando, setCargando] = useState(true);
-  const [tab, setTab] = useState<"grupos" | "sedes" | "equipos" | "partidos">("grupos");
+  const [tab, setTab] = useState<"grupos" | "sedes" | "equipos" | "partidos" | "noticias">("grupos");
 
   useEffect(() => {
     fetch("/api/mundial")
@@ -147,10 +159,21 @@ export default function MundialPage() {
       .then(d => {
         if (Array.isArray(d.grupos)) setGrupos(d.grupos);
         if (Array.isArray(d.partidos)) setPartidos(d.partidos);
+        if (typeof d.quinielasActivas === "number") setQuinielasActivas(d.quinielasActivas);
       })
       .catch(() => {})
       .finally(() => setCargando(false));
   }, []);
+
+  useEffect(() => {
+    if (tab !== "noticias" || noticias.length > 0) return;
+    setCargandoNoticias(true);
+    fetch("/api/mundial/noticias")
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d.articulos)) setNoticias(d.articulos); })
+      .catch(() => {})
+      .finally(() => setCargandoNoticias(false));
+  }, [tab, noticias.length]);
 
   const sedePorPais = (pais: string) => SEDES.filter(s => s.pais === pais);
 
@@ -206,14 +229,27 @@ export default function MundialPage() {
             </div>
           )}
 
-          {/* CTA */}
-          <Link
-            href="/quiniela"
-            className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-lg px-8 py-4 rounded-2xl transition-all shadow-lg shadow-amber-500/30 hover:shadow-amber-400/40 hover:scale-105"
-          >
-            ⚽ Hacer mi quiniela
-          </Link>
-          <p className="text-gray-500 text-xs mt-3">Quinielas disponibles para grupos y eliminación directa</p>
+          {/* CTA inteligente */}
+          {quinielasActivas === null ? (
+            <div className="h-14 w-48 mx-auto bg-white/10 rounded-2xl animate-pulse" />
+          ) : quinielasActivas > 0 ? (
+            <>
+              <Link
+                href="/quiniela"
+                className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-lg px-8 py-4 rounded-2xl transition-all shadow-lg shadow-amber-500/30 hover:shadow-amber-400/40 hover:scale-105"
+              >
+                ⚽ Hacer mi quiniela
+              </Link>
+              <p className="text-green-400 text-xs mt-3 font-semibold">¡Quinielas abiertas ahora!</p>
+            </>
+          ) : (
+            <>
+              <div className="inline-flex items-center gap-2 bg-white/10 text-white/50 font-black text-lg px-8 py-4 rounded-2xl cursor-not-allowed select-none border border-white/10">
+                🕐 Quinielas próximamente
+              </div>
+              <p className="text-gray-500 text-xs mt-3">Disponibles en cuanto empiece el torneo</p>
+            </>
+          )}
         </div>
       </div>
 
@@ -221,10 +257,11 @@ export default function MundialPage() {
       <div className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur border-b border-white/5">
         <div className="max-w-xl mx-auto flex overflow-x-auto">
           {([
-            { key: "grupos",   label: "Grupos",   icon: <LayoutGrid  size={16} /> },
-            { key: "partidos", label: "Partidos", icon: <CalendarDays size={16} /> },
-            { key: "equipos",  label: "Equipos",  icon: <Shield       size={16} /> },
-            { key: "sedes",    label: "Sedes",    icon: <MapPin       size={16} /> },
+            { key: "grupos",   label: "Grupos",   icon: <LayoutGrid   size={15} /> },
+            { key: "partidos", label: "Partidos", icon: <CalendarDays size={15} /> },
+            { key: "equipos",  label: "Equipos",  icon: <Shield       size={15} /> },
+            { key: "sedes",    label: "Sedes",    icon: <MapPin       size={15} /> },
+            { key: "noticias", label: "Noticias", icon: <Newspaper    size={15} /> },
           ] as const).map(({ key, label, icon }) => (
             <button
               key={key}
@@ -405,19 +442,95 @@ export default function MundialPage() {
           </div>
         )}
 
+        {/* -- NOTICIAS -- */}
+        {tab === "noticias" && (
+          <div className="space-y-3">
+            {cargandoNoticias ? (
+              <div className="space-y-3">
+                {[1,2,3].map(i => (
+                  <div key={i} className="bg-gray-900 rounded-2xl overflow-hidden animate-pulse">
+                    <div className="h-40 bg-gray-800" />
+                    <div className="p-4 space-y-2">
+                      <div className="h-4 bg-gray-700 rounded w-3/4" />
+                      <div className="h-3 bg-gray-800 rounded w-full" />
+                      <div className="h-3 bg-gray-800 rounded w-2/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : noticias.length === 0 ? (
+              <div className="bg-gray-900 rounded-2xl p-8 text-center space-y-3">
+                <Newspaper size={32} className="text-gray-600 mx-auto" />
+                <p className="text-gray-400">No se encontraron noticias del Mundial en este momento</p>
+                <a href="https://www.espn.com.mx/futbol/liga/_/name/FIFA.WORLD" target="_blank" rel="noopener noreferrer"
+                  className="inline-block text-amber-400 text-sm underline">
+                  Ver noticias en ESPN →
+                </a>
+              </div>
+            ) : (
+              noticias.map((n, i) => (
+                <a
+                  key={i}
+                  href={n.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block bg-gray-900 rounded-2xl overflow-hidden hover:bg-gray-800 transition-colors group"
+                >
+                  {n.imagen && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={n.imagen}
+                      alt={n.titulo}
+                      className="w-full h-44 object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                  )}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="text-white font-bold text-sm leading-snug group-hover:text-amber-300 transition-colors flex-1">
+                        {n.titulo}
+                      </h3>
+                      <ExternalLink size={14} className="text-gray-600 shrink-0 mt-0.5 group-hover:text-amber-400 transition-colors" />
+                    </div>
+                    {n.descripcion && (
+                      <p className="text-gray-400 text-xs leading-relaxed line-clamp-2">{n.descripcion}</p>
+                    )}
+                    <div className="flex items-center gap-3 mt-2.5 text-[10px] text-gray-600">
+                      {n.fecha && (
+                        <span className="flex items-center gap-1">
+                          <Clock size={10} />
+                          {new Date(n.fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
+                        </span>
+                      )}
+                      {n.autor && <span>Por {n.autor}</span>}
+                      <span className="ml-auto text-amber-600 font-semibold">ESPN</span>
+                    </div>
+                  </div>
+                </a>
+              ))
+            )}
+          </div>
+        )}
+
         {/* -- CTA BOTTOM -- */}
         <div className="rounded-2xl overflow-hidden mt-4" style={{ background: "linear-gradient(135deg, #92400e, #78350f)" }}>
           <div className="px-5 py-6 text-center space-y-3">
             <p className="text-amber-300 font-black text-xl">¿Listo para el Mundial?</p>
             <p className="text-amber-100/70 text-sm">
-              Regístrate en Tablitas y participa en las quinielas de grupos y eliminación directa
+              Participa en las quinielas de grupos y eliminación directa
             </p>
-            <Link
-              href="/quiniela"
-              className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-gray-950 font-black px-8 py-3 rounded-xl transition-colors text-lg"
-            >
-              ⚽ Quiero jugar
-            </Link>
+            {quinielasActivas !== null && quinielasActivas > 0 ? (
+              <Link
+                href="/quiniela"
+                className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-gray-950 font-black px-8 py-3 rounded-xl transition-colors text-lg"
+              >
+                ⚽ Quiero jugar
+              </Link>
+            ) : (
+              <div className="inline-flex items-center gap-2 bg-white/10 text-white/50 font-bold px-8 py-3 rounded-xl text-base cursor-not-allowed border border-white/10">
+                🕐 Quinielas próximamente
+              </div>
+            )}
             <p className="text-amber-300/50 text-xs">$30 pesos · Fácil desde tu celular</p>
           </div>
         </div>
