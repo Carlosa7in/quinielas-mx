@@ -3,11 +3,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { LIGA_ICON } from "@/lib/equipos";
+import DesgloseCobrado from "@/components/DesgloseCobrado";
 
 type JornadaResumen = {
   id: string;
   numero: number;
   nombre: string | null;
+  ventas: number;
   temporada: string;
   liga: string;
   estado: string;
@@ -46,6 +48,7 @@ export default function AdminPage() {
   // Stats globales
   const totalQuinielas = jornadas.reduce((s, j) => s + j.totalQuinielas, 0);
   const totalRecaudado = jornadas.reduce((s, j) => s + j.recaudado, 0);
+  const totalVentas    = jornadas.reduce((s, j) => s + (j.ventas ?? j.recaudado), 0);
   const totalGanadoras = jornadas.reduce((s, j) => s + j.ganadoras, 0);
 
   return (
@@ -84,10 +87,10 @@ export default function AdminPage() {
                 <p className="text-2xl font-bold text-green-700">{totalQuinielas}</p>
                 <p className="text-xs text-gray-500">Quinielas</p>
               </div>
-              <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+              <div className="bg-white rounded-xl p-3 text-center shadow-sm col-span-3 sm:col-span-1">
                 <p className="text-2xl font-bold text-yellow-600">${totalRecaudado}</p>
                 <p className="text-xs text-gray-500">Cobrado</p>
-                <p className="text-[10px] text-gray-400">confirmado</p>
+                <DesgloseCobrado cobrado={totalRecaudado} ventas={totalVentas} />
               </div>
               <div className="bg-white rounded-xl p-3 text-center shadow-sm">
                 <p className="text-2xl font-bold text-blue-600">{totalGanadoras}</p>

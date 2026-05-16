@@ -42,6 +42,7 @@ export async function GET(
   const confirmadas     = jornada.quinielas.filter(q => q.estadoPago === "confirmado");
   const totalQuinielas  = confirmadas.length;
   const recaudado       = confirmadas.reduce((s, q) => s + q.monto, 0);
+  const ventas          = jornada.quinielas.filter(q => q.estadoPago !== "no_realizado").reduce((s, q) => s + q.monto, 0);
   const pendientes      = jornada.quinielas.filter(q => q.estadoPago === "pendiente").length;
   const ganadoras       = jornada.quinielas.filter(q => q.estado === "ganadora").length;
   const porCanal = {
@@ -76,7 +77,7 @@ export async function GET(
     id: jornada.id, numero: jornada.numero, nombre: jornada.nombre,
     temporada: jornada.temporada, liga: jornada.liga, estado: jornada.estado,
     partidos,
-    stats: { totalQuinielas, recaudado, pendientes, ganadoras, porCanal },
+    stats: { totalQuinielas, recaudado, ventas, pendientes, ganadoras, porCanal },
   });
 }
 

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { LIGA_ICON } from "@/lib/equipos";
+import DesgloseCobrado from "@/components/DesgloseCobrado";
 
 // Detecta si estamos en móvil Android (para usar intent de WA Business)
 function useIsMobile() {
@@ -654,6 +655,7 @@ export default function QuinielasAdminPage() {
   const todasConfirmadas = todasQuinielas.filter((q) => q.estadoPago === "confirmado");
   const totalGlobal = todasConfirmadas.length;
   const recaudadoGlobal = todasConfirmadas.reduce((s, q) => s + q.monto, 0);
+  const ventasGlobal = todasQuinielas.filter((q) => q.estadoPago !== "no_realizado").reduce((s, q) => s + q.monto, 0);
   const ganadorasGlobal = todasQuinielas.filter((q) => q.estado === "ganadora").length;
 
   return (
@@ -679,7 +681,7 @@ export default function QuinielasAdminPage() {
           <div className="bg-white rounded-xl p-3 text-center shadow-sm">
             <p className="text-2xl font-bold text-yellow-600">${recaudadoGlobal}</p>
             <p className="text-xs text-gray-500">Cobrado</p>
-            <p className="text-[10px] text-gray-400">confirmado</p>
+            <DesgloseCobrado cobrado={recaudadoGlobal} ventas={ventasGlobal} />
           </div>
           <div className="bg-white rounded-xl p-3 text-center shadow-sm">
             <p className="text-2xl font-bold text-blue-600">{ganadorasGlobal}</p>

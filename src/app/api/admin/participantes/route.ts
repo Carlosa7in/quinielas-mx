@@ -25,27 +25,33 @@ export async function GET(req: NextRequest) {
           estado: true,
           estadoPago: true,
           aciertos: true,
-          jornada: { select: { numero: true, temporada: true } },
+          jornada: { select: { numero: true, temporada: true, estado: true } },
         },
       },
     },
   });
 
   const resultado = clientes.map((c) => {
-    const confirmadas = c.quinielas.filter((q) => q.estadoPago === "confirmado");
+    const confirmadas       = c.quinielas.filter((q) => q.estadoPago === "confirmado");
+    const pendientesAbiertos = c.quinielas.filter((q) => q.estadoPago === "pendiente" && q.jornada.estado === "abierta");
+    const pendientesCerrados = c.quinielas.filter((q) => q.estadoPago === "pendiente" && q.jornada.estado !== "abierta");
     return {
       id: c.id,
       nombre: c.nombre,
       telefono: c.telefono,
       totalQuinielas: confirmadas.length,
+      pendientes: pendientesAbiertos.length,
+      pendientesCerrados: pendientesCerrados.length,
       ganadoras: c.quinielas.filter((q) => q.estado === "ganadora").length,
       ultimaJornada: confirmadas.length > 0
         ? Math.max(...confirmadas.map((q) => q.jornada.numero))
-        : null,
+        : c.quinielas.length > 0
+          ? Math.max(...c.quinielas.map((q) => q.jornada.numero))
+          : null,
     };
   });
 
-  resultado.sort((a, b) => b.totalQuinielas - a.totalQuinielas);
+  resultado.sort((a, b) => (b.totalQuinielas + b.pendientes + b.pendientesCerrados) - (a.totalQuinielas + a.pendientes + a.pendientesCerrados));
 
   return NextResponse.json(resultado);
 }

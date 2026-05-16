@@ -2,6 +2,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { LIGA_ICON, getLogoUrl } from "@/lib/equipos";
+import DesgloseCobrado from "@/components/DesgloseCobrado";
 
 type PickDist = { total: number; L: number; E: number; V: number; pctL: number; pctE: number; pctV: number };
 
@@ -13,7 +14,7 @@ type Partido = {
 };
 
 type Stats = {
-  totalQuinielas: number; recaudado: number; pendientes: number; ganadoras: number;
+  totalQuinielas: number; recaudado: number; ventas: number; pendientes: number; ganadoras: number;
   porCanal: { tienda: number; online: number };
 };
 
@@ -167,6 +168,7 @@ export default function JornadaDetallePage({ params }: { params: Promise<{ id: s
           <div className="bg-white rounded-xl p-3 text-center shadow-sm">
             <p className="text-2xl font-bold text-yellow-600">${fmt(stats.recaudado)}</p>
             <p className="text-xs text-gray-500">Cobrado</p>
+            <DesgloseCobrado cobrado={stats.recaudado} ventas={stats.ventas} />
             {stats.pendientes > 0 && (
               <p className="text-[10px] text-orange-500 font-semibold mt-0.5">⏳ {stats.pendientes} pendiente{stats.pendientes !== 1 ? "s" : ""}</p>
             )}

@@ -6,6 +6,8 @@ type Cliente = {
   nombre: string;
   telefono: string;
   totalQuinielas: number;
+  pendientes: number;
+  pendientesCerrados: number;
   ganadoras: number;
   ultimaJornada: number | null;
 };
@@ -31,60 +33,113 @@ function ClienteCard({
   onEliminar: (c: Cliente) => void;
   onWhatsApp: (telefono: string) => void;
 }) {
+  const nombre1 = c.nombre.split(" ")[0];
+  const tel = c.telefono.replace(/\D/g, "");
+  const telWA = tel.length === 10 ? `52${tel}` : tel;
+
+  const msgReembolso = [
+    `¡Hola ${nombre1}! 👋`,
+    ``,
+    `Revisamos tu registro y notamos que tu pago quedó *pendiente de confirmar* antes de que cerrara la jornada.`,
+    ``,
+    `Queremos ser transparentes contigo — lamentablemente ya no fue posible incluirte en esta ronda. 😔`,
+    ``,
+    `Puedes elegir:`,
+    `💸 *Reembolso total* de tu pago`,
+    `🎟️ *Crédito para la siguiente jornada* (participas gratis la próxima)`,
+    ``,
+    `¿Qué prefieres? Dinos y lo resolvemos de inmediato. 🙌`,
+  ].join("\n");
+
+  const msgCredito = [
+    `¡Hola ${nombre1}! 🎉`,
+    ``,
+    `Tenemos registrado que tienes un *crédito pendiente* con nosotros de la jornada anterior.`,
+    ``,
+    `🎟️ Tu próxima quiniela es *completamente gratis* — solo acércate cuando abramos la siguiente jornada y te registramos sin costo.`,
+    ``,
+    `¡Gracias por tu confianza! 🙌`,
+  ].join("\n");
+
   return (
-    <div className="bg-white rounded-xl p-4 flex items-center gap-3 shadow-sm">
-      <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center font-bold text-amber-700 text-sm shrink-0">
-        {c.nombre.charAt(0).toUpperCase()}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-800 truncate">{c.nombre}</p>
-        <p className="text-sm text-gray-500">+52 {c.telefono}</p>
-        <div className="flex gap-3 mt-1">
-          <span className="text-xs text-gray-400">
-            🎯 {c.totalQuinielas} quiniela{c.totalQuinielas !== 1 ? "s" : ""}
-          </span>
-          {c.ganadoras > 0 && (
-            <span className="text-xs text-yellow-600 font-semibold">
-              🏆 {c.ganadoras} ganada{c.ganadoras !== 1 ? "s" : ""}
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      {/* Fila principal */}
+      <div className="p-4 flex items-center gap-3">
+        <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center font-bold text-amber-700 text-sm shrink-0">
+          {c.nombre.charAt(0).toUpperCase()}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-800 truncate">{c.nombre}</p>
+          <p className="text-sm text-gray-500">+52 {c.telefono}</p>
+          <div className="flex gap-3 mt-1 flex-wrap">
+            <span className="text-xs text-gray-400">
+              🎯 {c.totalQuinielas} confirmada{c.totalQuinielas !== 1 ? "s" : ""}
+              {(c.pendientes + c.pendientesCerrados) > 0 && (
+                <span className={`font-semibold ${c.pendientesCerrados > 0 ? "text-orange-500" : "text-yellow-600"}`}>
+                  {" "}· {c.pendientes + c.pendientesCerrados} sin confirmar
+                </span>
+              )}
             </span>
-          )}
-          {c.ultimaJornada && (
-            <span className="text-xs text-gray-400">J{c.ultimaJornada}</span>
+            {c.ganadoras > 0 && (
+              <span className="text-xs text-yellow-600 font-semibold">🏆 {c.ganadoras} ganada{c.ganadoras !== 1 ? "s" : ""}</span>
+            )}
+            {c.ultimaJornada && (
+              <span className="text-xs text-gray-400">J{c.ultimaJornada}</span>
+            )}
+          </div>
+          {c.pendientes > 0 && (
+            <a href="/admin/quinielas" className="text-xs text-amber-600 hover:text-amber-800 hover:underline font-semibold mt-0.5 inline-block">
+              ⏳ Confirmar pago →
+            </a>
           )}
         </div>
+        {/* Acciones */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button onClick={() => onWhatsApp(c.telefono)} className="bg-[#25D366] hover:bg-[#20b858] text-white p-2 rounded-lg transition-colors" title="WhatsApp">
+            <IconWA />
+          </button>
+          <button onClick={() => onEditar(c)} className="bg-amber-100 hover:bg-amber-200 text-amber-700 p-2 rounded-lg transition-colors" title="Editar">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+          <button onClick={() => onEliminar(c)} className="bg-red-50 hover:bg-red-100 text-red-500 p-2 rounded-lg transition-colors" title="Eliminar">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            </svg>
+          </button>
+        </div>
       </div>
-      {/* Acciones */}
-      <div className="flex items-center gap-1.5 shrink-0">
-        <button
-          onClick={() => onWhatsApp(c.telefono)}
-          className="bg-[#25D366] hover:bg-[#20b858] text-white p-2 rounded-lg transition-colors"
-          title="WhatsApp"
-        >
-          <IconWA />
-        </button>
-        <button
-          onClick={() => onEditar(c)}
-          className="bg-amber-100 hover:bg-amber-200 text-amber-700 p-2 rounded-lg transition-colors"
-          title="Editar"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-          </svg>
-        </button>
-        <button
-          onClick={() => onEliminar(c)}
-          className="bg-red-50 hover:bg-red-100 text-red-500 p-2 rounded-lg transition-colors"
-          title="Eliminar"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-            <path d="M10 11v6M14 11v6" />
-            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-          </svg>
-        </button>
-      </div>
+
+      {/* Panel pago sin confirmar en jornada cerrada */}
+      {c.pendientesCerrados > 0 && (
+        <div className="border-t border-orange-100 bg-orange-50 px-4 py-3">
+          <p className="text-xs font-bold text-orange-700 mb-2">
+            ⚠️ {c.pendientesCerrados} pago{c.pendientesCerrados !== 1 ? "s" : ""} sin confirmar — jornada cerrada
+          </p>
+          <p className="text-xs text-orange-600 mb-2">Ofrécele una solución por WhatsApp:</p>
+          <div className="flex gap-2">
+            <a
+              href={`https://wa.me/${telWA}?text=${encodeURIComponent(msgReembolso)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex-1 text-center text-xs bg-white border border-orange-200 hover:bg-orange-100 text-orange-700 font-semibold px-2 py-2 rounded-lg transition-colors"
+            >
+              💸 Ofrecer reembolso
+            </a>
+            <a
+              href={`https://wa.me/${telWA}?text=${encodeURIComponent(msgCredito)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex-1 text-center text-xs bg-white border border-orange-200 hover:bg-orange-100 text-orange-700 font-semibold px-2 py-2 rounded-lg transition-colors"
+            >
+              🎟️ Ofrecer crédito
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -71,6 +71,7 @@ export async function GET() {
         totalQuinielas: confirmadas.length,
         totalPartidos: pCountMap.get(j.id) ?? 0,
         recaudado: confirmadas.reduce((s, q) => s + q.monto, 0),
+        ventas: qs.filter((q) => q.estadoPago !== "no_realizado").reduce((s, q) => s + q.monto, 0),
         ganadoras: qs.filter((q) => q.estado === "ganadora").length,
         primerPartidoFecha: baseParaCierre ? calcularFechaCierre(baseParaCierre) : null,
       };
