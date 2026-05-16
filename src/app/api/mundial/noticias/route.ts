@@ -38,10 +38,10 @@ export async function GET() {
   try {
     // Endpoints en español (lang=es&region=mx), del más específico al más general
     const urls = [
-      "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/news?limit=8&lang=es&region=mx",
-      "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/news?limit=8",
-      "https://site.api.espn.com/apis/site/v2/sports/soccer/news?limit=20&lang=es&region=mx",
-      "https://site.api.espn.com/apis/site/v2/sports/soccer/news?limit=20",
+      "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/news?limit=20&lang=es&region=mx",
+      "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/news?limit=20",
+      "https://site.api.espn.com/apis/site/v2/sports/soccer/news?limit=40&lang=es&region=mx",
+      "https://site.api.espn.com/apis/site/v2/sports/soccer/news?limit=40",
     ];
 
     let articulos: unknown[] = [];
@@ -66,7 +66,7 @@ export async function GET() {
               texto.includes("fifa") || texto.includes("2026")
             );
           })
-          .slice(0, 6)
+          .slice(0, 20)
           .map((a) => {
             const urlOriginal = a.links?.web?.href ?? "";
             return {
@@ -79,7 +79,7 @@ export async function GET() {
             };
           });
 
-        if (filtrados.length >= 3) {
+        if (filtrados.length >= 5) {
           articulos = filtrados;
           break;
         }
