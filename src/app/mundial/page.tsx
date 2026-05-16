@@ -421,19 +421,93 @@ export default function MundialPage() {
         )}
 
         {/* -- EQUIPOS -- */}
-        {tab === "equipos" && (
-          <div className="space-y-2">
-            <p className="text-xs text-gray-500 px-1">Toca un equipo para ver sus jugadores clave</p>
-            {EQUIPOS_DESTACADOS.map(eq => (
-              <TeamCard key={eq.pais} eq={eq} />
-            ))}
-            <div className="bg-gray-900 rounded-2xl p-4 text-center">
-              <p className="text-gray-500 text-sm">
-                Los 48 clasificados aparecerán en la sección de <button onClick={() => setTab("grupos")} className="text-amber-400 underline">Grupos</button> una vez que empiece el torneo.
-              </p>
+        {tab === "equipos" && (() => {
+          // Equipos con página de detalle, por slug
+          const slugMap = new Map(EQUIPOS_DESTACADOS.map(e => [e.pais.toLowerCase(), e.slug]));
+
+          // Si ESPN ya devolvió los 48 equipos de los grupos, mostrarlos todos
+          const equiposEspn = grupos.flatMap(g =>
+            g.equipos.map(eq => ({ ...eq, grupo: g.nombre }))
+          );
+
+          const hayEspn = equiposEspn.length > 0;
+
+          return (
+            <div className="space-y-4">
+              {/* Encabezado */}
+              <div className="flex items-center justify-between px-1">
+                <p className="text-xs text-gray-500">
+                  {hayEspn
+                    ? `${equiposEspn.length} selecciones clasificadas`
+                    : `${EQUIPOS_DESTACADOS.length} selecciones destacadas · 48 total`}
+                </p>
+                {hayEspn && (
+                  <span className="text-[10px] text-green-400 font-semibold">● En vivo</span>
+                )}
+              </div>
+
+              {hayEspn ? (
+                /* Grid con todos los 48 desde ESPN */
+                <div className="grid grid-cols-2 gap-2">
+                  {equiposEspn.map(eq => {
+                    const slug = slugMap.get(eq.nombre.toLowerCase());
+                    const card = (
+                      <div className={`bg-gray-900 rounded-xl p-3 flex items-center gap-2.5 ${slug ? "hover:bg-gray-800 transition-colors" : ""}`}>
+                        <FlagImg src={eq.logo} alt={eq.abrev} size={28} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-semibold text-xs truncate leading-tight">{eq.nombre}</p>
+                          <p className="text-gray-500 text-[10px]">{eq.grupo}</p>
+                        </div>
+                        {slug && <Shield size={11} className="text-amber-400 shrink-0" />}
+                      </div>
+                    );
+                    return slug
+                      ? <Link key={eq.id} href={`/mundial/equipo/${slug}`}>{card}</Link>
+                      : <div key={eq.id}>{card}</div>;
+                  })}
+                </div>
+              ) : (
+                /* Grid con los 10 equipos destacados */
+                <div className="grid grid-cols-2 gap-2">
+                  {EQUIPOS_DESTACADOS.map(eq => (
+                    <Link
+                      key={eq.slug}
+                      href={`/mundial/equipo/${eq.slug}`}
+                      className="bg-gray-900 rounded-xl overflow-hidden hover:bg-gray-800 transition-colors group"
+                    >
+                      {/* Franja de color del equipo */}
+                      <div className={`${eq.color} px-3 py-2 flex items-center gap-2`}>
+                        <span className="text-2xl leading-none">{eq.bandera}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-black text-sm truncate leading-tight">{eq.pais}</p>
+                          <p className="text-white/50 text-[10px]">{eq.confederation}</p>
+                        </div>
+                        {eq.mundiales > 0 && (
+                          <span className="text-amber-300 text-[10px] font-black shrink-0">🏆{eq.mundiales}</span>
+                        )}
+                      </div>
+                      {/* DT + botón */}
+                      <div className="px-3 py-2 flex items-center justify-between">
+                        <p className="text-gray-400 text-[10px] truncate">DT: {eq.dt}</p>
+                        <span className="text-amber-400 text-[10px] font-bold group-hover:translate-x-0.5 transition-transform shrink-0 ml-1">Ver →</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {/* Nota cuando no hay ESPN aún */}
+              {!hayEspn && (
+                <div className="bg-gray-900/60 rounded-xl px-4 py-3 text-center">
+                  <p className="text-gray-500 text-xs">
+                    Los 48 clasificados aparecerán aquí cuando arranque el torneo.{" "}
+                    <button onClick={() => setTab("grupos")} className="text-amber-400 underline">Ver grupos →</button>
+                  </p>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* -- SEDES -- */}
         {tab === "sedes" && (
