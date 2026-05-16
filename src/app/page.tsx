@@ -297,6 +297,33 @@ export default function Home() {
           <p className="mt-2 text-amber-300/80 text-lg font-medium">{t.subtitle}</p>
         </div>
 
+        {/* Banner Mundial 2026 */}
+        <Link
+          href="/mundial"
+          className="block w-full rounded-2xl overflow-hidden relative group"
+          style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #7c2d12 100%)" }}
+        >
+          <div className="absolute inset-0 opacity-10" style={{
+            backgroundImage: "repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 12px)",
+            backgroundSize: "17px 17px"
+          }} />
+          <div className="relative flex items-center gap-3 px-4 py-3">
+            <span className="text-3xl shrink-0">🏆</span>
+            <div className="flex-1 text-left min-w-0">
+              <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">
+                🇺🇸 🇲🇽 🇨🇦 FIFA World Cup 2026™
+              </p>
+              <p className="text-white font-black text-base leading-tight">
+                Nos preparamos para el Mundial
+              </p>
+              <p className="text-amber-200/70 text-xs mt-0.5">
+                Grupos · Equipos · Sedes · Quinielas
+              </p>
+            </div>
+            <span className="text-amber-400 text-lg group-hover:translate-x-1 transition-transform shrink-0">→</span>
+          </div>
+        </Link>
+
         <BannerPagosPendientes t={t} />
 
         <BolsaSection t={t} />
