@@ -17,6 +17,7 @@
     "jsbarcode": "^3.12.3",
     "jspdf": "^4.2.1",
     "jsqr": "^1.4.0",
+    "lucide-react": "^1.16.0",
     "next": "16.2.4",
     "next-auth": "^4.24.14",
     "prisma": "^5.22.0",
