@@ -90,7 +90,7 @@ export default function AdminPage() {
               <div className="bg-white rounded-xl p-3 text-center shadow-sm col-span-3 sm:col-span-1">
                 <p className="text-2xl font-bold text-yellow-600">${totalRecaudado}</p>
                 <p className="text-xs text-gray-500">Cobrado</p>
-                <DesgloseCobrado cobrado={totalRecaudado} ventas={totalVentas} />
+                <DesgloseCobrado cobrado={totalRecaudado} />
               </div>
               <div className="bg-white rounded-xl p-3 text-center shadow-sm">
                 <p className="text-2xl font-bold text-blue-600">{totalGanadoras}</p>

@@ -168,7 +168,7 @@ export default function JornadaDetallePage({ params }: { params: Promise<{ id: s
           <div className="bg-white rounded-xl p-3 text-center shadow-sm">
             <p className="text-2xl font-bold text-yellow-600">${fmt(stats.recaudado)}</p>
             <p className="text-xs text-gray-500">Cobrado</p>
-            <DesgloseCobrado cobrado={stats.recaudado} ventas={stats.ventas} />
+            <DesgloseCobrado cobrado={stats.recaudado} />
             {stats.pendientes > 0 && (
               <p className="text-[10px] text-orange-500 font-semibold mt-0.5">⏳ {stats.pendientes} pendiente{stats.pendientes !== 1 ? "s" : ""}</p>
             )}

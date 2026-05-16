@@ -681,7 +681,7 @@ export default function QuinielasAdminPage() {
           <div className="bg-white rounded-xl p-3 text-center shadow-sm">
             <p className="text-2xl font-bold text-yellow-600">${recaudadoGlobal}</p>
             <p className="text-xs text-gray-500">Cobrado</p>
-            <DesgloseCobrado cobrado={recaudadoGlobal} ventas={ventasGlobal} />
+            <DesgloseCobrado cobrado={recaudadoGlobal} />
           </div>
           <div className="bg-white rounded-xl p-3 text-center shadow-sm">
             <p className="text-2xl font-bold text-blue-600">{ganadorasGlobal}</p>
