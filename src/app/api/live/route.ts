@@ -107,25 +107,30 @@ export async function GET() {
     partido_id: string; equipo_local: string; equipo_visita: string;
     fecha_hora: string; resultado: string | null;
     goles_local: number | null; goles_visita: number | null; orden: number;
+    logo_local: string | null; logo_visita: string | null;
   };
 
   const rows = (await sql`
     SELECT
-      j.id            AS jornada_id,
-      j.numero        AS jornada_numero,
-      j.nombre        AS jornada_nombre,
-      j.liga          AS jornada_liga,
-      j.estado        AS jornada_estado,
-      p.id            AS partido_id,
-      p."equipoLocal"  AS equipo_local,
-      p."equipoVisita" AS equipo_visita,
-      p."fechaHora"::text AS fecha_hora,
+      j.id              AS jornada_id,
+      j.numero          AS jornada_numero,
+      j.nombre          AS jornada_nombre,
+      j.liga            AS jornada_liga,
+      j.estado          AS jornada_estado,
+      p.id              AS partido_id,
+      p."equipoLocal"   AS equipo_local,
+      p."equipoVisita"  AS equipo_visita,
+      to_char(p."fechaHora" AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS fecha_hora,
       p.resultado,
-      p."golesLocal"   AS goles_local,
-      p."golesVisita"  AS goles_visita,
-      p.orden
+      p."golesLocal"    AS goles_local,
+      p."golesVisita"   AS goles_visita,
+      p.orden,
+      el."logoUrl"      AS logo_local,
+      ev."logoUrl"      AS logo_visita
     FROM "Jornada" j
     LEFT JOIN "Partido" p ON p."jornadaId" = j.id
+    LEFT JOIN "Equipo" el ON el.nombre = p."equipoLocal"  AND el.liga = j.liga
+    LEFT JOIN "Equipo" ev ON ev.nombre = p."equipoVisita" AND ev.liga = j.liga
     WHERE j.estado IN ('abierta', 'cerrada', 'en_curso')
     ORDER BY j."fechaInicio", p.orden
   `) as RawRow[];
@@ -200,8 +205,9 @@ export async function GET() {
           let periodo = 0;
           let golesLocal: string | null = p.goles_local !== null ? String(p.goles_local) : null;
           let golesVisita: string | null = p.goles_visita !== null ? String(p.goles_visita) : null;
-          let logoLocal = "";
-          let logoVisita = "";
+          // Logos: primero BD, luego ESPN los sobreescribe si encuentra el partido
+          let logoLocal = p.logo_local ?? "";
+          let logoVisita = p.logo_visita ?? "";
           let eventos: unknown[] = [];
 
           if (espnEv) {

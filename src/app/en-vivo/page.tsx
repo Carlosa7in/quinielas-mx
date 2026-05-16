@@ -55,6 +55,25 @@ function fmtFecha(iso: string) {
   });
 }
 
+function TeamLogo({ logo, nombre }: { logo: string; nombre: string }) {
+  const initials = nombre.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  if (logo) {
+    return (
+      <img
+        src={logo}
+        alt={nombre}
+        className="w-7 h-7 object-contain shrink-0"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+      />
+    );
+  }
+  return (
+    <span className="w-7 h-7 rounded-full bg-gray-700 shrink-0 flex items-center justify-center text-[9px] font-black text-gray-300">
+      {initials}
+    </span>
+  );
+}
+
 function EventoItem({ ev }: { ev: Evento }) {
   return (
     <div className={`flex items-start gap-2 py-1.5 border-l-2 pl-3 ${TIPO_COLOR[ev.tipo] ?? "border-l-gray-600"}`}>
@@ -97,9 +116,7 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
             <span className={`text-sm font-bold truncate text-right ${p.estado === "post" ? "text-gray-400" : "text-white"}`}>
               {p.local.nombre}
             </span>
-            {p.local.logo
-              ? <img src={p.local.logo} alt="" className="w-6 h-6 object-contain shrink-0" />
-              : <span className="w-6 h-6 bg-gray-700 rounded-full shrink-0" />}
+            <TeamLogo logo={p.local.logo} nombre={p.local.nombre} />
           </div>
 
           {/* Marcador */}
@@ -117,9 +134,7 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
 
           {/* Visita */}
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            {p.visita.logo
-              ? <img src={p.visita.logo} alt="" className="w-6 h-6 object-contain shrink-0" />
-              : <span className="w-6 h-6 bg-gray-700 rounded-full shrink-0" />}
+            <TeamLogo logo={p.visita.logo} nombre={p.visita.nombre} />
             <span className={`text-sm font-bold truncate ${p.estado === "post" ? "text-gray-400" : "text-white"}`}>
               {p.visita.nombre}
             </span>
