@@ -77,13 +77,8 @@ export function LiveBadge() {
     .sort((a, b) => new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime());
   const proximo = proximos[0] ?? null;
 
-  // Solo mostrar si hay algo en vivo O hay un partido hoy
-  const hoy = new Date().toDateString();
-  const hayHoy =
-    enVivo.length > 0 ||
-    todosLosPartidos.some(p => new Date(p.fechaHora).toDateString() === hoy);
-
-  if (!hayHoy) return null;
+  // Mostrar si hay algo en vivo O hay partidos próximos
+  if (enVivo.length === 0 && proximos.length === 0) return null;
 
   // --- Estado 1: HAY PARTIDOS EN VIVO ---
   if (enVivo.length > 0) {
@@ -126,12 +121,19 @@ export function LiveBadge() {
     );
   }
 
-  // --- Estado 2: HAY PARTIDO PROXIMO HOY ---
-  if (proximo && new Date(proximo.fechaHora).toDateString() === hoy) {
+  // --- Estado 2: HAY PARTIDO PRÓXIMO ---
+  if (proximo) {
     const jornada = jornadas.find(j => j.partidos.some(p => p.id === proximo.id));
+    const esHoy = new Date(proximo.fechaHora).toDateString() === new Date().toDateString();
     const hora = new Date(proximo.fechaHora).toLocaleTimeString("es-MX", {
       hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City",
     });
+    const fechaLabel = esHoy
+      ? `Hoy a las ${hora}`
+      : new Date(proximo.fechaHora).toLocaleDateString("es-MX", {
+          weekday: "short", day: "numeric", month: "short",
+          hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City",
+        });
 
     return (
       <div
@@ -155,8 +157,8 @@ export function LiveBadge() {
           )}
 
           <div className="flex items-center justify-between mt-3">
-            <p className="text-gray-600 text-xs">Empieza a las <span className="text-amber-400/70 font-bold">{hora}</span></p>
-            <Countdown fechaISO={proximo.fechaHora} />
+            <p className="text-gray-600 text-xs"><span className="text-amber-400/70 font-bold">{fechaLabel}</span></p>
+            {esHoy && <Countdown fechaISO={proximo.fechaHora} />}
           </div>
 
           <div className="mt-3 flex items-center gap-2 text-gray-600 text-xs">

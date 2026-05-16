@@ -155,49 +155,22 @@ function NotifBloqueadasBanner() {
   }, []);
   if (!bloqueadas) return null;
 
-  const esChrome = typeof navigator !== "undefined" && /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
-  const esSafari = typeof navigator !== "undefined" && /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-  const esFirefox = typeof navigator !== "undefined" && /Firefox/.test(navigator.userAgent);
-
   return (
-    <div className="bg-gray-900 rounded-2xl p-4 border border-amber-700/30">
-      <div className="flex items-start gap-3">
-        <BellOff size={18} className="text-amber-400 mt-0.5 shrink-0" />
-        <div className="space-y-2">
-          <p className="text-amber-300 font-bold text-sm">Notificaciones bloqueadas</p>
-          <p className="text-gray-400 text-xs leading-relaxed">
-            Bloqueaste las notificaciones. Para re-activarlas:
-          </p>
-          {esChrome && (
-            <ol className="text-gray-400 text-xs space-y-0.5 list-decimal list-inside leading-relaxed">
-              <li>Toca el candado 🔒 junto a la URL arriba</li>
-              <li>Selecciona <strong className="text-white">Permisos del sitio</strong></li>
-              <li>Cambia <strong className="text-white">Notificaciones</strong> a <strong className="text-white">Permitir</strong></li>
-              <li>Recarga la página</li>
-            </ol>
-          )}
-          {esSafari && (
-            <ol className="text-gray-400 text-xs space-y-0.5 list-decimal list-inside leading-relaxed">
-              <li>Abre <strong className="text-white">Configuración</strong> del iPhone</li>
-              <li>Ve a <strong className="text-white">Safari → Notificaciones</strong></li>
-              <li>Encuentra este sitio y activa <strong className="text-white">Permitir</strong></li>
-            </ol>
-          )}
-          {esFirefox && (
-            <ol className="text-gray-400 text-xs space-y-0.5 list-decimal list-inside leading-relaxed">
-              <li>Toca el candado 🔒 en la barra de URL</li>
-              <li>Selecciona <strong className="text-white">Permisos de conexión</strong></li>
-              <li>Activa <strong className="text-white">Recibir notificaciones</strong></li>
-            </ol>
-          )}
-          {!esChrome && !esSafari && !esFirefox && (
-            <p className="text-gray-400 text-xs">
-              Ve a la configuración del sitio en tu navegador y cambia Notificaciones a &quot;Permitir&quot;.
-            </p>
-          )}
-        </div>
+    <button
+      className="w-full flex items-center justify-between bg-gray-900 rounded-2xl px-4 py-3 border border-amber-700/30 hover:border-amber-500/50 transition-colors"
+      onClick={() => {
+        // Abrir ajustes del navegador (funciona en Android Chrome)
+        if ("permissions" in navigator) {
+          alert("Ve a Ajustes del navegador > Permisos del sitio > Notificaciones y activa este sitio.");
+        }
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <BellOff size={15} className="text-amber-400 shrink-0" />
+        <span className="text-amber-300 text-sm font-semibold">Reactivar notificaciones</span>
       </div>
-    </div>
+      <span className="text-amber-400/50 text-xs">→ Ajustes</span>
+    </button>
   );
 }
 
