@@ -284,7 +284,7 @@ export default function ResultadosPage() {
     return <JornadaSelector onSelect={cargarJornada} titulo="Registrar Resultados" />;
   }
 
-  // ─── Pantalla final ───────────────────────────────────────────────────────
+  // --- Pantalla final -------------------------------------------------------
   if (finalizada && resueltos === total && total > 0) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -422,7 +422,7 @@ export default function ResultadosPage() {
     );
   }
 
-  // ─── Página principal ─────────────────────────────────────────────────────
+  // --- Página principal -----------------------------------------------------
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header sticky */}
@@ -502,7 +502,7 @@ export default function ResultadosPage() {
           if (!e) return null;
           const estaExpandido = expandidos.has(partido.id);
 
-          // ── Card compacta (guardado y no expandido) ──
+          // -- Card compacta (guardado y no expandido) --
           if (e.guardado && !estaExpandido) {
             const resLabel = e.resultado === "1" ? "Local" : e.resultado === "2" ? "Visita" : "Empate";
             return (
@@ -536,7 +536,7 @@ export default function ResultadosPage() {
             );
           }
 
-          // ── Card expandida (sin guardar o en edición) ──
+          // -- Card expandida (sin guardar o en edición) --
           return (
             <div
               key={partido.id}

@@ -51,7 +51,7 @@ export default function EquipoPage({ params }: { params: Promise<{ slug: string 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
 
-      {/* ── HERO ── */}
+      {/* -- HERO -- */}
       <div
         className="relative overflow-hidden"
         style={{ background: `linear-gradient(160deg, ${equipo.colorHex}cc 0%, #0f172a 60%)` }}
@@ -107,7 +107,7 @@ export default function EquipoPage({ params }: { params: Promise<{ slug: string 
 
       <div className="max-w-xl mx-auto px-4 py-5 space-y-5">
 
-        {/* ── DT ── */}
+        {/* -- DT -- */}
         <div className="bg-gray-900 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <Users size={14} className="text-amber-400" />
@@ -119,7 +119,7 @@ export default function EquipoPage({ params }: { params: Promise<{ slug: string 
           )}
         </div>
 
-        {/* ── JUGADORES ── */}
+        {/* -- JUGADORES -- */}
         <div className="bg-gray-900 rounded-2xl overflow-hidden">
           <div className="px-4 pt-4 pb-2 flex items-center gap-2">
             <Users size={14} className="text-amber-400" />
@@ -164,7 +164,7 @@ export default function EquipoPage({ params }: { params: Promise<{ slug: string 
           )}
         </div>
 
-        {/* ── HISTORIA ── */}
+        {/* -- HISTORIA -- */}
         <div className="bg-gray-900 rounded-2xl p-4 space-y-2">
           <div className="flex items-center gap-2">
             <Star size={14} className="text-amber-400" />
@@ -173,13 +173,13 @@ export default function EquipoPage({ params }: { params: Promise<{ slug: string 
           <p className="text-gray-300 text-sm leading-relaxed">{equipo.historia}</p>
         </div>
 
-        {/* ── CURIOSIDAD ── */}
+        {/* -- CURIOSIDAD -- */}
         <div className="bg-amber-900/30 border border-amber-700/30 rounded-2xl p-4">
           <p className="text-amber-400 font-bold text-xs uppercase tracking-wider mb-1">💡 Dato curioso</p>
           <p className="text-amber-100 text-sm leading-relaxed">{equipo.curiosidad}</p>
         </div>
 
-        {/* ── TÍTULOS ── */}
+        {/* -- TÍTULOS -- */}
         {equipo.titulos.length > 0 && (
           <div className="bg-gray-900 rounded-2xl p-4 space-y-2">
             <div className="flex items-center gap-2">
@@ -198,7 +198,7 @@ export default function EquipoPage({ params }: { params: Promise<{ slug: string 
           </div>
         )}
 
-        {/* ── CTA ── */}
+        {/* -- CTA -- */}
         <div className="rounded-2xl overflow-hidden" style={{ background: `linear-gradient(135deg, ${equipo.colorHex}99, #78350f)` }}>
           <div className="px-5 py-5 text-center space-y-3">
             <p className="text-white font-black text-lg">
@@ -214,7 +214,7 @@ export default function EquipoPage({ params }: { params: Promise<{ slug: string 
           </div>
         </div>
 
-        {/* ── NAVEGACIÓN ENTRE EQUIPOS ── */}
+        {/* -- NAVEGACIÓN ENTRE EQUIPOS -- */}
         <div>
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1 mb-3">Otros equipos</p>
           <div className="grid grid-cols-2 gap-2">

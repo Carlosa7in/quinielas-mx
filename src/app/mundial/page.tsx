@@ -4,7 +4,7 @@ import Link from "next/link";
 import { LayoutGrid, CalendarDays, Shield, MapPin } from "lucide-react";
 import { SEDES, EQUIPOS_DESTACADOS, MUNDIAL_FECHAS, FORMATO, type EquipoDestacado } from "@/lib/mundial2026";
 
-/* ─── Countdown ─────────────────────────────────────────────────────────── */
+/* --- Countdown ----------------------------------------------------------- */
 function useCuentaRegresiva() {
   const target = new Date(MUNDIAL_FECHAS.inicio).getTime();
   const calc = () => {
@@ -21,7 +21,7 @@ function useCuentaRegresiva() {
   return t;
 }
 
-/* ─── Types ─────────────────────────────────────────────────────────────── */
+/* --- Types --------------------------------------------------------------- */
 type Equipo = { id: string; nombre: string; abrev: string; logo: string; pts: number; pj: number; pg: number; pe: number; pp: number; gf: number; gc: number; dif: number };
 type Grupo  = { nombre: string; equipos: Equipo[] };
 type Partido = {
@@ -32,7 +32,7 @@ type Partido = {
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-/* ─── Small components ──────────────────────────────────────────────────── */
+/* --- Small components ---------------------------------------------------- */
 function FlagImg({ src, alt, size = 28 }: { src: string; alt: string; size?: number }) {
   const [err, setErr] = useState(false);
   if (!src || err) return <span className="text-2xl">{alt.slice(0, 2)}</span>;
@@ -133,7 +133,7 @@ function GrupoTable({ grupo }: { grupo: Grupo }) {
   );
 }
 
-/* ─── Page ──────────────────────────────────────────────────────────────── */
+/* --- Page ---------------------------------------------------------------- */
 export default function MundialPage() {
   const cuenta = useCuentaRegresiva();
   const [grupos, setGrupos] = useState<Grupo[]>([]);
@@ -157,7 +157,7 @@ export default function MundialPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
 
-      {/* ── HERO ── */}
+      {/* -- HERO -- */}
       <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)" }}>
         <div className="absolute inset-0 opacity-5" style={{
           backgroundImage: "repeating-linear-gradient(45deg, #fff 0, #fff 1px, transparent 0, transparent 50%)",
@@ -217,7 +217,7 @@ export default function MundialPage() {
         </div>
       </div>
 
-      {/* ── TABS ── */}
+      {/* -- TABS -- */}
       <div className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur border-b border-white/5">
         <div className="max-w-xl mx-auto flex overflow-x-auto">
           {([
@@ -243,7 +243,7 @@ export default function MundialPage() {
 
       <div className="max-w-xl mx-auto px-4 py-5 space-y-4">
 
-        {/* ── GRUPOS ── */}
+        {/* -- GRUPOS -- */}
         {tab === "grupos" && (
           <>
             {/* Formato visual */}
@@ -299,7 +299,7 @@ export default function MundialPage() {
           </>
         )}
 
-        {/* ── PARTIDOS ── */}
+        {/* -- PARTIDOS -- */}
         {tab === "partidos" && (
           <>
             {cargando ? (
@@ -354,7 +354,7 @@ export default function MundialPage() {
           </>
         )}
 
-        {/* ── EQUIPOS ── */}
+        {/* -- EQUIPOS -- */}
         {tab === "equipos" && (
           <div className="space-y-2">
             <p className="text-xs text-gray-500 px-1">Toca un equipo para ver sus jugadores clave</p>
@@ -369,7 +369,7 @@ export default function MundialPage() {
           </div>
         )}
 
-        {/* ── SEDES ── */}
+        {/* -- SEDES -- */}
         {tab === "sedes" && (
           <div className="space-y-4">
             {(["México", "USA", "Canadá"] as const).map(pais => (
@@ -405,7 +405,7 @@ export default function MundialPage() {
           </div>
         )}
 
-        {/* ── CTA BOTTOM ── */}
+        {/* -- CTA BOTTOM -- */}
         <div className="rounded-2xl overflow-hidden mt-4" style={{ background: "linear-gradient(135deg, #92400e, #78350f)" }}>
           <div className="px-5 py-6 text-center space-y-3">
             <p className="text-amber-300 font-black text-xl">¿Listo para el Mundial?</p>
