@@ -298,12 +298,10 @@ export async function GET(req: NextRequest) {
           : 0;
         const jornada = qs[0].jornada;
         const jornadaNombre = jornada.nombre ?? `Jornada ${jornada.numero}`;
-        const recaudadoDirecta = qs.reduce((s, q) => s + q.monto, 0);
         const existente = u.porJornada.find((j) => j.jornadaId === jId);
         if (existente) {
           existente.comisionDirecta += comisionDirecta;
           existente.comisionTotal += comisionDirecta;
-          existente.recaudado += recaudadoDirecta;
           existente.quinielas.push(...qs.map((q) => ({
             id: q.id, folio: q.folio, monto: q.monto, canal: q.canal,
             estado: q.estado, estadoPago: q.estadoPago, nombreCliente: q.nombreCliente,
@@ -319,7 +317,7 @@ export async function GET(req: NextRequest) {
             total: qs.length,
             tienda: 0,
             online: 0,
-            recaudado: recaudadoDirecta,
+            recaudado: 0,
             comisionTienda: 0,
             comisionReferido: 0,
             comision: 0,
@@ -337,7 +335,6 @@ export async function GET(req: NextRequest) {
           });
         }
         u.comisionTotal += comisionDirecta;
-        u.recaudado += recaudadoDirecta;
         u.pendientePago = u.porJornada
           .filter((j) => !j.pagado && j.comisionTotal > 0)
           .reduce((s, j) => s + j.comisionTotal, 0);
@@ -449,6 +446,25 @@ export async function GET(req: NextRequest) {
   const recaudadoGlobal = Array.from(recaudadoGlobalPorJornada.values()).reduce((s, j) => s + j.recaudado, 0);
   const totalGlobal = await prisma.quiniela.count({ where: jornadaId ? { jornadaId } : {} });
 
+  // Flujo de caja: efectivo (tienda) vs transferencias (online, todo cae en cuenta del superadmin)
+  const efectivoTotal = todasLasQ.filter(q => {
+    // necesitamos el canal — lo tomamos de las quinielas ya cargadas
+    return false; // placeholder, calculamos abajo
+  }).reduce((s, q) => s + q.monto, 0);
+
+  // Recalcular desde quinielas completas (todasLasQ no tiene canal)
+  const todasConfirmadasConCanal = await prisma.quiniela.findMany({
+    where: { estadoPago: "confirmado", ...(jornadaId ? { jornadaId } : {}) },
+    select: { monto: true, canal: true },
+  });
+  const efectivo       = todasConfirmadasConCanal.filter(q => q.canal === "tienda").reduce((s, q) => s + q.monto, 0);
+  const transferencias = todasConfirmadasConCanal.filter(q => q.canal !== "tienda").reduce((s, q) => s + q.monto, 0);
+
+  // Comisiones que el superadmin debe pagar a otros (vendedores/referidos)
+  const comisionesAPagar = reporte
+    .filter(v => v.rol === "vendedor" || (v.rol !== "vendedor" && !["admin","superadmin"].includes(v.rol)))
+    .reduce((s, v) => s + v.pendientePago, 0);
+
   return NextResponse.json({
     reporte,
     sinAsignar: sinAsignarQuinielas.length,
@@ -464,6 +480,7 @@ export async function GET(req: NextRequest) {
     totalGlobal,
     ventasDirectasConfirmadas: ventasDirectas.length,
     comisionDirectaTotal: ventasDirectas.reduce((s, q) => s + q.monto, 0) * COMISION_PCT,
+    flujo: { efectivo, transferencias },
   });
 }
 

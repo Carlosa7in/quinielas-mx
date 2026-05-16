@@ -76,6 +76,7 @@ export default function ComisionesPage() {
   const [comisionDirectaTotal, setComisionDirectaTotal] = useState(0);
   const [recaudadoGlobal, setRecaudadoGlobal] = useState(0);
   const [totalGlobal, setTotalGlobal] = useState(0);
+  const [flujo, setFlujo] = useState<{ efectivo: number; transferencias: number } | null>(null);
   const [jornadas, setJornadas] = useState<JornadaOpcion[]>([]);
   const [jornadaId, setJornadaId] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -93,7 +94,7 @@ export default function ComisionesPage() {
     const url = jornadaId ? `/api/admin/comisiones?jornadaId=${jornadaId}` : "/api/admin/comisiones";
     fetch(url)
       .then((r) => r.json())
-      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); setSinAsignarDetalle(data.sinAsignarDetalle ?? []); setNumAdmins(data.numAdmins ?? 0); setRecaudadoGlobal(data.recaudadoGlobal ?? 0); setTotalGlobal(data.totalGlobal ?? 0); setVentasDirectasConfirmadas(data.ventasDirectasConfirmadas ?? 0); setComisionDirectaTotal(data.comisionDirectaTotal ?? 0); })
+      .then((data) => { setReporte(data.reporte ?? []); setSinAsignar(data.sinAsignar ?? 0); setSinAsignarDetalle(data.sinAsignarDetalle ?? []); setNumAdmins(data.numAdmins ?? 0); setRecaudadoGlobal(data.recaudadoGlobal ?? 0); setTotalGlobal(data.totalGlobal ?? 0); setVentasDirectasConfirmadas(data.ventasDirectasConfirmadas ?? 0); setComisionDirectaTotal(data.comisionDirectaTotal ?? 0); setFlujo(data.flujo ?? null); })
       .finally(() => setCargando(false));
   }, [jornadaId]);
 
@@ -235,6 +236,33 @@ export default function ComisionesPage() {
                 <span className="font-black text-base">${fmt(bolsaNeta)}</span>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Flujo de caja — solo superadmin */}
+        {esSuperadmin && flujo && (flujo.efectivo > 0 || flujo.transferencias > 0) && (
+          <div className="bg-blue-950 text-white rounded-2xl p-4 space-y-3">
+            <p className="text-xs font-bold tracking-widest text-blue-400 uppercase">💳 En tu cuenta</p>
+            <p className="text-xs text-blue-400">Todo el dinero confirmado, sin importar quién lo vendió</p>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-blue-200">🏪 Efectivo (tienda)</span>
+                <span className="font-bold">${fmt(flujo.efectivo)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-blue-200">🏦 Transferencias recibidas</span>
+                <span className="font-bold">${fmt(flujo.transferencias)}</span>
+              </div>
+              <div className="border-t border-blue-800 pt-2 flex justify-between text-blue-300">
+                <span className="font-bold">Total en tu cuenta</span>
+                <span className="font-black text-base">${fmt(flujo.efectivo + flujo.transferencias)}</span>
+              </div>
+            </div>
+            {flujo.transferencias > 0 && (
+              <p className="text-xs text-blue-400 border-t border-blue-800 pt-2">
+                ⚠️ Las transferencias incluyen ventas de referidos (Elias y otros). Recuerda pagarles su comisión.
+              </p>
+            )}
           </div>
         )}
 
