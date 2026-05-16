@@ -298,10 +298,12 @@ export async function GET(req: NextRequest) {
           : 0;
         const jornada = qs[0].jornada;
         const jornadaNombre = jornada.nombre ?? `Jornada ${jornada.numero}`;
+        const recaudadoDirecta = qs.reduce((s, q) => s + q.monto, 0);
         const existente = u.porJornada.find((j) => j.jornadaId === jId);
         if (existente) {
           existente.comisionDirecta += comisionDirecta;
           existente.comisionTotal += comisionDirecta;
+          existente.recaudado += recaudadoDirecta;
           existente.quinielas.push(...qs.map((q) => ({
             id: q.id, folio: q.folio, monto: q.monto, canal: q.canal,
             estado: q.estado, estadoPago: q.estadoPago, nombreCliente: q.nombreCliente,
@@ -317,7 +319,7 @@ export async function GET(req: NextRequest) {
             total: qs.length,
             tienda: 0,
             online: 0,
-            recaudado: 0,
+            recaudado: recaudadoDirecta,
             comisionTienda: 0,
             comisionReferido: 0,
             comision: 0,
@@ -335,6 +337,7 @@ export async function GET(req: NextRequest) {
           });
         }
         u.comisionTotal += comisionDirecta;
+        u.recaudado += recaudadoDirecta;
         u.pendientePago = u.porJornada
           .filter((j) => !j.pagado && j.comisionTotal > 0)
           .reduce((s, j) => s + j.comisionTotal, 0);
