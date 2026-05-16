@@ -49,11 +49,7 @@ type EspnKeyMoment = {
   team?: { id?: string };
 };
 
-// Cache 30 s
-let cache: { data: unknown; ts: number } | null = null;
-const TTL = 30_000;
-
-// Goles ya notificados
+// Goles ya notificados (best-effort, se resetea entre instancias serverless)
 const notifiedGoals = new Set<string>();
 
 // Normaliza nombre de equipo para comparar entre DB y ESPN
@@ -103,10 +99,6 @@ function tipoEvento(km: EspnKeyMoment): string {
 
 export async function GET() {
   try {
-  if (cache && Date.now() - cache.ts < TTL) {
-    return NextResponse.json(cache.data);
-  }
-
   // 1. Obtener jornadas activas con todos sus partidos
   // "abierta" = registro abierto | "cerrada" = registro cerrado pero partidos jugandose | "en_curso" = alias
   const jornadas = await prisma.jornada.findMany({
@@ -118,9 +110,7 @@ export async function GET() {
   });
 
   if (jornadas.length === 0) {
-    const resultado = { jornadas: [], hayEnVivo: false, actualizado: new Date().toISOString() };
-    cache = { data: resultado, ts: Date.now() };
-    return NextResponse.json(resultado);
+    return NextResponse.json({ jornadas: [], hayEnVivo: false, actualizado: new Date().toISOString() });
   }
 
   // 2. Cargar scoreboard ESPN por liga unica
@@ -290,9 +280,7 @@ export async function GET() {
   }
 
   const hayEnVivo = jornadasResult.some(j => j.partidos.some(p => p.estado === "in"));
-  const resultado = { jornadas: jornadasResult, hayEnVivo, actualizado: new Date().toISOString() };
-  cache = { data: resultado, ts: Date.now() };
-  return NextResponse.json(resultado);
+  return NextResponse.json({ jornadas: jornadasResult, hayEnVivo, actualizado: new Date().toISOString() });
 
   } catch (err) {
     console.error("[/api/live] error:", err);
