@@ -108,8 +108,9 @@ export async function GET() {
   }
 
   // 1. Obtener jornadas activas con todos sus partidos
+  // "abierta" = registro abierto | "cerrada" = registro cerrado pero partidos jugandose | "en_curso" = alias
   const jornadas = await prisma.jornada.findMany({
-    where: { estado: { in: ["abierta", "en_curso"] } },
+    where: { estado: { in: ["abierta", "cerrada", "en_curso"] } },
     include: {
       partidos: { orderBy: { orden: "asc" } },
     },
