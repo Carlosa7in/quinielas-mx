@@ -1,12 +1,6 @@
 import webpush from "web-push";
 import { prisma } from "@/lib/prisma";
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT ?? "mailto:carlosariasariza@gmail.com",
-  process.env.VAPID_PUBLIC_KEY ?? "",
-  process.env.VAPID_PRIVATE_KEY ?? "",
-);
-
 export type PushPayload = {
   title: string;
   body: string;
@@ -16,6 +10,12 @@ export type PushPayload = {
 };
 
 export async function sendPushToAll(payload: PushPayload): Promise<number> {
+  // Inicializar VAPID en runtime (no en build time) para evitar error de llave faltante
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT ?? "mailto:carlosariasariza@gmail.com",
+    process.env.VAPID_PUBLIC_KEY ?? "",
+    process.env.VAPID_PRIVATE_KEY ?? "",
+  );
   const subs = await prisma.pushSubscription.findMany();
   let enviados = 0;
   const caducos: string[] = [];
