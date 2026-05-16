@@ -9,11 +9,26 @@ type EspnArticle = {
   description?: string;
   published?: string;
   lastModified?: string;
-  links?: { web?: { href?: string } };
+  links?: {
+    web?:    { href?: string };
+    mobile?: { href?: string };
+    app?:    { sportscenter?: { href?: string } };
+  };
   images?: { url?: string; width?: number; height?: number }[];
   categories?: { description?: string; type?: string }[];
   byline?: string;
 };
+
+// Convierte una URL de ESPN en inglés a su equivalente en español
+function toEspanolUrl(href: string): string {
+  if (!href) return href;
+  // espndeportes.espn.com ya es español
+  if (href.includes("espndeportes") || href.includes("espn.com.mx")) return href;
+  // www.espn.com/soccer/... → espndeportes.espn.com/futbol/...
+  return href
+    .replace("www.espn.com/soccer", "espndeportes.espn.com/futbol")
+    .replace("www.espn.com/", "espndeportes.espn.com/");
+}
 
 export async function GET() {
   if (cache && Date.now() - cache.ts < TTL) {
@@ -21,9 +36,11 @@ export async function GET() {
   }
 
   try {
-    // Intentar primero noticias específicas del Mundial
+    // Endpoints en español (lang=es&region=mx), del más específico al más general
     const urls = [
+      "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/news?limit=8&lang=es&region=mx",
       "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/news?limit=8",
+      "https://site.api.espn.com/apis/site/v2/sports/soccer/news?limit=20&lang=es&region=mx",
       "https://site.api.espn.com/apis/site/v2/sports/soccer/news?limit=20",
     ];
 
@@ -38,21 +55,29 @@ export async function GET() {
 
         const filtrados = arts
           .filter((a) => {
-            // Si viene del endpoint específico del Mundial, aceptar todos
             if (url.includes("fifa.world")) return true;
-            // Si viene del general, filtrar por palabras clave
-            const texto = ((a.headline ?? "") + " " + (a.description ?? "") + " " + (a.categories?.map(c => c.description).join(" ") ?? "")).toLowerCase();
-            return texto.includes("world cup") || texto.includes("mundial") || texto.includes("fifa") || texto.includes("2026");
+            const texto = (
+              (a.headline ?? "") + " " +
+              (a.description ?? "") + " " +
+              (a.categories?.map(c => c.description).join(" ") ?? "")
+            ).toLowerCase();
+            return (
+              texto.includes("world cup") || texto.includes("mundial") ||
+              texto.includes("fifa") || texto.includes("2026")
+            );
           })
           .slice(0, 6)
-          .map((a) => ({
-            titulo: a.headline ?? "",
-            descripcion: a.description ?? "",
-            imagen: a.images?.[0]?.url ?? null,
-            url: a.links?.web?.href ?? "",
-            fecha: a.published ?? a.lastModified ?? null,
-            autor: a.byline ?? null,
-          }));
+          .map((a) => {
+            const urlOriginal = a.links?.web?.href ?? "";
+            return {
+              titulo:      a.headline ?? "",
+              descripcion: a.description ?? "",
+              imagen:      a.images?.[0]?.url ?? null,
+              url:         toEspanolUrl(urlOriginal),
+              fecha:       a.published ?? a.lastModified ?? null,
+              autor:       a.byline ?? null,
+            };
+          });
 
         if (filtrados.length >= 3) {
           articulos = filtrados;
