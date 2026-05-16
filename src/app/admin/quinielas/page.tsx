@@ -322,8 +322,9 @@ function JornadaCard({ jornada, busqueda, usuarios }: { jornada: Jornada; busque
     });
 
   const pendientes = filtradas.filter((q) => q.canal !== "tienda" && q.estadoPago === "pendiente");
-  const total = filtradas.length;
-  const recaudado = filtradas.reduce((s, q) => s + q.monto, 0);
+  const confirmadas = filtradas.filter((q) => q.estadoPago === "confirmado");
+  const total = confirmadas.length;
+  const recaudado = confirmadas.reduce((s, q) => s + q.monto, 0);
   const ganadoras = filtradas.filter((q) => q.estado === "ganadora").length;
   const totalPicks = filtradas[0]?.picks.length ?? 0;
 
@@ -648,10 +649,11 @@ export default function QuinielasAdminPage() {
   const pasadas = jornadasFiltradas.filter((j) => j.estado === "finalizada");
   const mostrar = tab === "activa" ? activas : pasadas;
 
-  // Stats globales
+  // Stats globales — solo quinielas con pago confirmado
   const todasQuinielas = jornadas.flatMap((j) => j.quinielas);
-  const totalGlobal = todasQuinielas.length;
-  const recaudadoGlobal = todasQuinielas.reduce((s, q) => s + q.monto, 0);
+  const todasConfirmadas = todasQuinielas.filter((q) => q.estadoPago === "confirmado");
+  const totalGlobal = todasConfirmadas.length;
+  const recaudadoGlobal = todasConfirmadas.reduce((s, q) => s + q.monto, 0);
   const ganadorasGlobal = todasQuinielas.filter((q) => q.estado === "ganadora").length;
 
   return (
