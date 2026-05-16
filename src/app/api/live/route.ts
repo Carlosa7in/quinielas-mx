@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendPushToAll } from "@/lib/push";
+
+// Siempre dinamico - nunca cachear en build time
+export const dynamic = "force-dynamic";
 
 // Mapeo liga DB -> slug ESPN
 const LIGA_ESPN: Record<string, string> = {
@@ -100,6 +102,7 @@ function tipoEvento(km: EspnKeyMoment): string {
 }
 
 export async function GET() {
+  try {
   if (cache && Date.now() - cache.ts < TTL) {
     return NextResponse.json(cache.data);
   }
@@ -273,16 +276,28 @@ export async function GET() {
     }),
   );
 
-  // Enviar push por goles nuevos
-  for (const g of nuevosGoles) {
-    const titulo = g.jugador
-      ? `Gol de ${g.jugador}${g.minuto ? ` (${g.minuto})` : ""}`
-      : `Gol!${g.minuto ? ` ${g.minuto}` : ""}`;
-    sendPushToAll({ title: titulo, body: g.partido, icon: "/logo-tablitas.png", url: "/en-vivo", tag: `gol-${g.partido}-${g.minuto}` }).catch(() => {});
+  // Enviar push por goles nuevos (import dinamico para aislar errores de web-push)
+  if (nuevosGoles.length > 0) {
+    import("@/lib/push").then(({ sendPushToAll }) => {
+      for (const g of nuevosGoles) {
+        const titulo = g.jugador
+          ? `Gol de ${g.jugador}${g.minuto ? ` (${g.minuto})` : ""}`
+          : `Gol!${g.minuto ? ` ${g.minuto}` : ""}`;
+        sendPushToAll({ title: titulo, body: g.partido, icon: "/logo-tablitas.png", url: "/en-vivo", tag: `gol-${g.partido}-${g.minuto}` }).catch(() => {});
+      }
+    }).catch(() => {});
   }
 
   const hayEnVivo = jornadasResult.some(j => j.partidos.some(p => p.estado === "in"));
   const resultado = { jornadas: jornadasResult, hayEnVivo, actualizado: new Date().toISOString() };
   cache = { data: resultado, ts: Date.now() };
   return NextResponse.json(resultado);
+
+  } catch (err) {
+    console.error("[/api/live] error:", err);
+    return NextResponse.json(
+      { jornadas: [], hayEnVivo: false, actualizado: new Date().toISOString(), error: String(err) },
+      { status: 200 }, // 200 para que el cliente no muestre "Error al cargar"
+    );
+  }
 }

@@ -184,8 +184,7 @@ export default function EnVivoPage() {
   const cargar = useCallback(async () => {
     try {
       const res = await fetch("/api/live");
-      if (!res.ok) throw new Error("error");
-      const data = await res.json() as { jornadas: JornadaViva[]; hayEnVivo: boolean; actualizado: string };
+      const data = await res.json() as { jornadas?: JornadaViva[]; hayEnVivo?: boolean; actualizado?: string; error?: string };
       setJornadas(data.jornadas ?? []);
       setHayEnVivo(data.hayEnVivo ?? false);
       setUltimaActual(data.actualizado ?? null);

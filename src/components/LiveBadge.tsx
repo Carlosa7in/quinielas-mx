@@ -56,6 +56,14 @@ export function LiveBadge() {
       .then(r => r.json())
       .then((d: { jornadas?: JornadaViva[] }) => setJornadas(d.jornadas ?? []))
       .catch(() => setJornadas([]));
+    // Re-chequear cada 60s para detectar partidos que arrancan
+    const id = setInterval(() => {
+      fetch("/api/live")
+        .then(r => r.json())
+        .then((d: { jornadas?: JornadaViva[] }) => setJornadas(d.jornadas ?? []))
+        .catch(() => {});
+    }, 60_000);
+    return () => clearInterval(id);
   }, []);
 
   // Aun cargando
