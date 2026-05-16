@@ -5,6 +5,7 @@ import { LIGA_ICON } from "@/lib/equipos";
 import { useLocale } from "@/hooks/useLocale";
 import { translations, type HomeT } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
+import { LiveBadge } from "@/components/LiveBadge";
 
 type JornadaBolsaItem = {
   id: string;
@@ -367,6 +368,9 @@ export default function Home() {
           <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-4" style={{ height: "130px", objectFit: "contain" }} />
           <p className="mt-2 text-amber-300/80 text-lg font-medium">{t.subtitle}</p>
         </div>
+
+        {/* Badge EN VIVO */}
+        <LiveBadge />
 
         {/* Banner Mundial 2026 */}
         <MundialBanner />

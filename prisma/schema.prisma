@@ -154,3 +154,11 @@ model PreRegistro {
   createdAt  DateTime @default(now())
   usado      Boolean  @default(false)
 }
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}
