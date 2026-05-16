@@ -39,50 +39,53 @@ const BANCOS_MX = [
   "Otro",
 ];
 
-type BancoConfig = { bg: string; text: string; label: string };
+type BancoConfig = { bg: string; text: string; label: string; domain: string };
 
 const BANCO_CONFIG: Record<string, BancoConfig> = {
-  BBVA:                    { bg: "#004481", text: "#ffffff", label: "BBVA" },
-  Banorte:                 { bg: "#8B0000", text: "#ffffff", label: "BAN" },
-  Santander:               { bg: "#EC0000", text: "#ffffff", label: "SAN" },
-  HSBC:                    { bg: "#DB0011", text: "#ffffff", label: "HSBC" },
-  "Banamex / Citibanamex": { bg: "#003087", text: "#ffffff", label: "BAM" },
-  Scotiabank:              { bg: "#C8002A", text: "#ffffff", label: "SCO" },
-  "Kapital Bank":          { bg: "#FF4D00", text: "#ffffff", label: "KAP" },
-  "OXXO Pay":              { bg: "#E8000B", text: "#FFD700", label: "OXXO" },
-  "Spin by OXXO":          { bg: "#6B21A8", text: "#ffffff", label: "SPIN" },
-  "Mercado Pago":          { bg: "#009EE3", text: "#ffffff", label: "MP" },
-  "Nu (Nubank)":           { bg: "#820AD1", text: "#ffffff", label: "NU" },
-  "Hey Banco":             { bg: "#00A859", text: "#ffffff", label: "HEY" },
+  BBVA:                    { bg: "#004481", text: "#ffffff", label: "BBVA", domain: "bbva.com.mx" },
+  Banorte:                 { bg: "#8B0000", text: "#ffffff", label: "BAN",  domain: "banorte.com" },
+  Santander:               { bg: "#EC0000", text: "#ffffff", label: "SAN",  domain: "santander.com.mx" },
+  HSBC:                    { bg: "#DB0011", text: "#ffffff", label: "HSBC", domain: "hsbc.com.mx" },
+  "Banamex / Citibanamex": { bg: "#003087", text: "#ffffff", label: "BAM",  domain: "banamex.com" },
+  Scotiabank:              { bg: "#C8002A", text: "#ffffff", label: "SCO",  domain: "scotiabank.com.mx" },
+  "Kapital Bank":          { bg: "#FF4D00", text: "#ffffff", label: "KAP",  domain: "kapital.mx" },
+  "OXXO Pay":              { bg: "#E8000B", text: "#FFD700", label: "OXXO", domain: "oxxo.com" },
+  "Spin by OXXO":          { bg: "#6B21A8", text: "#ffffff", label: "SPIN", domain: "spinbyoxxo.com.mx" },
+  "Mercado Pago":          { bg: "#009EE3", text: "#ffffff", label: "MP",   domain: "mercadopago.com.mx" },
+  "Nu (Nubank)":           { bg: "#820AD1", text: "#ffffff", label: "NU",   domain: "nu.com.mx" },
+  "Hey Banco":             { bg: "#00A859", text: "#ffffff", label: "HEY",  domain: "heybanco.com" },
 };
 
 function BancoLogo({ banco, size = 36 }: { banco: string; size?: number }) {
   const cfg = BANCO_CONFIG[banco];
-  if (!cfg) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  if (!cfg || imgFailed) {
+    // Fallback: colored badge
+    const fontSize = !cfg ? size * 0.5 : size <= 28 ? 9 : size <= 36 ? 10 : 12;
     return (
-      <span style={{ fontSize: size * 0.6, lineHeight: 1 }}>🏦</span>
+      <div style={{
+        width: size, height: size, borderRadius: 8,
+        background: cfg?.bg ?? "#6b7280", color: cfg?.text ?? "#fff",
+        fontSize, fontWeight: 800, display: "flex", alignItems: "center",
+        justifyContent: "center", letterSpacing: (cfg?.label.length ?? 0) >= 4 ? "-0.5px" : "0px",
+        flexShrink: 0,
+      }}>
+        {cfg?.label ?? "🏦"}
+      </div>
     );
   }
-  const fontSize = size <= 28 ? 9 : size <= 36 ? 10 : 12;
+
   return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: 8,
-        background: cfg.bg,
-        color: cfg.text,
-        fontSize,
-        fontWeight: 800,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        letterSpacing: cfg.label.length >= 4 ? "-0.5px" : "0px",
-        flexShrink: 0,
-      }}
-    >
-      {cfg.label}
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`https://logo.clearbit.com/${cfg.domain}`}
+      alt={banco}
+      width={size}
+      height={size}
+      onError={() => setImgFailed(true)}
+      style={{ width: size, height: size, objectFit: "contain", borderRadius: 6, flexShrink: 0 }}
+    />
   );
 }
 
