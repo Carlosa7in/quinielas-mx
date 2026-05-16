@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
           id: true,
           folio: true,
           estado: true,
+          estadoPago: true,
           aciertos: true,
           jornada: { select: { numero: true, temporada: true } },
         },
@@ -30,16 +31,19 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  const resultado = clientes.map((c) => ({
-    id: c.id,
-    nombre: c.nombre,
-    telefono: c.telefono,
-    totalQuinielas: c.quinielas.length,
-    ganadoras: c.quinielas.filter((q) => q.estado === "ganadora").length,
-    ultimaJornada: c.quinielas.length > 0
-      ? Math.max(...c.quinielas.map((q) => q.jornada.numero))
-      : null,
-  }));
+  const resultado = clientes.map((c) => {
+    const confirmadas = c.quinielas.filter((q) => q.estadoPago === "confirmado");
+    return {
+      id: c.id,
+      nombre: c.nombre,
+      telefono: c.telefono,
+      totalQuinielas: confirmadas.length,
+      ganadoras: c.quinielas.filter((q) => q.estado === "ganadora").length,
+      ultimaJornada: confirmadas.length > 0
+        ? Math.max(...confirmadas.map((q) => q.jornada.numero))
+        : null,
+    };
+  });
 
   resultado.sort((a, b) => b.totalQuinielas - a.totalQuinielas);
 

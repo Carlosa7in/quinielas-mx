@@ -38,9 +38,10 @@ export async function GET(
     }
   } catch { /* ignorar */ }
 
-  // Stats de quinielas
-  const totalQuinielas  = jornada.quinielas.length;
-  const recaudado       = jornada.quinielas.filter(q => q.estadoPago === "confirmado").reduce((s, q) => s + q.monto, 0);
+  // Stats de quinielas — solo confirmadas para totales de dinero y conteo
+  const confirmadas     = jornada.quinielas.filter(q => q.estadoPago === "confirmado");
+  const totalQuinielas  = confirmadas.length;
+  const recaudado       = confirmadas.reduce((s, q) => s + q.monto, 0);
   const pendientes      = jornada.quinielas.filter(q => q.estadoPago === "pendiente").length;
   const ganadoras       = jornada.quinielas.filter(q => q.estado === "ganadora").length;
   const porCanal = {

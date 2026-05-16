@@ -16,6 +16,7 @@ type NotifData = {
 };
 
 const TIPO_ICON: Record<string, string> = {
+  kiosko:     "🏪",
   pago:       "💳",
   resultados: "⚽",
   premio:     "🏆",
@@ -141,7 +142,7 @@ export default function NotificationBell({ float = false }: { float?: boolean })
                   key={i}
                   href={item.href}
                   onClick={() => setAbierto(false)}
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderBottom: "1px solid #f3f4f6", textDecoration: "none", background: item.tipo !== "nuevo" ? "#fffbeb" : "#fff" }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderBottom: "1px solid #f3f4f6", textDecoration: "none", background: (item.tipo === "nuevo") ? "#fff" : "#fffbeb" }}
                 >
                   <span style={{ fontSize: 20, flexShrink: 0 }}>{TIPO_ICON[item.tipo] ?? "🔔"}</span>
                   <span style={{ color: "#111827", fontSize: 12, fontWeight: item.tipo !== "nuevo" ? 700 : 500, lineHeight: 1.4 }}>

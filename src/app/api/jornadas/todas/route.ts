@@ -16,7 +16,7 @@ export async function GET() {
 
     const quinielas = await prisma.quiniela.findMany({
       where: { jornadaId: { in: ids } },
-      select: { jornadaId: true, monto: true, estado: true },
+      select: { jornadaId: true, monto: true, estado: true, estadoPago: true },
     });
 
     // Sin DateTime en select — NeonDB devuelve {} para DateTime en ORM
@@ -46,10 +46,10 @@ export async function GET() {
       }
     }
 
-    const qMap = new Map<string, { monto: number; estado: string }[]>();
+    const qMap = new Map<string, { monto: number; estado: string; estadoPago: string }[]>();
     for (const q of quinielas) {
       if (!qMap.has(q.jornadaId)) qMap.set(q.jornadaId, []);
-      qMap.get(q.jornadaId)!.push({ monto: q.monto, estado: q.estado });
+      qMap.get(q.jornadaId)!.push({ monto: q.monto, estado: q.estado, estadoPago: q.estadoPago });
     }
 
     const pCountMap = new Map<string, number>();
@@ -59,6 +59,7 @@ export async function GET() {
 
     const resultado = jornadas.map((j) => {
       const qs = qMap.get(j.id) ?? [];
+      const confirmadas = qs.filter((q) => q.estadoPago === "confirmado");
       const baseParaCierre: Date | null = pMap.get(j.id) ?? null;
       return {
         id: j.id,
@@ -67,9 +68,9 @@ export async function GET() {
         temporada: j.temporada,
         liga: j.liga,
         estado: j.estado,
-        totalQuinielas: qs.length,
+        totalQuinielas: confirmadas.length,
         totalPartidos: pCountMap.get(j.id) ?? 0,
-        recaudado: qs.reduce((s, q) => s + q.monto, 0),
+        recaudado: confirmadas.reduce((s, q) => s + q.monto, 0),
         ganadoras: qs.filter((q) => q.estado === "ganadora").length,
         primerPartidoFecha: baseParaCierre ? calcularFechaCierre(baseParaCierre) : null,
       };

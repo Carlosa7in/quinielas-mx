@@ -234,12 +234,12 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
         <p className="text-amber-200 text-sm mb-8">
           Acércate al vendedor para confirmar y pagar <strong className="text-white">${precioEnviado}</strong>.
         </p>
-        <button
-          onClick={reiniciar}
+        <a
+          href="/"
           className="bg-white text-amber-800 font-bold px-8 py-3 rounded-2xl shadow-lg hover:bg-amber-50 transition-colors"
         >
-          Nueva quiniela
-        </button>
+          Cerrar
+        </a>
       </div>
     );
   }

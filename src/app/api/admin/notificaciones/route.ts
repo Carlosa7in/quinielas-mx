@@ -1,9 +1,12 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { prisma, sql } from "@/lib/prisma";
 
 // GET /api/admin/notificaciones — conteos para el bell del admin
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const userId = token?.id ? String(token.id) : null;
     // 1. Pagos pendientes de confirmar (online, no confirmados, no rechazados)
     const pagosPendientes = await prisma.quiniela.count({
       where: {
@@ -53,8 +56,31 @@ export async function GET() {
       (j) => j.partidos.length > 0
     ).length;
 
+    // 5. Pre-registros de kiosko pendientes (del vendedor actual, últimos 60 min)
+    let preRegistrosPendientes = 0;
+    if (userId) {
+      try {
+        const rows = await sql`
+          SELECT COUNT(*) AS total FROM "PreRegistro"
+          WHERE "vendedorId" = ${userId}
+            AND usado = false
+            AND "createdAt" > NOW() - INTERVAL '60 minutes'
+        `;
+        preRegistrosPendientes = Number(rows[0]?.total ?? 0);
+      } catch { /* tabla puede no existir aún */ }
+    }
+
     // Armar lista de notificaciones con texto
     const items: { tipo: string; texto: string; count: number; href: string }[] = [];
+
+    if (preRegistrosPendientes > 0) {
+      items.push({
+        tipo: "kiosko",
+        texto: `${preRegistrosPendientes} cliente${preRegistrosPendientes !== 1 ? "s" : ""} esperando en kiosko`,
+        count: preRegistrosPendientes,
+        href: "/admin/tienda",
+      });
+    }
 
     if (pagosPendientes > 0) {
       items.push({
@@ -92,7 +118,7 @@ export async function GET() {
       });
     }
 
-    const totalUrgentes = pagosPendientes + jornadasConResultadosPendientes + jornadasSinPremio;
+    const totalUrgentes = preRegistrosPendientes + pagosPendientes + jornadasConResultadosPendientes + jornadasSinPremio;
 
     return NextResponse.json({
       totalUrgentes,

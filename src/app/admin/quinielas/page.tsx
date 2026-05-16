@@ -385,8 +385,8 @@ function JornadaCard({ jornada, busqueda, usuarios }: { jornada: Jornada; busque
             </span>
           </div>
           <div className="flex gap-4 mt-1 text-xs text-gray-500 flex-wrap">
-            <span>🎯 {total} quinielas</span>
-            <span>💵 ${recaudado}</span>
+            <span>🎯 {total} confirmadas</span>
+            <span>💵 ${recaudado} cobrado</span>
             {pendientes.length > 0 && (
               <span className="text-yellow-600 font-semibold">⏳ {pendientes.length} sin confirmar</span>
             )}
@@ -678,7 +678,8 @@ export default function QuinielasAdminPage() {
           </div>
           <div className="bg-white rounded-xl p-3 text-center shadow-sm">
             <p className="text-2xl font-bold text-yellow-600">${recaudadoGlobal}</p>
-            <p className="text-xs text-gray-500">Recaudado</p>
+            <p className="text-xs text-gray-500">Cobrado</p>
+            <p className="text-[10px] text-gray-400">confirmado</p>
           </div>
           <div className="bg-white rounded-xl p-3 text-center shadow-sm">
             <p className="text-2xl font-bold text-blue-600">{ganadorasGlobal}</p>
@@ -715,7 +716,7 @@ export default function QuinielasAdminPage() {
               🟢 Activa
               {activas.length > 0 && (
                 <span className="ml-1.5 bg-white/30 text-xs px-1.5 py-0.5 rounded-full">
-                  {activas.flatMap((j) => j.quinielas).length}
+                  {activas.flatMap((j) => j.quinielas).filter((q) => q.estadoPago === "confirmado").length}
                 </span>
               )}
             </button>

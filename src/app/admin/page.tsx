@@ -86,7 +86,8 @@ export default function AdminPage() {
               </div>
               <div className="bg-white rounded-xl p-3 text-center shadow-sm">
                 <p className="text-2xl font-bold text-yellow-600">${totalRecaudado}</p>
-                <p className="text-xs text-gray-500">Recaudado</p>
+                <p className="text-xs text-gray-500">Cobrado</p>
+                <p className="text-[10px] text-gray-400">confirmado</p>
               </div>
               <div className="bg-white rounded-xl p-3 text-center shadow-sm">
                 <p className="text-2xl font-bold text-blue-600">{totalGanadoras}</p>
@@ -113,7 +114,7 @@ export default function AdminPage() {
             <div className="flex-1">
               <p className="font-bold text-gray-800">Jornadas Activas</p>
               <p className="text-sm text-gray-500">
-                {activas.length} jornada{activas.length !== 1 ? "s" : ""} · {totalQuinielas} quinielas · ${totalRecaudado}
+                {activas.length} jornada{activas.length !== 1 ? "s" : ""} · {totalQuinielas} confirmadas · ${totalRecaudado} cobrado
               </p>
             </div>
             <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full">

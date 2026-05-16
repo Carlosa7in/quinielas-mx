@@ -180,7 +180,7 @@ export default function JornadasPage() {
                   </div>
                   <div className="bg-yellow-50 rounded-lg p-2.5 text-center">
                     <p className="text-xl font-bold text-yellow-600">${j.recaudado}</p>
-                    <p className="text-xs text-gray-500">Recaudado</p>
+                    <p className="text-xs text-gray-500">Cobrado</p>
                   </div>
                   <div className="bg-blue-50 rounded-lg p-2.5 text-center">
                     <p className="text-xl font-bold text-blue-600">{j.totalPartidos}</p>
