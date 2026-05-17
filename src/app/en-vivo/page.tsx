@@ -311,7 +311,7 @@ export default function EnVivoPage() {
 
   useEffect(() => {
     cargar();
-    const id = setInterval(cargar, 30_000);
+    const id = setInterval(cargar, 15_000); // 15 s — más rápido para partidos en vivo
     return () => clearInterval(id);
   }, [cargar]);
 
@@ -412,7 +412,7 @@ export default function EnVivoPage() {
           </div>
         )}
 
-        <p className="text-center text-gray-700 text-[10px] pb-4">Actualiza cada 30 segundos</p>
+        <p className="text-center text-gray-700 text-[10px] pb-4">Actualiza cada 15 segundos</p>
       </div>
     </div>
   );
