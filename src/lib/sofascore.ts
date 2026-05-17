@@ -140,15 +140,10 @@ export async function findSofaEventId(
   const sid = await getSeasonId(tid);
   if (!sid) return null;
 
-  // Paralelo: last/0–last/5 + next/0 — cubre últimas 6 jornadas + próxima
-  // Todas las páginas van en caché 3 min, el primer cold-start tarda ~500 ms en paralelo
+  // Solo jornada en curso y la anterior + próxima — partidos en vivo siempre están aquí
   const pages = await Promise.all([
     fetchPage(tid, sid, "last/0"),
     fetchPage(tid, sid, "last/1"),
-    fetchPage(tid, sid, "last/2"),
-    fetchPage(tid, sid, "last/3"),
-    fetchPage(tid, sid, "last/4"),
-    fetchPage(tid, sid, "last/5"),
     fetchPage(tid, sid, "next/0"),
   ]);
 

@@ -437,16 +437,19 @@ export async function GET() {
             }
           }
 
-          // ── Eventos: SofaScore primero, ESPN como respaldo ────────────────────
-          // Se corre para CUALQUIER partido in/post, haya o no ESPN
+          // ── Eventos ──────────────────────────────────────────────────────────
+          // EN VIVO:     SofaScore (jornada actual) — más rico, tiene cambios/VAR
+          // TERMINADO:   ESPN details/keyMoments — datos ya consolidados
           if (estado === "in" || estado === "post") {
-              // ── Estrategia 1: SofaScore (más rico: cambios, VAR, periodo, asistencias) ──
-              // Busca por torneo específico según la liga del partido
+              // ── Estrategia 1: SofaScore — solo partidos EN VIVO ──────────────────
               const ligaPartido = p.partido_liga || j.liga;
-              const sofaId = await findSofaEventId(p.equipo_local, p.equipo_visita, ligaPartido);
-              const sofaIncs: SofaIncident[] = sofaId ? await fetchSofaIncidents(sofaId) : [];
+              let sofaId: number | null = null;
+              let sofaIncs: SofaIncident[] = [];
+              if (estado === "in") {
+                sofaId = await findSofaEventId(p.equipo_local, p.equipo_visita, ligaPartido);
+                sofaIncs = sofaId ? await fetchSofaIncidents(sofaId) : [];
+              }
               _sofaId = sofaId; _sofaIncs = sofaIncs.length;
-              console.log(`[live] ${p.equipo_local} vs ${p.equipo_visita} | liga="${ligaPartido}" sofaId=${sofaId ?? "null"} sofaIncs=${sofaIncs.length} espnEv=${espnEv?.id ?? "null"} estado=${estado}`);
 
               if (sofaIncs.length > 0) {
                 eventos = sofaIncs
