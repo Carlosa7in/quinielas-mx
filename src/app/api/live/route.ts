@@ -418,7 +418,26 @@ export async function GET() {
             if (localEspn?.team?.logo)  logoLocal  = localEspn.team.logo;
             if (visitaEspn?.team?.logo) logoVisita = visitaEspn.team.logo;
 
-            if (estado === "in" || estado === "post") {
+            if (estado === "post" && p.resultado) detalle = p.resultado;
+          } else {
+            // Sin ESPN: estado por fecha/DB
+            const ahora = Date.now();
+            const fechaMs = Number(p.fecha_epoch);
+            if (p.resultado) {
+              estado = "post";
+              detalle = p.resultado;
+            } else if (fechaMs <= ahora && ahora - fechaMs < 2 * 60 * 60 * 1000) {
+              estado = "in";
+            } else if (fechaMs > ahora) {
+              estado = "pre";
+            } else {
+              estado = "post";
+            }
+          }
+
+          // ── Eventos: SofaScore primero, ESPN como respaldo ────────────────────
+          // Se corre para CUALQUIER partido in/post, haya o no ESPN
+          if (estado === "in" || estado === "post") {
               // ── Estrategia 1: SofaScore (más rico: cambios, VAR, periodo, asistencias) ──
               // Busca por torneo específico según la liga del partido
               const ligaPartido = p.partido_liga || j.liga;
@@ -531,7 +550,7 @@ export async function GET() {
 
                     return { id: String(inc.id ?? clave), tipo, texto, minuto: min, jugador, asistente, jugadorSale };
                   });
-              } else {
+              } else if (espnEv) {
                 // ── Estrategia 2: details del scoreboard ESPN ────────────────────────────
                 const details = espnEv.competitions?.[0]?.details ?? [];
 
@@ -593,32 +612,16 @@ export async function GET() {
                 }
               }
 
-              // Notificación de partido terminado (siempre, independiente de la fuente)
+              // Notificación de partido terminado
+              const matchKey = espnEv?.id ?? `sofa-${sofaId ?? p.partido_id}`;
               if (estado === "post" && golesLocal !== null && golesVisita !== null) {
                 candidatos.push({
-                  clave: `final-${espnEv.id}`,
+                  clave: `final-${matchKey}`,
                   titulo: "⏱️ Partido terminado",
                   cuerpo: `${p.equipo_local} ${golesLocal} – ${golesVisita} ${p.equipo_visita}`,
-                  tag: `final-${espnEv.id}`,
+                  tag: `final-${matchKey}`,
                 });
               }
-            }
-
-            if (estado === "post" && p.resultado) detalle = p.resultado;
-          } else {
-            // Sin ESPN: estado por fecha
-            const ahora = Date.now();
-            const fechaMs = Number(p.fecha_epoch);
-            if (p.resultado) {
-              estado = "post";
-              detalle = p.resultado;
-            } else if (fechaMs <= ahora && ahora - fechaMs < 2 * 60 * 60 * 1000) {
-              estado = "in";
-            } else if (fechaMs > ahora) {
-              estado = "pre";
-            } else {
-              estado = "post";
-            }
           }
 
           return {
