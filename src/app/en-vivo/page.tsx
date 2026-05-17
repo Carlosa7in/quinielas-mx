@@ -161,6 +161,36 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
   );
 }
 
+function TestPushButton() {
+  const [estado, setEstado] = useState<"idle"|"loading"|"ok"|"error">("idle");
+  const [msg, setMsg] = useState("");
+
+  async function probar() {
+    setEstado("loading");
+    try {
+      const res = await fetch("/api/push/test", { method: "POST" });
+      const d = await res.json() as { ok: boolean; enviados?: number; error?: string };
+      if (d.ok) { setEstado("ok"); setMsg(`Enviada a ${d.enviados} dispositivo${d.enviados !== 1 ? "s" : ""}`); }
+      else { setEstado("error"); setMsg(d.error ?? "Error"); }
+    } catch { setEstado("error"); setMsg("Error de red"); }
+    setTimeout(() => { setEstado("idle"); setMsg(""); }, 4000);
+  }
+
+  if (estado === "ok")    return <span className="text-green-400 text-xs">{msg}</span>;
+  if (estado === "error") return <span className="text-red-400 text-xs">{msg}</span>;
+
+  return (
+    <button
+      onClick={probar}
+      disabled={estado === "loading"}
+      className="text-gray-600 hover:text-gray-400 text-xs transition-colors disabled:opacity-50"
+      title="Enviar notificación de prueba"
+    >
+      {estado === "loading" ? "..." : "Probar"}
+    </button>
+  );
+}
+
 function NotifBloqueadasBanner() {
   const [bloqueadas, setBloqueadas] = useState(false);
   useEffect(() => {
@@ -256,7 +286,10 @@ export default function EnVivoPage() {
             <p className="text-sm font-semibold text-white">Notificaciones de goles</p>
             <p className="text-xs text-gray-500">Aviso aunque no tengas la app abierta</p>
           </div>
-          <PushButton />
+          <div className="flex items-center gap-3">
+            <TestPushButton />
+            <PushButton />
+          </div>
         </div>
 
         {error && (
