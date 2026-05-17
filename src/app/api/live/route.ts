@@ -23,6 +23,12 @@ const LIGA_ESPN: Record<string, string> = {
   "Brasileirao":              "bra.1",
   "Brasileirao Serie A":      "bra.1",
   "Serie A Brasil":           "bra.1",
+  "Copa Libertadores":        "conmebol.libertadores",
+  "CONMEBOL Libertadores":    "conmebol.libertadores",
+  "Libertadores":             "conmebol.libertadores",
+  "Copa Sudamericana":        "conmebol.sudamericana",
+  "CONMEBOL Sudamericana":    "conmebol.sudamericana",
+  "Sudamericana":             "conmebol.sudamericana",
   "Liga Portuguesa":          "por.1",
   "Eredivisie":               "ned.1",
   "Liga Argentina":           "arg.1",
@@ -377,6 +383,7 @@ export async function GET() {
             resultadoDB: p.resultado ?? null,
             eventos,
             tieneEspn: !!espnEv,
+            _ligaDB: p.partido_liga, // DEBUG: quitar despues
           };
         }),
       );
