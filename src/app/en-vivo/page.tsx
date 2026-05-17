@@ -87,14 +87,14 @@ function EventoItem({ ev }: { ev: Evento }) {
 }
 
 function PartidoRow({ p }: { p: PartidoVivo }) {
-  const [expanded, setExpanded] = useState(p.estado === "in");
-
-  const estadoLabel =
-    p.estado === "in"   ? (p.reloj || "EN VIVO") :
-    p.estado === "post" ? (p.resultadoDB ?? "Final") :
-    fmtHora(p.fechaHora);
+  // Auto-expandir en vivo y terminados (para ver goles); pre queda colapsado
+  const [expanded, setExpanded] = useState(p.estado === "in" || p.estado === "post");
 
   const hayScore = p.local.goles !== null && p.visita.goles !== null;
+  const estadoLabel =
+    p.estado === "in"   ? (p.reloj || "EN VIVO") :
+    p.estado === "post" ? "Final" :
+    fmtHora(p.fechaHora);
 
   return (
     <div className={`rounded-xl overflow-hidden ${

@@ -326,12 +326,13 @@ export async function GET() {
             if (localEspn?.team?.logo)  logoLocal  = localEspn.team.logo;
             if (visitaEspn?.team?.logo) logoVisita = visitaEspn.team.logo;
 
-            if (estado === "in" && (slugPartido || slug)) {
+            if ((estado === "in" || estado === "post") && (slugPartido || slug)) {
               const kms = await fetchKeyMoments(slugPartido ?? slug ?? "", espnEv.id);
               eventos = kms.map(km => {
                 const tipo = tipoEvento(km);
                 const goalKey = `${espnEv.id}-${km.id ?? km.clock?.displayValue}`;
-                if (tipo === "gol" && km.id && !notifiedGoals.has(goalKey)) {
+                // Solo notificar push durante partidos EN VIVO (no al mostrar historial)
+                if (estado === "in" && tipo === "gol" && km.id && !notifiedGoals.has(goalKey)) {
                   notifiedGoals.add(goalKey);
                   nuevosGoles.push({
                     partido: `${p.equipo_local} vs ${p.equipo_visita}`,
