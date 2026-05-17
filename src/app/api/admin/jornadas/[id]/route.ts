@@ -16,12 +16,20 @@ export async function GET(
         select: {
           id: true, equipoLocal: true, equipoVisita: true,
           resultado: true, golesLocal: true, golesVisita: true, orden: true,
-          picks: { select: { prediccion: true } },
+          picks: {
+            select: { prediccion: true, quiniela: { select: { estadoPago: true } } },
+          },
         },
         orderBy: { orden: "asc" },
       },
       quinielas: {
-        select: { monto: true, estado: true, estadoPago: true, canal: true },
+        select: {
+          folio: true, monto: true, estado: true, estadoPago: true, canal: true,
+          aciertos: true, puntos: true,
+          nombreCliente: true,
+          cliente: { select: { nombre: true } },
+          usuario: { select: { nombre: true } },
+        },
       },
     },
   });
@@ -50,12 +58,13 @@ export async function GET(
     online:  jornada.quinielas.filter(q => q.canal !== "tienda").length,
   };
 
-  // Distribución de picks por partido
+  // Distribución de picks — solo quinielas confirmadas, valores "1"/"X"/"2"
   const partidos = jornada.partidos.map((p) => {
-    const total = p.picks.length;
-    const L = p.picks.filter(pk => pk.prediccion === "L").length;
-    const E = p.picks.filter(pk => pk.prediccion === "E").length;
-    const V = p.picks.filter(pk => pk.prediccion === "V").length;
+    const confirmedPicks = p.picks.filter(pk => pk.quiniela.estadoPago === "confirmado");
+    const total = confirmedPicks.length;
+    const L = confirmedPicks.filter(pk => pk.prediccion === "1").length;
+    const E = confirmedPicks.filter(pk => pk.prediccion === "X").length;
+    const V = confirmedPicks.filter(pk => pk.prediccion === "2").length;
     return {
       id: p.id,
       equipoLocal: p.equipoLocal,
@@ -73,11 +82,32 @@ export async function GET(
     };
   });
 
+  // Ordenar partidos por fechaHora
+  partidos.sort((a, b) => {
+    if (!a.fechaHora && !b.fechaHora) return a.orden - b.orden;
+    if (!a.fechaHora) return 1;
+    if (!b.fechaHora) return -1;
+    return new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime();
+  });
+
+  // Tabla de resultados — quinielas confirmadas con aciertos
+  const tablaResultados = jornada.quinielas
+    .filter(q => q.estadoPago === "confirmado")
+    .map(q => ({
+      folio: q.folio,
+      nombre: q.nombreCliente ?? q.cliente?.nombre ?? q.usuario?.nombre ?? "—",
+      aciertos: q.aciertos ?? 0,
+      puntos: q.puntos ?? 0,
+      estado: q.estado,
+    }))
+    .sort((a, b) => (b.aciertos ?? 0) - (a.aciertos ?? 0));
+
   return NextResponse.json({
     id: jornada.id, numero: jornada.numero, nombre: jornada.nombre,
     temporada: jornada.temporada, liga: jornada.liga, estado: jornada.estado,
     partidos,
     stats: { totalQuinielas, recaudado, ventas, pendientes, ganadoras, porCanal },
+    tablaResultados,
   });
 }
 

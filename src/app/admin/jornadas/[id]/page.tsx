@@ -18,10 +18,13 @@ type Stats = {
   porCanal: { tienda: number; online: number };
 };
 
+type ResultadoRow = { folio: string; nombre: string; aciertos: number; puntos: number; estado: string };
+
 type JornadaDetalle = {
   id: string; numero: number; nombre: string | null;
   temporada: string; liga: string; estado: string;
   partidos: Partido[]; stats: Stats;
+  tablaResultados: ResultadoRow[];
 };
 
 const fmt = (n: number) => n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -223,7 +226,7 @@ export default function JornadaDetallePage({ params }: { params: Promise<{ id: s
         {/* Partidos */}
         <div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">
-            Partidos · {jornada.partidos.length}
+            Partidos · {jornada.partidos.length} <span className="normal-case font-normal text-gray-300">(ordenados por hora)</span>
           </p>
           <div className="space-y-2">
             {jornada.partidos.map((p) => {
@@ -296,6 +299,19 @@ export default function JornadaDetallePage({ params }: { params: Promise<{ id: s
             })}
           </div>
         </div>
+
+        {/* Botón tabla de resultados */}
+        {jornada.tablaResultados?.length > 0 && (
+          <Link
+            href={`/admin/jornadas/${jornada.id}/resultados`}
+            className="block bg-white rounded-2xl shadow-sm p-4 hover:bg-amber-50 transition-colors text-center"
+          >
+            <p className="text-xl mb-1">🏆</p>
+            <p className="text-sm font-bold text-gray-800">Tabla de resultados</p>
+            <p className="text-xs text-gray-400 mt-0.5">{jornada.tablaResultados.length} quinielas · Ver clasificación completa</p>
+          </Link>
+        )}
+
       </div>
     </div>
   );

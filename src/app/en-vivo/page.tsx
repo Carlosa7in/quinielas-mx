@@ -57,8 +57,11 @@ type Evento = {
   texto: string;
   minuto?: string;
   jugador?: string;
-  asistente?: string;   // goles: quién asistió
-  jugadorSale?: string; // cambios: quién sale
+  asistente?: string;
+  jugadorSale?: string;
+  equipo?: string;
+  esPenal?: boolean;
+  esAutogol?: boolean;
 };
 type EquipoVivo = { nombre: string; logo: string; goles: string | null };
 type PartidoVivo = {
@@ -108,57 +111,130 @@ function TeamLogo({ logo, nombre }: { logo: string; nombre: string }) {
 }
 
 function EventoItem({ ev }: { ev: Evento }) {
-  const emoji = TIPO_EMOJI[ev.tipo];
-  const label = TIPO_LABEL[ev.tipo] ?? ev.tipo;
-
-  // Línea principal según tipo
-  let linea1: React.ReactNode;
-  let linea2: React.ReactNode = null;
-
-  if (ev.tipo === "cambio") {
-    linea1 = (
-      <>
-        {ev.jugador && <span className="text-green-400 text-xs font-semibold">↑ {ev.jugador} </span>}
-        {ev.jugadorSale && <span className="text-red-400 text-xs font-semibold">↓ {ev.jugadorSale}</span>}
-      </>
-    );
-  } else if (ev.tipo === "gol") {
-    linea1 = ev.jugador
-      ? <span className="text-white text-xs font-semibold">{ev.jugador}</span>
-      : <span className="text-gray-400 text-xs">{label}</span>;
-    if (ev.asistente) {
-      linea2 = <span className="text-gray-500 text-[10px]">Asist. {ev.asistente}</span>;
-    }
-    if (ev.texto && ev.texto !== "Gol") {
-      linea2 = <span className="text-gray-500 text-[10px]">{ev.texto}{ev.asistente ? ` · Asist. ${ev.asistente}` : ""}</span>;
-    }
-  } else if (ev.tipo === "inicio" || ev.tipo === "medio_tiempo" || ev.tipo === "periodo") {
-    // Usar texto legible si el texto raw es "KO"/"HT"/"FT"/etc.
-    const textoLegible = PERIODO_TEXTO[ev.texto ?? ""] ?? ev.texto ?? label;
-    linea1 = <span className="text-gray-400 text-xs font-semibold">{textoLegible}</span>;
-  } else if (ev.tipo === "var") {
-    linea1 = <span className="text-orange-300 text-xs font-semibold">{ev.texto || "Revisión VAR"}</span>;
-    if (ev.jugador) linea2 = <span className="text-gray-500 text-[10px]">{ev.jugador}</span>;
-  } else {
-    linea1 = (
-      <>
-        {ev.jugador && <span className="text-white text-xs font-semibold">{ev.jugador} </span>}
-        <span className="text-gray-400 text-xs">{label}</span>
-      </>
+  // ── Eventos de período: banner ancho ─────────────────────────────────────
+  if (ev.tipo === "inicio" || ev.tipo === "medio_tiempo" || ev.tipo === "periodo") {
+    const textoLegible = PERIODO_TEXTO[ev.texto ?? ""] ?? ev.texto ?? TIPO_LABEL[ev.tipo];
+    return (
+      <div className="flex items-center gap-2 py-2">
+        <div className="flex-1 h-px bg-white/10" />
+        <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest px-2">{textoLegible}</span>
+        <div className="flex-1 h-px bg-white/10" />
+      </div>
     );
   }
 
-  return (
-    <div className={`flex items-start gap-2 py-1.5 border-l-2 pl-3 ${TIPO_COLOR[ev.tipo] ?? "border-l-gray-600"}`}>
-      {/* Minuto */}
-      <span className="text-gray-600 text-[10px] w-10 shrink-0 tabular-nums pt-0.5">{ev.minuto ?? ""}</span>
-      {/* Emoji + contenido */}
-      <div className="flex items-start gap-1.5 flex-1">
-        {emoji && <span className="text-sm leading-none mt-0.5 shrink-0">{emoji}</span>}
-        <div className="flex-1">
-          <div>{linea1}</div>
-          {linea2 && <div className="mt-0.5">{linea2}</div>}
+  // ── Gol: máximo impacto ───────────────────────────────────────────────────
+  if (ev.tipo === "gol") {
+    const badge = ev.esAutogol ? "🤦 Autogol" : ev.esPenal ? "⚡ Penal" : null;
+    return (
+      <div className="rounded-lg bg-green-950/60 border border-green-500/30 px-3 py-2.5 my-1">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">⚽</span>
+            <div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-green-300 text-[11px] font-black uppercase tracking-wide">¡Gooool!</span>
+                {badge && (
+                  <span className="text-[9px] bg-green-800/60 text-green-300 px-1.5 py-0.5 rounded-full font-bold">{badge}</span>
+                )}
+              </div>
+              {ev.jugador && (
+                <p className="text-white text-sm font-black leading-tight">{ev.jugador}</p>
+              )}
+              {(ev.asistente || (ev.texto && ev.texto !== "Gol" && ev.texto !== "Goal")) && (
+                <p className="text-green-400/70 text-[10px] mt-0.5">
+                  {ev.texto && ev.texto !== "Gol" && ev.texto !== "Goal" ? ev.texto : ""}
+                  {ev.asistente ? `${ev.texto ? " · " : ""}Asist. ${ev.asistente}` : ""}
+                </p>
+              )}
+              {ev.equipo && <p className="text-gray-500 text-[10px]">{ev.equipo}</p>}
+            </div>
+          </div>
+          <span className="text-green-400/60 text-xs font-bold tabular-nums shrink-0">{ev.minuto}</span>
         </div>
+      </div>
+    );
+  }
+
+  // ── Tarjeta roja: impacto fuerte ──────────────────────────────────────────
+  if (ev.tipo === "roja") {
+    return (
+      <div className="rounded-lg bg-red-950/60 border border-red-500/40 px-3 py-2 my-0.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🟥</span>
+            <div>
+              <span className="text-red-300 text-[11px] font-black uppercase tracking-wide">¡Expulsado!</span>
+              {ev.jugador && <p className="text-white text-sm font-bold">{ev.jugador}</p>}
+              {ev.equipo && <p className="text-gray-500 text-[10px]">{ev.equipo}</p>}
+            </div>
+          </div>
+          <span className="text-red-400/60 text-xs font-bold tabular-nums shrink-0">{ev.minuto}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Amarilla ──────────────────────────────────────────────────────────────
+  if (ev.tipo === "amarilla") {
+    return (
+      <div className={`flex items-center gap-2 py-1.5 border-l-2 pl-3 border-l-yellow-400`}>
+        <span className="text-gray-500 text-[10px] w-10 shrink-0 tabular-nums">{ev.minuto}</span>
+        <span className="text-base shrink-0">🟡</span>
+        <div className="flex-1">
+          {ev.jugador
+            ? <span className="text-yellow-200 text-xs font-semibold">{ev.jugador}</span>
+            : <span className="text-gray-400 text-xs">Tarjeta amarilla</span>}
+          {ev.equipo && <p className="text-gray-600 text-[10px]">{ev.equipo}</p>}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Cambio ────────────────────────────────────────────────────────────────
+  if (ev.tipo === "cambio") {
+    return (
+      <div className="flex items-center gap-2 py-1.5 border-l-2 pl-3 border-l-blue-400">
+        <span className="text-gray-500 text-[10px] w-10 shrink-0 tabular-nums">{ev.minuto}</span>
+        <span className="text-base shrink-0">🔄</span>
+        <div className="flex-1 text-xs">
+          {ev.jugador && <span className="text-green-400 font-semibold">↑ {ev.jugador}</span>}
+          {ev.jugador && ev.jugadorSale && <span className="text-gray-600">  </span>}
+          {ev.jugadorSale && <span className="text-red-400 font-semibold">↓ {ev.jugadorSale}</span>}
+        </div>
+      </div>
+    );
+  }
+
+  // ── VAR ───────────────────────────────────────────────────────────────────
+  if (ev.tipo === "var") {
+    return (
+      <div className="rounded-lg bg-orange-950/40 border border-orange-500/20 px-3 py-2 my-0.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-base">📺</span>
+            <div>
+              <span className="text-orange-300 text-[11px] font-black uppercase tracking-wide">Revisión VAR</span>
+              {ev.texto && ev.texto !== "VAR" && (
+                <p className="text-orange-200/70 text-xs mt-0.5">{ev.texto}</p>
+              )}
+              {ev.jugador && <p className="text-gray-400 text-[10px]">{ev.jugador}</p>}
+            </div>
+          </div>
+          <span className="text-orange-400/60 text-xs font-bold tabular-nums shrink-0">{ev.minuto}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Fallback genérico ─────────────────────────────────────────────────────
+  return (
+    <div className={`flex items-center gap-2 py-1.5 border-l-2 pl-3 ${TIPO_COLOR[ev.tipo] ?? "border-l-gray-600"}`}>
+      <span className="text-gray-600 text-[10px] w-10 shrink-0 tabular-nums">{ev.minuto}</span>
+      <span className="text-sm shrink-0">{TIPO_EMOJI[ev.tipo] ?? "•"}</span>
+      <div className="flex-1 text-xs text-gray-400">
+        {ev.jugador && <span className="text-white font-semibold">{ev.jugador} </span>}
+        {ev.texto || TIPO_LABEL[ev.tipo] || ev.tipo}
       </div>
     </div>
   );

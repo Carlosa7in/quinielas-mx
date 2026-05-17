@@ -51,7 +51,7 @@ type EspnDetail = {
   type?: { id?: string; text?: string };
   text?: string;
   clock?: { value?: number; displayValue?: string };
-  team?: { id?: string };
+  team?: { id?: string; displayName?: string; location?: string; name?: string };
   scoringPlay?: boolean;
   redCard?: boolean;
   yellowCard?: boolean;
@@ -393,6 +393,10 @@ export async function GET() {
           let detalle = "";
           let reloj = "";
           let periodo = 0;
+          // Si el partido empezó hace más de 3h y no está en ESPN como "in", no vale la pena notificar
+          const fechaMs = Number(p.fecha_epoch);
+          const ahora = Date.now();
+          const esReciente = ahora - fechaMs < 3 * 60 * 60 * 1000; // últimas 3 horas
           let golesLocal: string | null = p.goles_local !== null ? String(p.goles_local) : null;
           let golesVisita: string | null = p.goles_visita !== null ? String(p.goles_visita) : null;
           // Logos: BD > ESPN teams endpoint > vacío
@@ -430,8 +434,6 @@ export async function GET() {
             }
           } else {
             // Sin ESPN: estado por fecha/DB
-            const ahora = Date.now();
-            const fechaMs = Number(p.fecha_epoch);
             if (p.resultado) {
               estado = "post";
               detalle = p.resultado;
@@ -476,7 +478,7 @@ export async function GET() {
                       else if (d.scoringPlay) tipo = "gol";
                       else tipo = d.type?.text?.toLowerCase() ?? "evento";
 
-                      if (estado === "in" && (tipo === "gol" || tipo === "roja") && d.id) {
+                      if (estado === "in" && esReciente && (tipo === "gol" || tipo === "roja") && d.id) {
                         const jugador = d.athletesInvolved?.[0]?.displayName;
                         const min = d.clock?.displayValue;
                         const clave = `${tipo}-${espnEv.id}-${d.id}`;
@@ -494,6 +496,9 @@ export async function GET() {
                         texto: d.text ?? d.type?.text ?? "",
                         minuto: d.clock?.displayValue,
                         jugador: d.athletesInvolved?.[0]?.displayName,
+                        equipo: d.team?.displayName ?? d.team?.location ?? d.team?.name,
+                        esPenal: d.penaltyKick ?? false,
+                        esAutogol: d.ownGoal ?? false,
                       };
                     });
                 } else if (slugPartido || slug) {
@@ -501,7 +506,7 @@ export async function GET() {
                   const kms = await fetchKeyMoments(slugPartido ?? slug ?? "", espnEv.id);
                   eventos = kms.map(km => {
                     const tipo = tipoEvento(km);
-                    if (estado === "in" && (tipo === "gol" || tipo === "roja") && km.id) {
+                    if (estado === "in" && esReciente && (tipo === "gol" || tipo === "roja") && km.id) {
                       const jugador = km.athletesInvolved?.[0]?.displayName;
                       const min = km.clock?.displayValue;
                       const clave = `${tipo}-${espnEv.id}-${km.id}`;
@@ -519,20 +524,60 @@ export async function GET() {
                       texto: km.text ?? km.type?.text ?? "",
                       minuto: km.clock?.displayValue,
                       jugador: km.athletesInvolved?.[0]?.displayName,
+                      equipo: (km as { team?: { displayName?: string } }).team?.displayName,
                     };
                   });
                 }
               }
 
-              // Notificación de partido terminado
+              // Notificación de partido terminado — solo si es reciente (< 3h)
               const matchKey = espnEv?.id ?? p.partido_id;
-              if (estado === "post" && golesLocal !== null && golesVisita !== null) {
+              if (estado === "post" && golesLocal !== null && golesVisita !== null && esReciente) {
                 candidatos.push({
                   clave: `final-${matchKey}`,
                   titulo: "⏱️ Partido terminado",
                   cuerpo: `${p.equipo_local} ${golesLocal} – ${golesVisita} ${p.equipo_visita}`,
                   tag: `final-${matchKey}`,
                 });
+              }
+
+              // Notificaciones de período (silbatazo, medio tiempo, inicio 2do) — solo in + reciente
+              if (estado === "in" && espnEv && esReciente) {
+                const espnSlug = slugPartido ?? slug ?? "";
+                // Silbatazo inicial: primer minuto del partido (periodo 1, reloj < 3 min)
+                if (periodo === 1 && reloj) {
+                  const mins = parseInt(reloj.split(":")[0] ?? "99");
+                  if (mins <= 3) {
+                    candidatos.push({
+                      clave: `kickoff-${espnEv.id}`,
+                      titulo: "🏁 ¡Arranca el partido!",
+                      cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
+                      tag: `kickoff-${espnEv.id}`,
+                    });
+                  }
+                }
+                // Medio tiempo: periodo 2 recién iniciado (detalle contiene "HT" o reloj < 3 min en periodo 2)
+                if (periodo === 2 && reloj) {
+                  const mins = parseInt(reloj.split(":")[0] ?? "99");
+                  if (mins <= 3) {
+                    candidatos.push({
+                      clave: `secondhalf-${espnEv.id}`,
+                      titulo: "▶️ ¡Empieza el 2° tiempo!",
+                      cuerpo: `${p.equipo_local} ${golesLocal ?? 0} – ${golesVisita ?? 0} ${p.equipo_visita}`,
+                      tag: `secondhalf-${espnEv.id}`,
+                    });
+                  }
+                }
+                // Detalle de ESPN indica "Halftime" o "HT"
+                if (detalle && /half.?time|HT\b/i.test(detalle)) {
+                  candidatos.push({
+                    clave: `halftime-${espnEv.id}`,
+                    titulo: "⏸️ Medio tiempo",
+                    cuerpo: `${p.equipo_local} ${golesLocal ?? 0} – ${golesVisita ?? 0} ${p.equipo_visita}`,
+                    tag: `halftime-${espnEv.id}`,
+                  });
+                }
+                void espnSlug; // usado en fetchKeyMoments, silencia unused warning
               }
           }
 
