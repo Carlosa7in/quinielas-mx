@@ -8,8 +8,8 @@ type PartidoVivo = {
   fechaHora: string;
   estado: string;
   reloj: string;
-  local: { nombre: string };
-  visita: { nombre: string };
+  local: { nombre: string; logo: string; goles: string | null };
+  visita: { nombre: string; logo: string; goles: string | null };
 };
 type JornadaViva = { id: string; nombre: string; partidos: PartidoVivo[] };
 
@@ -90,8 +90,6 @@ export function LiveBadge() {
 
   // --- Estado 1: HAY PARTIDOS EN VIVO ---
   if (enVivo.length > 0) {
-    const partido = enVivo[0];
-    const jornada = jornadas.find(j => j.partidos.some(p => p.id === partido.id));
     return (
       <Link
         href="/en-vivo"
@@ -101,27 +99,43 @@ export function LiveBadge() {
         <div className="absolute inset-0 opacity-10"
           style={{ backgroundImage: "repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 12px)", backgroundSize: "17px 17px" }}
         />
-        <div className="relative px-5 py-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-300 animate-pulse" />
-              <span className="text-red-200 text-xs font-black uppercase tracking-widest">En Vivo</span>
-            </div>
-            {jornada && <span className="text-red-300/60 text-[10px] font-semibold">{jornada.nombre}</span>}
+        <div className="relative px-4 py-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-300 animate-pulse" />
+            <span className="text-red-200 text-xs font-black uppercase tracking-widest">En Vivo — {enVivo.length} partido{enVivo.length > 1 ? "s" : ""}</span>
           </div>
 
-          <p className="text-white font-black text-lg leading-tight text-left">
-            {partido.local.nombre} <span className="text-red-300/70 font-light">vs</span> {partido.visita.nombre}
-          </p>
-          {partido.reloj && (
-            <p className="text-red-200/70 text-xs mt-0.5 text-left">{partido.reloj}</p>
-          )}
-          {enVivo.length > 1 && (
-            <p className="text-red-300/60 text-xs mt-1 text-left">+{enVivo.length - 1} partido{enVivo.length > 2 ? "s" : ""} mas en vivo</p>
-          )}
+          <div className="space-y-2">
+            {enVivo.map(p => (
+              <div key={p.id} className="flex items-center gap-2">
+                {/* Local */}
+                <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
+                  <span className="text-white text-sm font-bold truncate text-right">{p.local.nombre}</span>
+                  {p.local.logo
+                    ? <img src={p.local.logo} alt="" className="w-6 h-6 object-contain shrink-0" />
+                    : <span className="w-6 h-6 rounded-full bg-red-900/50 shrink-0 flex items-center justify-center text-[8px] font-black text-red-200">{p.local.nombre.slice(0,2).toUpperCase()}</span>}
+                </div>
+                {/* Score */}
+                <div className="flex items-center gap-1 shrink-0 min-w-[56px] justify-center">
+                  {p.local.goles !== null && p.visita.goles !== null ? (
+                    <span className="text-white font-black text-base tabular-nums">{p.local.goles} - {p.visita.goles}</span>
+                  ) : (
+                    <span className="text-red-300/60 text-sm font-bold">{p.reloj || "vs"}</span>
+                  )}
+                </div>
+                {/* Visita */}
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  {p.visita.logo
+                    ? <img src={p.visita.logo} alt="" className="w-6 h-6 object-contain shrink-0" />
+                    : <span className="w-6 h-6 rounded-full bg-red-900/50 shrink-0 flex items-center justify-center text-[8px] font-black text-red-200">{p.visita.nombre.slice(0,2).toUpperCase()}</span>}
+                  <span className="text-white text-sm font-bold truncate">{p.visita.nombre}</span>
+                </div>
+              </div>
+            ))}
+          </div>
 
-          <div className="flex items-center gap-1.5 mt-3 text-red-200 text-xs font-bold group-hover:gap-2.5 transition-all">
-            <span>Ver resultados en tiempo real</span>
+          <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-red-800/50 text-red-200 text-xs font-bold group-hover:gap-2.5 transition-all">
+            <span>Ver en tiempo real</span>
             <span className="group-hover:translate-x-1 transition-transform">→</span>
           </div>
         </div>

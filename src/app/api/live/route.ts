@@ -177,6 +177,7 @@ export async function GET() {
     jornada_id: string; jornada_numero: number; jornada_nombre: string | null;
     jornada_liga: string; jornada_estado: string;
     partido_id: string; equipo_local: string; equipo_visita: string;
+    partido_liga: string;
     fecha_hora: string | null; fecha_epoch: string; resultado: string | null;
     goles_local: number | null; goles_visita: number | null; orden: number;
     logo_local: string | null; logo_visita: string | null;
@@ -192,6 +193,7 @@ export async function GET() {
       p.id              AS partido_id,
       p."equipoLocal"   AS equipo_local,
       p."equipoVisita"  AS equipo_visita,
+      p.liga            AS partido_liga,
       to_char(p."fechaHora" AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS fecha_hora,
       (EXTRACT(EPOCH FROM p."fechaHora") * 1000)::bigint AS fecha_epoch,
       p.resultado,
@@ -230,9 +232,12 @@ export async function GET() {
   }
 
   // 2. Cargar scoreboard ESPN por liga unica
-  const ligasSlugs = [...new Set(
-    jornadas.map(j => LIGA_ESPN[j.liga]).filter(Boolean)
-  )] as string[];
+  // Incluir ligas de jornada + ligas individuales de cada partido (para jornadas Mixtas)
+  const allRows = jornadas.flatMap(j => j.partidos);
+  const ligasSlugs = [...new Set([
+    ...jornadas.map(j => LIGA_ESPN[j.liga]),
+    ...allRows.map(p => LIGA_ESPN[p.partido_liga]),
+  ].filter(Boolean))] as string[];
 
   const espnEventosPorLiga: Record<string, EspnEvent[]> = {};
   await Promise.all(
@@ -267,8 +272,17 @@ export async function GET() {
 
       const partidos = await Promise.all(
         j.partidos.map(async (p) => {
+          // Liga del partido (puede diferir de la jornada en jornadas Mixtas)
+          const slugPartido = LIGA_ESPN[p.partido_liga] ?? slug;
+          const espnEventsPartido = slugPartido
+            ? [...(espnEventosPorLiga[slugPartido] ?? []), ...(slug ? espnEventosPorLiga[slug] ?? [] : [])]
+            : espnEvents;
+          const logoMapPartido = slugPartido
+            ? new Map([...(logoMapPorLiga[slugPartido] ?? new Map()), ...logoMap])
+            : logoMap;
+
           // Buscar evento ESPN que coincida con los equipos
-          const espnEv = espnEvents.find(ev => {
+          const espnEv = espnEventsPartido.find(ev => {
             const comps = ev.competitions?.[0]?.competitors ?? [];
             const home = comps.find(c => c.homeAway === "home");
             const away = comps.find(c => c.homeAway === "away");
@@ -288,8 +302,8 @@ export async function GET() {
           let golesLocal: string | null = p.goles_local !== null ? String(p.goles_local) : null;
           let golesVisita: string | null = p.goles_visita !== null ? String(p.goles_visita) : null;
           // Logos: BD > ESPN teams endpoint > vacío
-          let logoLocal  = p.logo_local  ?? findLogo(logoMap, p.equipo_local);
-          let logoVisita = p.logo_visita ?? findLogo(logoMap, p.equipo_visita);
+          let logoLocal  = p.logo_local  ?? findLogo(logoMapPartido, p.equipo_local);
+          let logoVisita = p.logo_visita ?? findLogo(logoMapPartido, p.equipo_visita);
           let eventos: unknown[] = [];
 
           if (espnEv) {
@@ -312,8 +326,8 @@ export async function GET() {
             if (localEspn?.team?.logo)  logoLocal  = localEspn.team.logo;
             if (visitaEspn?.team?.logo) logoVisita = visitaEspn.team.logo;
 
-            if (estado === "in" && slug) {
-              const kms = await fetchKeyMoments(slug, espnEv.id);
+            if (estado === "in" && (slugPartido || slug)) {
+              const kms = await fetchKeyMoments(slugPartido ?? slug ?? "", espnEv.id);
               eventos = kms.map(km => {
                 const tipo = tipoEvento(km);
                 const goalKey = `${espnEv.id}-${km.id ?? km.clock?.displayValue}`;
