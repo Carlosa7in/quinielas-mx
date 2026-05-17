@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { RefreshCw, Clock, ArrowLeft, BellOff } from "lucide-react";
 import { PushButton } from "@/components/PushButton";
@@ -14,8 +14,21 @@ const TIPO_COLOR: Record<string, string> = {
   gol:          "border-l-green-400",
   amarilla:     "border-l-yellow-400",
   roja:         "border-l-red-500",
-  cambio:       "border-l-gray-600",
-  medio_tiempo: "border-l-blue-400",
+  cambio:       "border-l-blue-400",
+  medio_tiempo: "border-l-indigo-400",
+  inicio:       "border-l-indigo-400",
+  periodo:      "border-l-indigo-400",
+  var:          "border-l-orange-400",
+};
+
+const TIPO_EMOJI: Record<string, string> = {
+  gol:          "⚽",
+  amarilla:     "🟡",
+  roja:         "🟥",
+  cambio:       "🔄",
+  medio_tiempo: "⏸️",
+  inicio:       "🏁",
+  var:          "📺",
 };
 
 const TIPO_LABEL: Record<string, string> = {
@@ -24,9 +37,20 @@ const TIPO_LABEL: Record<string, string> = {
   roja:         "Roja",
   cambio:       "Cambio",
   medio_tiempo: "Medio tiempo",
+  inicio:       "Inicio",
+  periodo:      "Periodo",
+  var:          "VAR",
 };
 
-type Evento = { id?: string; tipo: string; texto: string; minuto?: string; jugador?: string };
+type Evento = {
+  id?: string;
+  tipo: string;
+  texto: string;
+  minuto?: string;
+  jugador?: string;
+  asistente?: string;   // goles: quién asistió
+  jugadorSale?: string; // cambios: quién sale
+};
 type EquipoVivo = { nombre: string; logo: string; goles: string | null };
 type PartidoVivo = {
   id: string;
@@ -75,12 +99,55 @@ function TeamLogo({ logo, nombre }: { logo: string; nombre: string }) {
 }
 
 function EventoItem({ ev }: { ev: Evento }) {
+  const emoji = TIPO_EMOJI[ev.tipo];
+  const label = TIPO_LABEL[ev.tipo] ?? ev.tipo;
+
+  // Línea principal según tipo
+  let linea1: React.ReactNode;
+  let linea2: React.ReactNode = null;
+
+  if (ev.tipo === "cambio") {
+    linea1 = (
+      <>
+        {ev.jugador && <span className="text-green-400 text-xs font-semibold">↑ {ev.jugador} </span>}
+        {ev.jugadorSale && <span className="text-red-400 text-xs font-semibold">↓ {ev.jugadorSale}</span>}
+      </>
+    );
+  } else if (ev.tipo === "gol") {
+    linea1 = ev.jugador
+      ? <span className="text-white text-xs font-semibold">{ev.jugador}</span>
+      : <span className="text-gray-400 text-xs">{label}</span>;
+    if (ev.asistente) {
+      linea2 = <span className="text-gray-500 text-[10px]">Asist. {ev.asistente}</span>;
+    }
+    if (ev.texto && ev.texto !== "Gol") {
+      linea2 = <span className="text-gray-500 text-[10px]">{ev.texto}{ev.asistente ? ` · Asist. ${ev.asistente}` : ""}</span>;
+    }
+  } else if (ev.tipo === "inicio" || ev.tipo === "medio_tiempo" || ev.tipo === "periodo") {
+    linea1 = <span className="text-gray-400 text-xs font-semibold">{ev.texto || label}</span>;
+  } else if (ev.tipo === "var") {
+    linea1 = <span className="text-orange-300 text-xs font-semibold">{ev.texto || "Revisión VAR"}</span>;
+    if (ev.jugador) linea2 = <span className="text-gray-500 text-[10px]">{ev.jugador}</span>;
+  } else {
+    linea1 = (
+      <>
+        {ev.jugador && <span className="text-white text-xs font-semibold">{ev.jugador} </span>}
+        <span className="text-gray-400 text-xs">{label}</span>
+      </>
+    );
+  }
+
   return (
     <div className={`flex items-start gap-2 py-1.5 border-l-2 pl-3 ${TIPO_COLOR[ev.tipo] ?? "border-l-gray-600"}`}>
-      <span className="text-gray-500 text-xs w-10 shrink-0 tabular-nums">{ev.minuto ?? ""}</span>
-      <div className="flex-1">
-        {ev.jugador && <span className="text-white text-xs font-semibold">{ev.jugador} </span>}
-        <span className="text-gray-400 text-xs">{TIPO_LABEL[ev.tipo] ?? ev.tipo}</span>
+      {/* Minuto */}
+      <span className="text-gray-600 text-[10px] w-10 shrink-0 tabular-nums pt-0.5">{ev.minuto ?? ""}</span>
+      {/* Emoji + contenido */}
+      <div className="flex items-start gap-1.5 flex-1">
+        {emoji && <span className="text-sm leading-none mt-0.5 shrink-0">{emoji}</span>}
+        <div className="flex-1">
+          <div>{linea1}</div>
+          {linea2 && <div className="mt-0.5">{linea2}</div>}
+        </div>
       </div>
     </div>
   );

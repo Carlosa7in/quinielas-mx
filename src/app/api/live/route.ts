@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/prisma";
+import { findSofaEventId, fetchSofaIncidents, type SofaIncident } from "@/lib/sofascore";
 
 // Siempre dinamico - nunca cachear en build time
 export const dynamic = "force-dynamic";
@@ -418,69 +419,181 @@ export async function GET() {
             if (visitaEspn?.team?.logo) logoVisita = visitaEspn.team.logo;
 
             if (estado === "in" || estado === "post") {
-              // Estrategia 1: details del scoreboard (Liga MX y la mayoría de ligas ESPN)
-              // Ya están en el fetch inicial — sin costo extra de red
-              const details = espnEv.competitions?.[0]?.details ?? [];
+              const fechaPartido = new Date(Number(p.fecha_epoch));
 
-              if (details.length > 0) {
-                eventos = details
-                  .filter(d => d.scoringPlay || d.yellowCard || d.redCard)
-                  .map(d => {
+              // ── Estrategia 1: SofaScore (más rico: cambios, VAR, periodo, asistencias) ──
+              const sofaId = await findSofaEventId(p.equipo_local, p.equipo_visita, fechaPartido);
+              const sofaIncs: SofaIncident[] = sofaId ? await fetchSofaIncidents(sofaId) : [];
+
+              if (sofaIncs.length > 0) {
+                eventos = sofaIncs
+                  .filter(inc => inc.incidentType !== "injuryTime") // minutos extra: irrelevante en timeline
+                  .map(inc => {
+                    const min = inc.addedTime
+                      ? `${inc.time}+${inc.addedTime}'`
+                      : `${inc.time}'`;
+                    const clave = `sofa-${sofaId}-${inc.incidentType}-${inc.id ?? inc.time}-${inc.addedTime ?? 0}`;
+
                     let tipo: string;
-                    if (d.redCard)          tipo = "roja";
-                    else if (d.yellowCard)  tipo = "amarilla";
-                    else if (d.scoringPlay) tipo = "gol";
-                    else tipo = d.type?.text?.toLowerCase() ?? "evento";
+                    let jugador: string | undefined;
+                    let asistente: string | undefined;
+                    let jugadorSale: string | undefined;
+                    let texto = "";
 
-                    // Candidatos a notificar: goles y rojas en partidos en vivo
-                    if (estado === "in" && (tipo === "gol" || tipo === "roja") && d.id) {
-                      const jugador = d.athletesInvolved?.[0]?.displayName;
-                      const min = d.clock?.displayValue;
+                    if (inc.incidentType === "goal") {
+                      tipo = "gol";
+                      jugador = inc.player?.name;
+                      asistente = inc.playerAssist?.name;
+                      if (inc.incidentClass === "ownGoal") texto = "Autogol";
+                      else if (inc.incidentClass === "penalty") texto = "Penal";
+
+                      // Push: goles en vivo
+                      if (estado === "in") {
+                        const extras = [
+                          inc.incidentClass === "ownGoal" ? "autogol" : null,
+                          inc.incidentClass === "penalty" ? "penal" : null,
+                          asistente ? `asist. ${asistente}` : null,
+                        ].filter(Boolean).join(" · ");
+                        candidatos.push({
+                          clave,
+                          titulo: `⚽ Gol${jugador ? ` de ${jugador}` : ""} (${min})`,
+                          cuerpo: `${p.equipo_local} vs ${p.equipo_visita}${extras ? `\n${extras}` : ""}`,
+                          tag: clave,
+                        });
+                      }
+                    } else if (inc.incidentType === "card") {
+                      tipo = inc.incidentClass === "red" || inc.incidentClass === "yellowRed" ? "roja" : "amarilla";
+                      jugador = inc.player?.name;
+                      if (inc.incidentClass === "yellowRed") texto = "Doble amarilla";
+
+                      // Push: rojas y amarillas en vivo
+                      if (estado === "in") {
+                        const emoji = tipo === "roja" ? "🟥" : "🟡";
+                        const label = tipo === "roja"
+                          ? (inc.incidentClass === "yellowRed" ? "Doble amarilla" : "Expulsión")
+                          : "Amarilla";
+                        candidatos.push({
+                          clave,
+                          titulo: `${emoji} ${label}${jugador ? ` – ${jugador}` : ""} (${min})`,
+                          cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
+                          tag: clave,
+                        });
+                      }
+                    } else if (inc.incidentType === "substitution") {
+                      tipo = "cambio";
+                      jugador = inc.playerIn?.name;
+                      jugadorSale = inc.playerOut?.name;
+                      texto = jugadorSale ? `↑ ${jugador ?? ""} ↓ ${jugadorSale}` : "";
+                    } else if (inc.incidentType === "varDecision") {
+                      tipo = "var";
+                      jugador = inc.player?.name;
+                      texto = inc.description ?? "Revisión VAR";
+                      // Push VAR en vivo
+                      if (estado === "in") {
+                        candidatos.push({
+                          clave,
+                          titulo: `📺 VAR (${min})`,
+                          cuerpo: `${texto}${jugador ? ` – ${jugador}` : ""} | ${p.equipo_local} vs ${p.equipo_visita}`,
+                          tag: clave,
+                        });
+                      }
+                    } else if (inc.incidentType === "period") {
+                      if (inc.text === "KO") {
+                        tipo = "inicio";
+                        texto = "Silbatazo inicial";
+                        if (estado === "in") {
+                          candidatos.push({
+                            clave,
+                            titulo: "🏁 ¡Empieza el partido!",
+                            cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
+                            tag: clave,
+                          });
+                        }
+                      } else if (inc.text === "HT") {
+                        tipo = "medio_tiempo";
+                        texto = "Medio tiempo";
+                        if (estado === "in") {
+                          candidatos.push({
+                            clave,
+                            titulo: `⏸️ Medio tiempo`,
+                            cuerpo: `${p.equipo_local} ${golesLocal ?? 0} – ${golesVisita ?? 0} ${p.equipo_visita}`,
+                            tag: clave,
+                          });
+                        }
+                      } else {
+                        tipo = "periodo";
+                        texto = inc.text ?? "";
+                      }
+                    } else {
+                      tipo = inc.incidentType;
+                      texto = inc.description ?? inc.text ?? "";
+                    }
+
+                    return { id: String(inc.id ?? clave), tipo, texto, minuto: min, jugador, asistente, jugadorSale };
+                  });
+              } else {
+                // ── Estrategia 2: details del scoreboard ESPN ────────────────────────────
+                const details = espnEv.competitions?.[0]?.details ?? [];
+
+                if (details.length > 0) {
+                  eventos = details
+                    .filter(d => d.scoringPlay || d.yellowCard || d.redCard)
+                    .map(d => {
+                      let tipo: string;
+                      if (d.redCard)          tipo = "roja";
+                      else if (d.yellowCard)  tipo = "amarilla";
+                      else if (d.scoringPlay) tipo = "gol";
+                      else tipo = d.type?.text?.toLowerCase() ?? "evento";
+
+                      if (estado === "in" && (tipo === "gol" || tipo === "roja") && d.id) {
+                        const jugador = d.athletesInvolved?.[0]?.displayName;
+                        const min = d.clock?.displayValue;
+                        const clave = `${tipo}-${espnEv.id}-${d.id}`;
+                        candidatos.push({
+                          clave,
+                          titulo: tipo === "gol"
+                            ? `⚽ Gol${jugador ? ` de ${jugador}` : ""}${min ? ` (${min})` : ""}`
+                            : `🟥 Roja${jugador ? ` – ${jugador}` : ""}${min ? ` (${min})` : ""}`,
+                          cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
+                          tag: clave,
+                        });
+                      }
+                      return {
+                        id: d.id, tipo,
+                        texto: d.text ?? d.type?.text ?? "",
+                        minuto: d.clock?.displayValue,
+                        jugador: d.athletesInvolved?.[0]?.displayName,
+                      };
+                    });
+                } else if (slugPartido || slug) {
+                  // ── Estrategia 3: summary ESPN (UCL/CONMEBOL con keyMoments) ────────
+                  const kms = await fetchKeyMoments(slugPartido ?? slug ?? "", espnEv.id);
+                  eventos = kms.map(km => {
+                    const tipo = tipoEvento(km);
+                    if (estado === "in" && (tipo === "gol" || tipo === "roja") && km.id) {
+                      const jugador = km.athletesInvolved?.[0]?.displayName;
+                      const min = km.clock?.displayValue;
+                      const clave = `${tipo}-${espnEv.id}-${km.id}`;
                       candidatos.push({
-                        clave: `${tipo}-${espnEv.id}-${d.id}`,
+                        clave,
                         titulo: tipo === "gol"
                           ? `⚽ Gol${jugador ? ` de ${jugador}` : ""}${min ? ` (${min})` : ""}`
                           : `🟥 Roja${jugador ? ` – ${jugador}` : ""}${min ? ` (${min})` : ""}`,
                         cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
-                        tag: `${tipo}-${espnEv.id}-${d.id}`,
+                        tag: clave,
                       });
                     }
                     return {
-                      id: d.id, tipo,
-                      texto: d.text ?? d.type?.text ?? "",
-                      minuto: d.clock?.displayValue,
-                      jugador: d.athletesInvolved?.[0]?.displayName,
-                      equipoId: d.team?.id,
+                      id: km.id, tipo,
+                      texto: km.text ?? km.type?.text ?? "",
+                      minuto: km.clock?.displayValue,
+                      jugador: km.athletesInvolved?.[0]?.displayName,
                     };
                   });
-              } else if (slugPartido || slug) {
-                // Estrategia 2: fallback al summary (UCL y ligas con keyMoments/scoringPlays)
-                const kms = await fetchKeyMoments(slugPartido ?? slug ?? "", espnEv.id);
-                eventos = kms.map(km => {
-                  const tipo = tipoEvento(km);
-                  if (estado === "in" && (tipo === "gol" || tipo === "roja") && km.id) {
-                    const jugador = km.athletesInvolved?.[0]?.displayName;
-                    const min = km.clock?.displayValue;
-                    candidatos.push({
-                      clave: `${tipo}-${espnEv.id}-${km.id}`,
-                      titulo: tipo === "gol"
-                        ? `⚽ Gol${jugador ? ` de ${jugador}` : ""}${min ? ` (${min})` : ""}`
-                        : `🟥 Roja${jugador ? ` – ${jugador}` : ""}${min ? ` (${min})` : ""}`,
-                      cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
-                      tag: `${tipo}-${espnEv.id}-${km.id}`,
-                    });
-                  }
-                  return {
-                    id: km.id, tipo,
-                    texto: km.text ?? km.type?.text ?? "",
-                    minuto: km.clock?.displayValue,
-                    jugador: km.athletesInvolved?.[0]?.displayName,
-                    equipoId: km.team?.id,
-                  };
-                });
+                }
               }
 
-              // Notificación de partido terminado
+              // Notificación de partido terminado (siempre, independiente de la fuente)
               if (estado === "post" && golesLocal !== null && golesVisita !== null) {
                 candidatos.push({
                   clave: `final-${espnEv.id}`,
