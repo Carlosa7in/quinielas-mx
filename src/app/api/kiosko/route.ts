@@ -34,12 +34,34 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No hay jornada abierta en este momento" }, { status: 404 });
   }
 
+  // fechaHora via SQL para ordenar por hora de juego
+  const allPartidoIds = jornadas.flatMap((j) => j.partidos.map((p) => p.id));
+  const fechaMap = new Map<string, string>();
+  if (allPartidoIds.length > 0) {
+    try {
+      const rows = await sql`SELECT id, "fechaHora" FROM "Partido" WHERE id = ANY(${allPartidoIds}::text[])`;
+      for (const r of rows) {
+        if (r.fechaHora) {
+          const d = r.fechaHora instanceof Date ? r.fechaHora : new Date(String(r.fechaHora));
+          if (!isNaN(d.getTime())) fechaMap.set(String(r.id), d.toISOString());
+        }
+      }
+    } catch { /* ignorar */ }
+  }
+
   const jornadasMapped = jornadas.map((j) => ({
     id: j.id,
     nombre: j.nombre ?? `Jornada ${j.numero}`,
     liga: j.liga,
     temporada: j.temporada,
-    partidos: j.partidos,
+    partidos: j.partidos
+      .map((p) => ({ ...p, fechaHora: fechaMap.get(p.id) ?? null }))
+      .sort((a, b) => {
+        if (!a.fechaHora && !b.fechaHora) return a.orden - b.orden;
+        if (!a.fechaHora) return 1;
+        if (!b.fechaHora) return -1;
+        return new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime();
+      }),
   }));
 
   return NextResponse.json({

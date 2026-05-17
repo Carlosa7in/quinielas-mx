@@ -293,7 +293,33 @@ export async function GET(req: Request) {
         );
       }
 
-      return NextResponse.json({ quinielas: verificadas });
+      // Ordenar picks de cada quiniela por fechaHora del partido
+      const allPartidoIds = [...new Set(verificadas.flatMap(q => q.picks.map(p => p.partidoId)))];
+      const fechaMap = new Map<string, string>();
+      if (allPartidoIds.length > 0) {
+        try {
+          const rows = await sql`SELECT id, "fechaHora" FROM "Partido" WHERE id = ANY(${allPartidoIds}::text[])`;
+          for (const r of rows) {
+            if (r.fechaHora) {
+              const d = r.fechaHora instanceof Date ? r.fechaHora : new Date(String(r.fechaHora));
+              if (!isNaN(d.getTime())) fechaMap.set(String(r.id), d.toISOString());
+            }
+          }
+        } catch { /* ignorar */ }
+      }
+      const verificadasOrdenadas = verificadas.map(q => ({
+        ...q,
+        picks: [...q.picks].sort((a, b) => {
+          const fa = fechaMap.get(a.partidoId) ?? null;
+          const fb = fechaMap.get(b.partidoId) ?? null;
+          if (!fa && !fb) return a.partido.orden - b.partido.orden;
+          if (!fa) return 1;
+          if (!fb) return -1;
+          return new Date(fa).getTime() - new Date(fb).getTime();
+        }),
+      }));
+
+      return NextResponse.json({ quinielas: verificadasOrdenadas });
     } catch (err) {
       console.error("[QUINIELAS GET telefono] error:", err);
       return NextResponse.json({ error: "Error al buscar: " + String(err) }, { status: 500 });
@@ -321,6 +347,7 @@ export async function GET(req: Request) {
         picks: {
           select: {
             id: true,
+            partidoId: true,
             prediccion: true,
             acertado: true,
             partido: {
@@ -342,7 +369,33 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Quiniela no encontrada" }, { status: 404 });
     }
 
-    return NextResponse.json(quiniela);
+    // Ordenar picks por fechaHora del partido
+    const partidoIds = quiniela.picks.map(p => p.partidoId);
+    const fechaMapFolio = new Map<string, string>();
+    if (partidoIds.length > 0) {
+      try {
+        const rows = await sql`SELECT id, "fechaHora" FROM "Partido" WHERE id = ANY(${partidoIds}::text[])`;
+        for (const r of rows) {
+          if (r.fechaHora) {
+            const d = r.fechaHora instanceof Date ? r.fechaHora : new Date(String(r.fechaHora));
+            if (!isNaN(d.getTime())) fechaMapFolio.set(String(r.id), d.toISOString());
+          }
+        }
+      } catch { /* ignorar */ }
+    }
+    const quinielaOrdenada = {
+      ...quiniela,
+      picks: [...quiniela.picks].sort((a, b) => {
+        const fa = fechaMapFolio.get(a.partidoId) ?? null;
+        const fb = fechaMapFolio.get(b.partidoId) ?? null;
+        if (!fa && !fb) return a.partido.orden - b.partido.orden;
+        if (!fa) return 1;
+        if (!fb) return -1;
+        return new Date(fa).getTime() - new Date(fb).getTime();
+      }),
+    };
+
+    return NextResponse.json(quinielaOrdenada);
   } catch (err) {
     console.error("[QUINIELAS GET] error:", err);
     return NextResponse.json({ error: "Error al buscar: " + String(err) }, { status: 500 });

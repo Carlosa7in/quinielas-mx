@@ -43,7 +43,14 @@ export async function GET() {
 
   const jornadasConFecha = jornadas.map((j) => ({
     ...j,
-    partidos: j.partidos.map((p) => ({ ...p, fechaHora: fechaMap.get(p.id) ?? null })),
+    partidos: j.partidos
+      .map((p) => ({ ...p, fechaHora: fechaMap.get(p.id) ?? null }))
+      .sort((a, b) => {
+        if (!a.fechaHora && !b.fechaHora) return a.orden - b.orden;
+        if (!a.fechaHora) return 1;
+        if (!b.fechaHora) return -1;
+        return new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime();
+      }),
   }));
 
   return NextResponse.json({ jornadas: jornadasConFecha });

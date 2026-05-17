@@ -45,10 +45,14 @@ export async function GET(req: Request) {
     console.error("[/api/jornadas] fechaHora query failed:", e);
   }
 
-  const partidosConFecha = jornada.partidos.map((p) => ({
-    ...p,
-    fechaHora: fechaHorasMap[p.id] ?? null,
-  }));
+  const partidosConFecha = jornada.partidos
+    .map((p) => ({ ...p, fechaHora: fechaHorasMap[p.id] ?? null }))
+    .sort((a, b) => {
+      if (!a.fechaHora && !b.fechaHora) return a.orden - b.orden;
+      if (!a.fechaHora) return 1;
+      if (!b.fechaHora) return -1;
+      return new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime();
+    });
 
   return NextResponse.json({ ...jornada, partidos: partidosConFecha });
 }

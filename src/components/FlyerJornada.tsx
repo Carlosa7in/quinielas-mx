@@ -7,7 +7,7 @@ type Partido = {
   equipoLocal: string;
   equipoVisita: string;
   orden: number;
-  fechaHoraStr?: string | null;
+  fechaHora?: string | null;
 };
 
 type FlyerProps = {
@@ -132,14 +132,24 @@ async function dibujarFlyer(
   const GAP_ROWS_FOOTER = 28;
   const FOOTER_H = 116;
 
-  const fixedH =
+  // Área fija por encima y por debajo de las filas
+  const URL_H = 34; // franja con URL al pie
+  const headerAreaH =
     PAD_TOP + LOGO_H + GAP_LOGO_TITLE +
     TITLE_H + SUBTITLE_H + GAP_TITLE_COLS +
-    COL_H + GAP_COL_ROWS +
-    GAP_ROWS_FOOTER + FOOTER_H + PAD_BOT;
+    COL_H + GAP_COL_ROWS;
+  const footerAreaH = GAP_ROWS_FOOTER + FOOTER_H + URL_H + PAD_BOT;
+  const availH = H - headerAreaH - footerAreaH;
 
-  const n = Math.max(partidos.length, 1);
-  const ROW_H = Math.min(82, Math.max(56, Math.floor((H - fixedH) / n)));
+  // ROW_H se expande hasta MAX cuando caben todos los partidos;
+  // si hay demasiados se clampea a MIN y los sobrantes se cortan (no se aplastan).
+  const ROW_H_MIN = 68;
+  const ROW_H_MAX = 88;
+  const maxRows   = Math.floor(availH / ROW_H_MIN);
+  const partidosMostrar = partidos.slice(0, maxRows);
+  const cortados  = partidos.length - partidosMostrar.length;
+  const n         = Math.max(partidosMostrar.length, 1);
+  const ROW_H     = Math.min(ROW_H_MAX, Math.floor(availH / n));
 
   // HiDPI
   const scale = 2;
@@ -255,7 +265,7 @@ async function dibujarFlyer(
   curY += COL_H + GAP_COL_ROWS;
 
   // ── Filas de partidos ─────────────────────────────────────────────────
-  partidos.forEach((p, i) => {
+  partidosMostrar.forEach((p, i) => {
     const y   = curY + i * ROW_H;
     const midY = y + ROW_H / 2;
     const cy  = midY + 6; // baseline texto
@@ -263,6 +273,25 @@ async function dibujarFlyer(
     // Fondo alternado
     ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)";
     roundRect(ctx, PAD, y + 2, W - PAD * 2, ROW_H - 4, 10);
+
+    // Fecha / hora en zona izquierda (PAD area)
+    if (p.fechaHora) {
+      const d = new Date(p.fechaHora);
+      const dia  = d.toLocaleDateString("es-MX", { weekday: "short", timeZone: "America/Mexico_City" })
+                    .replace(".", "").slice(0, 3).toUpperCase();
+      const hora = d.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Mexico_City" })
+                    .replace(/\s*a\.m\./i, "am").replace(/\s*p\.m\./i, "pm");
+      const dateCX = PAD / 2 + 2;
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#fcd34d";
+      ctx.font = "bold 13px Arial, sans-serif";
+      ctx.textBaseline = "middle";
+      ctx.fillText(dia,  dateCX, midY - 9);
+      ctx.fillStyle = "rgba(255,255,255,0.70)";
+      ctx.font = "11px Arial, sans-serif";
+      ctx.fillText(hora, dateCX, midY + 8);
+      ctx.textBaseline = "alphabetic";
+    }
 
     // Botón L
     ctx.fillStyle = "rgba(29,78,216,0.85)";
@@ -303,14 +332,24 @@ async function dibujarFlyer(
     ctx.fillText(truncar(p.equipoVisita.toUpperCase(), 12), awayNameX, cy);
   });
 
-  curY += n * ROW_H + GAP_ROWS_FOOTER;
+  // ── Indicador de partidos recortados ─────────────────────────────────
+  if (cortados > 0) {
+    const moreY = curY + n * ROW_H + GAP_ROWS_FOOTER / 2 + 12;
+    ctx.fillStyle = "rgba(253,211,77,0.80)";
+    ctx.font = "italic 17px Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`+${cortados} partido${cortados > 1 ? "s" : ""} más · ver en tablitasquinielas.com`, W / 2, moreY);
+    ctx.textBaseline = "alphabetic";
+  }
 
-  // ── Footer precio ─────────────────────────────────────────────────────
+  // ── Footer anclado al fondo del canvas ───────────────────────────────
+  const footerY = H - PAD_BOT - URL_H - FOOTER_H;
   ctx.fillStyle = "rgba(6,78,59,0.90)";
-  roundRect(ctx, PAD, curY, W - PAD * 2, FOOTER_H, 14);
+  roundRect(ctx, PAD, footerY, W - PAD * 2, FOOTER_H, 14);
 
   // Izquierda: "PRECIO:" + "$20" alineados por el centro vertical
-  const priceY = curY + FOOTER_H / 2;
+  const priceY = footerY + FOOTER_H / 2;
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
   ctx.font = "bold 20px Arial, sans-serif";
@@ -324,8 +363,8 @@ async function dibujarFlyer(
 
   // Derecha: fecha de cierre
   const lineGap = 24;
-  const RR1 = curY + FOOTER_H / 2 - lineGap / 2;
-  const RR2 = curY + FOOTER_H / 2 + lineGap / 2 + 14;
+  const RR1 = footerY + FOOTER_H / 2 - lineGap / 2;
+  const RR2 = footerY + FOOTER_H / 2 + lineGap / 2 + 14;
   ctx.fillStyle = "#6ee7b7";
   ctx.font = "bold 19px Arial, sans-serif";
   ctx.textBaseline = "middle";
@@ -341,6 +380,14 @@ async function dibujarFlyer(
       }).toUpperCase()
     : tf.verFecha;
   ctx.fillText(cierreTexto, W - PAD - 26, RR2);
+  ctx.textBaseline = "alphabetic";
+
+  // ── URL al pie ────────────────────────────────────────────────────────
+  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.font = "600 19px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("tablitasquinielas.com", W / 2, H - PAD_BOT / 2);
   ctx.textBaseline = "alphabetic";
 }
 
@@ -370,7 +417,12 @@ export function FlyerJornada({ jornadaId, jornadaNombre, liga, temporada, refCod
     try {
       const res = await fetch(`/api/jornadas?id=${jornadaId}`);
       const data = await res.json();
-      const partidos: Partido[] = (data.partidos ?? []).sort((a: Partido, b: Partido) => a.orden - b.orden);
+      const partidos: Partido[] = (data.partidos ?? []).sort((a: Partido, b: Partido) => {
+        if (!a.fechaHora && !b.fechaHora) return a.orden - b.orden;
+        if (!a.fechaHora) return 1;
+        if (!b.fechaHora) return -1;
+        return new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime();
+      });
 
       const canvas = canvasRef.current!;
       const origen = window.location.origin;

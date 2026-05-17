@@ -568,58 +568,53 @@ export async function GET() {
                 });
               }
 
-              // Notificaciones + eventos sintéticos de período — solo in + reciente
+              // ── Push notifications de período (solo al ocurrir, una vez) ──────
               if (estado === "in" && espnEv && esReciente) {
-                const mins = reloj ? parseInt(reloj.split(":")[0] ?? "99") : 99;
+                const mins = reloj ? parseInt(reloj) : 99;
+                if (periodo === 1 && mins <= 3)
+                  candidatos.push({ clave: `kickoff-${espnEv.id}`, titulo: "🏁 ¡Arranca el partido!", cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`, tag: `kickoff-${espnEv.id}` });
+                if (periodo === 2 && mins <= 3)
+                  candidatos.push({ clave: `secondhalf-${espnEv.id}`, titulo: "▶️ ¡Empieza el 2° tiempo!", cuerpo: `${p.equipo_local} ${golesLocal ?? 0} – ${golesVisita ?? 0} ${p.equipo_visita}`, tag: `secondhalf-${espnEv.id}` });
+                if (detalle && /half.?time|HT\b/i.test(detalle))
+                  candidatos.push({ clave: `halftime-${espnEv.id}`, titulo: "⏸️ Medio tiempo", cuerpo: `${p.equipo_local} ${golesLocal ?? 0} – ${golesVisita ?? 0} ${p.equipo_visita}`, tag: `halftime-${espnEv.id}` });
+              }
 
-                // Silbatazo inicial: periodo 1, reloj < 3 min
-                if (periodo === 1 && mins <= 3) {
-                  candidatos.push({
-                    clave: `kickoff-${espnEv.id}`,
-                    titulo: "🏁 ¡Arranca el partido!",
-                    cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
-                    tag: `kickoff-${espnEv.id}`,
-                  });
-                  // También en la lista de eventos para que aparezca en la página
-                  (eventos as unknown[]).unshift({
-                    id: `kickoff-${espnEv.id}`,
-                    tipo: "inicio",
-                    texto: "¡Arranca el partido!",
-                    minuto: reloj || "0'",
-                  });
+              // ── Marcadores de período en el timeline (SIEMPRE, basado en estado) ─
+              // El array eventos se construye en orden CRONOLÓGICO (más antiguo primero).
+              // La UI hace [...eventos].reverse() para mostrar el más reciente arriba.
+              if ((estado === "in" || estado === "post") && espnEv) {
+                const evId  = espnEv.id;
+                const score = `${golesLocal ?? 0}–${golesVisita ?? 0}`;
+                type Ev = { id?: string; minuto?: string; tipo?: string; texto?: string };
+                const realEvs = eventos as Ev[];
+                const merged: Ev[] = [];
+
+                // 🏁 Kickoff — siempre el PRIMERO (más antiguo → queda al fondo tras .reverse())
+                merged.push({ id: `syn-kickoff-${evId}`, tipo: "inicio", texto: "¡Arranca el partido!", minuto: "1'" });
+
+                if (periodo >= 2 || estado === "post") {
+                  // Encontrar dónde termina la primera parte (último evento ≤ 45')
+                  let htInsert = 0; // default: insertar marcadores justo después del kickoff
+                  for (let i = 0; i < realEvs.length; i++) {
+                    const m = parseInt(realEvs[i].minuto ?? "999");
+                    if (!isNaN(m) && m <= 45) htInsert = i + 1;
+                  }
+                  // [kickoff, ...1ªParte, HALFTIME, SECOND_HALF, ...2ªParte]
+                  merged.push(...realEvs.slice(0, htInsert));
+                  merged.push({ id: `syn-ht-${evId}`,  tipo: "medio_tiempo", texto: `Medio tiempo · ${score}`, minuto: "45'" });
+                  merged.push({ id: `syn-sh-${evId}`,  tipo: "periodo",      texto: "2° Tiempo",                minuto: "46'" });
+                  merged.push(...realEvs.slice(htInsert));
+                } else {
+                  // Solo primer tiempo todavía
+                  merged.push(...realEvs);
                 }
 
-                // Inicio 2° tiempo: periodo 2, reloj < 3 min
-                if (periodo === 2 && mins <= 3) {
-                  candidatos.push({
-                    clave: `secondhalf-${espnEv.id}`,
-                    titulo: "▶️ ¡Empieza el 2° tiempo!",
-                    cuerpo: `${p.equipo_local} ${golesLocal ?? 0} – ${golesVisita ?? 0} ${p.equipo_visita}`,
-                    tag: `secondhalf-${espnEv.id}`,
-                  });
-                  (eventos as unknown[]).unshift({
-                    id: `secondhalf-${espnEv.id}`,
-                    tipo: "periodo",
-                    texto: "Empieza el 2° tiempo",
-                    minuto: reloj || "45'",
-                  });
+                // ⏱️ Silbato final — siempre el ÚLTIMO (más reciente → queda arriba tras .reverse())
+                if (estado === "post") {
+                  merged.push({ id: `syn-final-${evId}`, tipo: "periodo", texto: `Partido terminado · ${score}`, minuto: "90'" });
                 }
 
-                // Medio tiempo: detalle de ESPN indica "Halftime" o "HT"
-                if (detalle && /half.?time|HT\b/i.test(detalle)) {
-                  candidatos.push({
-                    clave: `halftime-${espnEv.id}`,
-                    titulo: "⏸️ Medio tiempo",
-                    cuerpo: `${p.equipo_local} ${golesLocal ?? 0} – ${golesVisita ?? 0} ${p.equipo_visita}`,
-                    tag: `halftime-${espnEv.id}`,
-                  });
-                  (eventos as unknown[]).unshift({
-                    id: `halftime-${espnEv.id}`,
-                    tipo: "medio_tiempo",
-                    texto: `Medio tiempo · ${golesLocal ?? 0}–${golesVisita ?? 0}`,
-                    minuto: "45'",
-                  });
-                }
+                eventos = merged;
               }
           }
 

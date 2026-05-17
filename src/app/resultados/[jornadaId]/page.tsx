@@ -459,16 +459,16 @@ export default function ResultadosPage() {
                   const esSegundo = premios.segundoAciertos !== null && q.aciertos === premios.segundoAciertos;
                   const total     = partidos.length;
                   const ac        = q.aciertos ?? 0;
-                  // Vibrant row & pts colors by aciertos level
+                  // Row & pts colors by aciertos level (soft -100 tones)
                   const { rowBg, ptsBg, ptsColor } = (() => {
-                    if (ac === total)       return { rowBg: "#fde68a", ptsBg: "#d97706", ptsColor: "#fff" }; // amber-200 / amber-600
-                    if (ac >= total - 1)   return { rowBg: "#bbf7d0", ptsBg: "#16a34a", ptsColor: "#fff" }; // green-200 / green-600
-                    if (ac >= 5)           return { rowBg: "#99f6e4", ptsBg: "#0d9488", ptsColor: "#fff" }; // teal-200 / teal-600
-                    if (ac === 4)          return { rowBg: "#bfdbfe", ptsBg: "#2563eb", ptsColor: "#fff" }; // blue-200 / blue-600
-                    if (ac === 3)          return { rowBg: "#c7d2fe", ptsBg: "#4f46e5", ptsColor: "#fff" }; // indigo-200 / indigo-600
+                    if (ac === total)       return { rowBg: "#fef9c3", ptsBg: "#d97706", ptsColor: "#fff" }; // yellow-100 / amber-600
+                    if (ac >= total - 1)   return { rowBg: "#dcfce7", ptsBg: "#16a34a", ptsColor: "#fff" }; // green-100  / green-600
+                    if (ac >= 5)           return { rowBg: "#ccfbf1", ptsBg: "#0d9488", ptsColor: "#fff" }; // teal-100   / teal-600
+                    if (ac === 4)          return { rowBg: "#dbeafe", ptsBg: "#2563eb", ptsColor: "#fff" }; // blue-100   / blue-600
+                    if (ac === 3)          return { rowBg: "#e0e7ff", ptsBg: "#4f46e5", ptsColor: "#fff" }; // indigo-100 / indigo-600
                     if (ac === 2)          return { rowBg: idx % 2 === 0 ? WHITE : LGRAY, ptsBg: LGRAY2, ptsColor: "#6b7280" }; // neutral
-                    if (ac === 1)          return { rowBg: "#fed7aa", ptsBg: "#ea580c", ptsColor: "#fff" }; // orange-200 / orange-600
-                    return                        { rowBg: "#fecaca", ptsBg: "#dc2626", ptsColor: "#fff" }; // red-200 / red-600 (0)
+                    if (ac === 1)          return { rowBg: "#ffedd5", ptsBg: "#ea580c", ptsColor: "#fff" }; // orange-100 / orange-600
+                    return                        { rowBg: "#fee2e2", ptsBg: "#dc2626", ptsColor: "#fff" }; // red-100    / red-600 (0)
                   })();
                   return (
                     <tr key={q.id} style={{ background: rowBg, borderBottom: `1px solid ${LGRAY2}` }}>

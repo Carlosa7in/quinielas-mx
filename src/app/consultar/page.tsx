@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { LogoEquipo } from "@/components/LogoEquipo";
-import LoadingScreen from "@/components/LoadingScreen";
 import { Suspense } from "react";
 
 type Pick = {
@@ -76,13 +75,6 @@ type Partido = {
   golesVisita: number | null;
 };
 
-type JornadaPreliminares = {
-  id: string;
-  numero: number;
-  temporada: string;
-  liga: string;
-  partidos: Partido[];
-};
 
 const LABEL: Record<string, string> = { "1": "L", "X": "E", "2": "V" };
 
@@ -394,129 +386,6 @@ function ScannerQR({ onFolioDetectado }: { onFolioDetectado: (folio: string) => 
 const toTitleCase = (str: string) =>
   str.replace(/\b\w/g, (c) => c.toUpperCase());
 
-const RESULTADO_LABEL: Record<string, string> = { "1": "L", "X": "E", "2": "V" };
-const RESULTADO_COLOR: Record<string, string> = {
-  "1": "bg-green-100 text-green-700",
-  "X": "bg-yellow-100 text-yellow-700",
-  "2": "bg-blue-100 text-blue-700",
-};
-
-/* ─── Preliminares: resultados de partidos ─── */
-function Preliminares() {
-  const [datos, setDatos] = useState<JornadaPreliminares[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [jornadaActiva, setJornadaActiva] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/preliminares")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setDatos(data);
-          setJornadaActiva(data[0].id);
-        }
-      })
-      .finally(() => setCargando(false));
-  }, []);
-
-  if (cargando) return <LoadingScreen texto="Cargando resultados..." variant="inline" />;
-
-  if (datos.length === 0) return null;
-
-  const jornada = datos.find((j) => j.id === jornadaActiva) ?? datos[0];
-  const hayResultados = jornada.partidos.some((p) => p.resultado !== null);
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between px-1">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">📋 Resultados</p>
-        <p className="text-xs text-gray-400">{jornada.partidos.length} partidos</p>
-      </div>
-
-      {/* Selector de jornada si hay más de una activa */}
-      {datos.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {datos.map((j) => (
-            <button
-              key={j.id}
-              onClick={() => setJornadaActiva(j.id)}
-              className={`shrink-0 text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
-                jornadaActiva === j.id
-                  ? "bg-amber-700 text-white"
-                  : "bg-white text-gray-500 border border-gray-200"
-              }`}
-            >
-              {j.liga} J{j.numero}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        {/* Cabecera */}
-        <div className="bg-brand text-white px-4 py-2.5 flex items-center justify-between">
-          <span className="text-sm font-bold">{jornada.liga} · Jornada {jornada.numero}</span>
-          <span className="text-xs text-amber-400">{jornada.temporada}</span>
-        </div>
-
-        {!hayResultados && (
-          <div className="px-4 py-3 bg-yellow-50 text-yellow-700 text-xs text-center">
-            ⏳ Los resultados se irán publicando conforme avance la jornada
-          </div>
-        )}
-
-        <div className="divide-y divide-gray-50">
-          {jornada.partidos.map((p) => {
-            const marcador = p.golesLocal !== null && p.golesVisita !== null
-              ? `${p.golesLocal} - ${p.golesVisita}`
-              : null;
-
-            return (
-              <div key={p.id} className="flex items-center px-4 py-2.5 gap-2">
-                {/* Número */}
-                <span className="text-xs text-gray-300 w-5 text-right shrink-0">{p.orden}</span>
-
-                {/* Local */}
-                <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
-                  <span className="text-xs text-gray-700 truncate text-right">{p.equipoLocal}</span>
-                  <LogoEquipo equipo={p.equipoLocal} size={20} />
-                </div>
-
-                {/* Marcador / vs */}
-                <div className="shrink-0 w-16 text-center">
-                  {marcador ? (
-                    <span className="text-xs font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-md">
-                      {marcador}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-gray-300">vs</span>
-                  )}
-                </div>
-
-                {/* Visita */}
-                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  <LogoEquipo equipo={p.equipoVisita} size={20} />
-                  <span className="text-xs text-gray-700 truncate">{p.equipoVisita}</span>
-                </div>
-
-                {/* Resultado 1/X/2 */}
-                <div className="shrink-0 w-7 text-right">
-                  {p.resultado ? (
-                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${RESULTADO_COLOR[p.resultado] ?? "bg-gray-100 text-gray-500"}`}>
-                      {RESULTADO_LABEL[p.resultado] ?? p.resultado}
-                    </span>
-                  ) : (
-                    <span className="text-gray-200 text-xs">–</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ─── Página principal ─── */
 function ConsultarInner() {
@@ -722,11 +591,6 @@ function ConsultarInner() {
           />
         )}
 
-        {/* Divider */}
-        <div className="border-t border-gray-200 pt-2" />
-
-        {/* Resultados de partidos */}
-        <Preliminares />
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, sql } from "@/lib/prisma";
 
 // Prize constants
 const PORC_PRIMERO = 0.60;
@@ -46,6 +46,18 @@ export async function GET(
       },
     });
 
+    // fechaHora via SQL (NeonDB bug con DateTime en Prisma ORM)
+    const fechaMap: Record<string, string> = {};
+    try {
+      const rows = await sql`SELECT id, "fechaHora" FROM "Partido" WHERE "jornadaId" = ${jornadaId}`;
+      for (const r of rows) {
+        if (r.fechaHora) {
+          const d = r.fechaHora instanceof Date ? r.fechaHora : new Date(String(r.fechaHora));
+          if (!isNaN(d.getTime())) fechaMap[String(r.id)] = d.toISOString();
+        }
+      }
+    } catch { /* ignorar */ }
+
     // Fetch logos from Equipo table for all teams in this jornada
     const teamNames = [...new Set(partidos.flatMap((p) => [p.equipoLocal, p.equipoVisita]))];
     const equipos = await prisma.equipo.findMany({
@@ -57,9 +69,18 @@ export async function GET(
     );
     const partidosConLogos = partidos.map((p) => ({
       ...p,
+      fechaHora: fechaMap[p.id] ?? null,
       logoLocal:  logoMap[p.equipoLocal]  ?? "",
       logoVisita: logoMap[p.equipoVisita] ?? "",
     }));
+
+    // Ordenar partidos por fechaHora (nulls al final), fallback a orden
+    partidosConLogos.sort((a, b) => {
+      if (!a.fechaHora && !b.fechaHora) return a.orden - b.orden;
+      if (!a.fechaHora) return 1;
+      if (!b.fechaHora) return -1;
+      return new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime();
+    });
 
     // Prize pool: tienda (cash) + online confirmed
     const quinielas = await prisma.quiniela.findMany({
@@ -120,18 +141,27 @@ export async function GET(
       ? quinielas.filter((q) => q.aciertos === segundoAciertos).length
       : 0;
 
-    // Format quinielas for response
+    // Format quinielas for response — picks ordenados por fechaHora del partido
     const quinielasFormatted = sortedQuinielas.map((q) => ({
       id: q.id,
       folio: q.folio,
       nombreCliente: q.nombreCliente,
       aciertos: q.aciertos,
-      picks: q.picks.map((p) => ({
-        prediccion: p.prediccion,
-        acertado: p.acertado,
-        partidoId: p.partidoId,
-        orden: p.partido.orden,
-      })),
+      picks: [...q.picks]
+        .sort((a, b) => {
+          const fa = fechaMap[a.partidoId] ?? null;
+          const fb = fechaMap[b.partidoId] ?? null;
+          if (!fa && !fb) return a.partido.orden - b.partido.orden;
+          if (!fa) return 1;
+          if (!fb) return -1;
+          return new Date(fa).getTime() - new Date(fb).getTime();
+        })
+        .map((p) => ({
+          prediccion: p.prediccion,
+          acertado: p.acertado,
+          partidoId: p.partidoId,
+          orden: p.partido.orden,
+        })),
     }));
 
     return NextResponse.json({
