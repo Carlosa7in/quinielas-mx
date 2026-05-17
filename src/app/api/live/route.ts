@@ -250,6 +250,20 @@ async function fetchKeyMoments(ligaSlug: string, eventId: string): Promise<EspnK
   } catch { return []; }
 }
 
+// Genera el título de push según el tipo de evento
+function tituloNotif(tipo: string, jugador: string | undefined, min: string | undefined): string {
+  const m = min ? ` (${min})` : "";
+  const j = jugador ? ` ${jugador}` : "";
+  switch (tipo) {
+    case "gol":      return `⚽ ¡Gooool!${j}${m}`;
+    case "roja":     return `🟥 Expulsión${j ? ` –${j}` : ""}${m}`;
+    case "amarilla": return `🟨 Amarilla${j ? ` –${j}` : ""}${m}`;
+    case "cambio":   return `🔄 Cambio${m}`;
+    case "var":      return `📺 VAR${m}`;
+    default:         return `🔔 Evento${m}`;
+  }
+}
+
 function tipoEvento(km: EspnKeyMoment): string {
   const id = (km.type?.id ?? "").toLowerCase();
   const txt = (km.text ?? "").toLowerCase();
@@ -470,13 +484,18 @@ export async function GET() {
 
                 if (details.length > 0) {
                   eventos = details
-                    .filter(d => d.scoringPlay || d.yellowCard || d.redCard)
+                    .filter(d => d.scoringPlay || d.yellowCard || d.redCard || d.type?.text)
                     .map(d => {
                       let tipo: string;
                       if (d.redCard)          tipo = "roja";
                       else if (d.yellowCard)  tipo = "amarilla";
                       else if (d.scoringPlay) tipo = "gol";
-                      else tipo = d.type?.text?.toLowerCase() ?? "evento";
+                      else {
+                        const t = (d.type?.text ?? "").toLowerCase();
+                        if (t.includes("substitut") || t.includes("cambio")) tipo = "cambio";
+                        else if (t.includes("var"))                           tipo = "var";
+                        else tipo = t || "evento";
+                      }
 
                       // Clave estable: usa d.id si existe, si no construye una desde tiempo+jugador
                       const detailKey = d.id
@@ -485,15 +504,13 @@ export async function GET() {
                           d.athletesInvolved?.[0]?.id ?? d.athletesInvolved?.[0]?.displayName ?? "p",
                         ].join("-");
 
-                      if (estado === "in" && esReciente && (tipo === "gol" || tipo === "roja")) {
+                      if (estado === "in" && esReciente) {
                         const jugador = d.athletesInvolved?.[0]?.displayName;
                         const min = d.clock?.displayValue;
                         const clave = `${tipo}-${espnEv.id}-${detailKey}`;
                         candidatos.push({
                           clave,
-                          titulo: tipo === "gol"
-                            ? `⚽ Gol${jugador ? ` de ${jugador}` : ""}${min ? ` (${min})` : ""}`
-                            : `🟥 Roja${jugador ? ` – ${jugador}` : ""}${min ? ` (${min})` : ""}`,
+                          titulo: tituloNotif(tipo, jugador, min),
                           cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
                           tag: clave,
                         });
@@ -518,15 +535,13 @@ export async function GET() {
                         km.clock?.displayValue ?? "t",
                         km.athletesInvolved?.[0]?.displayName ?? "p",
                       ].join("-");
-                    if (estado === "in" && esReciente && (tipo === "gol" || tipo === "roja")) {
+                    if (estado === "in" && esReciente) {
                       const jugador = km.athletesInvolved?.[0]?.displayName;
                       const min = km.clock?.displayValue;
                       const clave = `${tipo}-${espnEv.id}-${kmKey}`;
                       candidatos.push({
                         clave,
-                        titulo: tipo === "gol"
-                          ? `⚽ Gol${jugador ? ` de ${jugador}` : ""}${min ? ` (${min})` : ""}`
-                          : `🟥 Roja${jugador ? ` – ${jugador}` : ""}${min ? ` (${min})` : ""}`,
+                        titulo: tituloNotif(tipo, jugador, min),
                         cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
                         tag: clave,
                       });
