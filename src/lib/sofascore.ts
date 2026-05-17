@@ -67,6 +67,11 @@ function norm(s: string): string {
     .trim();
 }
 
+// Lookup normalizado: acepta cualquier encoding de tildes/ñ
+const LIGA_SOFA_NORM: Record<string, number> = Object.fromEntries(
+  Object.entries(LIGA_SOFA).map(([k, v]) => [norm(k), v])
+);
+
 function teamsMatch(a: string, b: string): boolean {
   const na = norm(a), nb = norm(b);
   if (!na || !nb) return false;
@@ -129,22 +134,25 @@ export async function findSofaEventId(
   const cacheKey = `${norm(equipoLocal)}|${norm(equipoVisita)}`;
   if (sofaIdCache.has(cacheKey)) return sofaIdCache.get(cacheKey)!;
 
-  const tid = LIGA_SOFA[ligaDB];
+  const tid = LIGA_SOFA[ligaDB] ?? LIGA_SOFA_NORM[norm(ligaDB)];
   if (!tid) return null; // liga no mapeada
 
   const sid = await getSeasonId(tid);
   if (!sid) return null;
 
-  // Paralelo: last/0, last/1, last/2, next/0 — cubre últimas 3 jornadas + próxima
-  // Páginas cacheadas 3 min, así que añadir last/1 y last/2 no penaliza en caliente
-  const [l0, l1, l2, n0] = await Promise.all([
+  // Paralelo: last/0–last/5 + next/0 — cubre últimas 6 jornadas + próxima
+  // Todas las páginas van en caché 3 min, el primer cold-start tarda ~500 ms en paralelo
+  const pages = await Promise.all([
     fetchPage(tid, sid, "last/0"),
     fetchPage(tid, sid, "last/1"),
     fetchPage(tid, sid, "last/2"),
+    fetchPage(tid, sid, "last/3"),
+    fetchPage(tid, sid, "last/4"),
+    fetchPage(tid, sid, "last/5"),
     fetchPage(tid, sid, "next/0"),
   ]);
 
-  const all = [...l0, ...l1, ...l2, ...n0];
+  const all = pages.flat();
   const match = all.find(ev =>
     teamsMatch(equipoLocal, ev.homeTeam.name) &&
     teamsMatch(equipoVisita, ev.awayTeam.name),
