@@ -98,7 +98,7 @@ async function getSeasonId(tid: number): Promise<number | null> {
   } catch { return null; }
 }
 
-async function fetchPage(tid: number, sid: number, page: "last/0" | "next/0"): Promise<SofaEvent[]> {
+async function fetchPage(tid: number, sid: number, page: string): Promise<SofaEvent[]> {
   const key = `${tid}/${sid}/${page}`;
   const cached = pageCache.get(key);
   if (cached && Date.now() - cached.ts < PAGE_TTL) return cached.events;
@@ -135,13 +135,16 @@ export async function findSofaEventId(
   const sid = await getSeasonId(tid);
   if (!sid) return null;
 
-  // last/0 y next/0 en paralelo — cubre jornada más reciente + en curso/próxima
-  const [lastEvs, nextEvs] = await Promise.all([
+  // Paralelo: last/0, last/1, last/2, next/0 — cubre últimas 3 jornadas + próxima
+  // Páginas cacheadas 3 min, así que añadir last/1 y last/2 no penaliza en caliente
+  const [l0, l1, l2, n0] = await Promise.all([
     fetchPage(tid, sid, "last/0"),
+    fetchPage(tid, sid, "last/1"),
+    fetchPage(tid, sid, "last/2"),
     fetchPage(tid, sid, "next/0"),
   ]);
 
-  const all = [...lastEvs, ...nextEvs];
+  const all = [...l0, ...l1, ...l2, ...n0];
   const match = all.find(ev =>
     teamsMatch(equipoLocal, ev.homeTeam.name) &&
     teamsMatch(equipoVisita, ev.awayTeam.name),

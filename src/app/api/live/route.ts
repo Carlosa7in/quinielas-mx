@@ -640,6 +640,8 @@ export async function GET() {
             tieneEspn: !!espnEv,
             _debug: {
               ligaDB: p.partido_liga ?? j.liga,
+              local: p.equipo_local,
+              visita: p.equipo_visita,
               espnId: espnEv?.id ?? null,
               sofaId: _sofaId,
               sofaIncs: _sofaIncs,
