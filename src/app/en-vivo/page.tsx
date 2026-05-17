@@ -165,8 +165,8 @@ function EventoItem({ ev }: { ev: Evento }) {
 }
 
 function PartidoRow({ p }: { p: PartidoVivo }) {
-  // Auto-expandir en vivo y terminados (para ver goles); pre queda colapsado
-  const [expanded, setExpanded] = useState(p.estado === "in" || p.estado === "post");
+  // Auto-expandir solo si hay eventos; pre siempre colapsado
+  const [expanded, setExpanded] = useState(p.estado === "in" || (p.estado === "post" && p.eventos.length > 0));
 
   const hayScore = p.local.goles !== null && p.visita.goles !== null;
   const estadoLabel =
@@ -228,11 +228,12 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
       </button>
 
       {/* Eventos */}
-      {expanded && p.eventos.length > 0 && (
+      {expanded && (
         <div className="border-t border-white/5 px-4 py-2 space-y-0.5">
-          {[...p.eventos].reverse().map((ev, i) => (
-            <EventoItem key={ev.id ?? i} ev={ev} />
-          ))}
+          {p.eventos.length > 0
+            ? [...p.eventos].reverse().map((ev, i) => <EventoItem key={ev.id ?? i} ev={ev} />)
+            : <p className="text-gray-600 text-xs text-center py-2">Sin incidentes disponibles</p>
+          }
         </div>
       )}
     </div>
