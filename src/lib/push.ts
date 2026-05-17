@@ -1,5 +1,5 @@
 import webpush from "web-push";
-import { prisma } from "@/lib/prisma";
+import { sql } from "@/lib/prisma";
 
 export type PushPayload = {
   title: string;
@@ -9,6 +9,8 @@ export type PushPayload = {
   tag?: string;
 };
 
+type SubRow = { endpoint: string; p256dh: string; auth: string };
+
 export async function sendPushToAll(payload: PushPayload): Promise<number> {
   // Inicializar VAPID en runtime (no en build time) para evitar error de llave faltante
   webpush.setVapidDetails(
@@ -16,12 +18,16 @@ export async function sendPushToAll(payload: PushPayload): Promise<number> {
     process.env.VAPID_PUBLIC_KEY ?? "",
     process.env.VAPID_PRIVATE_KEY ?? "",
   );
-  const subs = await prisma.pushSubscription.findMany();
+
+  const rows = (await sql`
+    SELECT "endpoint", "p256dh", "auth" FROM "PushSubscription"
+  `) as SubRow[];
+
   let enviados = 0;
   const caducos: string[] = [];
 
   await Promise.all(
-    subs.map(async (sub) => {
+    rows.map(async (sub) => {
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
@@ -39,9 +45,10 @@ export async function sendPushToAll(payload: PushPayload): Promise<number> {
   );
 
   if (caducos.length > 0) {
-    await prisma.pushSubscription.deleteMany({
-      where: { endpoint: { in: caducos } },
-    });
+    await sql`
+      DELETE FROM "PushSubscription"
+      WHERE "endpoint" = ANY(${caducos}::text[])
+    `;
   }
 
   return enviados;
