@@ -419,7 +419,8 @@ export async function GET() {
             resultadoDB: p.resultado ?? null,
             eventos,
             tieneEspn: !!espnEv,
-            _ligaDB: p.partido_liga, // DEBUG: quitar despues
+            _ligaDB: p.partido_liga,   // DEBUG
+            _espnId: espnEv?.id ?? null, // DEBUG
           };
         }),
       );
