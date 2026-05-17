@@ -441,11 +441,12 @@ export async function GET() {
           // EN VIVO:     SofaScore (jornada actual) — más rico, tiene cambios/VAR
           // TERMINADO:   ESPN details/keyMoments — datos ya consolidados
           if (estado === "in" || estado === "post") {
-              // ── Estrategia 1: SofaScore — solo partidos EN VIVO ──────────────────
+              // ── Estrategia 1: SofaScore ──────────────────────────────────────────
+              // EN VIVO siempre; TERMINADO solo si ESPN no tiene el partido
               const ligaPartido = p.partido_liga || j.liga;
               let sofaId: number | null = null;
               let sofaIncs: SofaIncident[] = [];
-              if (estado === "in") {
+              if (estado === "in" || (estado === "post" && !espnEv)) {
                 sofaId = await findSofaEventId(p.equipo_local, p.equipo_visita, ligaPartido);
                 sofaIncs = sofaId ? await fetchSofaIncidents(sofaId) : [];
               }

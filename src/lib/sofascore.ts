@@ -140,10 +140,14 @@ export async function findSofaEventId(
   const sid = await getSeasonId(tid);
   if (!sid) return null;
 
-  // Solo jornada en curso y la anterior + próxima — partidos en vivo siempre están aquí
+  // last/0–last/4 cubre ~5 jornadas + next/0 para próximos
+  // Todo en paralelo + caché 3 min → sin penalización de latencia
   const pages = await Promise.all([
     fetchPage(tid, sid, "last/0"),
     fetchPage(tid, sid, "last/1"),
+    fetchPage(tid, sid, "last/2"),
+    fetchPage(tid, sid, "last/3"),
+    fetchPage(tid, sid, "last/4"),
     fetchPage(tid, sid, "next/0"),
   ]);
 
