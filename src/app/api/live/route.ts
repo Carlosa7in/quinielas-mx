@@ -6,20 +6,29 @@ export const dynamic = "force-dynamic";
 
 // Mapeo liga DB -> slug ESPN
 const LIGA_ESPN: Record<string, string> = {
-  "Liga MX":               "mex.1",
-  "Liga MX Femenil":       "mex.w.1",
-  "Champions League":      "uefa.champions",
-  "UEFA Champions League": "uefa.champions",
-  "UEFA Europa League":    "uefa.europa",
-  "Premier League":        "eng.1",
-  "La Liga":               "esp.1",
-  "Serie A":               "ita.1",
-  "Bundesliga":            "ger.1",
-  "Ligue 1":               "fra.1",
-  "MLS":                   "usa.1",
-  "Mundial":               "fifa.world",
-  "FIFA World Cup":        "fifa.world",
-  "World Cup 2026":        "fifa.world",
+  "Liga MX":                  "mex.1",
+  "Liga MX Femenil":          "mex.w.1",
+  "Champions League":         "uefa.champions",
+  "UEFA Champions League":    "uefa.champions",
+  "UEFA Europa League":       "uefa.europa",
+  "Premier League":           "eng.1",
+  "La Liga":                  "esp.1",
+  "Serie A":                  "ita.1",
+  "Bundesliga":               "ger.1",
+  "Ligue 1":                  "fra.1",
+  "MLS":                      "usa.1",
+  "Mundial":                  "fifa.world",
+  "FIFA World Cup":           "fifa.world",
+  "World Cup 2026":           "fifa.world",
+  "Brasileirao":              "bra.1",
+  "Brasileirao Serie A":      "bra.1",
+  "Serie A Brasil":           "bra.1",
+  "Liga Portuguesa":          "por.1",
+  "Eredivisie":               "ned.1",
+  "Liga Argentina":           "arg.1",
+  "Apertura":                 "mex.1",
+  "Clausura":                 "mex.1",
+  "Mixta":                    "mex.1",
 };
 
 type EspnCompetitor = {
@@ -71,16 +80,40 @@ async function getLogoMap(ligaSlug: string): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   try {
     const res = await fetch(
-      `https://site.api.espn.com/apis/site/v2/sports/soccer/${ligaSlug}/teams`,
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/${ligaSlug}/teams?limit=100`,
     );
     if (!res.ok) return map;
-    type TeamEntry = { team: { name?: string; shortDisplayName?: string; abbreviation?: string; logos?: { href: string }[] } };
-    const data = await res.json() as { sports?: { leagues?: { teams?: TeamEntry[] }[] }[] };
-    const teams = data.sports?.[0]?.leagues?.[0]?.teams ?? [];
-    for (const t of teams) {
-      const logo = t.team.logos?.[0]?.href ?? "";
+    // ESPN puede devolver la lista en varias estructuras
+    const data = await res.json() as Record<string, unknown>;
+
+    type RawTeam = {
+      name?: string; displayName?: string; shortDisplayName?: string;
+      abbreviation?: string; location?: string;
+      logo?: string; logos?: { href?: string; url?: string }[];
+    };
+
+    // Estructura 1: { sports: [{ leagues: [{ teams: [{ team: {...} }] }] }] }
+    // Estructura 2: { teams: [{ team: {...} }] }
+    // Estructura 3: { items: [{...}] }
+    const rawTeams: RawTeam[] = [];
+    const sports = (data.sports as { leagues?: { teams?: { team: RawTeam }[] }[] }[])?.[0];
+    const leagueTeams = sports?.leagues?.[0]?.teams;
+    if (leagueTeams) {
+      for (const t of leagueTeams) rawTeams.push(t.team);
+    } else {
+      const direct = (data.teams as { team?: RawTeam }[]) ?? (data.items as RawTeam[]) ?? [];
+      for (const t of direct) rawTeams.push((t as { team?: RawTeam }).team ?? (t as RawTeam));
+    }
+
+    for (const t of rawTeams) {
+      // Logo: puede estar en logo (string) o logos[0].href / logos[0].url
+      const logo =
+        t.logo ??
+        t.logos?.find(l => l.href)?.href ??
+        t.logos?.find(l => l.url)?.url ??
+        "";
       if (!logo) continue;
-      for (const name of [t.team.name, t.team.shortDisplayName, t.team.abbreviation]) {
+      for (const name of [t.displayName, t.name, t.shortDisplayName, t.abbreviation, t.location]) {
         if (name) map.set(norm(name), logo);
       }
     }
@@ -144,7 +177,7 @@ export async function GET() {
     jornada_id: string; jornada_numero: number; jornada_nombre: string | null;
     jornada_liga: string; jornada_estado: string;
     partido_id: string; equipo_local: string; equipo_visita: string;
-    fecha_hora: string; resultado: string | null;
+    fecha_hora: string | null; fecha_epoch: string; resultado: string | null;
     goles_local: number | null; goles_visita: number | null; orden: number;
     logo_local: string | null; logo_visita: string | null;
   };
@@ -160,6 +193,7 @@ export async function GET() {
       p."equipoLocal"   AS equipo_local,
       p."equipoVisita"  AS equipo_visita,
       to_char(p."fechaHora" AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS fecha_hora,
+      (EXTRACT(EPOCH FROM p."fechaHora") * 1000)::bigint AS fecha_epoch,
       p.resultado,
       p."golesLocal"    AS goles_local,
       p."golesVisita"   AS goles_visita,
@@ -305,7 +339,7 @@ export async function GET() {
           } else {
             // Sin ESPN: estado por fecha
             const ahora = Date.now();
-            const fechaMs = new Date(p.fecha_hora).getTime();
+            const fechaMs = Number(p.fecha_epoch);
             if (p.resultado) {
               estado = "post";
               detalle = p.resultado;
@@ -321,7 +355,7 @@ export async function GET() {
           return {
             id: p.partido_id,
             orden: p.orden,
-            fechaHora: p.fecha_hora,
+            fechaHora: new Date(Number(p.fecha_epoch)).toISOString(),
             estado, detalle, reloj, periodo,
             local:  { nombre: p.equipo_local,  logo: logoLocal,  goles: golesLocal  },
             visita: { nombre: p.equipo_visita, logo: logoVisita, goles: golesVisita },
