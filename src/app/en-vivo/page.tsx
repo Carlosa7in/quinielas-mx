@@ -312,6 +312,16 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
           }
         </div>
       )}
+
+      {/* Comparar con mi quiniela */}
+      <div className="border-t border-white/5 px-4 py-2">
+        <Link
+          href="/consultar"
+          className="flex items-center justify-center gap-1.5 w-full text-[11px] font-semibold text-amber-400/80 hover:text-amber-300 transition-colors py-1"
+        >
+          <span>📋</span> Comparar con mi quiniela
+        </Link>
+      </div>
     </div>
   );
 }
@@ -438,13 +448,10 @@ export default function EnVivoPage() {
         <NotifBloqueadasBanner />
         <div className="bg-gray-900 rounded-2xl px-4 py-3 flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-white">Notificaciones de goles</p>
-            <p className="text-xs text-gray-500">Aviso aunque no tengas la app abierta</p>
+            <p className="text-sm font-semibold text-white">Notificaciones en vivo</p>
+            <p className="text-xs text-gray-500">Avisos aunque no tengas la app abierta</p>
           </div>
-          <div className="flex items-center gap-3">
-            <TestPushButton />
-            <PushButton />
-          </div>
+          <PushButton />
         </div>
 
         {error && (
