@@ -153,9 +153,10 @@ export async function findSofaEventId(
   ]);
 
   const all = pages.flat();
+  // Busca en ambos órdenes: la DB puede tener local/visita invertidos vs SofaScore
   const match = all.find(ev =>
-    teamsMatch(equipoLocal, ev.homeTeam.name) &&
-    teamsMatch(equipoVisita, ev.awayTeam.name),
+    (teamsMatch(equipoLocal, ev.homeTeam.name) && teamsMatch(equipoVisita, ev.awayTeam.name)) ||
+    (teamsMatch(equipoLocal, ev.awayTeam.name) && teamsMatch(equipoVisita, ev.homeTeam.name)),
   );
 
   if (match) {
