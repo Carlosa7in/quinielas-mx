@@ -437,129 +437,12 @@ export async function GET() {
             }
           }
 
-          // ── Eventos ──────────────────────────────────────────────────────────
-          // EN VIVO:     SofaScore (jornada actual) — más rico, tiene cambios/VAR
-          // TERMINADO:   ESPN details/keyMoments — datos ya consolidados
+          // ── Eventos: ESPN (details → keyMoments) ─────────────────────────────
           if (estado === "in" || estado === "post") {
-              // ── Estrategia 1: SofaScore ──────────────────────────────────────────
-              // EN VIVO siempre; TERMINADO solo si ESPN no tiene el partido
-              const ligaPartido = p.partido_liga || j.liga;
-              let sofaId: number | null = null;
-              let sofaIncs: SofaIncident[] = [];
-              if (estado === "in" || (estado === "post" && !espnEv)) {
-                sofaId = await findSofaEventId(p.equipo_local, p.equipo_visita, ligaPartido);
-                sofaIncs = sofaId ? await fetchSofaIncidents(sofaId) : [];
-              }
-              _sofaId = sofaId; _sofaIncs = sofaIncs.length;
+              _sofaId = null; _sofaIncs = 0;
 
-              if (sofaIncs.length > 0) {
-                eventos = sofaIncs
-                  .filter(inc => inc.incidentType !== "injuryTime") // minutos extra: irrelevante en timeline
-                  .map(inc => {
-                    const min = inc.addedTime
-                      ? `${inc.time}+${inc.addedTime}'`
-                      : `${inc.time}'`;
-                    const clave = `sofa-${sofaId}-${inc.incidentType}-${inc.id ?? inc.time}-${inc.addedTime ?? 0}`;
-
-                    let tipo: string;
-                    let jugador: string | undefined;
-                    let asistente: string | undefined;
-                    let jugadorSale: string | undefined;
-                    let texto = "";
-
-                    if (inc.incidentType === "goal") {
-                      tipo = "gol";
-                      jugador = inc.player?.name;
-                      asistente = inc.playerAssist?.name;
-                      if (inc.incidentClass === "ownGoal") texto = "Autogol";
-                      else if (inc.incidentClass === "penalty") texto = "Penal";
-
-                      // Push: goles en vivo
-                      if (estado === "in") {
-                        const extras = [
-                          inc.incidentClass === "ownGoal" ? "autogol" : null,
-                          inc.incidentClass === "penalty" ? "penal" : null,
-                          asistente ? `asist. ${asistente}` : null,
-                        ].filter(Boolean).join(" · ");
-                        candidatos.push({
-                          clave,
-                          titulo: `⚽ Gol${jugador ? ` de ${jugador}` : ""} (${min})`,
-                          cuerpo: `${p.equipo_local} vs ${p.equipo_visita}${extras ? `\n${extras}` : ""}`,
-                          tag: clave,
-                        });
-                      }
-                    } else if (inc.incidentType === "card") {
-                      tipo = inc.incidentClass === "red" || inc.incidentClass === "yellowRed" ? "roja" : "amarilla";
-                      jugador = inc.player?.name;
-                      if (inc.incidentClass === "yellowRed") texto = "Doble amarilla";
-
-                      // Push: rojas y amarillas en vivo
-                      if (estado === "in") {
-                        const emoji = tipo === "roja" ? "🟥" : "🟡";
-                        const label = tipo === "roja"
-                          ? (inc.incidentClass === "yellowRed" ? "Doble amarilla" : "Expulsión")
-                          : "Amarilla";
-                        candidatos.push({
-                          clave,
-                          titulo: `${emoji} ${label}${jugador ? ` – ${jugador}` : ""} (${min})`,
-                          cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
-                          tag: clave,
-                        });
-                      }
-                    } else if (inc.incidentType === "substitution") {
-                      tipo = "cambio";
-                      jugador = inc.playerIn?.name;
-                      jugadorSale = inc.playerOut?.name;
-                      texto = jugadorSale ? `↑ ${jugador ?? ""} ↓ ${jugadorSale}` : "";
-                    } else if (inc.incidentType === "varDecision") {
-                      tipo = "var";
-                      jugador = inc.player?.name;
-                      texto = inc.description ?? "Revisión VAR";
-                      // Push VAR en vivo
-                      if (estado === "in") {
-                        candidatos.push({
-                          clave,
-                          titulo: `📺 VAR (${min})`,
-                          cuerpo: `${texto}${jugador ? ` – ${jugador}` : ""} | ${p.equipo_local} vs ${p.equipo_visita}`,
-                          tag: clave,
-                        });
-                      }
-                    } else if (inc.incidentType === "period") {
-                      if (inc.text === "KO") {
-                        tipo = "inicio";
-                        texto = "Silbatazo inicial";
-                        if (estado === "in") {
-                          candidatos.push({
-                            clave,
-                            titulo: "🏁 ¡Empieza el partido!",
-                            cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
-                            tag: clave,
-                          });
-                        }
-                      } else if (inc.text === "HT") {
-                        tipo = "medio_tiempo";
-                        texto = "Medio tiempo";
-                        if (estado === "in") {
-                          candidatos.push({
-                            clave,
-                            titulo: `⏸️ Medio tiempo`,
-                            cuerpo: `${p.equipo_local} ${golesLocal ?? 0} – ${golesVisita ?? 0} ${p.equipo_visita}`,
-                            tag: clave,
-                          });
-                        }
-                      } else {
-                        tipo = "periodo";
-                        texto = inc.text ?? "";
-                      }
-                    } else {
-                      tipo = inc.incidentType;
-                      texto = inc.description ?? inc.text ?? "";
-                    }
-
-                    return { id: String(inc.id ?? clave), tipo, texto, minuto: min, jugador, asistente, jugadorSale };
-                  });
-              } else if (espnEv) {
-                // ── Estrategia 2: details del scoreboard ESPN ────────────────────────────
+              if (espnEv) {
+                // ── ESPN details del scoreboard ──────────────────────────────────────
                 const details = espnEv.competitions?.[0]?.details ?? [];
 
                 if (details.length > 0) {
@@ -621,7 +504,7 @@ export async function GET() {
               }
 
               // Notificación de partido terminado
-              const matchKey = espnEv?.id ?? `sofa-${sofaId ?? p.partido_id}`;
+              const matchKey = espnEv?.id ?? p.partido_id;
               if (estado === "post" && golesLocal !== null && golesVisita !== null) {
                 candidatos.push({
                   clave: `final-${matchKey}`,
