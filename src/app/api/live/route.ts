@@ -155,14 +155,48 @@ function teamsMatch(dbName: string, espnName: string): boolean {
   return wordsA.some(w => wordsB.includes(w));
 }
 
+type EspnScoringPlay = {
+  id?: string;
+  type?: { id?: string; text?: string };
+  text?: string;
+  clock?: { displayValue?: string };
+  athletesInvolved?: { displayName?: string }[];
+  team?: { id?: string };
+  scoringPlay?: boolean;
+};
+
 async function fetchKeyMoments(ligaSlug: string, eventId: string): Promise<EspnKeyMoment[]> {
   try {
     const res = await fetch(
       `https://site.api.espn.com/apis/site/v2/sports/soccer/${ligaSlug}/summary?event=${eventId}`,
     );
     if (!res.ok) return [];
-    const data = await res.json() as { keyMoments?: EspnKeyMoment[] };
-    return data.keyMoments ?? [];
+    const data = await res.json() as {
+      keyMoments?: EspnKeyMoment[];
+      scoringPlays?: EspnScoringPlay[];
+      plays?: { items?: EspnScoringPlay[] };
+      header?: unknown;
+    };
+    // Log para debug (quitar después)
+    console.log(`[fetchKeyMoments] ${ligaSlug}/${eventId} keys:`, Object.keys(data),
+      "km:", data.keyMoments?.length ?? 0,
+      "sp:", data.scoringPlays?.length ?? 0,
+      "plays:", data.plays?.items?.length ?? 0);
+
+    // keyMoments es el campo principal; si está vacío, intentar scoringPlays
+    if (data.keyMoments && data.keyMoments.length > 0) return data.keyMoments;
+
+    // Algunos endpoints de ESPN brasileño/CONMEBOL usan scoringPlays
+    if (data.scoringPlays && data.scoringPlays.length > 0) {
+      return data.scoringPlays as EspnKeyMoment[];
+    }
+
+    // Fallback: plays con scoringPlay=true (goles únicamente)
+    const items = data.plays?.items ?? [];
+    const goals = items.filter(p => p.scoringPlay);
+    if (goals.length > 0) return goals as EspnKeyMoment[];
+
+    return [];
   } catch { return []; }
 }
 
