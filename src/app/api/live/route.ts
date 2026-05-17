@@ -45,6 +45,21 @@ type EspnCompetitor = {
   team?: { id?: string; name?: string; abbreviation?: string; logo?: string };
 };
 
+type EspnDetail = {
+  id?: string;
+  type?: { id?: string; text?: string };
+  text?: string;
+  clock?: { value?: number; displayValue?: string };
+  team?: { id?: string };
+  scoringPlay?: boolean;
+  redCard?: boolean;
+  yellowCard?: boolean;
+  penaltyKick?: boolean;
+  ownGoal?: boolean;
+  shootout?: boolean;
+  athletesInvolved?: { id?: string; displayName?: string }[];
+};
+
 type EspnEvent = {
   id: string;
   name?: string;
@@ -54,7 +69,7 @@ type EspnEvent = {
     displayClock?: string;
     period?: number;
   };
-  competitions?: { competitors?: EspnCompetitor[] }[];
+  competitions?: { competitors?: EspnCompetitor[]; details?: EspnDetail[] }[];
 };
 
 type EspnKeyMoment = {
@@ -66,8 +81,42 @@ type EspnKeyMoment = {
   team?: { id?: string };
 };
 
-// Goles ya notificados (best-effort, se resetea entre instancias serverless)
-const notifiedGoals = new Set<string>();
+// ── Notificaciones persistidas en DB ──────────────────────────────────────────
+type CandidatoNotif = {
+  clave: string;   // PK única en DB
+  titulo: string;
+  cuerpo: string;
+  tag: string;
+};
+
+async function ensureNotifTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS "EventoNotificado" (
+      "clave"    TEXT        NOT NULL,
+      "creadoAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "EventoNotificado_pkey" PRIMARY KEY ("clave")
+    )
+  `;
+}
+
+// Inserta las claves nuevas (ON CONFLICT DO NOTHING) y devuelve solo las que
+// se insertaron ahora (= nunca notificadas antes).
+async function filtrarYMarcarNuevos(claves: string[]): Promise<Set<string>> {
+  if (claves.length === 0) return new Set();
+  try {
+    await ensureNotifTable();
+    const rows = (await sql`
+      INSERT INTO "EventoNotificado" ("clave")
+      SELECT unnest(${claves}::text[])
+      ON CONFLICT ("clave") DO NOTHING
+      RETURNING "clave"
+    `) as { clave: string }[];
+    return new Set(rows.map(r => r.clave));
+  } catch {
+    // Si falla la DB preferimos mandar duplicados antes que silencio
+    return new Set(claves);
+  }
+}
 
 // Normaliza nombre de equipo para comparar entre DB y ESPN
 function norm(s: string): string {
@@ -304,7 +353,7 @@ export async function GET() {
   );
 
   // 3. Para cada partido en DB, buscar su par en ESPN
-  const nuevosGoles: { partido: string; jugador?: string; minuto?: string }[] = [];
+  const candidatos: CandidatoNotif[] = [];
 
   const jornadasResult = await Promise.all(
     jornadas.map(async (j) => {
@@ -368,28 +417,78 @@ export async function GET() {
             if (localEspn?.team?.logo)  logoLocal  = localEspn.team.logo;
             if (visitaEspn?.team?.logo) logoVisita = visitaEspn.team.logo;
 
-            if ((estado === "in" || estado === "post") && (slugPartido || slug)) {
-              const kms = await fetchKeyMoments(slugPartido ?? slug ?? "", espnEv.id);
-              eventos = kms.map(km => {
-                const tipo = tipoEvento(km);
-                const goalKey = `${espnEv.id}-${km.id ?? km.clock?.displayValue}`;
-                // Solo notificar push durante partidos EN VIVO (no al mostrar historial)
-                if (estado === "in" && tipo === "gol" && km.id && !notifiedGoals.has(goalKey)) {
-                  notifiedGoals.add(goalKey);
-                  nuevosGoles.push({
-                    partido: `${p.equipo_local} vs ${p.equipo_visita}`,
-                    jugador: km.athletesInvolved?.[0]?.displayName,
-                    minuto: km.clock?.displayValue,
+            if (estado === "in" || estado === "post") {
+              // Estrategia 1: details del scoreboard (Liga MX y la mayoría de ligas ESPN)
+              // Ya están en el fetch inicial — sin costo extra de red
+              const details = espnEv.competitions?.[0]?.details ?? [];
+
+              if (details.length > 0) {
+                eventos = details
+                  .filter(d => d.scoringPlay || d.yellowCard || d.redCard)
+                  .map(d => {
+                    let tipo: string;
+                    if (d.redCard)          tipo = "roja";
+                    else if (d.yellowCard)  tipo = "amarilla";
+                    else if (d.scoringPlay) tipo = "gol";
+                    else tipo = d.type?.text?.toLowerCase() ?? "evento";
+
+                    // Candidatos a notificar: goles y rojas en partidos en vivo
+                    if (estado === "in" && (tipo === "gol" || tipo === "roja") && d.id) {
+                      const jugador = d.athletesInvolved?.[0]?.displayName;
+                      const min = d.clock?.displayValue;
+                      candidatos.push({
+                        clave: `${tipo}-${espnEv.id}-${d.id}`,
+                        titulo: tipo === "gol"
+                          ? `⚽ Gol${jugador ? ` de ${jugador}` : ""}${min ? ` (${min})` : ""}`
+                          : `🟥 Roja${jugador ? ` – ${jugador}` : ""}${min ? ` (${min})` : ""}`,
+                        cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
+                        tag: `${tipo}-${espnEv.id}-${d.id}`,
+                      });
+                    }
+                    return {
+                      id: d.id, tipo,
+                      texto: d.text ?? d.type?.text ?? "",
+                      minuto: d.clock?.displayValue,
+                      jugador: d.athletesInvolved?.[0]?.displayName,
+                      equipoId: d.team?.id,
+                    };
                   });
-                }
-                return {
-                  id: km.id, tipo,
-                  texto: km.text ?? km.type?.text ?? "",
-                  minuto: km.clock?.displayValue,
-                  jugador: km.athletesInvolved?.[0]?.displayName,
-                  equipoId: km.team?.id,
-                };
-              });
+              } else if (slugPartido || slug) {
+                // Estrategia 2: fallback al summary (UCL y ligas con keyMoments/scoringPlays)
+                const kms = await fetchKeyMoments(slugPartido ?? slug ?? "", espnEv.id);
+                eventos = kms.map(km => {
+                  const tipo = tipoEvento(km);
+                  if (estado === "in" && (tipo === "gol" || tipo === "roja") && km.id) {
+                    const jugador = km.athletesInvolved?.[0]?.displayName;
+                    const min = km.clock?.displayValue;
+                    candidatos.push({
+                      clave: `${tipo}-${espnEv.id}-${km.id}`,
+                      titulo: tipo === "gol"
+                        ? `⚽ Gol${jugador ? ` de ${jugador}` : ""}${min ? ` (${min})` : ""}`
+                        : `🟥 Roja${jugador ? ` – ${jugador}` : ""}${min ? ` (${min})` : ""}`,
+                      cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
+                      tag: `${tipo}-${espnEv.id}-${km.id}`,
+                    });
+                  }
+                  return {
+                    id: km.id, tipo,
+                    texto: km.text ?? km.type?.text ?? "",
+                    minuto: km.clock?.displayValue,
+                    jugador: km.athletesInvolved?.[0]?.displayName,
+                    equipoId: km.team?.id,
+                  };
+                });
+              }
+
+              // Notificación de partido terminado
+              if (estado === "post" && golesLocal !== null && golesVisita !== null) {
+                candidatos.push({
+                  clave: `final-${espnEv.id}`,
+                  titulo: "⏱️ Partido terminado",
+                  cuerpo: `${p.equipo_local} ${golesLocal} – ${golesVisita} ${p.equipo_visita}`,
+                  tag: `final-${espnEv.id}`,
+                });
+              }
             }
 
             if (estado === "post" && p.resultado) detalle = p.resultado;
@@ -443,15 +542,22 @@ export async function GET() {
     }),
   );
 
-  // Enviar push por goles nuevos (import dinamico para aislar errores de web-push)
-  if (nuevosGoles.length > 0) {
-    import("@/lib/push").then(({ sendPushToAll }) => {
-      for (const g of nuevosGoles) {
-        const titulo = g.jugador
-          ? `Gol de ${g.jugador}${g.minuto ? ` (${g.minuto})` : ""}`
-          : `Gol!${g.minuto ? ` ${g.minuto}` : ""}`;
-        sendPushToAll({ title: titulo, body: g.partido, icon: "/logo-tablitas.png", url: "/en-vivo", tag: `gol-${g.partido}-${g.minuto}` }).catch(() => {});
-      }
+  // Enviar push: filtrar en DB los ya notificados, marcar los nuevos, enviar
+  if (candidatos.length > 0) {
+    filtrarYMarcarNuevos(candidatos.map(c => c.clave)).then(nuevasClaves => {
+      const aEnviar = candidatos.filter(c => nuevasClaves.has(c.clave));
+      if (aEnviar.length === 0) return;
+      import("@/lib/push").then(({ sendPushToAll }) => {
+        for (const n of aEnviar) {
+          sendPushToAll({
+            title: n.titulo,
+            body: n.cuerpo,
+            icon: "/logo-tablitas.png",
+            url: "/en-vivo",
+            tag: n.tag,
+          }).catch(() => {});
+        }
+      }).catch(() => {});
     }).catch(() => {});
   }
 
