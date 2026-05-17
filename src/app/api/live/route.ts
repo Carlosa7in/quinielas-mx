@@ -419,10 +419,10 @@ export async function GET() {
             if (visitaEspn?.team?.logo) logoVisita = visitaEspn.team.logo;
 
             if (estado === "in" || estado === "post") {
-              const fechaPartido = new Date(Number(p.fecha_epoch));
-
               // ── Estrategia 1: SofaScore (más rico: cambios, VAR, periodo, asistencias) ──
-              const sofaId = await findSofaEventId(p.equipo_local, p.equipo_visita, fechaPartido);
+              // Busca por torneo específico según la liga del partido
+              const ligaPartido = p.partido_liga || j.liga;
+              const sofaId = await findSofaEventId(p.equipo_local, p.equipo_visita, ligaPartido);
               const sofaIncs: SofaIncident[] = sofaId ? await fetchSofaIncidents(sofaId) : [];
 
               if (sofaIncs.length > 0) {

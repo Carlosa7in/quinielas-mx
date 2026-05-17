@@ -38,8 +38,17 @@ const TIPO_LABEL: Record<string, string> = {
   cambio:       "Cambio",
   medio_tiempo: "Medio tiempo",
   inicio:       "Inicio",
-  periodo:      "Periodo",
+  periodo:      "Fin",
   var:          "VAR",
+};
+
+// Texto legible para marcadores de periodo SofaScore
+const PERIODO_TEXTO: Record<string, string> = {
+  KO:  "🏁 Silbatazo inicial",
+  HT:  "⏸️ Medio tiempo",
+  FT:  "⏱️ Fin del partido",
+  ET:  "⏳ Tiempo extra",
+  PEN: "🥅 Penales",
 };
 
 type Evento = {
@@ -124,7 +133,9 @@ function EventoItem({ ev }: { ev: Evento }) {
       linea2 = <span className="text-gray-500 text-[10px]">{ev.texto}{ev.asistente ? ` · Asist. ${ev.asistente}` : ""}</span>;
     }
   } else if (ev.tipo === "inicio" || ev.tipo === "medio_tiempo" || ev.tipo === "periodo") {
-    linea1 = <span className="text-gray-400 text-xs font-semibold">{ev.texto || label}</span>;
+    // Usar texto legible si el texto raw es "KO"/"HT"/"FT"/etc.
+    const textoLegible = PERIODO_TEXTO[ev.texto ?? ""] ?? ev.texto ?? label;
+    linea1 = <span className="text-gray-400 text-xs font-semibold">{textoLegible}</span>;
   } else if (ev.tipo === "var") {
     linea1 = <span className="text-orange-300 text-xs font-semibold">{ev.texto || "Revisión VAR"}</span>;
     if (ev.jugador) linea2 = <span className="text-gray-500 text-[10px]">{ev.jugador}</span>;
