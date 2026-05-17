@@ -689,7 +689,7 @@ export async function GET() {
   }
 
   const hayEnVivo = jornadasResult.some(j => j.partidos.some(p => p.estado === "in"));
-  return NextResponse.json({ jornadas: jornadasResult, hayEnVivo, actualizado: new Date().toISOString() });
+  return NextResponse.json({ jornadas: jornadasResult, hayEnVivo, actualizado: new Date().toISOString(), _v: "v6-reversed-order" });
 
   } catch (err) {
     console.error("[/api/live] error:", err);
