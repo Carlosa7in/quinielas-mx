@@ -425,20 +425,18 @@ export default function ResultadosPage() {
                   <td style={{ padding: "4px 10px" }}>
                     <span style={{ color: WHITE, fontSize: rFontXS, fontWeight: 800, letterSpacing: 1 }}>NOMBRE</span>
                   </td>
-                  {partidos.map((p, i) => {
+                  {partidos.map((p) => {
                     const res = p.resultado ? (PRED_LABEL[p.resultado] ?? p.resultado) : null;
-                    const resBg = p.resultado === "1" ? "#16a34a"
-                      : p.resultado === "2" ? "#dc2626"
-                      : p.resultado === "X" ? "#ca8a04"
+                    const resColor = p.resultado === "1" ? "#4ade80"
+                      : p.resultado === "2" ? "#f87171"
+                      : p.resultado === "X" ? "#fbbf24"
                       : "transparent";
                     return (
                       <td key={`num-${p.id}`} style={{ textAlign: "center", padding: "3px 1px" }}>
                         {res ? (
-                          <div style={{ background: resBg, borderRadius: 4, height: rCellH, width: rColW - 4, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <span style={{ color: WHITE, fontSize: rFontSM, fontWeight: 900 }}>{res}</span>
-                          </div>
+                          <span style={{ color: resColor, fontSize: rFontSM, fontWeight: 900 }}>{res}</span>
                         ) : (
-                          <span style={{ color: "#93c5fd", fontSize: rFontXS, fontWeight: 800 }}>{i + 1}</span>
+                          <span style={{ color: "#475569", fontSize: rFontXS, fontWeight: 600 }}>·</span>
                         )}
                       </td>
                     );
@@ -463,14 +461,14 @@ export default function ResultadosPage() {
                   const ac        = q.aciertos ?? 0;
                   // Vibrant row & pts colors by aciertos level
                   const { rowBg, ptsBg, ptsColor } = (() => {
-                    if (ac === total)       return { rowBg: "#fef3c7", ptsBg: "#f59e0b", ptsColor: "#78350f" }; // amber
-                    if (ac >= total - 1)   return { rowBg: "#dcfce7", ptsBg: "#22c55e", ptsColor: "#14532d" }; // green
-                    if (ac >= 5)           return { rowBg: "#ccfbf1", ptsBg: "#14b8a6", ptsColor: "#134e4a" }; // teal
-                    if (ac === 4)          return { rowBg: "#dbeafe", ptsBg: "#3b82f6", ptsColor: "#1e3a8a" }; // blue
-                    if (ac === 3)          return { rowBg: "#e0e7ff", ptsBg: "#818cf8", ptsColor: "#312e81" }; // indigo
+                    if (ac === total)       return { rowBg: "#fde68a", ptsBg: "#d97706", ptsColor: "#fff" }; // amber-200 / amber-600
+                    if (ac >= total - 1)   return { rowBg: "#bbf7d0", ptsBg: "#16a34a", ptsColor: "#fff" }; // green-200 / green-600
+                    if (ac >= 5)           return { rowBg: "#99f6e4", ptsBg: "#0d9488", ptsColor: "#fff" }; // teal-200 / teal-600
+                    if (ac === 4)          return { rowBg: "#bfdbfe", ptsBg: "#2563eb", ptsColor: "#fff" }; // blue-200 / blue-600
+                    if (ac === 3)          return { rowBg: "#c7d2fe", ptsBg: "#4f46e5", ptsColor: "#fff" }; // indigo-200 / indigo-600
                     if (ac === 2)          return { rowBg: idx % 2 === 0 ? WHITE : LGRAY, ptsBg: LGRAY2, ptsColor: "#6b7280" }; // neutral
-                    if (ac === 1)          return { rowBg: "#fff7ed", ptsBg: "#fb923c", ptsColor: "#7c2d12" }; // orange
-                    return                        { rowBg: "#fef2f2", ptsBg: "#f87171", ptsColor: "#7f1d1d" }; // red (0)
+                    if (ac === 1)          return { rowBg: "#fed7aa", ptsBg: "#ea580c", ptsColor: "#fff" }; // orange-200 / orange-600
+                    return                        { rowBg: "#fecaca", ptsBg: "#dc2626", ptsColor: "#fff" }; // red-200 / red-600 (0)
                   })();
                   return (
                     <tr key={q.id} style={{ background: rowBg, borderBottom: `1px solid ${LGRAY2}` }}>
@@ -486,8 +484,10 @@ export default function ResultadosPage() {
                       {partidos.map((p) => {
                         const cell  = picksForPartido(q.picks, p.id);
                         const hasR  = p.resultado !== null;
-                        const s     = cell && hayResultados ? pickStyle(cell.acertado, hasR) : { bg: "#d1d5db", color: "#6b7280" };
-                        const label = cell && hayResultados ? cell.label : "?";
+                        // Si el partido no ha jugado aún → siempre "?" (como quinielas no liberadas)
+                        const revealed = cell && hayResultados && hasR;
+                        const s     = revealed ? pickStyle(cell!.acertado, true) : { bg: "#d1d5db", color: "#6b7280" };
+                        const label = revealed ? cell!.label : "?";
                         return (
                           <td key={`${q.id}-${p.id}`} style={{ width: rColW, textAlign: "center", padding: "3px 1px" }}>
                             <div style={{ background: s.bg, borderRadius: 4, height: rCellH, width: rColW - 4, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -519,14 +519,14 @@ export default function ResultadosPage() {
           {[
             { bg: "#16a34a", label: "Acertado" },
             { bg: "#dc2626", label: "Fallado" },
-            { bg: "#d1d5db", label: "Pendiente" },
-            { bg: "#f59e0b", label: "Todo correcto" },
-            { bg: "#22c55e", label: "Excelente" },
-            { bg: "#14b8a6", label: "Muy bien" },
-            { bg: "#3b82f6", label: "Bien" },
-            { bg: "#818cf8", label: "Regular" },
-            { bg: "#fb923c", label: "Poco" },
-            { bg: "#f87171", label: "Sin aciertos" },
+            { bg: "#d1d5db", label: "Pendiente / No jugado" },
+            { bg: "#d97706", label: "Todo correcto" },
+            { bg: "#16a34a", label: "Excelente" },
+            { bg: "#0d9488", label: "Muy bien" },
+            { bg: "#2563eb", label: "Bien" },
+            { bg: "#4f46e5", label: "Regular" },
+            { bg: "#ea580c", label: "Poco" },
+            { bg: "#dc2626", label: "Sin aciertos" },
           ].map(({ bg, label }) => (
             <span key={label} className="flex items-center gap-1.5">
               <span style={{ background: bg, width: 16, height: 13, borderRadius: 3, display: "inline-block" }} />
