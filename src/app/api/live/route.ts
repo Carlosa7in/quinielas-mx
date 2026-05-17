@@ -443,6 +443,7 @@ export async function GET() {
               const ligaPartido = p.partido_liga || j.liga;
               const sofaId = await findSofaEventId(p.equipo_local, p.equipo_visita, ligaPartido);
               const sofaIncs: SofaIncident[] = sofaId ? await fetchSofaIncidents(sofaId) : [];
+              console.log(`[live] ${p.equipo_local} vs ${p.equipo_visita} | liga="${ligaPartido}" sofaId=${sofaId ?? "null"} sofaIncs=${sofaIncs.length} espnEv=${espnEv?.id ?? "null"} estado=${estado}`);
 
               if (sofaIncs.length > 0) {
                 eventos = sofaIncs
