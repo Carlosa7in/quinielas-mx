@@ -273,6 +273,7 @@ export async function GET() {
     fecha_hora: string | null; fecha_epoch: string; resultado: string | null;
     goles_local: number | null; goles_visita: number | null; orden: number;
     logo_local: string | null; logo_visita: string | null;
+    espn_id: string | null;
   };
 
   const rows = (await sql`
@@ -292,6 +293,7 @@ export async function GET() {
       p."golesLocal"    AS goles_local,
       p."golesVisita"   AS goles_visita,
       p.orden,
+      p."espnId"        AS espn_id,
       el."logoUrl"      AS logo_local,
       ev."logoUrl"      AS logo_visita
     FROM "Jornada" j
@@ -421,6 +423,11 @@ export async function GET() {
             if (visitaEspn?.team?.logo) logoVisita = visitaEspn.team.logo;
 
             if (estado === "post" && p.resultado) detalle = p.resultado;
+
+            // Guardar espnId en BD si aún no lo tiene (para poder usarlo cuando caiga del scoreboard)
+            if (!p.espn_id) {
+              sql`UPDATE "Partido" SET "espnId" = ${espnEv.id} WHERE id = ${p.partido_id}`.catch(() => {});
+            }
           } else {
             // Sin ESPN: estado por fecha/DB
             const ahora = Date.now();
@@ -440,6 +447,20 @@ export async function GET() {
           // ── Eventos: ESPN (details → keyMoments) ─────────────────────────────
           if (estado === "in" || estado === "post") {
               _sofaId = null; _sofaIncs = 0;
+
+              // Para post sin espnEv: intentar con espnId guardado en BD via summary
+              const savedEspnId = p.espn_id;
+              if (!espnEv && savedEspnId && (slugPartido || slug) && estado === "post") {
+                const kms = await fetchKeyMoments(slugPartido ?? slug ?? "", savedEspnId);
+                if (kms.length > 0) {
+                  eventos = kms.map(km => ({
+                    id: km.id, tipo: tipoEvento(km),
+                    texto: km.text ?? km.type?.text ?? "",
+                    minuto: km.clock?.displayValue,
+                    jugador: km.athletesInvolved?.[0]?.displayName,
+                  }));
+                }
+              }
 
               if (espnEv) {
                 // ── ESPN details del scoreboard ──────────────────────────────────────
