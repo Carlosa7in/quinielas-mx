@@ -178,7 +178,17 @@ export default function PremiacionPage() {
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">{error}</div>
+          <div className="space-y-3">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">{error}</div>
+            <a
+              href={`/resultados/${jornadaSeleccionada.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-amber-50 hover:border-amber-300 text-gray-700 font-semibold py-3 rounded-xl transition-colors shadow-sm"
+            >
+              <span>📊</span> Ver tabla de resultados
+            </a>
+          </div>
         )}
 
         {datos && !cargando && (

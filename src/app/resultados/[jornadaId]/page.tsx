@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { getLogoUrl } from "@/lib/equipos";
+import LoadingScreen from "@/components/LoadingScreen";
 
 type Partido = {
   id: string;
@@ -274,11 +275,7 @@ export default function ResultadosPage() {
       </div>
     </div>
   );
-  if (!data) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <p className="text-gray-400 animate-pulse">Cargando resultados...</p>
-    </div>
-  );
+  if (!data) return <LoadingScreen texto="Cargando resultados..." />;
 
   const { jornada, partidos, premios } = data;
   const nombreJornada = jornada.nombre ?? `Jornada ${jornada.numero}`;
@@ -462,7 +459,19 @@ export default function ResultadosPage() {
                 {quinielasFiltradas.map((q, idx) => {
                   const esPrimero = premios.maxAciertos    !== null && q.aciertos === premios.maxAciertos;
                   const esSegundo = premios.segundoAciertos !== null && q.aciertos === premios.segundoAciertos;
-                  const rowBg     = esPrimero ? "#fef9c3" : esSegundo ? "#f0fdf4" : idx % 2 === 0 ? WHITE : LGRAY;
+                  const total     = partidos.length;
+                  const ac        = q.aciertos ?? 0;
+                  // Vibrant row & pts colors by aciertos level
+                  const { rowBg, ptsBg, ptsColor } = (() => {
+                    if (ac === total)       return { rowBg: "#fef3c7", ptsBg: "#f59e0b", ptsColor: "#78350f" }; // amber
+                    if (ac >= total - 1)   return { rowBg: "#dcfce7", ptsBg: "#22c55e", ptsColor: "#14532d" }; // green
+                    if (ac >= 5)           return { rowBg: "#ccfbf1", ptsBg: "#14b8a6", ptsColor: "#134e4a" }; // teal
+                    if (ac === 4)          return { rowBg: "#dbeafe", ptsBg: "#3b82f6", ptsColor: "#1e3a8a" }; // blue
+                    if (ac === 3)          return { rowBg: "#e0e7ff", ptsBg: "#818cf8", ptsColor: "#312e81" }; // indigo
+                    if (ac === 2)          return { rowBg: idx % 2 === 0 ? WHITE : LGRAY, ptsBg: LGRAY2, ptsColor: "#6b7280" }; // neutral
+                    if (ac === 1)          return { rowBg: "#fff7ed", ptsBg: "#fb923c", ptsColor: "#7c2d12" }; // orange
+                    return                        { rowBg: "#fef2f2", ptsBg: "#f87171", ptsColor: "#7f1d1d" }; // red (0)
+                  })();
                   return (
                     <tr key={q.id} style={{ background: rowBg, borderBottom: `1px solid ${LGRAY2}` }}>
                       <td style={{ padding: "4px 6px", width: rNameW, overflow: "hidden" }}>
@@ -488,8 +497,8 @@ export default function ResultadosPage() {
                         );
                       })}
                       <td style={{ width: rPtsW, textAlign: "center", padding: "3px 2px" }}>
-                        <div style={{ background: esPrimero ? "#fbbf24" : esSegundo ? "#86efac" : LGRAY2, borderRadius: 4, height: rCellH, width: rPtsW - 6, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <span style={{ color: esPrimero ? "#78350f" : esSegundo ? "#14532d" : "#6b7280", fontSize: rFontSM + 2, fontWeight: 900 }}>
+                        <div style={{ background: ptsBg, borderRadius: 4, height: rCellH, width: rPtsW - 6, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ color: ptsColor, fontSize: rFontSM + 2, fontWeight: 900 }}>
                             {q.aciertos ?? "—"}
                           </span>
                         </div>
@@ -511,8 +520,13 @@ export default function ResultadosPage() {
             { bg: "#16a34a", label: "Acertado" },
             { bg: "#dc2626", label: "Fallado" },
             { bg: "#d1d5db", label: "Pendiente" },
-            { bg: "#fbbf24", label: "1° Lugar" },
-            { bg: "#86efac", label: "2° Lugar" },
+            { bg: "#f59e0b", label: "Todo correcto" },
+            { bg: "#22c55e", label: "Excelente" },
+            { bg: "#14b8a6", label: "Muy bien" },
+            { bg: "#3b82f6", label: "Bien" },
+            { bg: "#818cf8", label: "Regular" },
+            { bg: "#fb923c", label: "Poco" },
+            { bg: "#f87171", label: "Sin aciertos" },
           ].map(({ bg, label }) => (
             <span key={label} className="flex items-center gap-1.5">
               <span style={{ background: bg, width: 16, height: 13, borderRadius: 3, display: "inline-block" }} />

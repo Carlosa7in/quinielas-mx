@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { calcularFechaCierre } from "@/lib/fechas";
+import LoadingScreen from "@/components/LoadingScreen";
 
 type Partido = {
   id: string;
@@ -168,13 +169,7 @@ export default function AdminJornadaPage() {
     setPosponiendo(false);
   };
 
-  if (cargando) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500 animate-pulse">Cargando...</p>
-      </div>
-    );
-  }
+  if (cargando) return <LoadingScreen />;
 
   const { cerrado, fechaCierre } = jornada ? estadoRegistro(jornada.partidos) : { cerrado: false, fechaCierre: null };
 

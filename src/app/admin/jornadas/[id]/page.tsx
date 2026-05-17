@@ -3,6 +3,7 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { LIGA_ICON, getLogoUrl } from "@/lib/equipos";
 import DesgloseCobrado from "@/components/DesgloseCobrado";
+import LoadingScreen from "@/components/LoadingScreen";
 
 type PickDist = { total: number; L: number; E: number; V: number; pctL: number; pctE: number; pctV: number };
 
@@ -98,11 +99,7 @@ export default function JornadaDetallePage({ params }: { params: Promise<{ id: s
     setCambiandoEstado(false);
   };
 
-  if (cargando) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <p className="text-gray-400 animate-pulse">Cargando jornada...</p>
-    </div>
-  );
+  if (cargando) return <LoadingScreen texto="Cargando jornada..." />;
 
   if (!jornada) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -303,7 +300,7 @@ export default function JornadaDetallePage({ params }: { params: Promise<{ id: s
         {/* Botón tabla de resultados */}
         {jornada.tablaResultados?.length > 0 && (
           <Link
-            href={`/admin/jornadas/${jornada.id}/resultados`}
+            href={`/resultados/${jornada.id}`}
             className="block bg-white rounded-2xl shadow-sm p-4 hover:bg-amber-50 transition-colors text-center"
           >
             <p className="text-xl mb-1">🏆</p>

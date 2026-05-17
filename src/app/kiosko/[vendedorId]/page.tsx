@@ -2,6 +2,7 @@
 import { useState, useEffect, use } from "react";
 import { getLogoUrl } from "@/lib/equipos";
 import { telefonoFalso } from "@/lib/telefono";
+import LoadingScreen from "@/components/LoadingScreen";
 
 const PRECIO_BASE = 20;
 
@@ -257,15 +258,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   }
 
   /* ── Cargando ────────────────────────────────────────────────────────────── */
-  if (!datos) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "44px", objectFit: "contain" }} />
-        <p className="text-gray-400 text-sm animate-pulse">Cargando jornada...</p>
-      </div>
-    );
-  }
+  if (!datos) return <LoadingScreen texto="Cargando jornada..." />;
 
   /* ── Selección de jornada ────────────────────────────────────────────────── */
   if (!jornadaSeleccionada && datos.jornadas.length > 1) {

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
+import LoadingScreen from "@/components/LoadingScreen";
 
 type ResultadoRow = { folio: string; nombre: string; aciertos: number; puntos: number; estado: string };
 
@@ -34,11 +35,7 @@ export default function TablaResultadosPage({ params }: { params: Promise<{ id: 
       .finally(() => setCargando(false));
   }, [id]);
 
-  if (cargando) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <p className="text-gray-400 animate-pulse">Cargando resultados...</p>
-    </div>
-  );
+  if (cargando) return <LoadingScreen texto="Cargando resultados..." />;
   if (!data) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <p className="text-gray-500">No encontrado</p>

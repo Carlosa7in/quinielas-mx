@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import LoadingScreen from "@/components/LoadingScreen";
 
 type Equipo = {
   id: string; nombre: string; abrev: string; logo: string;
@@ -286,13 +287,7 @@ export default function ClasificacionPage() {
           </p>
         </div>
 
-        {cargando && (
-          <div className="text-center py-12">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-3 animate-pulse" style={{ height: "80px", objectFit: "contain" }} />
-            <p className="text-gray-400 text-sm">Cargando clasificación...</p>
-          </div>
-        )}
+        {cargando && <LoadingScreen texto="Cargando clasificación..." variant="inline" />}
 
         {error && <div className="bg-red-50 text-red-600 rounded-xl p-4 text-center text-sm">{error}</div>}
 

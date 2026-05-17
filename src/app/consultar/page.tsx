@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { LogoEquipo } from "@/components/LogoEquipo";
+import LoadingScreen from "@/components/LoadingScreen";
 import { Suspense } from "react";
 
 type Pick = {
@@ -418,9 +419,7 @@ function Preliminares() {
       .finally(() => setCargando(false));
   }, []);
 
-  if (cargando) return (
-    <div className="text-center py-4 text-gray-400 text-sm animate-pulse">Cargando resultados...</div>
-  );
+  if (cargando) return <LoadingScreen texto="Cargando resultados..." variant="inline" />;
 
   if (datos.length === 0) return null;
 
