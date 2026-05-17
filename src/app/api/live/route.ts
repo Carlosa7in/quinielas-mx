@@ -397,6 +397,8 @@ export async function GET() {
           let logoLocal  = p.logo_local  ?? findLogo(logoMapPartido, p.equipo_local);
           let logoVisita = p.logo_visita ?? findLogo(logoMapPartido, p.equipo_visita);
           let eventos: unknown[] = [];
+          let _sofaId: number | null | "pre" = "pre";
+          let _sofaIncs = -1;
 
           if (espnEv) {
             const status = espnEv.status?.type;
@@ -443,6 +445,7 @@ export async function GET() {
               const ligaPartido = p.partido_liga || j.liga;
               const sofaId = await findSofaEventId(p.equipo_local, p.equipo_visita, ligaPartido);
               const sofaIncs: SofaIncident[] = sofaId ? await fetchSofaIncidents(sofaId) : [];
+              _sofaId = sofaId; _sofaIncs = sofaIncs.length;
               console.log(`[live] ${p.equipo_local} vs ${p.equipo_visita} | liga="${ligaPartido}" sofaId=${sofaId ?? "null"} sofaIncs=${sofaIncs.length} espnEv=${espnEv?.id ?? "null"} estado=${estado}`);
 
               if (sofaIncs.length > 0) {
@@ -635,8 +638,13 @@ export async function GET() {
             resultadoDB: p.resultado ?? null,
             eventos,
             tieneEspn: !!espnEv,
-            _ligaDB: p.partido_liga,   // DEBUG
-            _espnId: espnEv?.id ?? null, // DEBUG
+            _debug: {
+              ligaDB: p.partido_liga ?? j.liga,
+              espnId: espnEv?.id ?? null,
+              sofaId: _sofaId,
+              sofaIncs: _sofaIncs,
+              estado,
+            },
           };
         }),
       );
