@@ -478,10 +478,17 @@ export async function GET() {
                       else if (d.scoringPlay) tipo = "gol";
                       else tipo = d.type?.text?.toLowerCase() ?? "evento";
 
-                      if (estado === "in" && esReciente && (tipo === "gol" || tipo === "roja") && d.id) {
+                      // Clave estable: usa d.id si existe, si no construye una desde tiempo+jugador
+                      const detailKey = d.id
+                        ?? [
+                          d.clock?.value ?? d.clock?.displayValue ?? "t",
+                          d.athletesInvolved?.[0]?.id ?? d.athletesInvolved?.[0]?.displayName ?? "p",
+                        ].join("-");
+
+                      if (estado === "in" && esReciente && (tipo === "gol" || tipo === "roja")) {
                         const jugador = d.athletesInvolved?.[0]?.displayName;
                         const min = d.clock?.displayValue;
-                        const clave = `${tipo}-${espnEv.id}-${d.id}`;
+                        const clave = `${tipo}-${espnEv.id}-${detailKey}`;
                         candidatos.push({
                           clave,
                           titulo: tipo === "gol"
@@ -506,10 +513,15 @@ export async function GET() {
                   const kms = await fetchKeyMoments(slugPartido ?? slug ?? "", espnEv.id);
                   eventos = kms.map(km => {
                     const tipo = tipoEvento(km);
-                    if (estado === "in" && esReciente && (tipo === "gol" || tipo === "roja") && km.id) {
+                    const kmKey = km.id
+                      ?? [
+                        km.clock?.displayValue ?? "t",
+                        km.athletesInvolved?.[0]?.displayName ?? "p",
+                      ].join("-");
+                    if (estado === "in" && esReciente && (tipo === "gol" || tipo === "roja")) {
                       const jugador = km.athletesInvolved?.[0]?.displayName;
                       const min = km.clock?.displayValue;
-                      const clave = `${tipo}-${espnEv.id}-${km.id}`;
+                      const clave = `${tipo}-${espnEv.id}-${kmKey}`;
                       candidatos.push({
                         clave,
                         titulo: tipo === "gol"
@@ -541,34 +553,44 @@ export async function GET() {
                 });
               }
 
-              // Notificaciones de período (silbatazo, medio tiempo, inicio 2do) — solo in + reciente
+              // Notificaciones + eventos sintéticos de período — solo in + reciente
               if (estado === "in" && espnEv && esReciente) {
-                const espnSlug = slugPartido ?? slug ?? "";
-                // Silbatazo inicial: primer minuto del partido (periodo 1, reloj < 3 min)
-                if (periodo === 1 && reloj) {
-                  const mins = parseInt(reloj.split(":")[0] ?? "99");
-                  if (mins <= 3) {
-                    candidatos.push({
-                      clave: `kickoff-${espnEv.id}`,
-                      titulo: "🏁 ¡Arranca el partido!",
-                      cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
-                      tag: `kickoff-${espnEv.id}`,
-                    });
-                  }
+                const mins = reloj ? parseInt(reloj.split(":")[0] ?? "99") : 99;
+
+                // Silbatazo inicial: periodo 1, reloj < 3 min
+                if (periodo === 1 && mins <= 3) {
+                  candidatos.push({
+                    clave: `kickoff-${espnEv.id}`,
+                    titulo: "🏁 ¡Arranca el partido!",
+                    cuerpo: `${p.equipo_local} vs ${p.equipo_visita}`,
+                    tag: `kickoff-${espnEv.id}`,
+                  });
+                  // También en la lista de eventos para que aparezca en la página
+                  (eventos as unknown[]).unshift({
+                    id: `kickoff-${espnEv.id}`,
+                    tipo: "inicio",
+                    texto: "¡Arranca el partido!",
+                    minuto: reloj || "0'",
+                  });
                 }
-                // Medio tiempo: periodo 2 recién iniciado (detalle contiene "HT" o reloj < 3 min en periodo 2)
-                if (periodo === 2 && reloj) {
-                  const mins = parseInt(reloj.split(":")[0] ?? "99");
-                  if (mins <= 3) {
-                    candidatos.push({
-                      clave: `secondhalf-${espnEv.id}`,
-                      titulo: "▶️ ¡Empieza el 2° tiempo!",
-                      cuerpo: `${p.equipo_local} ${golesLocal ?? 0} – ${golesVisita ?? 0} ${p.equipo_visita}`,
-                      tag: `secondhalf-${espnEv.id}`,
-                    });
-                  }
+
+                // Inicio 2° tiempo: periodo 2, reloj < 3 min
+                if (periodo === 2 && mins <= 3) {
+                  candidatos.push({
+                    clave: `secondhalf-${espnEv.id}`,
+                    titulo: "▶️ ¡Empieza el 2° tiempo!",
+                    cuerpo: `${p.equipo_local} ${golesLocal ?? 0} – ${golesVisita ?? 0} ${p.equipo_visita}`,
+                    tag: `secondhalf-${espnEv.id}`,
+                  });
+                  (eventos as unknown[]).unshift({
+                    id: `secondhalf-${espnEv.id}`,
+                    tipo: "periodo",
+                    texto: "Empieza el 2° tiempo",
+                    minuto: reloj || "45'",
+                  });
                 }
-                // Detalle de ESPN indica "Halftime" o "HT"
+
+                // Medio tiempo: detalle de ESPN indica "Halftime" o "HT"
                 if (detalle && /half.?time|HT\b/i.test(detalle)) {
                   candidatos.push({
                     clave: `halftime-${espnEv.id}`,
@@ -576,8 +598,13 @@ export async function GET() {
                     cuerpo: `${p.equipo_local} ${golesLocal ?? 0} – ${golesVisita ?? 0} ${p.equipo_visita}`,
                     tag: `halftime-${espnEv.id}`,
                   });
+                  (eventos as unknown[]).unshift({
+                    id: `halftime-${espnEv.id}`,
+                    tipo: "medio_tiempo",
+                    texto: `Medio tiempo · ${golesLocal ?? 0}–${golesVisita ?? 0}`,
+                    minuto: "45'",
+                  });
                 }
-                void espnSlug; // usado en fetchKeyMoments, silencia unused warning
               }
           }
 
