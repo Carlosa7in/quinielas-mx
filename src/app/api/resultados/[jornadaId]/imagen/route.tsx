@@ -7,6 +7,9 @@ export const dynamic = "force-dynamic";
 // ── Constantes de premios ──────────────────────────────────────────────────────
 const PORC_PRIMERO = 0.60;
 const PORC_SEGUNDO = 0.25;
+const PORC_ADMIN   = 0.15;
+const COMISION_PCT = 0.10;
+const MAX_ROWS     = 15;
 
 // ── Dimensiones ───────────────────────────────────────────────────────────────
 const W       = 900;
@@ -22,7 +25,8 @@ const H_LOGO_ROW    = 52;
 const H_SCORE_ROW   = 28;
 const H_NUM_ROW     = 26;
 const H_DATA        = 26;
-const H_FOOTER      = 8;
+const H_MORE_ROW    = 22;
+const H_FOOTER      = 28;
 
 const FIXED_H = H_HEADER + H_TITLE + H_PRIZE + H_TOTALS + H_RES_BAR +
                 H_LOGO_ROW * 2 + H_SCORE_ROW + H_NUM_ROW + H_FOOTER;
@@ -101,10 +105,13 @@ export async function GET(
       return a.folio.localeCompare(b.folio);
     });
 
-    // Premios
-    const totalRecaudado = quinielas.reduce((s, q) => s + q.monto, 0);
-    const bolsa1 = totalRecaudado * PORC_PRIMERO;
-    const bolsa2 = totalRecaudado * PORC_SEGUNDO + (Number(jornada.bolsa2Acumulada) ?? 0);
+    // Premios (fórmula correcta: 15% casa + 10% vendedores = 75% bolsa neta)
+    const totalRecaudado  = quinielas.reduce((s, q) => s + q.monto, 0);
+    const fondoAdmin      = totalRecaudado * PORC_ADMIN;
+    const totalComisiones = totalRecaudado * COMISION_PCT;
+    const bolsaNeta       = totalRecaudado - fondoAdmin - totalComisiones;
+    const bolsa1 = Math.floor(bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO)));
+    const bolsa2 = Math.floor(bolsaNeta * (PORC_SEGUNDO  / (PORC_PRIMERO + PORC_SEGUNDO))) + (Number(jornada.bolsa2Acumulada) ?? 0);
 
     const aciertosUnicos = [
       ...new Set(quinielas.map(q => q.aciertos).filter((a): a is number => a !== null)),
@@ -114,9 +121,14 @@ export async function GET(
     const primeroCount = maxAciertos     !== null ? quinielas.filter(q => q.aciertos === maxAciertos).length     : 0;
     const segundoCount = segundoAciertos !== null ? quinielas.filter(q => q.aciertos === segundoAciertos).length : 0;
 
+    // Limitar a top 15 para imagen compartible
+    const top15   = sorted.slice(0, MAX_ROWS);
+    const cortados = sorted.length - top15.length;
+
     // Ancho de columna de juego (dinámico)
     const gameW = Math.max(28, Math.floor((W - NAME_W - PTS_W) / Math.max(1, ps.length)));
-    const totalH = FIXED_H + sorted.length * H_DATA;
+    const moreRowH = cortados > 0 ? H_MORE_ROW : 0;
+    const totalH = FIXED_H + top15.length * H_DATA + moreRowH + H_FOOTER;
 
     // ── Paleta ───────────────────────────────────────────────────────────────
     const NAVY  = "#1e3a5f";
@@ -238,8 +250,8 @@ export async function GET(
             </div>
           </div>
 
-          {/* ── Filas de datos ── */}
-          {sorted.map((q, idx) => {
+          {/* ── Filas de datos (top 15) ── */}
+          {top15.map((q, idx) => {
             const es1 = maxAciertos     !== null && q.aciertos === maxAciertos;
             const es2 = segundoAciertos !== null && q.aciertos === segundoAciertos;
             const rowBg = es1 ? "#fef9c3" : es2 ? "#f0fdf4" : idx % 2 === 0 ? WHITE : "#f9fafb";
@@ -284,8 +296,19 @@ export async function GET(
             );
           })}
 
-          {/* Footer */}
-          <div style={{ height: H_FOOTER, background: "#f1f5f9" }} />
+          {/* "+N más" row if clipped */}
+          {cortados > 0 && (
+            <div style={{ height: H_MORE_ROW, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", borderTop: "1px solid #e5e7eb" }}>
+              <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
+                +{cortados} participante{cortados !== 1 ? "s" : ""} más · tabla completa en tablitasquinielas.com
+              </span>
+            </div>
+          )}
+
+          {/* Footer con URL */}
+          <div style={{ height: H_FOOTER, background: NAVY, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 12, color: "#fbbf24", fontWeight: 700, letterSpacing: 1 }}>tablitasquinielas.com</span>
+          </div>
         </div>
       ),
       { width: W, height: totalH }

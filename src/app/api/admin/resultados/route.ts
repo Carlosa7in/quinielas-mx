@@ -129,7 +129,7 @@ export async function POST(req: Request) {
       // Find max aciertos (1st place)
       const maxAciertos = todasConfirmadas.length > 0 ? Math.max(...todasConfirmadas.map((q) => q.aciertos ?? 0)) : 0;
       const ganadores1 = todasConfirmadas.filter((q) => (q.aciertos ?? 0) === maxAciertos);
-      const premio1Cada = ganadores1.length > 0 ? bolsa1 / ganadores1.length : 0;
+      const premio1Cada = ganadores1.length > 0 ? Math.floor(bolsa1 / ganadores1.length) : 0;
 
       // Find 2nd place (second highest aciertos, different from 1st)
       const aciertosUnicos = [...new Set(todasConfirmadas.map((q) => q.aciertos ?? 0))].sort((a, b) => b - a);
@@ -138,7 +138,7 @@ export async function POST(req: Request) {
         ? todasConfirmadas.filter((q) => (q.aciertos ?? 0) === segundoAciertos)
         : [];
 
-      // Determine 2nd place distribution
+      // Determine 2nd place distribution (Math.floor to truncate cents)
       let premio2Cada = 0;
       let bolsa2SiguienteJornada = 0;
       let acumulaciones2Nuevas = jornadaData?.acumulaciones2 ?? 0;
@@ -146,8 +146,8 @@ export async function POST(req: Request) {
 
       if (ganadores2.length > 0) {
         if (ganadores2.length <= MAX_GANADORES_2 || acumulaciones2Nuevas >= MAX_ACUMULACIONES) {
-          // Distribute
-          premio2Cada = bolsa2Total / ganadores2.length;
+          // Distribute (Math.floor to truncate cents)
+          premio2Cada = Math.floor(bolsa2Total / ganadores2.length);
           segundoDistribuido = true;
           acumulaciones2Nuevas = 0;
           bolsa2SiguienteJornada = 0;

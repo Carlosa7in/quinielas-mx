@@ -73,21 +73,35 @@ export async function GET(req: Request) {
     const bolsa2Base  = bolsaNeta * (PORC_SEGUNDO  / (PORC_PRIMERO + PORC_SEGUNDO));
     const bolsa2Total = bolsa2Base + (jornada.bolsa2Acumulada ?? 0);
 
-    // Ganadores (por aciertos)
+    // Ganadores (por aciertos) — recalcular premios correctos (Math.floor, no DB)
     const aciertosUnicos = [
       ...new Set(todasQuinielas.map((q) => q.aciertos ?? 0)),
     ].sort((a, b) => b - a);
     const maxAciertos    = aciertosUnicos[0] ?? 0;
     const segundoAciertos = aciertosUnicos.length > 1 ? aciertosUnicos[1] : null;
 
-    const g1 = todasQuinielas
-      .filter((q) => (q.aciertos ?? 0) === maxAciertos && q.premio !== null)
-      .map((q) => ({ folio: q.folio, nombre: q.nombreCliente, telefono: q.telefonoCliente, aciertos: q.aciertos, premio: q.premio }));
+    const ganadores1Raw = todasQuinielas.filter((q) => (q.aciertos ?? 0) === maxAciertos);
+    const ganadores2Raw = segundoAciertos !== null
+      ? todasQuinielas.filter((q) => (q.aciertos ?? 0) === segundoAciertos)
+      : [];
 
-    const g2 = segundoAciertos !== null
-      ? todasQuinielas
-          .filter((q) => (q.aciertos ?? 0) === segundoAciertos && q.premio !== null)
-          .map((q) => ({ folio: q.folio, nombre: q.nombreCliente, telefono: q.telefonoCliente, aciertos: q.aciertos, premio: q.premio }))
+    // Recalcular premios (floored) — ignorar valores almacenados en DB
+    const MAX_GANADORES_2 = 20;
+    const MAX_ACUMULACIONES = 2;
+    const segundoDistribuidoCalc =
+      ganadores2Raw.length > 0 &&
+      (ganadores2Raw.length <= MAX_GANADORES_2 || (jornada.acumulaciones2 ?? 0) >= MAX_ACUMULACIONES);
+
+    const premio1Cada = ganadores1Raw.length > 0 ? Math.floor(bolsa1 / ganadores1Raw.length) : 0;
+    const premio2Cada = segundoDistribuidoCalc && ganadores2Raw.length > 0
+      ? Math.floor(bolsa2Total / ganadores2Raw.length)
+      : 0;
+
+    const g1 = ganadores1Raw
+      .map((q) => ({ folio: q.folio, nombre: q.nombreCliente, telefono: q.telefonoCliente, aciertos: q.aciertos, premio: premio1Cada }));
+
+    const g2 = segundoDistribuidoCalc
+      ? ganadores2Raw.map((q) => ({ folio: q.folio, nombre: q.nombreCliente, telefono: q.telefonoCliente, aciertos: q.aciertos, premio: premio2Cada }))
       : [];
 
     return NextResponse.json({
@@ -111,7 +125,7 @@ export async function GET(req: Request) {
       ganadores1: g1,
       ganadores2: g2,
       acumulaciones2: jornada.acumulaciones2,
-      segundoDistribuido: g2.length > 0,
+      segundoDistribuido: segundoDistribuidoCalc,
     });
   } catch (err) {
     console.error("[PREMIACION] error:", err);
