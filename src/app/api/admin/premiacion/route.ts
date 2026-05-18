@@ -55,22 +55,21 @@ export async function GET(req: Request) {
     const referidoCount = qReferido.length;
     const directaCount  = qDirecta.length;
 
-    // Comisión 10% del monto por cada venta
+    // Comisión 10% del monto por cada venta (se pagan del fondo admin, no del pozo de premios)
     const comisionTienda   = qTienda.reduce((s, q) => s + q.monto * COMISION_PCT, 0);
     const comisionReferido = qReferido.reduce((s, q) => s + q.monto * COMISION_PCT, 0);
-    // Directas: 10% también va a la casa (no a ningún vendedor externo)
     const comisionDirecta  = qDirecta.reduce((s, q) => s + q.monto * COMISION_PCT, 0);
     const totalComisiones  = comisionTienda + comisionReferido + comisionDirecta;
 
-    // Fondo admin: 15% del total + comisión directa (ventas sin referido → van a la casa)
-    const fondoAdmin = totalRecaudado * PORC_ADMIN + comisionDirecta;
+    // Fondo admin: estrictamente el 15% del total recaudado.
+    // Las comisiones se pagan DESDE este fondo, no se deducen del pozo de premios.
+    const fondoAdmin  = totalRecaudado * PORC_ADMIN;
+    const netoAdmin   = fondoAdmin - totalComisiones;  // lo que queda al admin tras comisiones
 
-    // Bolsa neta para premios (total − fondo admin − com. tienda − com. referido)
-    const bolsaNeta = Math.max(totalRecaudado - fondoAdmin - comisionTienda - comisionReferido, 0);
-
-    // Bolsas de 1° y 2° lugar sobre la bolsa neta
-    const bolsa1     = bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO)); // 60/85
-    const bolsa2Base = bolsaNeta * (PORC_SEGUNDO / (PORC_PRIMERO + PORC_SEGUNDO)); // 25/85
+    // Pozo de premios: el 85% restante (60% + 25%)
+    const bolsaNeta   = totalRecaudado - fondoAdmin;   // == totalRecaudado × 0.85
+    const bolsa1      = totalRecaudado * PORC_PRIMERO; // 60% del total recaudado
+    const bolsa2Base  = totalRecaudado * PORC_SEGUNDO; // 25% del total recaudado
     const bolsa2Total = bolsa2Base + (jornada.bolsa2Acumulada ?? 0);
 
     // Ganadores (por aciertos)
@@ -99,7 +98,7 @@ export async function GET(req: Request) {
       totalRecaudado,
       totalEnJuego: todasQuinielas.length,
       desglose: {
-        fondoAdmin,
+        fondoAdmin, netoAdmin,
         comisionTienda,   tiendaCount,
         comisionReferido, referidoCount,
         comisionDirecta,  directaCount,

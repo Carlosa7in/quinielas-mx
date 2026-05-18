@@ -27,7 +27,7 @@ type PremiacionData = {
   totalRecaudado: number;
   totalEnJuego: number;
   desglose: {
-    fondoAdmin: number;
+    fondoAdmin: number; netoAdmin: number;
     comisionTienda: number;   tiendaCount: number;
     comisionReferido: number; referidoCount: number;
     comisionDirecta: number;  directaCount: number;
@@ -196,59 +196,67 @@ export default function PremiacionPage() {
             {/* Resumen financiero — desglose completo */}
             <div>
               <p className="text-xs text-gray-400 font-medium px-1 mb-2">DESGLOSE FINANCIERO</p>
-              <div className="bg-stone-900 text-white rounded-2xl p-4 space-y-2 text-sm">
-                {/* Total */}
-                <div className="flex justify-between">
-                  <span className="text-stone-300">Total recaudado ({datos.totalEnJuego} quinielas)</span>
-                  <span className="font-bold">{formatMXN(datos.totalRecaudado)}</span>
+              <div className="bg-stone-900 text-white rounded-2xl p-4 space-y-3 text-sm">
+
+                {/* ── Total recaudado ─────────────────────────────────── */}
+                <div className="flex justify-between font-bold text-base">
+                  <span>Total recaudado ({datos.totalEnJuego} quinielas)</span>
+                  <span>{formatMXN(datos.totalRecaudado)}</span>
                 </div>
-                {/* Tipos de venta */}
-                <div className="flex gap-3 text-stone-500 text-xs flex-wrap">
-                  {datos.desglose.tiendaCount > 0   && <span>🏪 {datos.desglose.tiendaCount} tienda</span>}
-                  {datos.desglose.referidoCount > 0  && <span>🔗 {datos.desglose.referidoCount} referido</span>}
-                  {datos.desglose.directaCount > 0   && <span>🌐 {datos.desglose.directaCount} directas</span>}
+                <div className="flex gap-3 text-stone-500 text-xs flex-wrap -mt-1">
+                  {datos.desglose.tiendaCount   > 0 && <span>🏪 {datos.desglose.tiendaCount} tienda</span>}
+                  {datos.desglose.referidoCount > 0 && <span>🔗 {datos.desglose.referidoCount} referido</span>}
+                  {datos.desglose.directaCount  > 0 && <span>🌐 {datos.desglose.directaCount} directas</span>}
                 </div>
-                {/* Deducciones */}
-                <div className="border-t border-stone-700 pt-2 space-y-1">
-                  <div className="flex justify-between text-blue-400">
-                    <span>− Admin (15%)</span>
-                    <span className="font-bold">−{formatMXN(datos.desglose.fondoAdmin)}</span>
+
+                {/* ── Pozo de premios (85%) ────────────────────────────── */}
+                <div className="border-t border-stone-700 pt-3 space-y-1.5">
+                  <div className="flex justify-between text-green-400 font-bold">
+                    <span>💰 Pozo de premios (85%)</span>
+                    <span>{formatMXN(datos.desglose.bolsaNeta)}</span>
+                  </div>
+                  <div className="flex justify-between text-yellow-400 pl-4">
+                    <span>🥇 1.° lugar (60% del total)</span>
+                    <span className="font-bold">{formatMXN(datos.bolsa1)}</span>
+                  </div>
+                  <div className="flex justify-between text-blue-400 pl-4">
+                    <span>🥈 2.° lugar (25% del total{datos.jornada.bolsa2Acumulada > 0 ? " + acum." : ""})</span>
+                    <span className="font-bold">{formatMXN(datos.bolsa2Total)}</span>
+                  </div>
+                </div>
+
+                {/* ── Fondo administración (15%) ───────────────────────── */}
+                <div className="border-t border-stone-700 pt-3 space-y-1.5">
+                  <div className="flex justify-between text-blue-400 font-bold">
+                    <span>🏛️ Fondo administración (15%)</span>
+                    <span>{formatMXN(datos.desglose.fondoAdmin)}</span>
                   </div>
                   {datos.desglose.comisionTienda > 0 && (
-                    <div className="flex justify-between text-orange-400">
+                    <div className="flex justify-between text-orange-400 pl-4">
                       <span>− Com. tienda ($2 × {datos.desglose.tiendaCount})</span>
                       <span className="font-bold">−{formatMXN(datos.desglose.comisionTienda)}</span>
                     </div>
                   )}
                   {datos.desglose.comisionReferido > 0 && (
-                    <div className="flex justify-between text-cyan-400">
+                    <div className="flex justify-between text-cyan-400 pl-4">
                       <span>− Com. referidos ($2 × {datos.desglose.referidoCount})</span>
                       <span className="font-bold">−{formatMXN(datos.desglose.comisionReferido)}</span>
                     </div>
                   )}
                   {datos.desglose.comisionDirecta > 0 && (
-                    <div className="flex justify-between text-purple-400">
-                      <span>− Ventas directas 🌐 ($2 × {datos.desglose.directaCount})</span>
+                    <div className="flex justify-between text-purple-400 pl-4">
+                      <span>− Com. directas ($2 × {datos.desglose.directaCount})</span>
                       <span className="font-bold">−{formatMXN(datos.desglose.comisionDirecta)}</span>
                     </div>
                   )}
+                  {datos.desglose.totalComisiones > 0 && (
+                    <div className="flex justify-between text-stone-400 pl-4 border-t border-stone-700 pt-1 mt-1">
+                      <span>= Neto admin</span>
+                      <span className="font-bold">{formatMXN(datos.desglose.netoAdmin)}</span>
+                    </div>
+                  )}
                 </div>
-                {/* Bolsa neta */}
-                <div className="border-t border-stone-700 pt-2 flex justify-between text-green-400 font-bold">
-                  <span>💰 Bolsa para premios</span>
-                  <span className="text-base">{formatMXN(datos.desglose.bolsaNeta)}</span>
-                </div>
-                {/* Split 1° / 2° */}
-                <div className="border-t border-stone-700 pt-2 space-y-1">
-                  <div className="flex justify-between text-yellow-400">
-                    <span>🥇 1.° lugar (60% de bolsa)</span>
-                    <span className="font-bold">{formatMXN(datos.bolsa1)}</span>
-                  </div>
-                  <div className="flex justify-between text-blue-400">
-                    <span>🥈 2.° lugar (25% de bolsa{datos.jornada.bolsa2Acumulada > 0 ? " + acum." : ""})</span>
-                    <span className="font-bold">{formatMXN(datos.bolsa2Total)}</span>
-                  </div>
-                </div>
+
               </div>
             </div>
 

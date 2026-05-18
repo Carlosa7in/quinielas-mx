@@ -314,10 +314,14 @@ export default function ResultadosPage() {
           </div>
           <div className="text-right text-sm space-y-1 shrink-0">
             {premios.primeroCount > 0 && (
-              <p className="text-yellow-300 font-bold">🥇 {fmt(premios.bolsa1)} · {premios.primeroCount} gana{premios.primeroCount !== 1 ? "dores" : "dor"}</p>
+              <p className="text-yellow-300 font-bold">
+                🥇 {fmt(premios.bolsa1 / premios.primeroCount)} c/u · {premios.primeroCount} gana{premios.primeroCount !== 1 ? "dores" : "dor"}
+              </p>
             )}
             {premios.segundoCount > 0 && (
-              <p className="text-white/70 font-semibold text-xs">🥈 {fmt(premios.bolsa2)} · {premios.segundoCount}</p>
+              <p className="text-white/70 font-semibold text-xs">
+                🥈 {fmt(premios.bolsa2 / premios.segundoCount)} c/u · {premios.segundoCount}
+              </p>
             )}
           </div>
         </div>
@@ -361,10 +365,10 @@ export default function ResultadosPage() {
             </div>
             <div style={{ textAlign: "right" }}>
               {premios.primeroCount > 0 && (
-                <div style={{ color: "#fde047", fontSize: 12, fontWeight: 800 }}>1° {fmt(premios.bolsa1)} · {premios.primeroCount} ganador{premios.primeroCount !== 1 ? "es" : ""}</div>
+                <div style={{ color: "#fde047", fontSize: 12, fontWeight: 800 }}>1° {fmt(premios.bolsa1 / premios.primeroCount)} c/u · {premios.primeroCount} ganador{premios.primeroCount !== 1 ? "es" : ""}</div>
               )}
               {premios.segundoCount > 0 && (
-                <div style={{ color: "#d1d5db", fontSize: 11, fontWeight: 700 }}>2° {fmt(premios.bolsa2)} · {premios.segundoCount} ganador{premios.segundoCount !== 1 ? "es" : ""}</div>
+                <div style={{ color: "#d1d5db", fontSize: 11, fontWeight: 700 }}>2° {fmt(premios.bolsa2 / premios.segundoCount)} c/u · {premios.segundoCount} ganador{premios.segundoCount !== 1 ? "es" : ""}</div>
               )}
             </div>
           </div>
