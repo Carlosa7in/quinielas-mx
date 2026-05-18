@@ -126,6 +126,9 @@ export async function GET(req: Request) {
       ganadores2: g2,
       acumulaciones2: jornada.acumulaciones2,
       segundoDistribuido: segundoDistribuidoCalc,
+      participantes: todasQuinielas
+        .filter((q) => q.telefonoCliente)
+        .map((q) => ({ folio: q.folio, nombre: q.nombreCliente, telefono: q.telefonoCliente })),
     });
   } catch (err) {
     console.error("[PREMIACION] error:", err);

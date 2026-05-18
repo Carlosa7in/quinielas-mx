@@ -85,6 +85,28 @@ export async function GET(
       logoVisita: logoMap[p.equipoVisita] ?? "",
     }));
 
+    // fechaHora via SQL (NeonDB bug con DateTime en Prisma ORM)
+    const fechaMapImg: Record<string, string> = {};
+    try {
+      const rows = await sql`SELECT id, "fechaHora" FROM "Partido" WHERE "jornadaId" = ${jornadaId}`;
+      for (const r of rows) {
+        if (r.fechaHora) {
+          const d = r.fechaHora instanceof Date ? r.fechaHora : new Date(String(r.fechaHora));
+          if (!isNaN(d.getTime())) fechaMapImg[String(r.id)] = d.toISOString();
+        }
+      }
+    } catch { /* ignorar */ }
+
+    // Sort partidos by fechaHora, fallback to orden
+    ps.sort((a, b) => {
+      const fa = fechaMapImg[a.id] ?? null;
+      const fb = fechaMapImg[b.id] ?? null;
+      if (!fa && !fb) return a.orden - b.orden;
+      if (!fa) return 1;
+      if (!fb) return -1;
+      return new Date(fa).getTime() - new Date(fb).getTime();
+    });
+
     // Quinielas en juego
     const quinielas = await prisma.quiniela.findMany({
       where: {
@@ -157,10 +179,10 @@ export async function GET(
           {/* ── Premios ── */}
           <div style={{ height: H_PRIZE, background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>1° LUGAR</span>
-            <span style={{ fontSize: 16, fontWeight: 900, color: RED, marginLeft: 6 }}>{fmt(bolsa1)}</span>
+            <span style={{ fontSize: 16, fontWeight: 900, color: RED, marginLeft: 6 }}>{fmt(primeroCount > 0 ? Math.floor(bolsa1 / primeroCount) : bolsa1)}{primeroCount > 1 ? " c/u" : ""}</span>
             <span style={{ fontSize: 16, color: "#94a3b8", marginLeft: 18, marginRight: 18 }}>/</span>
             <span style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>2° LUGAR</span>
-            <span style={{ fontSize: 16, fontWeight: 900, color: RED, marginLeft: 6 }}>{fmt(bolsa2)}</span>
+            <span style={{ fontSize: 16, fontWeight: 900, color: RED, marginLeft: 6 }}>{fmt(segundoCount > 0 ? Math.floor(bolsa2 / segundoCount) : bolsa2)}{segundoCount > 1 ? " c/u" : ""}</span>
           </div>
 
           {/* ── Totales ── */}
@@ -182,7 +204,7 @@ export async function GET(
             </div>
             {ps.map(p => (
               <div key={`l-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {p.logoLocal
+                {p.logoLocal && p.logoLocal.trim()
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={p.logoLocal} width={38} height={38} style={{ objectFit: "contain" }} />
                   : <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -219,7 +241,7 @@ export async function GET(
             </div>
             {ps.map(p => (
               <div key={`v-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {p.logoVisita
+                {p.logoVisita && p.logoVisita.trim()
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={p.logoVisita} width={38} height={38} style={{ objectFit: "contain" }} />
                   : <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -254,7 +276,16 @@ export async function GET(
           {top15.map((q, idx) => {
             const es1 = maxAciertos     !== null && q.aciertos === maxAciertos;
             const es2 = segundoAciertos !== null && q.aciertos === segundoAciertos;
-            const rowBg = es1 ? "#fef9c3" : es2 ? "#f0fdf4" : idx % 2 === 0 ? WHITE : "#f9fafb";
+            const ac = q.aciertos ?? -1;
+            const total = ps.length;
+            const rowBg = ac === total ? "#fef9c3"
+              : ac >= total - 1 ? "#dcfce7"
+              : ac >= 5          ? "#ccfbf1"
+              : ac === 4         ? "#dbeafe"
+              : ac === 3         ? "#e0e7ff"
+              : ac === 1         ? "#ffedd5"
+              : ac === 0         ? "#fee2e2"
+              : idx % 2 === 0    ? WHITE : "#f9fafb";
 
             return (
               <div key={q.id} style={{ height: H_DATA, background: rowBg, display: "flex", alignItems: "center", borderBottom: "1px solid #f3f4f6" }}>
@@ -286,8 +317,8 @@ export async function GET(
                 })}
                 {/* PTS */}
                 <div style={{ width: PTS_W, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ background: es1 ? "#eab308" : es2 ? "#86efac" : "#e5e7eb", borderRadius: 3, paddingLeft: 4, paddingRight: 4, paddingTop: 1, paddingBottom: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 14, fontWeight: 900, color: es1 ? "#78350f" : es2 ? "#14532d" : "#6b7280", lineHeight: "16px" }}>
+                  <div style={{ background: ac === total ? "#eab308" : ac >= total - 1 ? "#16a34a" : ac >= 5 ? "#0d9488" : ac === 4 ? "#2563eb" : ac === 3 ? "#4f46e5" : ac === 1 ? "#ea580c" : ac === 0 ? "#dc2626" : "#e5e7eb", borderRadius: 3, paddingLeft: 4, paddingRight: 4, paddingTop: 1, paddingBottom: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 14, fontWeight: 900, color: (ac >= total - 1 || ac === total) ? "#fff" : ac >= 3 ? "#fff" : ac === 1 || ac === 0 ? "#fff" : "#6b7280", lineHeight: "16px" }}>
                       {q.aciertos ?? "—"}
                     </span>
                   </div>

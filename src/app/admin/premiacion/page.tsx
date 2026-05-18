@@ -13,6 +13,8 @@ type Ganador = {
   premio: number | null;
 };
 
+type Participante = { folio: string; nombre: string | null; telefono: string | null };
+
 type PremiacionData = {
   jornada: {
     id: string;
@@ -40,11 +42,14 @@ type PremiacionData = {
   ganadores2: Ganador[];
   acumulaciones2: number;
   segundoDistribuido: boolean;
+  participantes: Participante[];
 };
 
 function formatMXN(amount: number): string {
   return amount.toLocaleString("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
 }
+
+const BASE_URL = "https://tablitasquinielas.netlify.app";
 
 function buildWhatsAppMsg(
   nombre: string | null,
@@ -55,9 +60,7 @@ function buildWhatsAppMsg(
   locale: "es" | "en" = "es",
   jornadaId?: string,
 ): string {
-  const link = jornadaId
-    ? `https://tablitasquinielas.com/resultados/${jornadaId}`
-    : undefined;
+  const link = jornadaId ? `${BASE_URL}/resultados/${jornadaId}` : undefined;
   return translations[locale].wa.ganador(
     nombre,
     aciertos ?? 0,
@@ -68,16 +71,36 @@ function buildWhatsAppMsg(
   );
 }
 
-function whatsappUrl(telefono: string | null, msg: string): string {
+function buildMassMsgText(nombre: string | null, jornadaNombre: string, jornadaId: string): string {
+  const link = `${BASE_URL}/resultados/${jornadaId}`;
+  return [
+    `Hola ${nombre ?? ""}! 👋`,
+    ``,
+    `Aquí está la tabla de resultados de *${jornadaNombre}*. ¡Revisa cómo quedaste en la lista!`,
+    ``,
+    `📊 Ver resultados completos:`,
+    link,
+    ``,
+    `Tablitas Quinielas 🎯`,
+  ].join("\n");
+}
+
+type WaType = "normal" | "business";
+
+function whatsappUrl(telefono: string | null, msg: string, type: WaType = "normal"): string {
   if (!telefono) return "#";
   const clean = telefono.replace(/\D/g, "");
   const num = clean.startsWith("52") ? clean : `52${clean}`;
+  if (type === "business") {
+    return `https://api.whatsapp.com/send?phone=${num}&text=${encodeURIComponent(msg)}`;
+  }
   return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 }
 
-function GanadorCard({ ganador, lugar, jornadaNombre, jornadaId, locale = "es" }: { ganador: Ganador; lugar: "1.°" | "2.°"; jornadaNombre: string; jornadaId?: string; locale?: "es" | "en" }) {
+function GanadorCard({ ganador, lugar, jornadaNombre, jornadaId, waType = "normal", locale = "es" }: { ganador: Ganador; lugar: "1.°" | "2.°"; jornadaNombre: string; jornadaId?: string; waType?: WaType; locale?: "es" | "en" }) {
   const msg = buildWhatsAppMsg(ganador.nombre, ganador.aciertos, jornadaNombre, lugar, ganador.premio, locale, jornadaId);
-  const url = whatsappUrl(ganador.telefono, msg);
+  const urlNormal   = whatsappUrl(ganador.telefono, msg, "normal");
+  const urlBusiness = whatsappUrl(ganador.telefono, msg, "business");
 
   return (
     <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col gap-2">
@@ -92,14 +115,16 @@ function GanadorCard({ ganador, lugar, jornadaNombre, jornadaId, locale = "es" }
         </div>
       </div>
       {ganador.telefono ? (
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded-lg text-sm transition-colors"
-        >
-          <span>💬</span> Notificar por WhatsApp
-        </a>
+        <div className="grid grid-cols-2 gap-1.5">
+          <a href={urlNormal} target="_blank" rel="noopener noreferrer"
+            className={`flex items-center justify-center gap-1 py-2 rounded-lg text-sm font-bold transition-colors ${waType === "normal" ? "bg-green-600 hover:bg-green-500 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+            💬 WA Normal
+          </a>
+          <a href={urlBusiness} target="_blank" rel="noopener noreferrer"
+            className={`flex items-center justify-center gap-1 py-2 rounded-lg text-sm font-bold transition-colors ${waType === "business" ? "bg-green-600 hover:bg-green-500 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+            🏢 WA Business
+          </a>
+        </div>
       ) : (
         <p className="text-xs text-gray-400 text-center italic">Sin teléfono registrado</p>
       )}
@@ -113,6 +138,7 @@ export default function PremiacionPage() {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
   const [locale, setLocale] = useLocale();
+  const [waType, setWaType] = useState<WaType>("normal");
 
   const cargarPremiacion = async (j: JornadaResumen) => {
     // Only allow finalized jornadas
@@ -279,6 +305,25 @@ export default function PremiacionPage() {
               </div>
             )}
 
+            {/* WA type toggle */}
+            <div>
+              <p className="text-xs text-gray-400 font-medium px-1 mb-2">TIPO DE WHATSAPP</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setWaType("normal")}
+                  className={`py-2.5 rounded-xl text-sm font-bold transition-colors ${waType === "normal" ? "bg-green-600 text-white" : "bg-white text-gray-500 border border-gray-200"}`}
+                >
+                  💬 WA Normal
+                </button>
+                <button
+                  onClick={() => setWaType("business")}
+                  className={`py-2.5 rounded-xl text-sm font-bold transition-colors ${waType === "business" ? "bg-green-700 text-white" : "bg-white text-gray-500 border border-gray-200"}`}
+                >
+                  🏢 WA Business
+                </button>
+              </div>
+            </div>
+
             {/* 1st place winners */}
             <div>
               <p className="text-xs text-gray-400 font-medium px-1 mb-2">
@@ -292,7 +337,7 @@ export default function PremiacionPage() {
               ) : (
                 <div className="space-y-3">
                   {datos.ganadores1.map((g) => (
-                    <GanadorCard key={g.folio} ganador={g} lugar="1.°" jornadaNombre={jornadaNombre} jornadaId={datos.jornada.id} locale={locale} />
+                    <GanadorCard key={g.folio} ganador={g} lugar="1.°" jornadaNombre={jornadaNombre} jornadaId={datos.jornada.id} waType={waType} locale={locale} />
                   ))}
                 </div>
               )}
@@ -316,6 +361,50 @@ export default function PremiacionPage() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Mensaje masivo */}
+            {datos.participantes.length > 0 && (
+              <div>
+                <p className="text-xs text-gray-400 font-medium px-1 mb-2">
+                  📣 MENSAJE MASIVO — {datos.participantes.length} participantes con teléfono
+                </p>
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 space-y-1">
+                    <p className="text-xs text-gray-500 font-medium">Vista previa del mensaje:</p>
+                    <pre className="text-xs text-gray-700 whitespace-pre-wrap bg-gray-50 rounded-lg p-3 font-sans leading-relaxed">
+                      {buildMassMsgText("(nombre)", jornadaNombre, datos.jornada.id)}
+                    </pre>
+                  </div>
+                  <div className="divide-y divide-gray-50 max-h-80 overflow-y-auto">
+                    {datos.participantes.map((p) => {
+                      const msg = buildMassMsgText(p.nombre, jornadaNombre, datos.jornada.id);
+                      const clean = (p.telefono ?? "").replace(/\D/g, "");
+                      const num = clean.startsWith("52") ? clean : `52${clean}`;
+                      const urlNormal   = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+                      const urlBusiness = `https://api.whatsapp.com/send?phone=${num}&text=${encodeURIComponent(msg)}`;
+                      return (
+                        <div key={p.folio} className="flex items-center justify-between gap-2 px-4 py-2.5">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{p.nombre ?? "—"}</p>
+                            <p className="text-xs text-gray-400 font-mono">{p.telefono}</p>
+                          </div>
+                          <div className="flex gap-1.5 shrink-0">
+                            <a href={urlNormal} target="_blank" rel="noopener noreferrer"
+                              className="text-xs bg-green-100 hover:bg-green-200 text-green-800 font-bold px-2.5 py-1.5 rounded-lg transition-colors">
+                              💬
+                            </a>
+                            <a href={urlBusiness} target="_blank" rel="noopener noreferrer"
+                              className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-2.5 py-1.5 rounded-lg transition-colors">
+                              🏢
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
 
