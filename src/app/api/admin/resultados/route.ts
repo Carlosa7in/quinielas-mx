@@ -95,8 +95,10 @@ export async function POST(req: Request) {
 
       // ── Prize calculation ──────────────────────────────────────────────────
       // Prize constants — easy to change
-      const PORC_PRIMERO = 0.60;
-      const PORC_SEGUNDO = 0.25;
+      const PORC_PRIMERO    = 0.60;
+      const PORC_SEGUNDO    = 0.25;
+      const PORC_ADMIN      = 0.15;
+      const COMISION_PCT    = 0.10;  // 10% por venta (tienda/referido/directa)
       const MAX_GANADORES_2 = 20;
       const MAX_ACUMULACIONES = 2;
 
@@ -116,9 +118,12 @@ export async function POST(req: Request) {
         select: { id: true, monto: true, aciertos: true, nombreCliente: true, telefonoCliente: true, folio: true },
       });
 
-      const totalRecaudado = todasConfirmadas.reduce((s, q) => s + q.monto, 0);
-      const bolsa1 = totalRecaudado * PORC_PRIMERO;
-      const bolsa2Base = totalRecaudado * PORC_SEGUNDO;
+      const totalRecaudado  = todasConfirmadas.reduce((s, q) => s + q.monto, 0);
+      const fondoAdmin      = totalRecaudado * PORC_ADMIN;              // 15% casa
+      const totalComisiones = totalRecaudado * COMISION_PCT;            // 10% ventas (tienda+referido+directa)
+      const bolsaNeta       = totalRecaudado - fondoAdmin - totalComisiones; // lo que queda para premios
+      const bolsa1     = bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO));
+      const bolsa2Base = bolsaNeta * (PORC_SEGUNDO  / (PORC_PRIMERO + PORC_SEGUNDO));
       const bolsa2Total = bolsa2Base + (jornadaData?.bolsa2Acumulada ?? 0);
 
       // Find max aciertos (1st place)

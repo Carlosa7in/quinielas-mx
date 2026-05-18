@@ -61,15 +61,16 @@ export async function GET(req: Request) {
     const comisionDirecta  = qDirecta.reduce((s, q) => s + q.monto * COMISION_PCT, 0);
     const totalComisiones  = comisionTienda + comisionReferido + comisionDirecta;
 
-    // Fondo admin: estrictamente el 15% del total recaudado.
-    // Las comisiones se pagan DESDE este fondo, no se deducen del pozo de premios.
-    const fondoAdmin  = totalRecaudado * PORC_ADMIN;
-    const netoAdmin   = fondoAdmin - totalComisiones;  // lo que queda al admin tras comisiones
+    // Fondo admin: 15% del total.
+    // Comisiones (tienda/referido/directa): deducciones separadas del pozo de premios.
+    const fondoAdmin  = totalRecaudado * PORC_ADMIN;                  // $87
 
-    // Pozo de premios: el 85% restante (60% + 25%)
-    const bolsaNeta   = totalRecaudado - fondoAdmin;   // == totalRecaudado × 0.85
-    const bolsa1      = totalRecaudado * PORC_PRIMERO; // 60% del total recaudado
-    const bolsa2Base  = totalRecaudado * PORC_SEGUNDO; // 25% del total recaudado
+    // Bolsa neta: lo que queda después de sacar la casa Y las comisiones
+    const bolsaNeta   = totalRecaudado - fondoAdmin - totalComisiones; // $435
+
+    // Premios: reparto proporcional 60:25 de la bolsa neta
+    const bolsa1      = bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO));
+    const bolsa2Base  = bolsaNeta * (PORC_SEGUNDO  / (PORC_PRIMERO + PORC_SEGUNDO));
     const bolsa2Total = bolsa2Base + (jornada.bolsa2Acumulada ?? 0);
 
     // Ganadores (por aciertos)
@@ -98,7 +99,7 @@ export async function GET(req: Request) {
       totalRecaudado,
       totalEnJuego: todasQuinielas.length,
       desglose: {
-        fondoAdmin, netoAdmin,
+        fondoAdmin,
         comisionTienda,   tiendaCount,
         comisionReferido, referidoCount,
         comisionDirecta,  directaCount,

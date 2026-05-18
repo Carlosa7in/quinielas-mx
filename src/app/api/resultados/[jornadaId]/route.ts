@@ -4,6 +4,8 @@ import { prisma, sql } from "@/lib/prisma";
 // Prize constants
 const PORC_PRIMERO = 0.60;
 const PORC_SEGUNDO = 0.25;
+const PORC_ADMIN   = 0.15;
+const COMISION_PCT = 0.10;
 
 // GET /api/resultados/[jornadaId] — public, no auth required
 export async function GET(
@@ -120,10 +122,13 @@ export async function GET(
       return a.folio.localeCompare(b.folio);
     });
 
-    // Compute prize pool
-    const totalRecaudado = quinielas.reduce((s, q) => s + q.monto, 0);
-    const bolsa1 = totalRecaudado * PORC_PRIMERO;
-    const bolsa2Base = totalRecaudado * PORC_SEGUNDO;
+    // Compute prize pool (misma lógica que premiacion y finalización)
+    const totalRecaudado  = quinielas.reduce((s, q) => s + q.monto, 0);
+    const fondoAdmin      = totalRecaudado * PORC_ADMIN;
+    const totalComisiones = totalRecaudado * COMISION_PCT;
+    const bolsaNeta       = totalRecaudado - fondoAdmin - totalComisiones;
+    const bolsa1     = bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO));
+    const bolsa2Base = bolsaNeta * (PORC_SEGUNDO  / (PORC_PRIMERO + PORC_SEGUNDO));
     const bolsa2 = bolsa2Base + (jornada.bolsa2Acumulada ?? 0);
 
     // Determine rank thresholds
