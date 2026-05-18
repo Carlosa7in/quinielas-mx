@@ -92,7 +92,7 @@ function whatsappUrl(telefono: string | null, msg: string, type: WaType = "norma
   const clean = telefono.replace(/\D/g, "");
   const num = clean.startsWith("52") ? clean : `52${clean}`;
   if (type === "business") {
-    return `https://api.whatsapp.com/send?phone=${num}&text=${encodeURIComponent(msg)}`;
+    return `https://web.whatsapp.com/send?phone=${num}&text=${encodeURIComponent(msg)}`;
   }
   return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 }
@@ -122,7 +122,7 @@ function GanadorCard({ ganador, lugar, jornadaNombre, jornadaId, waType = "norma
           </a>
           <a href={urlBusiness} target="_blank" rel="noopener noreferrer"
             className={`flex items-center justify-center gap-1 py-2 rounded-lg text-sm font-bold transition-colors ${waType === "business" ? "bg-green-600 hover:bg-green-500 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
-            🏢 WA Business
+            🌐 WA Web
           </a>
         </div>
       ) : (
@@ -319,7 +319,7 @@ export default function PremiacionPage() {
                   onClick={() => setWaType("business")}
                   className={`py-2.5 rounded-xl text-sm font-bold transition-colors ${waType === "business" ? "bg-green-700 text-white" : "bg-white text-gray-500 border border-gray-200"}`}
                 >
-                  🏢 WA Business
+                  🌐 WA Web
                 </button>
               </div>
             </div>
