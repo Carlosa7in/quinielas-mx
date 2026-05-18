@@ -526,18 +526,47 @@ function PerfilInner() {
               </div>
             )}
 
-            {stats.totalQuinielas === 0 && !esAdminRole && (
-              <div className="text-center py-10 text-gray-400">
-                <p className="text-3xl mb-2">{esVendedor ? "🔗" : "📋"}</p>
-                <p>{esVendedor ? "Aún no has referido quinielas" : "Todavia no tienes quinielas registradas"}</p>
-                {esVendedor && usuario.codigoRef && (
-                  <button
-                    onClick={copiarLink}
-                    className="mt-3 bg-cyan-600 text-white font-bold text-sm px-4 py-2 rounded-xl"
-                  >
-                    {copiado ? "✓ ¡Copiado!" : "📋 Copiar mi link y compartir"}
-                  </button>
+            {/* Instrucciones para vendedor — siempre visibles */}
+            {esVendedor && (
+              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-cyan-50 px-4 py-3 border-b border-cyan-100">
+                  <p className="text-sm font-bold text-cyan-800">📋 ¿Cómo funciona?</p>
+                </div>
+                <div className="px-4 py-3 space-y-2.5">
+                  {[
+                    { n: "1", icon: "🔗", text: "Comparte **tu link personal** con tus contactos para que registren sus quinielas." },
+                    { n: "2", icon: "💰", text: "Ganas **$2 de comisión** por cada quiniela que se venda a través de tu link." },
+                    { n: "3", icon: "📊", text: "Consulta tus **ventas por jornada** y el total acumulado en la pestaña Resumen." },
+                    { n: "4", icon: "✅", text: "Cobra tu comisión con el administrador al cierre de cada jornada." },
+                  ].map(({ n, icon, text }) => (
+                    <div key={n} className="flex items-start gap-3">
+                      <span className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 text-xs font-black flex items-center justify-center shrink-0 mt-0.5">{n}</span>
+                      <p className="text-sm text-gray-600 leading-snug">
+                        {icon}{" "}
+                        {text.split("**").map((part, i) =>
+                          i % 2 === 1 ? <strong key={i} className="text-gray-800">{part}</strong> : part
+                        )}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {usuario.codigoRef && (
+                  <div className="px-4 pb-4">
+                    <button
+                      onClick={copiarLink}
+                      className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors"
+                    >
+                      {copiado ? "✓ ¡Link copiado!" : "📋 Copiar mi link de ventas"}
+                    </button>
+                  </div>
                 )}
+              </div>
+            )}
+
+            {stats.totalQuinielas === 0 && !esAdminRole && !esVendedor && (
+              <div className="text-center py-10 text-gray-400">
+                <p className="text-3xl mb-2">📋</p>
+                <p>Todavia no tienes quinielas registradas</p>
               </div>
             )}
           </>

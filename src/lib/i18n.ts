@@ -50,6 +50,7 @@ export const translations = {
         jornadaNombre: string,
         lugar: string,
         premio: string,
+        linkResultados?: string,
       ) =>
         [
           `🏆 ¡Felicidades ${nombre ?? "ganador/a"}!`,
@@ -59,6 +60,7 @@ export const translations = {
           `💰 Tu premio: ${premio}`,
           ``,
           `Tienes 7 días para reclamarlo. ¡Contáctanos para recibirlo!`,
+          ...(linkResultados ? [``, `📊 Ver resultados: ${linkResultados}`] : []),
           ``,
           `Tablitas Quinielas 🎯`,
         ].join("\n"),
@@ -113,6 +115,7 @@ export const translations = {
         jornadaNombre: string,
         lugar: string,
         premio: string,
+        linkResultados?: string,
       ) =>
         [
           `🏆 Congratulations ${nombre ?? "winner"}!`,
@@ -122,6 +125,7 @@ export const translations = {
           `💰 Your prize: ${premio}`,
           ``,
           `You have 7 days to claim it. Contact us to receive it!`,
+          ...(linkResultados ? [``, `📊 See results: ${linkResultados}`] : []),
           ``,
           `Tablitas Quinielas 🎯`,
         ].join("\n"),
@@ -172,5 +176,5 @@ export type FlyerT = {
 
 export type WaT = {
   promo: (liga: string, nombre: string, link: string) => string;
-  ganador: (nombre: string | null, aciertos: number, jornadaNombre: string, lugar: string, premio: string) => string;
+  ganador: (nombre: string | null, aciertos: number, jornadaNombre: string, lugar: string, premio: string, linkResultados?: string) => string;
 };
