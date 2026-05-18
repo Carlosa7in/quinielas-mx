@@ -127,8 +127,8 @@ export async function GET(
     const fondoAdmin      = totalRecaudado * PORC_ADMIN;
     const totalComisiones = totalRecaudado * COMISION_PCT;
     const bolsaNeta       = totalRecaudado - fondoAdmin - totalComisiones;
-    const bolsa1     = bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO));
-    const bolsa2Base = bolsaNeta * (PORC_SEGUNDO  / (PORC_PRIMERO + PORC_SEGUNDO));
+    const bolsa1     = Math.floor(bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO)));
+    const bolsa2Base = Math.floor(bolsaNeta * (PORC_SEGUNDO  / (PORC_PRIMERO + PORC_SEGUNDO)));
     const bolsa2 = bolsa2Base + (jornada.bolsa2Acumulada ?? 0);
 
     // Determine rank thresholds
