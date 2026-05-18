@@ -352,222 +352,354 @@ function PerfilInner() {
               </div>
             </div>
 
-            {/* Link de referido — destacado para vendedores y tienda */}
-            {(esVendedor || esTienda) && (
-              <div className={`rounded-xl p-4 flex items-center justify-between gap-3 shadow-sm ${usuario.codigoRef ? "bg-cyan-600 text-white" : "bg-gray-100 text-gray-500"}`}>
-                <div className="min-w-0">
-                  {usuario.codigoRef ? (
-                    <>
-                      <p className="text-xs font-bold text-cyan-100 uppercase tracking-wider mb-0.5">Tu link de ventas</p>
-                      <p className="font-mono text-sm font-bold truncate">/quiniela?ref={usuario.codigoRef}</p>
-                    </>
-                  ) : (
-                    <p className="text-sm">Sin código de referido asignado</p>
-                  )}
+            {/* ── Vista principal VENDEDOR ────────────────────────────── */}
+            {esVendedor ? (
+              <>
+                {/* Stats rápidos */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                    <p className="text-2xl font-bold text-green-700">{stats.totalQuinielas}</p>
+                    <p className="text-xs text-gray-500">Quinielas referidas</p>
+                  </div>
+                  <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                    <p className="text-2xl font-bold text-amber-600">${fmt(stats.comisionGanada + stats.comisionPendiente)}</p>
+                    <p className="text-xs text-gray-500">Comisión total</p>
+                  </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  {usuario.codigoRef && (
-                    <button
-                      onClick={copiarLink}
-                      className="bg-white text-cyan-700 font-bold text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95"
-                    >
-                      {copiado ? "✓ Copiado" : "📋 Copiar"}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setTab("milink")}
-                    className="bg-cyan-700 text-white text-xs px-3 py-1.5 rounded-lg border border-cyan-500"
-                  >
-                    Ver →
-                  </button>
-                </div>
-              </div>
-            )}
 
-            {/* Stats cards */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                <p className="text-2xl font-bold text-green-700">{stats.totalQuinielas}</p>
-                <p className="text-xs text-gray-500">{esVendedor ? "Quinielas referidas" : "Quinielas vendidas"}</p>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                <p className="text-2xl font-bold text-yellow-600">${fmt(stats.totalRecaudado)}</p>
-                <p className="text-xs text-gray-500">{esVendedor ? "Total generado" : "Recaudado personal"}</p>
-              </div>
-              {stats.comisionGanada > 0 && (
-                <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                  <p className="text-2xl font-bold text-amber-600">${fmt(stats.comisionGanada)}</p>
-                  <p className="text-xs text-gray-500">Comisión tienda</p>
-                </div>
-              )}
-              {esAdminRole && stats.comisionAdmin > 0 && (
-                <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                  <p className="text-2xl font-bold text-blue-600">${fmt(stats.comisionAdmin)}</p>
-                  <p className="text-xs text-gray-500">Fondo admin (15%)</p>
-                </div>
-              )}
-              {stats.comisionPendiente > 0 && (
-                <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                  <p className="text-2xl font-bold text-orange-500">${fmt(stats.comisionPendiente)}</p>
-                  <p className="text-xs text-gray-500">Pendiente tienda</p>
-                </div>
-              )}
-              {esAdminRole && stats.comisionAdminPendiente > 0 && (
-                <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                  <p className="text-2xl font-bold text-orange-400">${fmt(stats.comisionAdminPendiente)}</p>
-                  <p className="text-xs text-gray-500">Pendiente admin</p>
-                </div>
-              )}
-            </div>
-
-            {/* Ventas por jornada */}
-            {porJornada.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-gray-100">
-                  <h3 className="font-bold text-gray-800">Ventas por jornada</h3>
-                </div>
-                <div className="divide-y divide-gray-50">
-                  {porJornada.map((j) => {
-                    const open = jornadasExpandidas.has(j.jornadaId);
-                    return (
-                      <div key={j.jornadaId}>
-                        <button
-                          onClick={() => toggleJornada(j.jornadaId)}
-                          className="w-full text-left p-4 hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-semibold text-gray-700 text-sm">
-                                {j.liga} · {j.jornadaNombre}
-                              </p>
-                              <p className="text-xs text-gray-400 mt-0.5">{j.total} quinielas · ${fmt(j.recaudado)}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {j.comision > 0 && (
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${j.pagado ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
-                                  {j.pagado ? "Pagado" : `$${fmt(j.comision)} pend.`}
-                                </span>
-                              )}
-                              <span className="text-gray-400 text-xs">{open ? "▲" : "▼"}</span>
-                            </div>
-                          </div>
-                        </button>
-                        {open && (
-                          <div className="px-4 pb-4 grid grid-cols-3 gap-2">
-                            <div className="bg-green-50 rounded-lg p-2.5 text-center">
-                              <p className="font-bold text-green-700">{j.total}</p>
-                              <p className="text-[10px] text-gray-500">Quinielas</p>
-                              {(j.tienda > 0 || j.online > 0) && (
-                                <p className="text-[9px] text-gray-400">
-                                  {j.tienda > 0 && `${j.tienda}T`}{j.tienda > 0 && j.online > 0 && "·"}{j.online > 0 && `${j.online}O`}
-                                </p>
-                              )}
-                            </div>
-                            <div className="bg-yellow-50 rounded-lg p-2.5 text-center">
-                              <p className="font-bold text-yellow-600">${fmt(j.recaudado)}</p>
-                              <p className="text-[10px] text-gray-500">Recaudado</p>
-                            </div>
-                            <div className="bg-orange-50 rounded-lg p-2.5 text-center">
-                              <p className="font-bold text-orange-600">${fmt(j.comision)}</p>
-                              <p className="text-[10px] text-gray-500">Comisión</p>
-                              {j.pagado && j.pagadoEn && (
-                                <p className="text-[9px] text-green-600">{fmtFecha(j.pagadoEn)}</p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Ultimas quinielas */}
-            {recientes.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-gray-100">
-                  <h3 className="font-bold text-gray-800">Ultimas quinielas</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left px-3 py-2 text-gray-500 font-medium">Folio</th>
-                        <th className="text-left px-3 py-2 text-gray-500 font-medium">Cliente</th>
-                        <th className="text-center px-2 py-2 text-gray-500 font-medium">Canal</th>
-                        <th className="text-right px-3 py-2 text-gray-500 font-medium">Monto</th>
-                        <th className="text-right px-3 py-2 text-gray-500 font-medium">Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {recientes.map((q) => (
-                        <tr key={q.folio} className="hover:bg-gray-50">
-                          <td className="px-3 py-2 font-mono text-gray-600">{q.folio}</td>
-                          <td className="px-3 py-2 text-gray-500 truncate max-w-[80px]">
-                            {q.nombreCliente ?? "—"}
-                          </td>
-                          <td className="px2 py-2 text-center">
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${CANAL_COLOR[q.canal] ?? "bg-gray-100 text-gray-600"}`}>
-                              {q.canal === "tienda" ? "Tienda" : "Online"}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-right font-semibold text-gray-700">
-                            ${fmt(q.monto)}
-                          </td>
-                          <td className={`px-3 py-2 text-right capitalize ${ESTADO_COLOR[q.estado] ?? "text-gray-500"}`}>
-                            {q.estado}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* Instrucciones para vendedor — siempre visibles */}
-            {esVendedor && (
-              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                <div className="bg-cyan-50 px-4 py-3 border-b border-cyan-100">
-                  <p className="text-sm font-bold text-cyan-800">📋 ¿Cómo funciona?</p>
-                </div>
-                <div className="px-4 py-3 space-y-2.5">
-                  {[
-                    { n: "1", icon: "🔗", text: "Comparte **tu link personal** con tus contactos para que registren sus quinielas." },
-                    { n: "2", icon: "💰", text: "Ganas **$2 de comisión** por cada quiniela que se venda a través de tu link." },
-                    { n: "3", icon: "📊", text: "Consulta tus **ventas por jornada** y el total acumulado en la pestaña Resumen." },
-                    { n: "4", icon: "✅", text: "Cobra tu comisión con el administrador al cierre de cada jornada." },
-                  ].map(({ n, icon, text }) => (
-                    <div key={n} className="flex items-start gap-3">
-                      <span className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 text-xs font-black flex items-center justify-center shrink-0 mt-0.5">{n}</span>
-                      <p className="text-sm text-gray-600 leading-snug">
-                        {icon}{" "}
-                        {text.split("**").map((part, i) =>
-                          i % 2 === 1 ? <strong key={i} className="text-gray-800">{part}</strong> : part
-                        )}
-                      </p>
+                {/* Mi link — card grande tipo admin */}
+                {usuario.codigoRef ? (
+                  <div className="bg-cyan-700 hover:bg-cyan-600 rounded-xl p-4 flex items-center gap-3 transition-colors shadow-sm">
+                    <span className="text-2xl shrink-0">🔗</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-white">Mi Link de Ventas</p>
+                      <p className="text-cyan-200 text-sm font-mono truncate">/quiniela?ref={usuario.codigoRef}</p>
                     </div>
-                  ))}
-                </div>
-                {usuario.codigoRef && (
-                  <div className="px-4 pb-4">
                     <button
                       onClick={copiarLink}
-                      className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors"
+                      className="bg-white text-cyan-700 font-bold text-xs px-3 py-2 rounded-lg shrink-0 transition-all active:scale-95"
                     >
-                      {copiado ? "✓ ¡Link copiado!" : "📋 Copiar mi link de ventas"}
+                      {copiado ? "✓" : "📋 Copiar"}
                     </button>
                   </div>
+                ) : (
+                  <div className="bg-gray-100 rounded-xl p-4 text-center text-gray-400 text-sm">
+                    Sin código de referido — pídelo al administrador
+                  </div>
                 )}
-              </div>
-            )}
 
-            {stats.totalQuinielas === 0 && !esAdminRole && !esVendedor && (
-              <div className="text-center py-10 text-gray-400">
-                <p className="text-3xl mb-2">📋</p>
-                <p>Todavia no tienes quinielas registradas</p>
-              </div>
+                {/* Flyer de jornadas abiertas */}
+                {jornadasAbiertas.length > 0 && usuario.codigoRef && (
+                  <div>
+                    <p className="text-xs text-gray-400 font-medium px-1 mb-2 uppercase tracking-wide">Compartir por jornada</p>
+                    <div className="space-y-3">
+                      {jornadasAbiertas.map((j) => {
+                        const nombreJornada = j.nombre ?? `Jornada ${j.numero}`;
+                        const origin = typeof window !== "undefined" ? window.location.origin : "https://tablitasquinielas.netlify.app";
+                        const link = `${origin}/quiniela?ref=${usuario.codigoRef}`;
+                        const mensaje = `🏆 ¡Ya están abiertas las quinielas!\n\n⚽ ${j.liga} · ${nombreJornada}\n💰 Solo $20 por boleto — ¡gana premios en efectivo!\n\nRegistra la tuya aquí 👇\n${link}\n\n¡No te quedes sin la tuya! 🔥`;
+                        const waUrl = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+                        return (
+                          <div key={j.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                              <div>
+                                <p className="font-bold text-gray-800">{nombreJornada}</p>
+                                <p className="text-xs text-gray-400">{j.liga} · {j.temporada}</p>
+                              </div>
+                              <a
+                                href={waUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-colors shrink-0"
+                              >
+                                💬 WA
+                              </a>
+                            </div>
+                            <div className="p-3">
+                              <FlyerJornada
+                                jornadaId={j.id}
+                                jornadaNombre={j.nombre ?? `Jornada ${j.numero}`}
+                                liga={j.liga}
+                                temporada={j.temporada}
+                                refCode={usuario.codigoRef!}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Instrucciones estilo cards admin */}
+                <div>
+                  <p className="text-xs text-gray-400 font-medium px-1 mb-2 uppercase tracking-wide">¿Cómo ganar comisiones?</p>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="bg-cyan-700 text-white rounded-xl p-4 flex items-center gap-3">
+                      <span className="text-2xl shrink-0">🔗</span>
+                      <div>
+                        <p className="font-bold">1. Comparte tu link</p>
+                        <p className="text-cyan-200 text-sm">Envía tu link personal a tus contactos y redes</p>
+                      </div>
+                    </div>
+                    <div className="bg-green-700 text-white rounded-xl p-4 flex items-center gap-3">
+                      <span className="text-2xl shrink-0">💰</span>
+                      <div>
+                        <p className="font-bold">2. Gana $2 por quiniela</p>
+                        <p className="text-green-200 text-sm">Cada registro confirmado vía tu link te genera $2</p>
+                      </div>
+                    </div>
+                    <div className="bg-amber-700 text-white rounded-xl p-4 flex items-center gap-3">
+                      <span className="text-2xl shrink-0">🖼️</span>
+                      <div>
+                        <p className="font-bold">3. Genera el flyer</p>
+                        <p className="text-amber-200 text-sm">Descarga la imagen con los partidos para compartir en status</p>
+                      </div>
+                    </div>
+                    <div className="bg-indigo-700 text-white rounded-xl p-4 flex items-center gap-3">
+                      <span className="text-2xl shrink-0">📊</span>
+                      <div>
+                        <p className="font-bold">4. Revisa tus ventas</p>
+                        <p className="text-indigo-200 text-sm">En la pestaña "Mi Link" ves tu historial y comisiones</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ventas por jornada */}
+                {porJornada.length > 0 && (
+                  <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-gray-100">
+                      <h3 className="font-bold text-gray-800">Mis ventas por jornada</h3>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {porJornada.map((j) => {
+                        const open = jornadasExpandidas.has(j.jornadaId);
+                        return (
+                          <div key={j.jornadaId}>
+                            <button
+                              onClick={() => toggleJornada(j.jornadaId)}
+                              className="w-full text-left p-4 hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-semibold text-gray-700 text-sm">{j.liga} · {j.jornadaNombre}</p>
+                                  <p className="text-xs text-gray-400 mt-0.5">{j.total} quinielas · ${fmt(j.recaudado)}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {j.comision > 0 && (
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${j.pagado ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
+                                      {j.pagado ? "Pagado" : `$${fmt(j.comision)} pend.`}
+                                    </span>
+                                  )}
+                                  <span className="text-gray-400 text-xs">{open ? "▲" : "▼"}</span>
+                                </div>
+                              </div>
+                            </button>
+                            {open && (
+                              <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+                                <div className="bg-green-50 rounded-lg p-2.5 text-center">
+                                  <p className="font-bold text-green-700">{j.total}</p>
+                                  <p className="text-[10px] text-gray-500">Quinielas</p>
+                                </div>
+                                <div className="bg-yellow-50 rounded-lg p-2.5 text-center">
+                                  <p className="font-bold text-yellow-600">${fmt(j.recaudado)}</p>
+                                  <p className="text-[10px] text-gray-500">Recaudado</p>
+                                </div>
+                                <div className="bg-orange-50 rounded-lg p-2.5 text-center">
+                                  <p className="font-bold text-orange-600">${fmt(j.comision)}</p>
+                                  <p className="text-[10px] text-gray-500">Comisión</p>
+                                  {j.pagado && j.pagadoEn && (
+                                    <p className="text-[9px] text-green-600">{fmtFecha(j.pagadoEn)}</p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* ── Vista para admin / tienda / otros ─────────────────────── */
+              <>
+                {/* Link de referido — destacado para tienda */}
+                {esTienda && (
+                  <div className={`rounded-xl p-4 flex items-center justify-between gap-3 shadow-sm ${usuario.codigoRef ? "bg-cyan-600 text-white" : "bg-gray-100 text-gray-500"}`}>
+                    <div className="min-w-0">
+                      {usuario.codigoRef ? (
+                        <>
+                          <p className="text-xs font-bold text-cyan-100 uppercase tracking-wider mb-0.5">Tu link de ventas</p>
+                          <p className="font-mono text-sm font-bold truncate">/quiniela?ref={usuario.codigoRef}</p>
+                        </>
+                      ) : (
+                        <p className="text-sm">Sin código de referido asignado</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      {usuario.codigoRef && (
+                        <button
+                          onClick={copiarLink}
+                          className="bg-white text-cyan-700 font-bold text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95"
+                        >
+                          {copiado ? "✓ Copiado" : "📋 Copiar"}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setTab("milink")}
+                        className="bg-cyan-700 text-white text-xs px-3 py-1.5 rounded-lg border border-cyan-500"
+                      >
+                        Ver →
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Stats cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                    <p className="text-2xl font-bold text-green-700">{stats.totalQuinielas}</p>
+                    <p className="text-xs text-gray-500">Quinielas vendidas</p>
+                  </div>
+                  <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                    <p className="text-2xl font-bold text-yellow-600">${fmt(stats.totalRecaudado)}</p>
+                    <p className="text-xs text-gray-500">Recaudado personal</p>
+                  </div>
+                  {stats.comisionGanada > 0 && (
+                    <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                      <p className="text-2xl font-bold text-amber-600">${fmt(stats.comisionGanada)}</p>
+                      <p className="text-xs text-gray-500">Comisión tienda</p>
+                    </div>
+                  )}
+                  {esAdminRole && stats.comisionAdmin > 0 && (
+                    <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                      <p className="text-2xl font-bold text-blue-600">${fmt(stats.comisionAdmin)}</p>
+                      <p className="text-xs text-gray-500">Fondo admin (15%)</p>
+                    </div>
+                  )}
+                  {stats.comisionPendiente > 0 && (
+                    <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                      <p className="text-2xl font-bold text-orange-500">${fmt(stats.comisionPendiente)}</p>
+                      <p className="text-xs text-gray-500">Pendiente tienda</p>
+                    </div>
+                  )}
+                  {esAdminRole && stats.comisionAdminPendiente > 0 && (
+                    <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+                      <p className="text-2xl font-bold text-orange-400">${fmt(stats.comisionAdminPendiente)}</p>
+                      <p className="text-xs text-gray-500">Pendiente admin</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Ventas por jornada */}
+                {porJornada.length > 0 && (
+                  <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-gray-100">
+                      <h3 className="font-bold text-gray-800">Ventas por jornada</h3>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {porJornada.map((j) => {
+                        const open = jornadasExpandidas.has(j.jornadaId);
+                        return (
+                          <div key={j.jornadaId}>
+                            <button
+                              onClick={() => toggleJornada(j.jornadaId)}
+                              className="w-full text-left p-4 hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-semibold text-gray-700 text-sm">
+                                    {j.liga} · {j.jornadaNombre}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-0.5">{j.total} quinielas · ${fmt(j.recaudado)}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {j.comision > 0 && (
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${j.pagado ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
+                                      {j.pagado ? "Pagado" : `$${fmt(j.comision)} pend.`}
+                                    </span>
+                                  )}
+                                  <span className="text-gray-400 text-xs">{open ? "▲" : "▼"}</span>
+                                </div>
+                              </div>
+                            </button>
+                            {open && (
+                              <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+                                <div className="bg-green-50 rounded-lg p-2.5 text-center">
+                                  <p className="font-bold text-green-700">{j.total}</p>
+                                  <p className="text-[10px] text-gray-500">Quinielas</p>
+                                  {(j.tienda > 0 || j.online > 0) && (
+                                    <p className="text-[9px] text-gray-400">
+                                      {j.tienda > 0 && `${j.tienda}T`}{j.tienda > 0 && j.online > 0 && "·"}{j.online > 0 && `${j.online}O`}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="bg-yellow-50 rounded-lg p-2.5 text-center">
+                                  <p className="font-bold text-yellow-600">${fmt(j.recaudado)}</p>
+                                  <p className="text-[10px] text-gray-500">Recaudado</p>
+                                </div>
+                                <div className="bg-orange-50 rounded-lg p-2.5 text-center">
+                                  <p className="font-bold text-orange-600">${fmt(j.comision)}</p>
+                                  <p className="text-[10px] text-gray-500">Comisión</p>
+                                  {j.pagado && j.pagadoEn && (
+                                    <p className="text-[9px] text-green-600">{fmtFecha(j.pagadoEn)}</p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Ultimas quinielas */}
+                {recientes.length > 0 && (
+                  <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-gray-100">
+                      <h3 className="font-bold text-gray-800">Ultimas quinielas</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="text-left px-3 py-2 text-gray-500 font-medium">Folio</th>
+                            <th className="text-left px-3 py-2 text-gray-500 font-medium">Cliente</th>
+                            <th className="text-center px-2 py-2 text-gray-500 font-medium">Canal</th>
+                            <th className="text-right px-3 py-2 text-gray-500 font-medium">Monto</th>
+                            <th className="text-right px-3 py-2 text-gray-500 font-medium">Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {recientes.map((q) => (
+                            <tr key={q.folio} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 font-mono text-gray-600">{q.folio}</td>
+                              <td className="px-3 py-2 text-gray-500 truncate max-w-[80px]">{q.nombreCliente ?? "—"}</td>
+                              <td className="px2 py-2 text-center">
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${CANAL_COLOR[q.canal] ?? "bg-gray-100 text-gray-600"}`}>
+                                  {q.canal === "tienda" ? "Tienda" : "Online"}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-right font-semibold text-gray-700">${fmt(q.monto)}</td>
+                              <td className={`px-3 py-2 text-right capitalize ${ESTADO_COLOR[q.estado] ?? "text-gray-500"}`}>{q.estado}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {stats.totalQuinielas === 0 && !esAdminRole && (
+                  <div className="text-center py-10 text-gray-400">
+                    <p className="text-3xl mb-2">📋</p>
+                    <p>Todavia no tienes quinielas registradas</p>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
