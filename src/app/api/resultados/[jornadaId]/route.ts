@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma, sql } from "@/lib/prisma";
+import { getLogoUrl } from "@/lib/equipos";
 
 // Prize constants
 const PORC_PRIMERO = 0.60;
@@ -72,8 +73,9 @@ export async function GET(
     const partidosConLogos = partidos.map((p) => ({
       ...p,
       fechaHora: fechaMap[p.id] ?? null,
-      logoLocal:  logoMap[p.equipoLocal]  ?? "",
-      logoVisita: logoMap[p.equipoVisita] ?? "",
+      // DB logo → fallback a getLogoUrl (equipos.ts hardcoded ESPN IDs)
+      logoLocal:  logoMap[p.equipoLocal]  || getLogoUrl(p.equipoLocal)  || "",
+      logoVisita: logoMap[p.equipoVisita] || getLogoUrl(p.equipoVisita) || "",
     }));
 
     // Ordenar partidos por fechaHora (nulls al final), fallback a orden

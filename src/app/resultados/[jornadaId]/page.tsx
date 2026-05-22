@@ -463,16 +463,18 @@ export default function ResultadosPage() {
                   const esSegundo = premios.segundoAciertos !== null && q.aciertos === premios.segundoAciertos;
                   const total     = partidos.length;
                   const ac        = q.aciertos ?? 0;
-                  // Row & pts colors by aciertos level (soft -100 tones)
+                  // Colores por RANGO primero (1°/2° siempre destacan), luego por aciertos
                   const { rowBg, ptsBg, ptsColor } = (() => {
-                    if (ac === total)       return { rowBg: "#fef9c3", ptsBg: "#d97706", ptsColor: "#fff" }; // yellow-100 / amber-600
-                    if (ac >= total - 1)   return { rowBg: "#dcfce7", ptsBg: "#16a34a", ptsColor: "#fff" }; // green-100  / green-600
-                    if (ac >= 5)           return { rowBg: "#ccfbf1", ptsBg: "#0d9488", ptsColor: "#fff" }; // teal-100   / teal-600
-                    if (ac === 4)          return { rowBg: "#dbeafe", ptsBg: "#2563eb", ptsColor: "#fff" }; // blue-100   / blue-600
-                    if (ac === 3)          return { rowBg: "#e0e7ff", ptsBg: "#4f46e5", ptsColor: "#fff" }; // indigo-100 / indigo-600
-                    if (ac === 2)          return { rowBg: idx % 2 === 0 ? WHITE : LGRAY, ptsBg: LGRAY2, ptsColor: "#6b7280" }; // neutral
-                    if (ac === 1)          return { rowBg: "#ffedd5", ptsBg: "#ea580c", ptsColor: "#fff" }; // orange-100 / orange-600
-                    return                        { rowBg: "#fee2e2", ptsBg: "#dc2626", ptsColor: "#fff" }; // red-100    / red-600 (0)
+                    if (esPrimero)         return { rowBg: "#fef08a", ptsBg: "#b45309", ptsColor: "#fff" }; // 🥇 amarillo fuerte
+                    if (esSegundo)         return { rowBg: "#bfdbfe", ptsBg: "#1d4ed8", ptsColor: "#fff" }; // 🥈 azul cielo
+                    if (ac === total)      return { rowBg: "#bbf7d0", ptsBg: "#15803d", ptsColor: "#fff" }; // perfecto (fuera de premio)
+                    if (ac >= total - 1)   return { rowBg: "#d1fae5", ptsBg: "#16a34a", ptsColor: "#fff" }; // casi perfecto
+                    if (ac >= 5)           return { rowBg: "#f0fdf4", ptsBg: "#0d9488", ptsColor: "#fff" }; // bueno
+                    if (ac === 4)          return { rowBg: "#f8fafc", ptsBg: "#2563eb", ptsColor: "#fff" }; // regular
+                    if (ac === 3)          return { rowBg: "#f1f5f9", ptsBg: "#4f46e5", ptsColor: "#fff" }; // bajo
+                    if (ac === 2)          return { rowBg: idx % 2 === 0 ? WHITE : LGRAY, ptsBg: LGRAY2, ptsColor: "#6b7280" };
+                    if (ac === 1)          return { rowBg: "#fff7ed", ptsBg: "#ea580c", ptsColor: "#fff" }; // poco
+                    return                        { rowBg: "#fef2f2", ptsBg: "#dc2626", ptsColor: "#fff" }; // sin aciertos
                   })();
                   return (
                     <tr key={q.id} style={{ background: rowBg, borderBottom: `1px solid ${LGRAY2}` }}>

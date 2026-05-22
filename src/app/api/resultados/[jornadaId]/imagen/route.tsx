@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { prisma, sql } from "@/lib/prisma";
+import { getLogoUrl } from "@/lib/equipos";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,8 +82,8 @@ export async function GET(
     );
     const ps = partidos.map(p => ({
       ...p,
-      logoLocal:  logoMap[p.equipoLocal]  ?? "",
-      logoVisita: logoMap[p.equipoVisita] ?? "",
+      logoLocal:  logoMap[p.equipoLocal]  || getLogoUrl(p.equipoLocal)  || "",
+      logoVisita: logoMap[p.equipoVisita] || getLogoUrl(p.equipoVisita) || "",
     }));
 
     // fechaHora via SQL (NeonDB bug con DateTime en Prisma ORM)
@@ -278,14 +279,17 @@ export async function GET(
             const es2 = segundoAciertos !== null && q.aciertos === segundoAciertos;
             const ac = q.aciertos ?? -1;
             const total = ps.length;
-            const rowBg = ac === total ? "#fef9c3"
-              : ac >= total - 1 ? "#dcfce7"
-              : ac >= 5          ? "#ccfbf1"
-              : ac === 4         ? "#dbeafe"
-              : ac === 3         ? "#e0e7ff"
-              : ac === 1         ? "#ffedd5"
-              : ac === 0         ? "#fee2e2"
-              : idx % 2 === 0    ? WHITE : "#f9fafb";
+            // Colores por RANGO primero, luego por aciertos
+            const rowBg = es1              ? "#fef08a"   // 🥇 amarillo intenso
+              : es2                        ? "#bfdbfe"   // 🥈 azul cielo
+              : ac === total               ? "#bbf7d0"   // perfecto (si no es 1ro/2do)
+              : ac >= total - 1            ? "#d1fae5"   // casi perfecto
+              : ac >= 5                    ? "#f0fdf4"   // bueno
+              : ac === 4                   ? "#f8fafc"   // regular
+              : ac === 3                   ? "#f1f5f9"
+              : ac === 1                   ? "#fff7ed"   // poco
+              : ac === 0                   ? "#fef2f2"   // sin aciertos
+              : idx % 2 === 0              ? WHITE : "#f9fafb";
 
             return (
               <div key={q.id} style={{ height: H_DATA, background: rowBg, display: "flex", alignItems: "center", borderBottom: "1px solid #f3f4f6" }}>
@@ -317,8 +321,16 @@ export async function GET(
                 })}
                 {/* PTS */}
                 <div style={{ width: PTS_W, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ background: ac === total ? "#eab308" : ac >= total - 1 ? "#16a34a" : ac >= 5 ? "#0d9488" : ac === 4 ? "#2563eb" : ac === 3 ? "#4f46e5" : ac === 1 ? "#ea580c" : ac === 0 ? "#dc2626" : "#e5e7eb", borderRadius: 3, paddingLeft: 4, paddingRight: 4, paddingTop: 1, paddingBottom: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 14, fontWeight: 900, color: (ac >= total - 1 || ac === total) ? "#fff" : ac >= 3 ? "#fff" : ac === 1 || ac === 0 ? "#fff" : "#6b7280", lineHeight: "16px" }}>
+                  <div style={{
+                    background: es1 ? "#b45309" : es2 ? "#1d4ed8"
+                      : ac === total ? "#16a34a" : ac >= total - 1 ? "#15803d"
+                      : ac >= 5 ? "#0d9488" : ac === 4 ? "#2563eb" : ac === 3 ? "#4f46e5"
+                      : ac === 1 ? "#ea580c" : ac === 0 ? "#dc2626" : "#cbd5e1",
+                    borderRadius: 4, paddingLeft: 5, paddingRight: 5, paddingTop: 2, paddingBottom: 2,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    minWidth: 28,
+                  }}>
+                    <span style={{ fontSize: 15, fontWeight: 900, color: ac >= 2 || es1 || es2 ? "#fff" : "#374151", lineHeight: "16px" }}>
                       {q.aciertos ?? "—"}
                     </span>
                   </div>
