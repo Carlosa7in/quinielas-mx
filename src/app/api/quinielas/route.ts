@@ -4,6 +4,7 @@ import { prisma, sql } from "@/lib/prisma";
 import { generarFolio } from "@/lib/folio";
 import { calcularFechaCierre } from "@/lib/fechas";
 import { telefonoFalso } from "@/lib/telefono";
+import { sendPushToAll } from "@/lib/push";
 
 // Calcula cuántas combinaciones hay (producto cartesiano de opciones) — para el monto
 function numeroCombinaciones(picks: { predicciones: string[] }[]): number {
@@ -219,6 +220,47 @@ export async function PATCH(req: Request) {
   } catch (err) {
     console.error("[QUINIELAS PATCH] error:", err);
     return NextResponse.json({ error: "Error al guardar: " + String(err) }, { status: 500 });
+  }
+}
+
+// DELETE /api/quinielas?folio=xxx - cliente cancela registro (solo si pago pendiente)
+export async function DELETE(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const folio = searchParams.get("folio");
+  if (!folio) return NextResponse.json({ error: "Folio requerido" }, { status: 400 });
+
+  try {
+    // Buscar la quiniela y verificar que no esté pagada
+    const quiniela = await prisma.quiniela.findUnique({
+      where: { folio },
+      select: { id: true, estadoPago: true, nombreCliente: true },
+    });
+
+    if (!quiniela) {
+      return NextResponse.json({ error: "Quiniela no encontrada" }, { status: 404 });
+    }
+
+    if (quiniela.estadoPago === "confirmado") {
+      return NextResponse.json({ error: "No se puede cancelar una quiniela con pago confirmado" }, { status: 403 });
+    }
+
+    // Eliminar picks primero (FK), luego la quiniela
+    await prisma.pick.deleteMany({ where: { quinielaId: quiniela.id } });
+    await prisma.quiniela.delete({ where: { id: quiniela.id } });
+
+    // Notificar al admin
+    const nombre = quiniela.nombreCliente ?? "Sin nombre";
+    sendPushToAll({
+      title: "❌ Cliente canceló su registro",
+      body: `Folio: ${folio} — ${nombre}`,
+      tag: `cancelar-${folio}`,
+      url: "/admin/quinielas",
+    }).catch(() => {/* no bloquear */});
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[QUINIELAS DELETE] error:", err);
+    return NextResponse.json({ error: "Error al cancelar: " + String(err) }, { status: 500 });
   }
 }
 

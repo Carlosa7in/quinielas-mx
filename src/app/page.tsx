@@ -245,6 +245,10 @@ function BannerPagosPendientes({ t }: { t: HomeT }) {
           const params = new URLSearchParams({ total: String(boletos), formas: String(boletos), montoTotal: String(monto) });
           const cancelar = (e: React.MouseEvent) => {
             e.preventDefault();
+            if (!confirm(`¿Cancelar la quiniela ${p.folio}? Esta acción no se puede deshacer.`)) return;
+            // Borrar del servidor (sin await — no bloquear UX)
+            fetch(`/api/quinielas?folio=${encodeURIComponent(p.folio)}`, { method: "DELETE" }).catch(() => {});
+            // Borrar del localStorage
             const nuevos = pendientes.filter((x) => x.folio !== p.folio);
             setPendientes(nuevos);
             try {
