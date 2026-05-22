@@ -1,43 +1,72 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, sql } from "@/lib/prisma";
 
 // GET /api/admin/quinielas — jornadas con sus quinielas
 export async function GET() {
-  const jornadas = await prisma.jornada.findMany({
-    select: {
-      id: true,
-      numero: true,
-      nombre: true,
-      temporada: true,
-      liga: true,
-      estado: true,
-      quinielas: {
-        select: {
-          id: true,
-          folio: true,
-          usuarioId: true,
-          vendedorId: true,
-          nombreCliente: true,
-          telefonoCliente: true,
-          canal: true,
-          monto: true,
-          estado: true,
-          estadoPago: true,
-          aciertos: true,
-          referenciaPago: true,
-          createdAt: true,
-          usuario: { select: { nombre: true } },
-          vendedor: { select: { nombre: true, codigo: true } },
-          picks: {
-            select: { prediccion: true, acertado: true, partidoId: true, partido: { select: { orden: true } } },
-            orderBy: { partido: { orden: "asc" } },
+  try {
+    const jornadas = await prisma.jornada.findMany({
+      select: {
+        id: true,
+        numero: true,
+        nombre: true,
+        temporada: true,
+        liga: true,
+        estado: true,
+        quinielas: {
+          select: {
+            id: true,
+            folio: true,
+            usuarioId: true,
+            vendedorId: true,
+            nombreCliente: true,
+            telefonoCliente: true,
+            canal: true,
+            monto: true,
+            estado: true,
+            estadoPago: true,
+            aciertos: true,
+            referenciaPago: true,
+            usuario: { select: { nombre: true } },
+            vendedor: { select: { nombre: true, codigo: true } },
+            picks: {
+              select: { prediccion: true, acertado: true, partidoId: true, partido: { select: { orden: true } } },
+              orderBy: { partido: { orden: "asc" } },
+            },
           },
+          orderBy: { folio: "desc" },
         },
-        orderBy: { createdAt: "desc" },
       },
-    },
-    orderBy: { numero: "desc" },
-  });
+      orderBy: { numero: "desc" },
+    });
 
-  return NextResponse.json(jornadas);
+    // createdAt vía neon() directo — Prisma/NeonDB devuelve {} para DateTime
+    const createdAtMap = new Map<string, string>();
+    try {
+      const rows = await sql`
+        SELECT id, to_char("createdAt" AT TIME ZONE 'America/Mexico_City', 'YYYY-MM-DD"T"HH24:MI:SS') AS created
+        FROM "Quiniela"
+      `;
+      for (const r of rows) {
+        if (r.id && r.created) createdAtMap.set(r.id as string, r.created as string);
+      }
+    } catch { /* si falla, createdAt queda null */ }
+
+    // Inyectar createdAt en cada quiniela y reordenar por fecha desc
+    const resultado = jornadas.map((j) => ({
+      ...j,
+      quinielas: j.quinielas
+        .map((q) => ({ ...q, createdAt: createdAtMap.get(q.id) ?? null }))
+        .sort((a, b) => {
+          if (!a.createdAt && !b.createdAt) return 0;
+          if (!a.createdAt) return 1;
+          if (!b.createdAt) return -1;
+          return b.createdAt.localeCompare(a.createdAt);
+        }),
+    }));
+
+    return NextResponse.json(resultado);
+  } catch (err) {
+    console.error("[/api/admin/quinielas]", err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }
