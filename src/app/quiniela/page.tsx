@@ -120,7 +120,7 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
     fetch("/api/jornadas/todas")
       .then((r) => r.json())
       .then((data: Jornada[]) => {
-        const activas = data.filter((j) => j.estado === "abierta");
+        const activas = data.filter((j) => j.estado === "abierta" || j.estado === "cerrada");
         setJornadas(activas);
         if (activas.length > 0) {
           const ligas = [...new Set(activas.map((j) => j.liga))];
@@ -169,8 +169,8 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
         <div className="text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-tablitas.png" alt="Tablitas Quinielas" className="mx-auto mb-4 opacity-60" style={{ height: "90px", objectFit: "contain" }} />
-          <h2 className="text-xl font-bold mb-2">No hay jornadas abiertas</h2>
-          <p className="text-amber-300/60 text-sm">Vuelve pronto, pronto habrá una nueva jornada.</p>
+          <h2 className="text-xl font-bold mb-2">No hay jornadas disponibles</h2>
+          <p className="text-amber-300/60 text-sm">El registro está cerrado o no hay jornada activa.<br/>Vuelve pronto, pronto habrá una nueva.</p>
           <a href="/" className="mt-6 inline-block text-yellow-300 underline">← Inicio</a>
         </div>
       </div>
@@ -792,20 +792,30 @@ function QuinielaInner() {
             <h2 className="font-semibold text-gray-700">¿Cómo vas a pagar?</h2>
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setMetodoPago("transferencia")}
-                className={`rounded-xl p-3 text-center border-2 transition-colors ${
-                  metodoPago === "transferencia" ? "border-amber-500 bg-amber-50" : "border-gray-200 hover:border-gray-300"
+                className={`relative rounded-xl p-3 text-center border-2 transition-all ${
+                  metodoPago === "transferencia"
+                    ? "border-amber-500 bg-amber-500 shadow-md scale-[1.02]"
+                    : "border-gray-200 bg-white hover:border-amber-300"
                 }`}>
+                {metodoPago === "transferencia" && (
+                  <span className="absolute top-1.5 right-1.5 text-white text-xs bg-green-500 rounded-full w-5 h-5 flex items-center justify-center font-bold">✓</span>
+                )}
                 <p className="text-2xl mb-1">🏦</p>
-                <p className="text-sm font-semibold text-gray-800">Transferencia</p>
-                <p className="text-xs text-gray-400">SPEI / Banca en línea</p>
+                <p className={`text-sm font-bold ${metodoPago === "transferencia" ? "text-white" : "text-gray-800"}`}>Transferencia</p>
+                <p className={`text-xs ${metodoPago === "transferencia" ? "text-amber-100" : "text-gray-400"}`}>SPEI / Banca en línea</p>
               </button>
               <button type="button" onClick={() => setMetodoPago("oxxo")}
-                className={`rounded-xl p-3 text-center border-2 transition-colors ${
-                  metodoPago === "oxxo" ? "border-amber-500 bg-amber-50" : "border-gray-200 hover:border-gray-300"
+                className={`relative rounded-xl p-3 text-center border-2 transition-all ${
+                  metodoPago === "oxxo"
+                    ? "border-amber-500 bg-amber-500 shadow-md scale-[1.02]"
+                    : "border-gray-200 bg-white hover:border-amber-300"
                 }`}>
+                {metodoPago === "oxxo" && (
+                  <span className="absolute top-1.5 right-1.5 text-white text-xs bg-green-500 rounded-full w-5 h-5 flex items-center justify-center font-bold">✓</span>
+                )}
                 <p className="text-2xl mb-1">🏪</p>
-                <p className="text-sm font-semibold text-gray-800">Depósito OXXO</p>
-                <p className="text-xs text-gray-400">Efectivo en cualquier OXXO</p>
+                <p className={`text-sm font-bold ${metodoPago === "oxxo" ? "text-white" : "text-gray-800"}`}>Depósito OXXO</p>
+                <p className={`text-xs ${metodoPago === "oxxo" ? "text-amber-100" : "text-gray-400"}`}>Efectivo en cualquier OXXO</p>
               </button>
             </div>
 

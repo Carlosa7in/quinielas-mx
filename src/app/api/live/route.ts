@@ -407,10 +407,14 @@ export async function GET() {
           let detalle = "";
           let reloj = "";
           let periodo = 0;
-          // Si el partido empezó hace más de 3h y no está en ESPN como "in", no vale la pena notificar
+          // Solo notificar eventos de partidos que empezaron hace menos de 3h
           const fechaMs = Number(p.fecha_epoch);
           const ahora = Date.now();
-          const esReciente = ahora - fechaMs < 3 * 60 * 60 * 1000; // últimas 3 horas
+          const minutosDesdeInicio = (ahora - fechaMs) / 60_000;
+          const esReciente = minutosDesdeInicio < 180; // últimas 3 horas
+          // Para "partido terminado": solo notificar si el partido terminó hace menos de 30min
+          // (evita notificaciones al abrir en-vivo horas después de un partido)
+          const esRecienTerminado = minutosDesdeInicio < 120 + 30; // ~30min después del 90'
           let golesLocal: string | null = p.goles_local !== null ? String(p.goles_local) : null;
           let golesVisita: string | null = p.goles_visita !== null ? String(p.goles_visita) : null;
           // Logos: BD > ESPN teams endpoint > vacío
@@ -557,9 +561,9 @@ export async function GET() {
                 }
               }
 
-              // Notificación de partido terminado — solo si es reciente (< 3h)
+              // Notificación de partido terminado — solo si terminó hace menos de ~30min
               const matchKey = espnEv?.id ?? p.partido_id;
-              if (estado === "post" && golesLocal !== null && golesVisita !== null && esReciente) {
+              if (estado === "post" && golesLocal !== null && golesVisita !== null && esRecienTerminado) {
                 candidatos.push({
                   clave: `final-${matchKey}`,
                   titulo: "⏱️ Partido terminado",
