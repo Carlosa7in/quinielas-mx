@@ -58,7 +58,7 @@ export default function JornadasPage() {
     }
   };
 
-  const activas = jornadas.filter((j) => j.estado === "abierta");
+  const activas = jornadas.filter((j) => j.estado === "abierta" || j.estado === "cerrada");
   const mostrar = tab === "activas" ? activas : jornadas;
 
   return (

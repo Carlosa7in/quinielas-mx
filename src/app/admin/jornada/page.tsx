@@ -75,7 +75,7 @@ export default function AdminJornadaPage() {
       .then((r) => r.json())
       .then((d) => {
         setJornadas(d.jornadas ?? []);
-        const abierta = (d.jornadas ?? []).find((j: Jornada) => j.estado === "abierta");
+        const abierta = (d.jornadas ?? []).find((j: Jornada) => j.estado === "abierta" || j.estado === "cerrada");
         if (abierta) setJornadaId(abierta.id);
         setCargando(false);
       })

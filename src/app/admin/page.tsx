@@ -42,7 +42,7 @@ export default function AdminPage() {
     window.location.reload();
   };
 
-  const activas = jornadas.filter((j) => j.estado === "abierta");
+  const activas = jornadas.filter((j) => j.estado === "abierta" || j.estado === "cerrada");
   const hayJornadas = jornadas.length > 0;
 
   // Stats globales

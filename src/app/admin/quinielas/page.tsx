@@ -687,8 +687,8 @@ export default function QuinielasAdminPage() {
   const ligas = [...new Set(jornadas.map((j) => j.liga))];
 
   const jornadasFiltradas = (ligaFiltro === "todas" ? jornadas : jornadas.filter((j) => j.liga === ligaFiltro))
-    .filter((j) => esAdmin || j.estado === "abierta"); // vendedores solo ven jornadas abiertas
-  const activas = jornadasFiltradas.filter((j) => j.estado === "abierta");
+    .filter((j) => esAdmin || ["abierta", "cerrada"].includes(j.estado)); // vendedores ven abierta y cerrada
+  const activas = jornadasFiltradas.filter((j) => j.estado === "abierta" || j.estado === "cerrada");
   const pasadas = jornadasFiltradas.filter((j) => j.estado === "finalizada");
   const mostrar = tab === "activa" ? activas : pasadas;
 
