@@ -49,6 +49,7 @@ type Jornada = {
   temporada: string;
   liga: string;
   estado: string;
+  fechaCierre: string | null;
   quinielas: Quiniela[];
 };
 
@@ -143,11 +144,13 @@ function WaBizBoton({ tel, msg, label, onSent }: { tel: string; msg: string; lab
 // Barra de acción de pago — aparece debajo de los picks solo cuando hay algo que hacer
 function PagoAcciones({
   quiniela,
+  fechaCierre,
   onUpdate,
   onConfirmado,
   onTicketEnviado,
 }: {
   quiniela: Quiniela;
+  fechaCierre?: string | null;
   onUpdate: (id: string, ep: string) => void;
   onConfirmado?: (id: string) => void;
   onTicketEnviado?: (id: string) => void;
@@ -201,6 +204,26 @@ function PagoAcciones({
   };
 
   const nombre = quiniela.nombreCliente?.split(" ")[0] ?? "";
+
+  // Línea de recordatorio de cierre
+  let cierreLinea = "";
+  if (fechaCierre) {
+    const cierreDate = new Date(fechaCierre);
+    const hoy = new Date();
+    const esHoy = cierreDate.toDateString() === hoy.toDateString();
+    const hora = cierreDate.toLocaleTimeString("es-MX", {
+      hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Mexico_City",
+    });
+    if (esHoy) {
+      cierreLinea = `⏰ Recuerda que los registros cierran *hoy a las ${hora}*`;
+    } else {
+      const dia = cierreDate.toLocaleDateString("es-MX", {
+        weekday: "long", timeZone: "America/Mexico_City",
+      });
+      cierreLinea = `⏰ Recuerda que los registros cierran *el ${dia} a las ${hora}*`;
+    }
+  }
+
   const seguimientoMsg = [
     `¡Hola${nombre ? ` ${nombre}` : ""}! 👋`,
     ``,
@@ -217,6 +240,7 @@ function PagoAcciones({
     ``,
     `3️⃣ Ahí encontrarás los datos para realizar tu pago 💳`,
     ``,
+    ...(cierreLinea ? [cierreLinea, ``] : []),
     `¡Cualquier duda aquí estoy! 😊`,
   ].join("\n");
 
@@ -624,7 +648,7 @@ function JornadaCard({ jornada, busqueda, usuarios }: { jornada: Jornada; busque
                             );
                           })}
                         </div>
-                        <PagoAcciones quiniela={q} onUpdate={actualizarPago} onConfirmado={marcarConfirmada} onTicketEnviado={marcarTicketEnviado} />
+                        <PagoAcciones quiniela={q} fechaCierre={jornada.fechaCierre} onUpdate={actualizarPago} onConfirmado={marcarConfirmada} onTicketEnviado={marcarTicketEnviado} />
                         {q.canal === "tienda" && !q.usuarioId && (
                           <AsignarVendedor
                             quiniela={q}

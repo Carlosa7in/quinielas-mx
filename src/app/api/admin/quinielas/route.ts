@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma, sql } from "@/lib/prisma";
+import { calcularFechaCierre } from "@/lib/fechas";
 
 // GET /api/admin/quinielas — jornadas con sus quinielas
 export async function GET() {
@@ -51,9 +52,30 @@ export async function GET() {
       }
     } catch { /* si falla, createdAt queda null */ }
 
+    // Fecha del primer partido por jornada (para calcular cierre)
+    const fechaCierreMap = new Map<string, string>();
+    try {
+      const rows = await sql`
+        SELECT "jornadaId", MIN("fechaHora") AS primer_partido
+        FROM "Partido"
+        WHERE "fechaHora" IS NOT NULL
+        GROUP BY "jornadaId"
+      `;
+      for (const r of rows) {
+        if (r.jornadaId && r.primer_partido) {
+          const d = r.primer_partido instanceof Date ? r.primer_partido : new Date(String(r.primer_partido));
+          if (!isNaN(d.getTime())) {
+            const cierre = calcularFechaCierre(d);
+            fechaCierreMap.set(String(r.jornadaId), cierre.toISOString());
+          }
+        }
+      }
+    } catch { /* si falla, fechaCierre queda null */ }
+
     // Inyectar createdAt en cada quiniela y reordenar por fecha desc
     const resultado = jornadas.map((j) => ({
       ...j,
+      fechaCierre: fechaCierreMap.get(j.id) ?? null,
       quinielas: j.quinielas
         .map((q) => ({ ...q, createdAt: createdAtMap.get(q.id) ?? null }))
         .sort((a, b) => {
