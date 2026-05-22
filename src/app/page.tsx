@@ -389,20 +389,12 @@ export default function Home() {
           >
             {t.consultar}
           </Link>
-          <div className="grid grid-cols-2 gap-3">
-            <Link
-              href="/clasificacion"
-              className="block w-full bg-white/8 hover:bg-white/15 text-stone-200 font-semibold py-3 px-4 rounded-xl transition-colors text-sm text-center"
-            >
-              {t.clasificacion}
-            </Link>
-            <Link
-              href="/tabla"
-              className="block w-full bg-white/8 hover:bg-white/15 text-stone-200 font-semibold py-3 px-4 rounded-xl transition-colors text-sm text-center"
-            >
-              📊 Tabla Liga MX
-            </Link>
-          </div>
+          <Link
+            href="/clasificacion"
+            className="block w-full bg-white/8 hover:bg-white/15 text-stone-200 font-semibold py-3 px-4 rounded-xl transition-colors text-sm text-center"
+          >
+            {t.clasificacion}
+          </Link>
         </div>
 
         <div className="bg-white/5 rounded-xl p-4 text-sm text-stone-300 space-y-2">

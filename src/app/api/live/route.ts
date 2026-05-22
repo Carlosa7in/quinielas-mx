@@ -632,6 +632,7 @@ export async function GET() {
             resultadoDB: p.resultado ?? null,
             eventos,
             tieneEspn: !!espnEv,
+            sofaId: typeof _sofaId === "number" ? _sofaId : null,
             _debug: {
               ligaDB: p.partido_liga ?? j.liga,
               local: p.equipo_local,

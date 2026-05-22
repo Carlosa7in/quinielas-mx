@@ -77,6 +77,7 @@ type PartidoVivo = {
   resultadoDB: string | null;
   eventos: Evento[];
   tieneEspn: boolean;
+  sofaId: number | null;
 };
 type JornadaViva = { id: string; nombre: string; liga: string; partidos: PartidoVivo[] };
 
@@ -302,6 +303,19 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
           </p>
         )}
       </button>
+
+      {/* Alineaciones SofaScore — solo pre-partido */}
+      {p.estado === "pre" && p.sofaId && (
+        <div className="border-t border-white/5 px-4 pt-3 pb-1">
+          <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-2 text-center">Alineaciones probables</p>
+          <iframe
+            src={`https://widgets.sofascore.com/embed/lineups?id=${p.sofaId}&widgetTheme=dark`}
+            style={{ width: "100%", height: "640px", border: "none", borderRadius: "8px" }}
+            scrolling="no"
+            title={`Alineaciones ${p.local.nombre} vs ${p.visita.nombre}`}
+          />
+        </div>
+      )}
 
       {/* Eventos */}
       {expanded && (

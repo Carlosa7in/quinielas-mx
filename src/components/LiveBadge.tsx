@@ -163,29 +163,35 @@ export function LiveBadge() {
         style={{ background: "linear-gradient(135deg, #1c1917 0%, #292524 100%)", border: "1px solid rgba(255,255,255,0.07)" }}
       >
         <div className="relative px-5 py-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Lock size={11} className="text-gray-500" />
-              <span className="text-gray-500 text-xs font-black uppercase tracking-widest">Partidos hoy</span>
-            </div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-gray-500 text-xs font-black uppercase tracking-widest">
+              {esHoy ? "Partidos hoy" : "Próximos partidos"}
+            </span>
             {jornada && <span className="text-gray-600 text-[10px] font-semibold">{jornada.nombre}</span>}
           </div>
 
-          <p className="text-gray-300 font-bold text-base leading-tight text-left">
-            {proximo.local.nombre} <span className="text-gray-600 font-light">vs</span> {proximo.visita.nombre}
-          </p>
+          {/* Partido principal con logos */}
+          <div className="flex items-center gap-3">
+            {proximo.local.logo && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={proximo.local.logo} alt={proximo.local.nombre} className="w-7 h-7 object-contain shrink-0" />
+            )}
+            <p className="text-gray-300 font-bold text-base leading-tight flex-1 text-center">
+              {proximo.local.nombre} <span className="text-gray-600 font-light">vs</span> {proximo.visita.nombre}
+            </p>
+            {proximo.visita.logo && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={proximo.visita.logo} alt={proximo.visita.nombre} className="w-7 h-7 object-contain shrink-0" />
+            )}
+          </div>
+
           {proximos.length > 1 && (
-            <p className="text-gray-600 text-xs mt-0.5 text-left">+{proximos.length - 1} partido{proximos.length > 2 ? "s" : ""} mas</p>
+            <p className="text-gray-600 text-xs mt-1 text-center">+{proximos.length - 1} partido{proximos.length > 2 ? "s" : ""} más</p>
           )}
 
           <div className="flex items-center justify-between mt-3">
             <p className="text-gray-600 text-xs"><span className="text-amber-400/70 font-bold">{fechaLabel}</span></p>
             {esHoy && <Countdown fechaISO={proximo.fechaHora} />}
-          </div>
-
-          <div className="mt-3 flex items-center gap-2 text-gray-600 text-xs">
-            <Lock size={10} />
-            <span>Se desbloquea cuando empiece el partido</span>
           </div>
         </div>
       </div>

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
           tipo: "kiosko",
           texto: `${preRegistrosPendientes} cliente${preRegistrosPendientes !== 1 ? "s" : ""} esperando en kiosko`,
           count: preRegistrosPendientes,
-          href: "/admin/tienda?bandeja=1",
+          href: `/kiosko/${userId}?bandeja=1`,
         });
       }
     }
