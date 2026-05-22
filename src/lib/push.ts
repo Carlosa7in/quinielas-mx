@@ -11,18 +11,16 @@ export type PushPayload = {
 
 type SubRow = { endpoint: string; p256dh: string; auth: string };
 
-export async function sendPushToAll(payload: PushPayload): Promise<number> {
-  // Inicializar VAPID en runtime (no en build time) para evitar error de llave faltante
+function initVapid() {
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT ?? "mailto:carlosariasariza@gmail.com",
     process.env.VAPID_PUBLIC_KEY ?? "",
     process.env.VAPID_PRIVATE_KEY ?? "",
   );
+}
 
-  const rows = (await sql`
-    SELECT "endpoint", "p256dh", "auth" FROM "PushSubscription"
-  `) as SubRow[];
-
+async function sendToRows(rows: SubRow[], payload: PushPayload): Promise<number> {
+  initVapid();
   let enviados = 0;
   const caducos: string[] = [];
 
@@ -35,7 +33,6 @@ export async function sendPushToAll(payload: PushPayload): Promise<number> {
         );
         enviados++;
       } catch (err: unknown) {
-        // 410 Gone = suscripcion caducada, borrar
         const statusCode = (err as { statusCode?: number }).statusCode;
         if (statusCode === 410 || statusCode === 404) {
           caducos.push(sub.endpoint);
@@ -52,4 +49,21 @@ export async function sendPushToAll(payload: PushPayload): Promise<number> {
   }
 
   return enviados;
+}
+
+/** Envía a TODOS los suscriptores (clientes y admins). Usar para eventos de partido. */
+export async function sendPushToAll(payload: PushPayload): Promise<number> {
+  const rows = (await sql`
+    SELECT "endpoint", "p256dh", "auth" FROM "PushSubscription"
+  `) as SubRow[];
+  return sendToRows(rows, payload);
+}
+
+/** Envía SOLO a suscriptores admin. Usar para eventos operativos (cancelaciones, kiosko, etc.). */
+export async function sendPushToAdmins(payload: PushPayload): Promise<number> {
+  const rows = (await sql`
+    SELECT "endpoint", "p256dh", "auth" FROM "PushSubscription"
+    WHERE "tipo" = 'admin'
+  `) as SubRow[];
+  return sendToRows(rows, payload);
 }

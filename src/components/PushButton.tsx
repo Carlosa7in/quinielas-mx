@@ -13,7 +13,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 type Estado = "loading" | "activando" | "unsupported" | "denied" | "subscribed" | "unsubscribed";
 
-export function PushButton({ className = "" }: { className?: string }) {
+export function PushButton({ className = "", tipo = "cliente" }: { className?: string; tipo?: "cliente" | "admin" }) {
   const [estado, setEstado] = useState<Estado>("loading");
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export function PushButton({ className = "" }: { className?: string }) {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_KEY) as unknown as ArrayBuffer,
       });
-      const res = await fetch("/api/push/subscribe", {
+      const res = await fetch(`/api/push/subscribe?tipo=${tipo}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(sub.toJSON()),

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/prisma";
-import { findSofaEventId, fetchSofaIncidents, type SofaIncident } from "@/lib/sofascore";
+import { findSofaEventId, fetchSofaIncidents, checkLineupsAvailable, type SofaIncident } from "@/lib/sofascore";
 
 // Siempre dinamico - nunca cachear en build time
 export const dynamic = "force-dynamic";
@@ -461,6 +461,31 @@ export async function GET() {
               estado = "pre";
             } else {
               estado = "post";
+            }
+          }
+
+          // ── Para partidos pre: buscar sofaId y verificar alineaciones ─────────
+          if (estado === "pre") {
+            // Solo partidos en las próximas 48 horas (no vale la pena buscar más lejanos)
+            const horasHasta = (fechaMs - Date.now()) / 3_600_000;
+            if (horasHasta <= 48) {
+              try {
+                const ligaPartido = p.partido_liga ?? j.liga;
+                const sofaEventId = await findSofaEventId(p.equipo_local, p.equipo_visita, ligaPartido);
+                if (sofaEventId) {
+                  _sofaId = sofaEventId;
+                  // Verificar si hay alineaciones disponibles
+                  const lineupsOk = await checkLineupsAvailable(sofaEventId);
+                  if (lineupsOk) {
+                    candidatos.push({
+                      clave: `lineups-${sofaEventId}`,
+                      titulo: `📋 Ya tenemos las alineaciones`,
+                      cuerpo: `${p.equipo_local} vs ${p.equipo_visita} — Vélas aquí`,
+                      tag: `lineups-${sofaEventId}`,
+                    });
+                  }
+                }
+              } catch { /* ignorar errores de SofaScore */ }
             }
           }
 

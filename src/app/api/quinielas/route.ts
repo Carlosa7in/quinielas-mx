@@ -4,7 +4,7 @@ import { prisma, sql } from "@/lib/prisma";
 import { generarFolio } from "@/lib/folio";
 import { calcularFechaCierre } from "@/lib/fechas";
 import { telefonoFalso } from "@/lib/telefono";
-import { sendPushToAll } from "@/lib/push";
+import { sendPushToAdmins } from "@/lib/push";
 
 // Calcula cuántas combinaciones hay (producto cartesiano de opciones) — para el monto
 function numeroCombinaciones(picks: { predicciones: string[] }[]): number {
@@ -250,7 +250,7 @@ export async function DELETE(req: Request) {
 
     // Notificar al admin
     const nombre = quiniela.nombreCliente ?? "Sin nombre";
-    sendPushToAll({
+    sendPushToAdmins({
       title: "❌ Cliente canceló su registro",
       body: `Folio: ${folio} — ${nombre}`,
       tag: `cancelar-${folio}`,

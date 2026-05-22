@@ -173,3 +173,20 @@ export async function fetchSofaIncidents(eventId: number): Promise<SofaIncident[
     return d.incidents ?? [];
   } catch { return []; }
 }
+
+type SofaLineupTeam = { players?: unknown[] };
+/**
+ * Verifica si SofaScore ya tiene alineaciones confirmadas para un partido.
+ * Devuelve true cuando al menos un equipo tiene jugadores registrados.
+ */
+export async function checkLineupsAvailable(eventId: number): Promise<boolean> {
+  try {
+    const r = await fetch(`https://api.sofascore.com/api/v1/event/${eventId}/lineups`, { headers: HEADERS });
+    if (!r.ok) return false;
+    const d = await r.json() as { confirmed?: boolean; home?: SofaLineupTeam; away?: SofaLineupTeam };
+    if (d.confirmed) return true;
+    const homePlayers = d.home?.players?.length ?? 0;
+    const awayPlayers = d.away?.players?.length ?? 0;
+    return homePlayers > 0 || awayPlayers > 0;
+  } catch { return false; }
+}
