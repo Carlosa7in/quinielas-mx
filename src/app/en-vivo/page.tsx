@@ -306,14 +306,22 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
 
       {/* Alineaciones SofaScore — solo pre-partido */}
       {p.estado === "pre" && p.sofaId && (
-        <div className="border-t border-white/5 px-4 pt-3 pb-1">
+        <div className="border-t border-white/5 px-4 pt-3 pb-3">
           <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-2 text-center">Alineaciones probables</p>
           <iframe
-            src={`https://widgets.sofascore.com/embed/lineups?id=${p.sofaId}&widgetTheme=dark`}
-            style={{ width: "100%", height: "640px", border: "none", borderRadius: "8px" }}
+            src={`https://widgets.sofascore.com/en/embed/event?eventId=${p.sofaId}&defaultLocale=es`}
+            style={{ width: "100%", height: "500px", border: "none", borderRadius: "8px", background: "#111" }}
             scrolling="no"
             title={`Alineaciones ${p.local.nombre} vs ${p.visita.nombre}`}
           />
+          <a
+            href={`https://www.sofascore.com/match/${p.sofaId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1 mt-2 text-gray-600 hover:text-gray-400 text-[10px] transition-colors"
+          >
+            Ver en SofaScore →
+          </a>
         </div>
       )}
 

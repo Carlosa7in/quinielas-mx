@@ -158,8 +158,9 @@ export function LiveBadge() {
         });
 
     return (
-      <div
-        className="w-full rounded-2xl overflow-hidden relative"
+      <Link
+        href="/en-vivo"
+        className="block w-full rounded-2xl overflow-hidden relative group"
         style={{ background: "linear-gradient(135deg, #1c1917 0%, #292524 100%)", border: "1px solid rgba(255,255,255,0.07)" }}
       >
         <div className="relative px-5 py-4">
@@ -191,10 +192,13 @@ export function LiveBadge() {
 
           <div className="flex items-center justify-between mt-3">
             <p className="text-gray-600 text-xs"><span className="text-amber-400/70 font-bold">{fechaLabel}</span></p>
-            {esHoy && <Countdown fechaISO={proximo.fechaHora} />}
+            {esHoy
+              ? <Countdown fechaISO={proximo.fechaHora} />
+              : <span className="text-gray-600 text-xs font-bold group-hover:text-gray-400 transition-colors">Ver →</span>
+            }
           </div>
         </div>
-      </div>
+      </Link>
     );
   }
 
