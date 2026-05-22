@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sql } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -170,6 +171,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(logoMap, {
       headers: { "Cache-Control": "private, max-age=3600" },
     });
+  } catch {
+    return NextResponse.json({});
+  }
+}
+
+// Endpoint adicional: /api/logos/db?liga=... — logos guardados en la tabla Equipo
+// El flyer lo usa como fuente primaria (más confiable que ESPN)
+export async function POST(req: NextRequest) {
+  const liga = req.nextUrl.searchParams.get("liga") ?? "";
+  if (!liga) return NextResponse.json({});
+  try {
+    const rows = await sql`
+      SELECT nombre, "logoUrl" FROM "Equipo"
+      WHERE liga = ${liga} AND "logoUrl" IS NOT NULL
+    `;
+    const logoMap: Record<string, string> = {};
+    for (const r of rows) {
+      if (!r.nombre || !r.logoUrl) continue;
+      const nombre = String(r.nombre);
+      const url = String(r.logoUrl);
+      logoMap[nombre] = url;
+      logoMap[slugify(nombre)] = url;
+    }
+    return NextResponse.json(logoMap);
   } catch {
     return NextResponse.json({});
   }

@@ -167,21 +167,29 @@ async function dibujarFlyer(
   try { bgImg = await cargarImagen("/flyer-bg.webp"); } catch { /* sin fondo */ }
   try { logoImg = await cargarImagen("/logo-tablitas.png"); } catch { /* sin logo */ }
 
-  // ── Cargar logos de equipos desde ESPN (vía proxy) ───────────────────
-  // Primero obtenemos el mapa nombre→URL para la liga de esta jornada.
-  // Para jornadas Mixtas cargamos todas las ligas soportadas.
+  // ── Cargar logos de equipos: DB (primario) + ESPN (respaldo) ─────────
   const ligas = liga === "Mixta"
     ? ["Liga MX", "Champions League", "Premier League", "La Liga", "Serie A", "Ligue 1", "Brasileirão"]
     : [liga];
 
-  const logoUrlMaps = await Promise.all(
+  // ESPN logos (GET)
+  const espnMaps = await Promise.all(
     ligas.map(l =>
       fetch(`/api/logos?liga=${encodeURIComponent(l)}`)
         .then(r => r.json() as Promise<Record<string, string>>)
         .catch(() => ({} as Record<string, string>))
     )
   );
-  const logoUrlMap: Record<string, string> = Object.assign({}, ...logoUrlMaps);
+  // DB logos (POST) — más confiables, sobreescriben ESPN en caso de conflicto
+  const dbMaps = await Promise.all(
+    ligas.map(l =>
+      fetch(`/api/logos?liga=${encodeURIComponent(l)}`, { method: "POST" })
+        .then(r => r.json() as Promise<Record<string, string>>)
+        .catch(() => ({} as Record<string, string>))
+    )
+  );
+  // DB tiene prioridad
+  const logoUrlMap: Record<string, string> = Object.assign({}, ...espnMaps, ...dbMaps);
 
   // Luego cargamos cada imagen vía proxy (mismo origen → sin CORS)
   const equiposUnicos = [...new Set(partidos.flatMap(p => [p.equipoLocal, p.equipoVisita]))];
@@ -257,8 +265,14 @@ async function dibujarFlyer(
   ctx.fillStyle = "#93c5fd";
   ctx.font = "bold 18px Arial, sans-serif";
   ctx.textAlign = "center";
+  // "FECHA" centrado en el área del date box (x=124, w=72 → center=160)
+  ctx.fillStyle = "#fbbf24";
+  ctx.font = "bold 14px Arial, sans-serif";
+  ctx.fillText("FECHA",     124 + 36,          curY + 24);
+  ctx.fillStyle = "#93c5fd";
+  ctx.font = "bold 18px Arial, sans-serif";
   ctx.fillText("L",          PAD + 26,          curY + 24);
-  ctx.fillText(tf.local,     (PAD + localNameX) / 2 + PAD / 2, curY + 24);
+  ctx.fillText(tf.local,     (196 + localNameX) / 2, curY + 24);
   ctx.fillText("E",          W / 2,             curY + 24);
   ctx.fillText(tf.visitante, (awayNameX + W - PAD) / 2, curY + 24);
   ctx.fillText("V",          W - PAD - 26,      curY + 24);
@@ -274,22 +288,32 @@ async function dibujarFlyer(
     ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)";
     roundRect(ctx, PAD, y + 2, W - PAD * 2, ROW_H - 4, 10);
 
-    // Fecha / hora en zona izquierda (PAD area)
+    // Fecha / hora — dentro del recuadro, entre botón L y nombre local
     if (p.fechaHora) {
       const d = new Date(p.fechaHora);
       const dia  = d.toLocaleDateString("es-MX", { weekday: "short", timeZone: "America/Mexico_City" })
                     .replace(".", "").slice(0, 3).toUpperCase();
       const hora = d.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Mexico_City" })
                     .replace(/\s*a\.m\./i, "am").replace(/\s*p\.m\./i, "pm");
-      const dateCX = PAD / 2 + 2;
+
+      // Caja de fecha: entre el botón L y el nombre local
+      const dateBoxX = PAD + 6 + btnW + 6;  // 124 — justo después del botón L
+      const dateBoxW = 72;
+      const dateBoxH = ROW_H - 18;
+      const dateBoxY = y + 9;
+
+      ctx.fillStyle = "rgba(10, 25, 55, 0.75)";
+      roundRect(ctx, dateBoxX, dateBoxY, dateBoxW, dateBoxH, 7);
+
+      const dateCX = dateBoxX + dateBoxW / 2; // 160
       ctx.textAlign = "center";
-      ctx.fillStyle = "#fcd34d";
-      ctx.font = "bold 13px Arial, sans-serif";
       ctx.textBaseline = "middle";
-      ctx.fillText(dia,  dateCX, midY - 9);
-      ctx.fillStyle = "rgba(255,255,255,0.70)";
-      ctx.font = "11px Arial, sans-serif";
-      ctx.fillText(hora, dateCX, midY + 8);
+      ctx.fillStyle = "#fcd34d";
+      ctx.font = "bold 16px Arial, sans-serif";
+      ctx.fillText(dia,  dateCX, midY - 10);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 14px Arial, sans-serif";
+      ctx.fillText(hora, dateCX, midY + 10);
       ctx.textBaseline = "alphabetic";
     }
 
@@ -315,9 +339,9 @@ async function dibujarFlyer(
 
     // Nombre local  (right-aligned → logo local → E btn)
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 21px Arial, sans-serif";
+    ctx.font = "bold 20px Arial, sans-serif";
     ctx.textAlign = "right";
-    ctx.fillText(truncar(p.equipoLocal.toUpperCase(), 12), localNameX, cy);
+    ctx.fillText(truncar(p.equipoLocal.toUpperCase(), 10), localNameX, cy);
 
     // Logo local (derecha del nombre, pegado al E btn)
     dibujarLogoCirculo(ctx, logoImgMap[p.equipoLocal] ?? null, p.equipoLocal, localLogoCX, midY, LOGO_R);
@@ -327,9 +351,9 @@ async function dibujarFlyer(
 
     // Nombre visitante (left-aligned ← logo visitante ← E btn)
     ctx.fillStyle = "#e5e7eb";
-    ctx.font = "bold 21px Arial, sans-serif";
+    ctx.font = "bold 20px Arial, sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(truncar(p.equipoVisita.toUpperCase(), 12), awayNameX, cy);
+    ctx.fillText(truncar(p.equipoVisita.toUpperCase(), 10), awayNameX, cy);
   });
 
   // ── Indicador de partidos recortados ─────────────────────────────────
