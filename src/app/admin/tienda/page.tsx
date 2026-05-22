@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
@@ -56,7 +56,7 @@ function formaCompleta(partidos: Partido[], picks: FormaPicks): boolean {
   return partidos.every((p) => (picks[p.id]?.length ?? 0) > 0);
 }
 
-export default function TiendaPage() {
+function TiendaInner() {
   const router = useRouter();
   const { data: session } = useSession();
   const usuarioId = (session?.user as { id?: string })?.id ?? null;
@@ -1052,5 +1052,13 @@ export default function TiendaPage() {
         </button>
       </form>
     </div>
+  );
+}
+
+export default function TiendaPage() {
+  return (
+    <Suspense fallback={null}>
+      <TiendaInner />
+    </Suspense>
   );
 }
