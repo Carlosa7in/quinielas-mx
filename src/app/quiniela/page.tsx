@@ -314,6 +314,7 @@ function QuinielaInner() {
   const [formaActiva, setFormaActiva] = useState(0);
 
   const [nombre, setNombre] = useState("");
+  const [codigoPais, setCodigoPais] = useState("52"); // default México
   const [telefono, setTelefono] = useState("");
   const [metodoPago, setMetodoPago] = useState<"transferencia" | "oxxo">("transferencia");
   const [cuentas, setCuentas] = useState<CuentaBancaria[]>([]);
@@ -445,6 +446,8 @@ function QuinielaInner() {
     e.preventDefault();
     if (!todasCompletas || !nombreCompleto(nombre) || registroCerrado) return;
     if (telefono && telefonoFalso(telefono)) { setError("Ingresa un número de teléfono real"); setEnviando(false); return; }
+    // Guardar con código de país para WhatsApp
+    const telefonoCompleto = codigoPais + telefono.replace(/\D/g, "");
     setEnviando(true);
     setError("");
 
@@ -463,7 +466,7 @@ function QuinielaInner() {
           jornadaId: jornada.id,
           picks: picksArr,
           nombre,
-          telefono,
+          telefono: telefonoCompleto,
           canal: metodoPago,
           ...(refCode ? { vendedorCodigo: refCode } : {}),
           ...(cuentaDestinoId ? { cuentaDestinoId } : {}),
@@ -619,24 +622,34 @@ function QuinielaInner() {
             )}
           </div>
           <div>
-            <input
-              type="tel"
-              placeholder="Teléfono (10 dígitos)"
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
-              maxLength={10}
-              inputMode="numeric"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                (telefono.replace(/\D/g, "").length > 0 && telefono.replace(/\D/g, "").length < 10) ||
-                (telefono.replace(/\D/g, "").length === 10 && telefonoFalso(telefono))
-                  ? "border-red-300"
-                  : "border-gray-200"
-              }`}
-            />
-            {telefono.replace(/\D/g, "").length > 0 && telefono.replace(/\D/g, "").length < 10 && (
+            <div className="flex gap-1.5">
+              <select
+                value={codigoPais}
+                onChange={(e) => { setCodigoPais(e.target.value); setTelefono(""); }}
+                className="border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white shrink-0"
+              >
+                <option value="52">🇲🇽 +52</option>
+                <option value="1">🇺🇸🇨🇦 +1</option>
+              </select>
+              <input
+                type="tel"
+                placeholder="10 dígitos"
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                maxLength={10}
+                inputMode="numeric"
+                className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                  (telefono.length > 0 && telefono.length < 10) ||
+                  (telefono.length === 10 && telefonoFalso(telefono))
+                    ? "border-red-300"
+                    : "border-gray-200"
+                }`}
+              />
+            </div>
+            {telefono.length > 0 && telefono.length < 10 && (
               <p className="text-xs text-red-500 mt-1 px-1">El teléfono debe tener 10 dígitos</p>
             )}
-            {telefono.replace(/\D/g, "").length === 10 && telefonoFalso(telefono) && (
+            {telefono.length === 10 && telefonoFalso(telefono) && (
               <p className="text-xs text-red-500 mt-1 px-1">Ingresa un número de teléfono real</p>
             )}
           </div>

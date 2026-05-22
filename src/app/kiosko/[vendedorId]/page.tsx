@@ -93,6 +93,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   const [formaActiva, setFormaActiva] = useState(0);
 
   const [nombre, setNombre] = useState("");
+  const [codigoPais, setCodigoPais] = useState("52");
   const [telefono, setTelefono] = useState("");
   const [sugerencias, setSugerencias] = useState<{ nombre: string; telefono: string }[]>([]);
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
@@ -187,7 +188,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   }, [nombre, esStaff]);
 
   const nombreValido = nombreCompleto(nombre);
-  const telValido = telefono.replace(/\D/g, "").length === 10 && !telefonoFalso(telefono);
+  const telValido = telefono.length === 10 && !telefonoFalso(telefono);
   const puedeEnviar = todasFormasCompletas && nombreValido && telValido;
 
   const faltanPicks = picks.filter((s) => s.length === 0).length;
@@ -210,7 +211,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
               vendedorId,
               jornadaId: jornada.id,
               nombre: nombre.trim(),
-              telefono: telefono.replace(/\D/g, ""),
+              telefono: codigoPais + telefono,
               picks: picksForma,
             }),
           })
@@ -553,7 +554,14 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
           <div>
             <label className="text-xs text-gray-500 block mb-1">Teléfono (10 dígitos)</label>
             <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-amber-500">
-              <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-sm border-r border-gray-200 shrink-0">+52</span>
+              <select
+                value={codigoPais}
+                onChange={(e) => { setCodigoPais(e.target.value); setTelefono(""); }}
+                className="px-2 py-2.5 bg-gray-50 text-gray-600 text-sm border-r border-gray-200 shrink-0 focus:outline-none"
+              >
+                <option value="52">🇲🇽 +52</option>
+                <option value="1">🇺🇸🇨🇦 +1</option>
+              </select>
               <input type="tel" value={telefono}
                 onChange={(e) => setTelefono(e.target.value.replace(/\D/g, "").slice(0, 10))}
                 placeholder="5512345678"

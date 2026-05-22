@@ -136,6 +136,7 @@ export default function NuevaJornadaPage() {
   const [espnLiga, setEspnLiga] = useState("Liga MX");
   const [espnDesde, setEspnDesde] = useState(toInputDate(hoy));
   const [espnHasta, setEspnHasta] = useState(toInputDate(masdiez));
+
   const [espnCargando, setEspnCargando] = useState(false);
   const [espnMensaje, setEspnMensaje] = useState<{ tipo: "ok" | "error" | "warn"; texto: string } | null>(null);
   const [espnDesconocidos, setEspnDesconocidos] = useState<string[]>([]);
@@ -144,6 +145,21 @@ export default function NuevaJornadaPage() {
   const [espnLista, setEspnLista] = useState<PartidoForm[]>([]);
   const [espnSeleccion, setEspnSeleccion] = useState<Set<number>>(new Set());
   const [espnNombreSugerido, setEspnNombreSugerido] = useState<string | null>(null);
+
+  // Cuando se cambia la liga a "Mundial", usar el rango del torneo; si no, hoy+10
+  useEffect(() => {
+    if (espnLiga === "Mundial") {
+      setEspnDesde("2026-06-11");
+      setEspnHasta("2026-06-21"); // primera jornada de grupos
+      setTemporada("Mundial 2026");
+    } else {
+      setEspnDesde(toInputDate(hoy));
+      setEspnHasta(toInputDate(masdiez));
+    }
+    setEspnLista([]);
+    setEspnSeleccion(new Set());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [espnLiga]);
 
   // ── Atajos de fecha por tipo de quiniela ──────────────────────────
   const aplicarAtajo = (tipo: "media" | "finde" | "domingo") => {
