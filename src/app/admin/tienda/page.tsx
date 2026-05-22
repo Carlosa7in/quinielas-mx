@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { LogoEquipo } from "@/components/LogoEquipo";
@@ -63,6 +63,7 @@ export default function TiendaPage() {
   const nombreUsuario = session?.user?.name ?? "";
   const rol = (session?.user as { role?: string })?.role ?? "";
   const esAdmin = ["admin", "superadmin"].includes(rol);
+  const esStaff = ["admin", "superadmin", "tienda", "vendedor"].includes(rol);
 
   type Modo = "home" | "vender" | "selector" | "seleccion" | "manual" | "bandeja";
   const [modo, setModo] = useState<Modo>("home");
@@ -72,6 +73,13 @@ export default function TiendaPage() {
     history.pushState({ modo: nuevoModo }, "");
     setModo(nuevoModo);
   };
+
+  // Si llega con ?bandeja=1 (desde la campana de notificaciones), abrir bandeja directo
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("bandeja") === "1") irA("bandeja");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Retroceder en el estado cuando el navegador/teléfono pulsa atrás
   useEffect(() => {
@@ -99,6 +107,8 @@ export default function TiendaPage() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [clienteEncontrado, setClienteEncontrado] = useState<{ nombre: string } | null>(null);
+  const [sugerencias, setSugerencias] = useState<{ nombre: string; telefono: string }[]>([]);
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
   const [buscandoCliente, setBuscandoCliente] = useState(false);
 
   // ── Kiosko / Bandeja ───────────────────────────────────────────
@@ -137,8 +147,13 @@ export default function TiendaPage() {
     // 2. Convertir picks → FormaPicks {partidoId: ["1"|"X"|"2"]}
     // Soporta formato nuevo [["L","E"],["V"],...] y formato legado ["L","V",...]
     const MAP: Record<string, string> = { L: "1", E: "X", V: "2" };
-    const partidosOrdenados: { id: string }[] = [...(jornadaData.partidos ?? [])].sort(
-      (a: { orden: number }, b: { orden: number }) => a.orden - b.orden
+    const partidosOrdenados = [...(jornadaData.partidos ?? [])].sort(
+      (a: { orden: number; fechaHora?: string }, b: { orden: number; fechaHora?: string }) => {
+        if (!a.fechaHora && !b.fechaHora) return a.orden - b.orden;
+        if (!a.fechaHora) return 1;
+        if (!b.fechaHora) return -1;
+        return new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime();
+      }
     );
     const formaPicks: FormaPicks = {};
     pr.picks.forEach((pick, i) => {
@@ -190,6 +205,18 @@ export default function TiendaPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [telefono]);
 
+  // Buscar sugerencias de clientes mientras escribe el nombre (solo staff)
+  useEffect(() => {
+    if (!esStaff || nombre.trim().length < 2) { setSugerencias([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/clientes?q=${encodeURIComponent(nombre.trim())}`);
+        if (res.ok) setSugerencias(await res.json());
+      } catch { /* silencioso */ }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [nombre, esStaff]);
+
   /* ── Header compartido home/vender ──────────────────────────── */
   const headerPanel = (onBack?: () => void) => {
     const rolLabel: Record<string, string> = { tienda: "Tienda", vendedor: "Vendedor", admin: "Admin", superadmin: "Superadmin" };
@@ -201,7 +228,7 @@ export default function TiendaPage() {
               <button onClick={onBack} className="text-amber-400 text-sm mr-1">←</button>
             ) : null}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "40px", objectFit: "contain" }} />
+            <a href="/" style={{flexShrink:0}}><img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "40px", objectFit: "contain" }} /></a>
             <h1 className="text-2xl font-bold">{onBack ? "Vender" : "Mi Panel"}</h1>
           </div>
           <div className="flex items-center gap-3">
@@ -361,7 +388,7 @@ export default function TiendaPage() {
                 🖨️
               </button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "36px", objectFit: "contain" }} />
+              <a href="/" style={{flexShrink:0}}><img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "36px", objectFit: "contain" }} /></a>
             </div>
           </div>
         </div>
@@ -918,12 +945,14 @@ export default function TiendaPage() {
         {/* ── Datos del cliente ── */}
         <div className="bg-white rounded-xl p-4 space-y-3">
           <h2 className="font-semibold text-gray-700">Datos del cliente</h2>
-          <div>
+          <div className="relative">
             <input
               type="text"
               placeholder="Nombre y apellido *"
               value={nombre}
-              onChange={(e) => setNombre(toTitleCase(e.target.value))}
+              onChange={(e) => { setNombre(toTitleCase(e.target.value)); setMostrarSugerencias(true); }}
+              onFocus={() => setMostrarSugerencias(true)}
+              onBlur={() => setTimeout(() => setMostrarSugerencias(false), 150)}
               required
               className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
                 nombre.trim().length > 0 && !nombreCompleto(nombre)
@@ -931,6 +960,26 @@ export default function TiendaPage() {
                   : "border-gray-200"
               }`}
             />
+            {mostrarSugerencias && sugerencias.length > 0 && (
+              <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                {sugerencias.map((s, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onMouseDown={() => {
+                      setNombre(s.nombre);
+                      setTelefono(s.telefono);
+                      setSugerencias([]);
+                      setMostrarSugerencias(false);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-amber-50 text-left border-b border-gray-50 last:border-0"
+                  >
+                    <span className="text-sm font-medium text-gray-800">{s.nombre}</span>
+                    <span className="text-xs text-gray-400 font-mono">{s.telefono}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             {nombre.trim().length > 0 && !nombreCompleto(nombre) && (
               <p className="text-xs text-red-500 mt-1 px-1">Ingresa nombre y apellido</p>
             )}

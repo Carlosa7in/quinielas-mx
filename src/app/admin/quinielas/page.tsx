@@ -34,6 +34,7 @@ type Quiniela = {
   monto: number;
   aciertos: number | null;
   referenciaPago: string | null;
+  createdAt: string | null;
   usuario: { nombre: string } | null;
   vendedor: { nombre: string; codigo: string } | null;
   picks: Pick[];
@@ -143,9 +144,13 @@ function WaBizBoton({ tel, msg, label, onSent }: { tel: string; msg: string; lab
 function PagoAcciones({
   quiniela,
   onUpdate,
+  onConfirmado,
+  onTicketEnviado,
 }: {
   quiniela: Quiniela;
   onUpdate: (id: string, ep: string) => void;
+  onConfirmado?: (id: string) => void;
+  onTicketEnviado?: (id: string) => void;
 }) {
   const { cambiar, cargando } = usePagoCambio(quiniela, onUpdate);
   const [enviando, setEnviando] = useState(false);
@@ -171,9 +176,9 @@ function PagoAcciones({
         <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5">
           <p className="text-xs text-green-700 font-semibold">✅ Confirmado — envía el ticket</p>
           <div className="flex gap-2">
-            <WaBizBoton tel={telWA} msg={msg} label="Enviar ticket 📲" onSent={() => setEnviando(false)} />
+            <WaBizBoton tel={telWA} msg={msg} label="Enviar ticket 📲" onSent={() => { setEnviando(false); onTicketEnviado?.(quiniela.id); }} />
           </div>
-          <button onClick={() => setEnviando(false)}
+          <button onClick={() => { setEnviando(false); onTicketEnviado?.(quiniela.id); }}
             className="text-xs text-gray-400 hover:text-gray-600 hover:underline w-full text-center">
             Omitir
           </button>
@@ -191,8 +196,28 @@ function PagoAcciones({
   const metodo = quiniela.canal === "oxxo" ? "OXXO" : "transferencia";
   const confirmar = async () => {
     await cambiar("confirmado");
+    onConfirmado?.(quiniela.id);
     if (quiniela.telefonoCliente) setEnviando(true);
   };
+
+  const nombre = quiniela.nombreCliente?.split(" ")[0] ?? "";
+  const instrucciones = quiniela.canal === "oxxo"
+    ? `Puedes pagar en cualquier tienda OXXO con tu referencia de pago. Solo dile al cajero que vas a realizar un pago de servicio y proporciona tu referencia.`
+    : `Puedes hacer una transferencia o depósito a nuestra cuenta. Una vez realizado el pago, comparte tu comprobante por este medio para confirmar tu registro.`;
+  const seguimientoMsg = [
+    `¡Hola${nombre ? ` ${nombre}` : ""}! 👋`,
+    ``,
+    `Vi que registraste tu quiniela en *Tablitas Quinielas* pero aún no hemos recibido tu pago. ¿Se te complicó algo? 😊`,
+    ``,
+    `${instrucciones}`,
+    ``,
+    `Cualquier duda estoy aquí para ayudarte. ¡No te quedes sin participar! ⚽🏆`,
+    ``,
+    `*Folio:* ${quiniela.folio}`,
+  ].join("\n");
+
+  const telRaw = (quiniela.telefonoCliente ?? "").replace(/\D/g, "");
+  const telWA = telRaw.length === 10 ? `52${telRaw}` : telRaw;
 
   return (
     <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5">
@@ -212,6 +237,9 @@ function PagoAcciones({
           {cargando ? "..." : "✗ No pagó"}
         </button>
       </div>
+      {quiniela.telefonoCliente && (
+        <WaBizBoton tel={telWA} msg={seguimientoMsg} label="💬 Seguimiento de pago" />
+      )}
     </div>
   );
 }
@@ -292,6 +320,12 @@ function JornadaCard({ jornada, busqueda, usuarios }: { jornada: Jornada; busque
   const [confirmando, setConfirmando] = useState(false);
   const [notifs, setNotifs] = useState<NotifItem[]>([]); // para enviar WA tras confirmar
   const [reenviarAbierto, setReenviarAbierto] = useState(false);
+  const [recienConfirmadas, setRecienConfirmadas] = useState<Set<string>>(new Set());
+
+  const marcarConfirmada = (id: string) =>
+    setRecienConfirmadas((prev) => new Set(prev).add(id));
+  const marcarTicketEnviado = (id: string) =>
+    setRecienConfirmadas((prev) => { const s = new Set(prev); s.delete(id); return s; });
 
   const actualizarPago = (id: string, estadoPago: string) => {
     setQuinielas((prev) => prev.map((q) => (q.id === id ? { ...q, estadoPago } : q)));
@@ -316,9 +350,12 @@ function JornadaCard({ jornada, busqueda, usuarios }: { jornada: Jornada; busque
         .toLowerCase()
         .includes(busqueda.toLowerCase())
     )
-    // Pendientes primero, luego el resto
+    // Pendientes primero → recién confirmadas → el resto
     .sort((a, b) => {
-      const peso = (q: Quiniela) => (q.canal !== "tienda" && q.estadoPago === "pendiente" ? 0 : 1);
+      const peso = (q: Quiniela) =>
+        q.canal !== "tienda" && q.estadoPago === "pendiente" ? 0
+        : recienConfirmadas.has(q.id) ? 1
+        : 2;
       return peso(a) - peso(b);
     });
 
@@ -561,6 +598,11 @@ function JornadaCard({ jornada, busqueda, usuarios }: { jornada: Jornada; busque
                           </p>
                         )}
                         <p className="font-mono text-xs text-gray-400 mt-0.5">{q.folio}</p>
+                        {q.createdAt && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            🕐 {new Date(q.createdAt).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })}
+                          </p>
+                        )}
                         {q.referenciaPago && (
                           <p className="text-xs text-blue-600 font-semibold mt-0.5">
                             🔑 Ref: {q.referenciaPago}
@@ -578,7 +620,7 @@ function JornadaCard({ jornada, busqueda, usuarios }: { jornada: Jornada; busque
                             );
                           })}
                         </div>
-                        <PagoAcciones quiniela={q} onUpdate={actualizarPago} />
+                        <PagoAcciones quiniela={q} onUpdate={actualizarPago} onConfirmado={marcarConfirmada} onTicketEnviado={marcarTicketEnviado} />
                         {q.canal === "tienda" && !q.usuarioId && (
                           <AsignarVendedor
                             quiniela={q}
@@ -667,7 +709,7 @@ export default function QuinielasAdminPage() {
             <h1 className="text-xl font-bold mt-1">Quinielas</h1>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "44px", objectFit: "contain", flexShrink: 0 }} />
+          <a href="/" style={{flexShrink:0}}><img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "44px", objectFit: "contain", flexShrink: 0 }} /></a>
         </div>
       </div>
 

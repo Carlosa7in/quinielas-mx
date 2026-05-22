@@ -247,7 +247,7 @@ export default function ClasificacionPage() {
             <p className="text-amber-300/70 text-sm">{datos?.temporada || "Cargando..."}</p>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "52px", objectFit: "contain", flexShrink: 0 }} />
+          <a href="/" style={{flexShrink:0}}><img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "52px", objectFit: "contain", flexShrink: 0 }} /></a>
         </div>
       </div>
 

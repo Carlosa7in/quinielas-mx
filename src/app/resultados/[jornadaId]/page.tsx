@@ -307,7 +307,7 @@ export default function ResultadosPage() {
       <div className="bg-brand text-white px-4 py-4">
         <div className="max-w-screen-lg mx-auto flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-tablitas.png" alt="Tablitas" className="h-10 w-auto object-contain shrink-0" />
+          <a href="/" style={{flexShrink:0}}><img src="/logo-tablitas.png" alt="Tablitas" className="h-10 w-auto object-contain shrink-0" /></a>
           <div className="flex-1">
             <p className="text-amber-300/70 text-xs">{jornada.liga} · {jornada.temporada}</p>
             <h1 className="text-lg font-bold leading-tight">{nombreJornada}</h1>

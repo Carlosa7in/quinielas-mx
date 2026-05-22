@@ -310,7 +310,7 @@ export default function ApostadoresPage() {
             <h1 className="text-xl font-bold mt-1">Apostadores</h1>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "40px", objectFit: "contain" }} />
+          <a href="/" style={{flexShrink:0}}><img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "40px", objectFit: "contain" }} /></a>
         </div>
       </div>
 

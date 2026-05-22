@@ -198,7 +198,7 @@ export default function PremiacionPage() {
           <div className="flex items-center gap-3">
             <LocaleToggle locale={locale} onChange={setLocale} dark />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "44px", objectFit: "contain", flexShrink: 0 }} />
+            <a href="/" style={{flexShrink:0}}><img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "44px", objectFit: "contain", flexShrink: 0 }} /></a>
           </div>
         </div>
       </div>

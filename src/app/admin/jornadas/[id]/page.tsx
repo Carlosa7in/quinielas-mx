@@ -122,7 +122,7 @@ export default function JornadaDetallePage({ params }: { params: Promise<{ id: s
           <div className="flex items-center justify-between mb-3">
             <Link href="/admin/jornadas" className="text-amber-400 text-sm">← Jornadas</Link>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "36px", objectFit: "contain" }} />
+            <a href="/" style={{flexShrink:0}}><img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "36px", objectFit: "contain" }} /></a>
           </div>
           <div className="flex items-start justify-between gap-3">
             <div>

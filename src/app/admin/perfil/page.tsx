@@ -319,11 +319,11 @@ function PerfilInner() {
           </div>
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <a href="/" style={{flexShrink:0}}><img
               src="/logo-tablitas.png"
               alt="Tablitas"
               style={{ height: "44px", objectFit: "contain", flexShrink: 0 }}
-            />
+            /></a>
             {esVendedor && (
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}

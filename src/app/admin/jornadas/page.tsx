@@ -71,7 +71,7 @@ export default function JornadasPage() {
             <h1 className="text-xl font-bold mt-1">Jornadas</h1>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "40px", objectFit: "contain" }} />
+          <a href="/" style={{flexShrink:0}}><img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "40px", objectFit: "contain" }} /></a>
         </div>
       </div>
 

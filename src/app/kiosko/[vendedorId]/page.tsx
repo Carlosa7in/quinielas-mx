@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, use } from "react";
+import { useSession } from "next-auth/react";
 import { getLogoUrl } from "@/lib/equipos";
 import { telefonoFalso } from "@/lib/telefono";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -79,6 +80,9 @@ const MAX_FORMAS = 5;
 
 export default function KioskoPage({ params }: { params: Promise<{ vendedorId: string }> }) {
   const { vendedorId } = use(params);
+  const { data: session } = useSession();
+  const rolSession = (session?.user as { role?: string })?.role ?? "";
+  const esStaff = ["admin", "superadmin", "tienda", "vendedor"].includes(rolSession);
 
   const [datos, setDatos] = useState<KioskoData | null>(null);
   const [jornadaSeleccionada, setJornadaSeleccionada] = useState<JornadaInfo | null>(null);
@@ -90,6 +94,8 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
 
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [sugerencias, setSugerencias] = useState<{ nombre: string; telefono: string }[]>([]);
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState("");
   const [enviado, setEnviado] = useState(false);
@@ -168,6 +174,18 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   const precioFormaActiva = combos * PRECIO_BASE;
   const precioTotal = formas.reduce((sum, f) => sum + combosTotal(f) * PRECIO_BASE, 0);
 
+  // Sugerencias de clientes (solo staff logueado)
+  useEffect(() => {
+    if (!esStaff || nombre.trim().length < 2) { setSugerencias([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/clientes?q=${encodeURIComponent(nombre.trim())}`);
+        if (res.ok) setSugerencias(await res.json());
+      } catch { /* silencioso */ }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [nombre, esStaff]);
+
   const nombreValido = nombreCompleto(nombre);
   const telValido = telefono.replace(/\D/g, "").length === 10 && !telefonoFalso(telefono);
   const puedeEnviar = todasFormasCompletas && nombreValido && telValido;
@@ -236,10 +254,10 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
           Acércate al vendedor para confirmar y pagar <strong className="text-white">${precioEnviado}</strong>.
         </p>
         <a
-          href="/"
+          href={esStaff ? "/admin/tienda" : "/"}
           className="bg-white text-amber-800 font-bold px-8 py-3 rounded-2xl shadow-lg hover:bg-amber-50 transition-colors"
         >
-          Cerrar
+          {esStaff ? "← Volver al kiosko" : "Cerrar"}
         </a>
       </div>
     );
@@ -501,14 +519,33 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
         {/* Datos del cliente */}
         <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3 mt-2">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Tus datos para el ticket</p>
-          <div>
+          <div className="relative">
             <label className="text-xs text-gray-500 block mb-1">Nombre completo</label>
             <input type="text" value={nombre}
-              onChange={(e) => setNombre(toTitleCase(e.target.value))}
+              onChange={(e) => { setNombre(toTitleCase(e.target.value)); setMostrarSugerencias(true); }}
+              onFocus={() => setMostrarSugerencias(true)}
+              onBlur={() => setTimeout(() => setMostrarSugerencias(false), 150)}
               placeholder="Nombre Apellido"
               autoCapitalize="off"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
+            {mostrarSugerencias && sugerencias.length > 0 && (
+              <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                {sugerencias.map((s, i) => (
+                  <button key={i} type="button"
+                    onMouseDown={() => {
+                      setNombre(s.nombre);
+                      setTelefono(s.telefono);
+                      setSugerencias([]);
+                      setMostrarSugerencias(false);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-amber-50 text-left border-b border-gray-50 last:border-0">
+                    <span className="text-sm font-medium text-gray-800">{s.nombre}</span>
+                    <span className="text-xs text-gray-400 font-mono">{s.telefono}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             {nombre.length > 2 && !nombreValido && (
               <p className="text-xs text-orange-400 mt-1">Ingresa nombre y al menos un apellido</p>
             )}

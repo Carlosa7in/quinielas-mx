@@ -124,7 +124,7 @@ export default function MiLinkPage() {
           <div className="flex items-center gap-3">
             <LocaleToggle locale={locale} onChange={setLocale} dark />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "40px", objectFit: "contain" }} />
+            <a href="/" style={{flexShrink:0}}><img src="/logo-tablitas.png" alt="Tablitas" style={{ height: "40px", objectFit: "contain" }} /></a>
           </div>
         </div>
       </div>

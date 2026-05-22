@@ -10,6 +10,10 @@ const LIGA_ESPN: Record<string, string> = {
   "Serie A":          "ita.1",
   "Ligue 1":          "fra.1",
   "Brasileirão":      "bra.1",
+  "Liga Argentina":   "arg.1",
+  "Bundesliga":       "ger.1",
+  "Eredivisie":       "ned.1",
+  "Liga Portugal":    "por.1",
 };
 
 // Quita acentos y pasa a minúsculas para comparación flexible
@@ -52,8 +56,9 @@ const NOMBRE_MAP: Record<string, string> = {
   "Inter Milan":                 "Inter",
   "FC Internazionale Milano":    "Inter",
   // Liga MX
-  "Santos":                      "Santos Laguna",
   "Santos Laguna":               "Santos Laguna",
+  // Brasileirão — Santos FC aparece como "Santos" en ESPN
+  "Santos FC":                   "Santos",
   // Premier
   "West Ham United":             "West Ham",
   "Brighton & Hove Albion":      "Brighton",
@@ -89,6 +94,28 @@ const NOMBRE_MAP: Record<string, string> = {
   "Botafogo de Futebol e Regatas": "Botafogo",
   "Sociedade Esportiva Palmeiras": "Palmeiras",
   "Clube de Regatas do Flamengo": "Flamengo",
+
+  // Liga Argentina — nombres ESPN
+  "Club Atlético Boca Juniors":  "Boca Juniors",
+  "Club Atlético River Plate":   "River Plate",
+  "Racing Club":                 "Racing Club",
+  "San Lorenzo de Almagro":      "San Lorenzo",
+  "Club Atlético Independiente": "Independiente",
+  "Estudiantes de La Plata":     "Estudiantes",
+  "Vélez Sársfield":             "Vélez Sársfield",
+  "Club Atlético Lanús":         "Lanús",
+  "Talleres de Córdoba":         "Talleres",
+  "Club Atlético Huracán":       "Huracán",
+  "Club Atlético Belgrano":      "Belgrano",
+  "Belgrano":                    "Belgrano",
+  "Godoy Cruz Antonio Tomba":    "Godoy Cruz",
+  "Club Atlético Tucumán":       "Atlético Tucumán",
+  "Barracas Central":            "Barracas Central",
+  "Club Atlético Platense":      "Platense",
+  "Club Atlético Tigre":         "Tigre",
+  "Newell's Old Boys":           "Newell's Old Boys",
+  "Club Atlético Rosario Central": "Rosario Central",
+  "Argentinos Juniors":          "Argentinos Juniors",
 };
 
 function normalizar(nombre: string): string {

@@ -25,6 +25,7 @@ export async function GET() {
           estadoPago: true,
           aciertos: true,
           referenciaPago: true,
+          createdAt: true,
           usuario: { select: { nombre: true } },
           vendedor: { select: { nombre: true, codigo: true } },
           picks: {

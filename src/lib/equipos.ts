@@ -21,7 +21,6 @@ const LOGOS: Record<string, string> = {
   "Pumas":                 "https://a.espncdn.com/i/teamlogos/soccer/500/233.png",
   "Querétaro":             "https://a.espncdn.com/i/teamlogos/soccer/500/222.png",
   "Santos Laguna":         "https://a.espncdn.com/i/teamlogos/soccer/500/225.png",
-  "Santos":                "https://a.espncdn.com/i/teamlogos/soccer/500/225.png",
   "Tigres UANL":           "https://a.espncdn.com/i/teamlogos/soccer/500/232.png",
   "Tigres":                "https://a.espncdn.com/i/teamlogos/soccer/500/232.png",
   "Tijuana":               "https://a.espncdn.com/i/teamlogos/soccer/500/10125.png",
@@ -159,6 +158,7 @@ const LOGOS: Record<string, string> = {
   "Internacional":            "https://a.espncdn.com/i/teamlogos/soccer/500/1936.png",
   "Grêmio":                   "https://a.espncdn.com/i/teamlogos/soccer/500/6273.png",
   "Santos FC":                "https://a.espncdn.com/i/teamlogos/soccer/500/2674.png",
+  "Santos":                   "https://a.espncdn.com/i/teamlogos/soccer/500/2674.png",
   "Athletico Paranaense":     "https://a.espncdn.com/i/teamlogos/soccer/500/3458.png",
   "Atlético Paranaense":      "https://a.espncdn.com/i/teamlogos/soccer/500/3458.png",
   "Cruzeiro":                 "https://a.espncdn.com/i/teamlogos/soccer/500/2022.png",
@@ -202,6 +202,13 @@ const LOGOS: Record<string, string> = {
   "Unión Santa Fe":           "https://a.espncdn.com/i/teamlogos/soccer/500/20.png",
   "Platense":                 "https://a.espncdn.com/i/teamlogos/soccer/500/7764.png",
   "Sarmiento":                "https://a.espncdn.com/i/teamlogos/soccer/500/10158.png",
+  "Belgrano":                 "https://a.espncdn.com/i/teamlogos/soccer/500/9833.png",
+  "Instituto":                "https://a.espncdn.com/i/teamlogos/soccer/500/7763.png",
+  "San Martín SJ":            "https://a.espncdn.com/i/teamlogos/soccer/500/7768.png",
+  "Barracas Central":         "https://a.espncdn.com/i/teamlogos/soccer/500/15109.png",
+  "Riestra":                  "https://a.espncdn.com/i/teamlogos/soccer/500/15516.png",
+  "Atlético Tucumán":         "https://a.espncdn.com/i/teamlogos/soccer/500/6074.png",
+  "Tucumán":                  "https://a.espncdn.com/i/teamlogos/soccer/500/6074.png",
 
   // ── Mundial — Selecciones nacionales ──────────────────────────────
   // ESPN countries CDN (ruta diferente: /countries/ en lugar de /soccer/)
