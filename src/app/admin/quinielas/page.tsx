@@ -201,19 +201,23 @@ function PagoAcciones({
   };
 
   const nombre = quiniela.nombreCliente?.split(" ")[0] ?? "";
-  const instrucciones = quiniela.canal === "oxxo"
-    ? `Puedes pagar en cualquier tienda OXXO con tu referencia de pago. Solo dile al cajero que vas a realizar un pago de servicio y proporciona tu referencia.`
-    : `Puedes hacer una transferencia o depósito a nuestra cuenta. Una vez realizado el pago, comparte tu comprobante por este medio para confirmar tu registro.`;
   const seguimientoMsg = [
     `¡Hola${nombre ? ` ${nombre}` : ""}! 👋`,
     ``,
-    `Vi que registraste tu quiniela en *Tablitas Quinielas* pero aún no hemos recibido tu pago. ¿Se te complicó algo? 😊`,
-    ``,
-    `${instrucciones}`,
-    ``,
-    `Cualquier duda estoy aquí para ayudarte. ¡No te quedes sin participar! ⚽🏆`,
+    `Vimos que registraste una quiniela pero aún no hemos recibido tu pago. ¿Tuviste algún problema? 😊`,
     ``,
     `*Folio:* ${quiniela.folio}`,
+    ``,
+    `Para completar tu registro sigue estos pasos:`,
+    ``,
+    `1️⃣ Entra aquí 👇`,
+    `https://tablitasquinielas.netlify.app`,
+    ``,
+    `2️⃣ Busca el aviso de tu folio y da click en *"Ver instrucciones"*`,
+    ``,
+    `3️⃣ Ahí encontrarás los datos para realizar tu pago 💳`,
+    ``,
+    `¡Cualquier duda aquí estoy! 😊`,
   ].join("\n");
 
   const telRaw = (quiniela.telefonoCliente ?? "").replace(/\D/g, "");
