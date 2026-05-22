@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Bell, BellOff, BellRing, Loader2 } from "lucide-react";
+import { BellOff, Loader2 } from "lucide-react";
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_KEY ?? "";
 
@@ -15,7 +15,6 @@ type Estado = "loading" | "activando" | "unsupported" | "denied" | "subscribed" 
 
 export function PushButton({ className = "" }: { className?: string }) {
   const [estado, setEstado] = useState<Estado>("loading");
-  const [confirmDesactivar, setConfirmDesactivar] = useState(false);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
@@ -72,58 +71,49 @@ export function PushButton({ className = "" }: { className?: string }) {
       }
     } catch { /* ignorar */ }
     setEstado("unsubscribed");
-    setConfirmDesactivar(false);
   }
 
-  if (estado === "loading")      return <span className="w-20 h-5 bg-gray-700 rounded animate-pulse" />;
-  if (estado === "unsupported")  return null;
-  if (estado === "activando") {
-    return (
-      <div className={`flex items-center gap-1.5 text-amber-400 text-xs ${className}`}>
-        <Loader2 size={13} className="animate-spin" />
-        <span>Activando...</span>
-      </div>
-    );
+  function toggle() {
+    if (estado === "subscribed") desactivar();
+    else if (estado === "unsubscribed") activar();
   }
 
-  if (estado === "denied") {
-    return (
-      <div className={`flex items-center gap-1.5 text-gray-500 text-xs ${className}`}>
-        <BellOff size={13} />
-        <span>Bloqueadas en ajustes</span>
-      </div>
-    );
-  }
+  if (estado === "unsupported") return null;
 
-  if (estado === "subscribed") {
-    // Requiere doble click para desactivar (evita desactivación accidental)
-    if (confirmDesactivar) {
-      return (
-        <div className={`flex items-center gap-2 ${className}`}>
-          <span className="text-gray-400 text-xs">¿Desactivar?</span>
-          <button onClick={desactivar} className="text-red-400 text-xs font-bold hover:text-red-300">Sí</button>
-          <button onClick={() => setConfirmDesactivar(false)} className="text-gray-500 text-xs hover:text-gray-300">No</button>
-        </div>
-      );
-    }
-    return (
-      <button
-        onClick={() => setConfirmDesactivar(true)}
-        className={`flex items-center gap-1.5 text-green-400 text-xs font-semibold ${className}`}
-      >
-        <BellRing size={13} />
-        <span>Activas ✓</span>
-      </button>
-    );
-  }
+  const activo = estado === "subscribed";
+  const cargando = estado === "loading" || estado === "activando";
+  const bloqueado = estado === "denied";
 
   return (
     <button
-      onClick={activar}
-      className={`flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-gray-900 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${className}`}
+      onClick={!cargando && !bloqueado ? toggle : undefined}
+      disabled={cargando || bloqueado}
+      title={bloqueado ? "Notificaciones bloqueadas en ajustes del navegador" : undefined}
+      className={`flex items-center gap-2 select-none transition-opacity ${cargando || bloqueado ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${className}`}
     >
-      <Bell size={13} />
-      <span>Activar</span>
+      {/* Label */}
+      <span className={`text-xs font-medium whitespace-nowrap ${activo ? "text-green-400" : "text-gray-400"}`}>
+        {bloqueado
+          ? "Notificaciones bloqueadas"
+          : activo
+            ? "Notificaciones activas"
+            : "Activar notificaciones"}
+      </span>
+
+      {/* Switch */}
+      {cargando ? (
+        <Loader2 size={13} className="animate-spin text-amber-400 shrink-0" />
+      ) : bloqueado ? (
+        <BellOff size={13} className="text-gray-500 shrink-0" />
+      ) : (
+        <div
+          className={`relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 ${activo ? "bg-green-500" : "bg-gray-600"}`}
+        >
+          <div
+            className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${activo ? "translate-x-[18px]" : "translate-x-0.5"}`}
+          />
+        </div>
+      )}
     </button>
   );
 }
