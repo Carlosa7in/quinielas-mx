@@ -169,8 +169,13 @@ export default function NuevaJornadaPage() {
   }, [espnLiga]);
 
   // ── Atajos de fecha por tipo de quiniela ──────────────────────────
+  // Para Mundial: usar la semana dentro del torneo basada en espnDesde actual
+  // Para otras ligas: usar la semana actual
   const aplicarAtajo = (tipo: "media" | "finde" | "domingo") => {
-    const lunes = inicioSemana(hoy);
+    const base = espnLiga === "Mundial"
+      ? inicioSemana(new Date(espnDesde + "T12:00:00")) // semana del rango actual
+      : inicioSemana(hoy);
+    const lunes = base;
     if (tipo === "media") {
       const mar = new Date(lunes); mar.setDate(lunes.getDate() + 1);
       const jue = new Date(lunes); jue.setDate(lunes.getDate() + 3);
@@ -446,8 +451,8 @@ export default function NuevaJornadaPage() {
                   : `Slots disponibles: ${slotsLibres} de ${MAX_PARTIDOS}`}
               </div>
 
-              {/* Atajos de tipo de quiniela — ocultos para Mundial */}
-              <div className={espnLiga === "Mundial" ? "hidden" : ""}>
+              {/* Atajos de fecha */}
+              <div>
                 <label className="text-xs text-gray-500 mb-1 block">Tipo de quiniela (atajo de fechas)</label>
                 <div className="flex gap-1.5">
                   <button type="button" onClick={() => aplicarAtajo("media")}
@@ -509,6 +514,26 @@ export default function NuevaJornadaPage() {
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               </div>
+
+              {/* Navegación semana anterior / siguiente — solo Mundial */}
+              {espnLiga === "Mundial" && (
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => {
+                    const d = new Date(espnDesde + "T12:00:00"); d.setDate(d.getDate() - 7);
+                    const h = new Date(espnHasta + "T12:00:00"); h.setDate(h.getDate() - 7);
+                    setEspnDesde(toInputDate(d)); setEspnHasta(toInputDate(h));
+                  }} className="flex-1 text-xs py-1.5 px-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 font-medium transition-colors">
+                    ← Semana anterior
+                  </button>
+                  <button type="button" onClick={() => {
+                    const d = new Date(espnDesde + "T12:00:00"); d.setDate(d.getDate() + 7);
+                    const h = new Date(espnHasta + "T12:00:00"); h.setDate(h.getDate() + 7);
+                    setEspnDesde(toInputDate(d)); setEspnHasta(toInputDate(h));
+                  }} className="flex-1 text-xs py-1.5 px-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 font-medium transition-colors">
+                    Semana siguiente →
+                  </button>
+                </div>
+              )}
 
               {/* Botón consultar */}
               <button type="button" onClick={consultarEspn} disabled={espnCargando}
