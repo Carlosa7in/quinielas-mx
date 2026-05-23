@@ -448,6 +448,8 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
   const [tab, setTab] = useState<"vivo" | "cuadro">("vivo");
   // Expandir eventos para partidos terminados
   const [expandedPost, setExpandedPost] = useState(p.estado === "post" && p.eventos.length > 0);
+  // Toggle cuadro para partidos pre
+  const [showCuadro, setShowCuadro] = useState(false);
 
   const hayScore  = p.local.goles !== null && p.visita.goles !== null;
   const sofaIdNum = p.sofaId ? Number(p.sofaId) : null;
@@ -512,21 +514,39 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
       p.estado === "post" ? "bg-gray-900/40" : "bg-gray-900"
     }`}>
 
-      {/* ── PRE: header estático + cuadro directo ── */}
+      {/* ── PRE: header estático + toggle cuadro ── */}
       {p.estado === "pre" && (
         <>
           <div>{scoreHeader}</div>
           <p className="text-gray-600 text-[10px] text-center pb-2 -mt-1">
             {fmtFecha(p.fechaHora)}
           </p>
-          <div className="border-t border-white/5">
+
+          {/* Botón toggle cuadro */}
+          <button
+            onClick={() => setShowCuadro(o => !o)}
+            className="w-full flex items-center justify-between px-4 py-2.5 border-t border-white/5 hover:bg-white/[0.03] transition-colors"
+          >
+            <span className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
+              <span className="text-base">📋</span>
+              Cuadro
+              {(sofaIdNum || p.alineacion) && (
+                <span className="text-[9px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded-full font-bold">
+                  Disponible
+                </span>
+              )}
+            </span>
+            <span className="text-gray-600 text-xs">{showCuadro ? "▲" : "▼"}</span>
+          </button>
+
+          {showCuadro && (
             <LineupContent
               alineacion={p.alineacion}
               local={p.local.nombre}
               visita={p.visita.nombre}
               sofaId={sofaIdNum}
             />
-          </div>
+          )}
         </>
       )}
 
