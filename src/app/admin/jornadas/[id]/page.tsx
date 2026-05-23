@@ -175,10 +175,22 @@ function BarraPicks({ pct, color, label }: { pct: number; color: string; label: 
 }
 
 function formatFecha(iso: string) {
-  const d = new Date(iso);
+  // Fechas guardadas en hora local México (datetime-local sin conversión UTC),
+  // leer directamente sin aplicar offset de zona horaria.
+  const local = iso.replace("Z", "").replace(".000", "");
+  const d = new Date(local);
+  const m = iso.match(/T(\d{2}):(\d{2})/);
+  let hora = "";
+  if (m) {
+    let h = parseInt(m[1]);
+    const min = m[2];
+    const ampm = h >= 12 ? "p.m." : "a.m.";
+    h = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    hora = `${h}:${min} ${ampm}`;
+  }
   return {
-    dia: d.toLocaleDateString("es-MX", { weekday: "short", day: "2-digit", month: "short", timeZone: "America/Mexico_City" }),
-    hora: d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" }),
+    dia: d.toLocaleDateString("es-MX", { weekday: "short", day: "2-digit", month: "short" }),
+    hora,
   };
 }
 
