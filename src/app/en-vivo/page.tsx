@@ -63,8 +63,13 @@ type Evento = {
   esPenal?: boolean;
   esAutogol?: boolean;
 };
-type LineupPlayer = { jersey: string; nombre: string; posicion: string };
-type Alineacion   = { local: LineupPlayer[]; visita: LineupPlayer[] };
+type LineupPlayer = { jersey: string; nombre: string; posicion: string; formationPlace?: number };
+type Alineacion   = {
+  local: LineupPlayer[];
+  visita: LineupPlayer[];
+  formacionLocal?: string;
+  formacionVisita?: string;
+};
 type EquipoVivo = { nombre: string; logo: string; goles: string | null };
 type PartidoVivo = {
   id: string;
@@ -243,73 +248,184 @@ function EventoItem({ ev }: { ev: Evento }) {
   );
 }
 
-const POS_LABEL: Record<string, string> = {
-  GK:"PO", G:"PO",
+// ─── Lineup Pitch ──────────────────────────────────────────────────────────
+
+const POS_CAT: Record<string, string> = {
+  GK:"GK", G:"GK",
   CB:"DEF", LB:"DEF", RB:"DEF", LWB:"DEF", RWB:"DEF", SW:"DEF", D:"DEF", DF:"DEF",
-  CDM:"MED", DM:"MED", CM:"MED", LM:"MED", RM:"MED", MF:"MED", M:"MED",
-  CAM:"MED", AM:"MED",
-  LW:"DEL", RW:"DEL", LF:"DEL", RF:"DEL",
-  CF:"DEL", ST:"DEL", SS:"DEL", F:"DEL", FW:"DEL",
+  CDM:"MID", DM:"MID", CM:"MID", LM:"MID", RM:"MID", MF:"MID", M:"MID",
+  CAM:"ATT", AM:"ATT",
+  LW:"FWD", RW:"FWD", LF:"FWD", RF:"FWD",
+  CF:"FWD", ST:"FWD", SS:"FWD", F:"FWD", FW:"FWD",
 };
-const POS_COLOR: Record<string, string> = {
-  PO:  "text-yellow-400",
-  DEF: "text-blue-400",
-  MED: "text-green-400",
-  DEL: "text-red-400",
+const CAT_ORD: Record<string, number> = { GK:0, DEF:1, MID:2, ATT:3, FWD:4 };
+const CAT_DOT: Record<string, string> = {
+  GK:  "bg-yellow-500  border-yellow-300",
+  DEF: "bg-blue-600    border-blue-300",
+  MID: "bg-emerald-600 border-emerald-300",
+  ATT: "bg-purple-600  border-purple-300",
+  FWD: "bg-red-600     border-red-300",
 };
 
-function LineupColumn({ players }: { players: LineupPlayer[] }) {
+function posOrd(p: string) { return CAT_ORD[POS_CAT[p.toUpperCase()] ?? "MID"] ?? 9; }
+
+/** Agrupa titulares en filas. Si hay formation ("4-2-3-1") la usa para saber cuántos por fila. */
+function groupByFormation(players: LineupPlayer[], formation?: string): LineupPlayer[][] {
+  const sorted = [...players].sort((a, b) => posOrd(a.posicion) - posOrd(b.posicion));
+
+  if (formation) {
+    const counts = [1, ...formation.split("-").map(Number)]; // GK + outfield lines
+    let idx = 0;
+    return counts
+      .map(n => { const r = sorted.slice(idx, idx + n); idx += n; return r; })
+      .filter(r => r.length > 0);
+  }
+
+  // Fallback: agrupar por categoría
+  const groups: Record<string, LineupPlayer[]> = {};
+  for (const p of sorted) {
+    const cat = POS_CAT[p.posicion.toUpperCase()] ?? "MID";
+    (groups[cat] ??= []).push(p);
+  }
+  return ["GK","DEF","MID","ATT","FWD"].map(c => groups[c] ?? []).filter(r => r.length > 0);
+}
+
+function PitchTeam({ players, formation }: { players: LineupPlayer[]; formation?: string }) {
+  const rows = groupByFormation(players, formation);
+  const nRows = rows.length;
+
   return (
-    <div className="flex-1 space-y-[3px]">
-      {players.map((pl, i) => {
-        const posLabel = POS_LABEL[pl.posicion.toUpperCase()] ?? pl.posicion;
-        const posColor = POS_COLOR[posLabel] ?? "text-gray-500";
-        return (
-          <div key={i} className="flex items-center gap-1.5">
-            <span className="text-gray-600 text-[9px] w-4 shrink-0 text-right tabular-nums">{pl.jersey}</span>
-            <span className={`text-[9px] font-black uppercase w-6 shrink-0 ${posColor}`}>{posLabel}</span>
-            <span className="text-gray-200 text-[10px] truncate leading-tight">{pl.nombre}</span>
-          </div>
-        );
+    <div
+      className="relative w-full rounded-xl overflow-hidden"
+      style={{
+        background: "linear-gradient(180deg,#14532d 0%,#166534 25%,#15803d 50%,#166534 75%,#14532d 100%)",
+        aspectRatio: "3/4",
+      }}
+    >
+      {/* Pitch lines SVG */}
+      <svg
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 100 133"
+        preserveAspectRatio="none"
+      >
+        {/* border */}
+        <rect x="2" y="2" width="96" height="129" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="0.8"/>
+        {/* center line */}
+        <line x1="2" y1="66.5" x2="98" y2="66.5" stroke="rgba(255,255,255,0.18)" strokeWidth="0.6"/>
+        {/* center circle */}
+        <circle cx="50" cy="66.5" r="13" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="0.6"/>
+        <circle cx="50" cy="66.5" r="1.2" fill="rgba(255,255,255,0.25)"/>
+        {/* top penalty */}
+        <rect x="22" y="2" width="56" height="20" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6"/>
+        <rect x="36" y="2" width="28" height="8"  fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="0.5"/>
+        {/* bottom penalty */}
+        <rect x="22" y="111" width="56" height="20" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6"/>
+        <rect x="36" y="123" width="28" height="8"  fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="0.5"/>
+        {/* goals */}
+        <rect x="38" y="0"   width="24" height="2.5" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="0.7"/>
+        <rect x="38" y="130.5" width="24" height="2.5" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="0.7"/>
+      </svg>
+
+      {/* Players */}
+      {rows.map((row, rowIdx) => {
+        // GK (rowIdx=0) → bottom (yPct≈88%). FWD (rowIdx=nRows-1) → top (yPct≈10%)
+        const yPct = nRows === 1 ? 50 : 88 - (rowIdx / (nRows - 1)) * 78;
+        return row.map((player, colIdx) => {
+          const xPct = ((colIdx + 1) / (row.length + 1)) * 100;
+          const cat   = POS_CAT[player.posicion.toUpperCase()] ?? "MID";
+          const dotCls = CAT_DOT[cat] ?? CAT_DOT.MID;
+          const lastName = player.nombre.split(" ").pop() ?? player.nombre;
+          return (
+            <div
+              key={`${rowIdx}-${colIdx}`}
+              className="absolute flex flex-col items-center gap-[2px] pointer-events-none"
+              style={{ left: `${xPct}%`, top: `${yPct}%`, transform: "translate(-50%,-50%)" }}
+            >
+              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-white text-[10px] font-black shadow-lg ${dotCls}`}>
+                {player.jersey}
+              </div>
+              <span
+                className="text-[8px] font-bold text-white leading-none text-center max-w-[52px] truncate px-0.5 rounded"
+                style={{ textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7)" }}
+              >
+                {lastName}
+              </span>
+            </div>
+          );
+        });
       })}
     </div>
   );
 }
 
 function LineupDisplay({ alineacion, local, visita }: { alineacion: Alineacion | null; local: string; visita: string }) {
+  const [tab, setTab]   = useState<"local"|"visita">("local");
   const [open, setOpen] = useState(false);
+
   const hayDatos = alineacion && (alineacion.local.length > 0 || alineacion.visita.length > 0);
 
   if (!hayDatos) {
     return (
-      <div className="border-t border-white/5 px-4 py-2 flex items-center justify-center gap-1.5">
+      <div className="border-t border-white/5 px-4 py-2 flex items-center justify-center">
         <span className="text-gray-700 text-[10px]">📋 Sin alineaciones confirmadas aún</span>
       </div>
     );
   }
 
+  const players   = tab === "local" ? alineacion.local   : alineacion.visita;
+  const formacion = tab === "local" ? alineacion.formacionLocal : alineacion.formacionVisita;
+
   return (
     <div className="border-t border-white/5">
+
+      {/* Toggle header */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-2 text-left hover:bg-white/[0.02] transition-colors"
+        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-white/[0.02] transition-colors"
       >
         <span className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-300">
           <span>📋</span> Alineaciones confirmadas
         </span>
-        <span className="text-gray-600 text-[10px]">{open ? "▲" : "▼"}</span>
+        <span className="text-gray-500 text-[10px]">{open ? "▲" : "▼"}</span>
       </button>
+
       {open && (
-        <div className="px-3 pb-3">
-          {/* Cabecera de equipos */}
-          <div className="flex gap-2 mb-2">
-            <p className="flex-1 text-[9px] font-black text-gray-400 uppercase tracking-wide truncate">{local}</p>
-            <p className="flex-1 text-[9px] font-black text-gray-400 uppercase tracking-wide truncate text-right">{visita}</p>
+        <div className="pb-3">
+          {/* Team tabs */}
+          <div className="flex border-b border-white/5 mb-3">
+            {(["local","visita"] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`flex-1 py-1.5 text-[11px] font-black truncate px-2 transition-colors ${
+                  tab === t
+                    ? "text-white border-b-2 border-indigo-400 -mb-px"
+                    : "text-gray-600"
+                }`}
+              >
+                {t === "local" ? local : visita}
+              </button>
+            ))}
           </div>
-          <div className="flex gap-3">
-            <LineupColumn players={alineacion.local} />
-            <div className="w-px bg-white/5 shrink-0" />
-            <LineupColumn players={alineacion.visita} />
+
+          {/* Formation label */}
+          {formacion && (
+            <p className="text-center text-[10px] font-black text-gray-500 mb-2 tracking-widest">{formacion}</p>
+          )}
+
+          {/* Pitch */}
+          <div className="px-4">
+            <PitchTeam players={players} formation={formacion} />
+          </div>
+
+          {/* Leyenda */}
+          <div className="flex items-center justify-center gap-3 mt-2 px-4">
+            {(["GK","DEF","MID","FWD"] as const).map(cat => (
+              <div key={cat} className="flex items-center gap-1">
+                <div className={`w-2.5 h-2.5 rounded-full ${CAT_DOT[cat === "MID" ? "MID" : cat].split(" ")[0]}`} />
+                <span className="text-[9px] text-gray-600 font-bold">{cat === "MID" ? "MED" : cat === "FWD" ? "DEL" : cat}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

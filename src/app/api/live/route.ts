@@ -85,6 +85,7 @@ type EspnKeyMoment = {
 type EspnRosterPlayer = {
   starter?: boolean;
   jersey?: string;
+  formationPlace?: number;
   athlete?: {
     displayName?: string;
     shortName?: string;
@@ -93,10 +94,16 @@ type EspnRosterPlayer = {
 };
 type EspnRosterTeam = {
   team?: { id?: string; displayName?: string };
+  formation?: string;
   roster?: EspnRosterPlayer[];
 };
-export type LineupPlayer = { jersey: string; nombre: string; posicion: string };
-export type Alineacion   = { local: LineupPlayer[]; visita: LineupPlayer[] };
+export type LineupPlayer = { jersey: string; nombre: string; posicion: string; formationPlace?: number };
+export type Alineacion   = {
+  local: LineupPlayer[];
+  visita: LineupPlayer[];
+  formacionLocal?: string;
+  formacionVisita?: string;
+};
 
 const POS_ORDER: Record<string, number> = {
   GK:0, G:0,
@@ -129,9 +136,10 @@ async function fetchEspnLineups(ligaSlug: string, eventId: string): Promise<Alin
       (team.roster ?? [])
         .filter(p => p.starter)
         .map(p => ({
-          jersey:   p.jersey ?? "",
-          nombre:   p.athlete?.shortName ?? p.athlete?.displayName ?? "",
-          posicion: p.athlete?.position?.abbreviation ?? "",
+          jersey:        p.jersey ?? "",
+          nombre:        p.athlete?.shortName ?? p.athlete?.displayName ?? "",
+          posicion:      p.athlete?.position?.abbreviation ?? "",
+          formationPlace: p.formationPlace,
         }))
         .sort((a, b) => posOrd(a.posicion) - posOrd(b.posicion));
 
@@ -143,7 +151,12 @@ async function fetchEspnLineups(ligaSlug: string, eventId: string): Promise<Alin
       lineupCache.set(key, { data: null, ts: Date.now() });
       return null;
     }
-    const result: Alineacion = { local, visita };
+    const result: Alineacion = {
+      local,
+      visita,
+      formacionLocal:  rosters[0]?.formation,
+      formacionVisita: rosters[1]?.formation,
+    };
     lineupCache.set(key, { data: result, ts: Date.now() });
     return result;
   } catch {
