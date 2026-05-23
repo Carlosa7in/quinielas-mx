@@ -31,35 +31,104 @@ type JornadaDetalle = {
 
 const fmt = (n: number) => n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-function SofaIdInput({ partidoId, inicial }: { partidoId: string; inicial: string | null }) {
-  const [valor, setValor] = useState(inicial ?? "");
-  const [guardando, setGuardando] = useState(false);
-  const [ok, setOk] = useState(!!inicial);
+function normSofa(s: string) {
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/\b(fc|cf|cd|afc|sc|rc|ac)\b/g, "").replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, " ").trim();
+}
 
-  const guardar = async () => {
-    setGuardando(true);
+function SofaIdInput({ partidoId, inicial, local, visita, fechaHora }: {
+  partidoId: string;
+  inicial: string | null;
+  local: string;
+  visita: string;
+  fechaHora: string | null;
+}) {
+  const [valor, setValor]       = useState(inicial ?? "");
+  const [guardando, setGuardando] = useState(false);
+  const [buscando, setBuscando]  = useState(false);
+  const [ok, setOk]             = useState(!!inicial);
+  const [error, setError]       = useState<string | null>(null);
+
+  const guardarId = async (id: string) => {
     const res = await fetch(`/api/admin/partido/${partidoId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sofaId: valor }),
+      body: JSON.stringify({ sofaId: id }),
     });
     const data = await res.json() as { sofaId?: string };
-    setOk(!!data.sofaId);
-    if (data.sofaId) setValor(data.sofaId);
+    if (data.sofaId) { setValor(data.sofaId); setOk(true); }
+    return !!data.sofaId;
+  };
+
+  const guardar = async () => {
+    if (!valor.trim()) return;
+    setGuardando(true); setError(null);
+    await guardarId(valor);
     setGuardando(false);
+  };
+
+  const buscarEnSofa = async () => {
+    if (!fechaHora) { setError("Sin fecha para buscar"); return; }
+    setBuscando(true); setError(null);
+
+    const fecha = fechaHora.slice(0, 10);
+    // Intentar día exacto y ±1 por diferencia de zonas horarias
+    const d = new Date(fecha + "T12:00:00Z");
+    const prev = new Date(d); prev.setUTCDate(d.getUTCDate() - 1);
+    const next = new Date(d); next.setUTCDate(d.getUTCDate() + 1);
+    const fechas = [fecha, prev.toISOString().slice(0,10), next.toISOString().slice(0,10)];
+
+    try {
+      const nl = normSofa(local), nv = normSofa(visita);
+      let encontrado: number | null = null;
+
+      for (const f of fechas) {
+        const res = await fetch(
+          `https://api.sofascore.com/api/v1/sport/football/scheduled-events/${f}`,
+          { headers: { "Accept": "application/json" } }
+        );
+        if (!res.ok) continue;
+        const data = await res.json() as { events?: { id: number; homeTeam: { name: string }; awayTeam: { name: string } }[] };
+        const hit = (data.events ?? []).find(ev => {
+          const nh = normSofa(ev.homeTeam.name), na = normSofa(ev.awayTeam.name);
+          return (nh.includes(nl) || nl.includes(nh) || nl.split(" ").some(w => w.length > 3 && nh.includes(w))) &&
+                 (na.includes(nv) || nv.includes(na) || nv.split(" ").some(w => w.length > 3 && na.includes(w)));
+        });
+        if (hit) { encontrado = hit.id; break; }
+      }
+
+      if (encontrado) {
+        await guardarId(String(encontrado));
+      } else {
+        setError("No encontrado — pega el ID manualmente");
+      }
+    } catch {
+      setError("Error de red — pega el ID manualmente");
+    }
+    setBuscando(false);
   };
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-100">
-      <p className="text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wide">
-        🔗 SofaScore widget
-      </p>
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+          🔗 SofaScore widget
+        </p>
+        <button
+          onClick={buscarEnSofa}
+          disabled={buscando || ok}
+          className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 disabled:opacity-40 transition-colors"
+        >
+          {buscando ? "🔍 Buscando..." : ok ? "✓ Listo" : "🔍 Buscar auto"}
+        </button>
+      </div>
       <div className="flex gap-2">
         <input
           type="text"
           value={valor}
-          onChange={e => { setValor(e.target.value); setOk(false); }}
-          placeholder='Pega el ID o el embed code completo...'
+          onChange={e => { setValor(e.target.value); setOk(false); setError(null); }}
+          placeholder="Pega el ID o el embed code..."
           className="flex-1 text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-400 bg-gray-50"
         />
         <button
@@ -67,12 +136,11 @@ function SofaIdInput({ partidoId, inicial }: { partidoId: string; inicial: strin
           disabled={guardando || !valor.trim()}
           className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-500 text-white disabled:opacity-40 hover:bg-amber-600 transition-colors shrink-0"
         >
-          {guardando ? "..." : ok ? "✓ Guardado" : "Guardar"}
+          {guardando ? "..." : "Guardar"}
         </button>
       </div>
-      {ok && (
-        <p className="text-[10px] text-green-600 mt-1">✅ Widget activo en /en-vivo</p>
-      )}
+      {ok && <p className="text-[10px] text-green-600 mt-1">✅ Widget activo en /en-vivo · ID: {valor}</p>}
+      {error && <p className="text-[10px] text-red-500 mt-1">⚠️ {error}</p>}
     </div>
   );
 }
@@ -341,7 +409,13 @@ export default function JornadaDetallePage({ params }: { params: Promise<{ id: s
 
                   {/* SofaScore widget ID */}
                   {!tieneResultado && (
-                    <SofaIdInput partidoId={p.id} inicial={p.sofaId} />
+                    <SofaIdInput
+                      partidoId={p.id}
+                      inicial={p.sofaId}
+                      local={p.equipoLocal}
+                      visita={p.equipoVisita}
+                      fechaHora={p.fechaHora}
+                    />
                   )}
                 </div>
               );
