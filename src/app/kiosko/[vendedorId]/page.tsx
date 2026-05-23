@@ -234,6 +234,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
     setFormas([[]]);
     setFormaActiva(0);
     setNombre("");
+    setCodigoPais("52");
     setTelefono("");
     setErrorEnvio("");
     if (datos?.jornadas?.length === 1) seleccionarJornada(datos.jornadas[0]);
@@ -254,12 +255,17 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
         <p className="text-amber-200 text-sm mb-8">
           Acércate al vendedor para confirmar y pagar <strong className="text-white">${precioEnviado}</strong>.
         </p>
-        <a
-          href={esStaff ? `/kiosko/${vendedorId}?bandeja=1` : "/"}
+        <button
+          onClick={reiniciar}
           className="bg-white text-amber-800 font-bold px-8 py-3 rounded-2xl shadow-lg hover:bg-amber-50 transition-colors"
         >
-          {esStaff ? "← Siguiente cliente" : "Cerrar"}
-        </a>
+          ← Siguiente cliente
+        </button>
+        {!esStaff && (
+          <a href="/" className="text-amber-200 text-sm underline underline-offset-2 mt-2">
+            Cerrar kiosko
+          </a>
+        )}
       </div>
     );
   }
