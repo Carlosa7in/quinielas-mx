@@ -6,6 +6,7 @@ import { RegistroCerrado } from "@/components/RegistroCerrado";
 import { calcularFechaCierre } from "@/lib/fechas";
 import { LIGA_ICON } from "@/lib/equipos";
 import { telefonoFalso } from "@/lib/telefono";
+import { PhoneInput, telCompleto, paisPorCodigo } from "@/components/PhoneInput";
 
 type Partido = {
   id: string;
@@ -445,9 +446,8 @@ function QuinielaInner() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!todasCompletas || !nombreCompleto(nombre) || registroCerrado) return;
-    if (telefono && telefonoFalso(telefono)) { setError("Ingresa un número de teléfono real"); setEnviando(false); return; }
-    // Guardar con código de país para WhatsApp
-    const telefonoCompleto = codigoPais + telefono.replace(/\D/g, "");
+    if (telefono && codigoPais === "52" && telefonoFalso(telefono)) { setError("Ingresa un número de teléfono real"); setEnviando(false); return; }
+    const telefonoCompleto = telefono ? telCompleto(codigoPais, telefono) : "";
     setEnviando(true);
     setError("");
 
@@ -622,34 +622,22 @@ function QuinielaInner() {
             )}
           </div>
           <div>
-            <div className="flex gap-1.5">
-              <select
-                value={codigoPais}
-                onChange={(e) => { setCodigoPais(e.target.value); setTelefono(""); }}
-                className="border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white shrink-0"
-              >
-                <option value="52">🇲🇽 +52</option>
-                <option value="1">🇺🇸🇨🇦 +1</option>
-              </select>
-              <input
-                type="tel"
-                placeholder="10 dígitos"
-                value={telefono}
-                onChange={(e) => setTelefono(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                maxLength={10}
-                inputMode="numeric"
-                className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                  (telefono.length > 0 && telefono.length < 10) ||
-                  (telefono.length === 10 && telefonoFalso(telefono))
-                    ? "border-red-300"
-                    : "border-gray-200"
-                }`}
-              />
-            </div>
-            {telefono.length > 0 && telefono.length < 10 && (
-              <p className="text-xs text-red-500 mt-1 px-1">El teléfono debe tener 10 dígitos</p>
+            <PhoneInput
+              codigo={codigoPais}
+              numero={telefono}
+              onCodigo={setCodigoPais}
+              onNumero={setTelefono}
+              inputClassName={
+                (telefono.length > 0 && telefono.length < paisPorCodigo(codigoPais).digitos) ||
+                (codigoPais === "52" && telefono.length === 10 && telefonoFalso(telefono))
+                  ? "border-red-300"
+                  : "border-gray-200"
+              }
+            />
+            {telefono.length > 0 && telefono.length < paisPorCodigo(codigoPais).digitos && (
+              <p className="text-xs text-red-500 mt-1 px-1">El teléfono debe tener {paisPorCodigo(codigoPais).digitos} dígitos</p>
             )}
-            {telefono.length === 10 && telefonoFalso(telefono) && (
+            {codigoPais === "52" && telefono.length === 10 && telefonoFalso(telefono) && (
               <p className="text-xs text-red-500 mt-1 px-1">Ingresa un número de teléfono real</p>
             )}
           </div>
