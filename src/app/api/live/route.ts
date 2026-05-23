@@ -471,7 +471,9 @@ export async function GET() {
             if (horasHasta <= 168) { // 7 días
               try {
                 const ligaPartido = p.partido_liga ?? j.liga;
-                const sofaEventId = await findSofaEventId(p.equipo_local, p.equipo_visita, ligaPartido);
+                // Pasar fecha para usar estrategia por fecha (más confiable)
+                const fechaStr = fechaMs ? new Date(fechaMs).toISOString().slice(0, 10) : undefined;
+                const sofaEventId = await findSofaEventId(p.equipo_local, p.equipo_visita, ligaPartido, fechaStr);
                 if (sofaEventId) {
                   _sofaId = sofaEventId;
                   // Verificar si hay alineaciones disponibles
