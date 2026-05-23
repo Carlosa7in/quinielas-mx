@@ -390,12 +390,15 @@ function LineupContent({ alineacion, local, visita, sofaId }: {
   if (sofaId) {
     return (
       <div className="px-3 pb-3 pt-2">
-        <iframe
-          src={`https://widgets.sofascore.com/embed/lineups?id=${sofaId}&widgetTheme=dark`}
-          style={{ width: "100%", height: "700px", border: "none", borderRadius: "12px", display: "block" }}
-          scrolling="no"
-          title="Alineaciones"
-        />
+        {/* overflow:hidden recorta el banner "Download SofaScore" del fondo del widget */}
+        <div className="relative overflow-hidden rounded-xl" style={{ height: "560px" }}>
+          <iframe
+            src={`https://widgets.sofascore.com/embed/lineups?id=${sofaId}&widgetTheme=dark`}
+            style={{ width: "100%", height: "700px", border: "none", display: "block" }}
+            scrolling="no"
+            title="Alineaciones"
+          />
+        </div>
       </div>
     );
   }
