@@ -73,7 +73,6 @@ function SofaIdInput({ partidoId, inicial, local, visita, fechaHora }: {
     setBuscando(true); setError(null);
 
     const fecha = fechaHora.slice(0, 10);
-    // Intentar día exacto y ±1 por diferencia de zonas horarias
     const d = new Date(fecha + "T12:00:00Z");
     const prev = new Date(d); prev.setUTCDate(d.getUTCDate() - 1);
     const next = new Date(d); next.setUTCDate(d.getUTCDate() + 1);
@@ -84,10 +83,8 @@ function SofaIdInput({ partidoId, inicial, local, visita, fechaHora }: {
       let encontrado: number | null = null;
 
       for (const f of fechas) {
-        const res = await fetch(
-          `https://api.sofascore.com/api/v1/sport/football/scheduled-events/${f}`,
-          { headers: { "Accept": "application/json" } }
-        );
+        // Usar proxy propio para evitar CORS
+        const res = await fetch(`/api/sofa-events?fecha=${f}`);
         if (!res.ok) continue;
         const data = await res.json() as { events?: { id: number; homeTeam: { name: string }; awayTeam: { name: string } }[] };
         const hit = (data.events ?? []).find(ev => {
@@ -104,7 +101,7 @@ function SofaIdInput({ partidoId, inicial, local, visita, fechaHora }: {
         setError("No encontrado — pega el ID manualmente");
       }
     } catch {
-      setError("Error de red — pega el ID manualmente");
+      setError("Error — pega el ID manualmente");
     }
     setBuscando(false);
   };
