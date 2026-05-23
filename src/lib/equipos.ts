@@ -388,6 +388,8 @@ export const EQUIPOS_POR_LIGA: Record<string, string[]> = {
     "Talleres", "Huracán", "Banfield", "Defensa y Justicia",
     "Newell's Old Boys", "Rosario Central", "Argentinos Juniors",
     "Godoy Cruz", "Tigre", "Unión Santa Fe", "Platense", "Colón",
+    "Belgrano", "Instituto", "Barracas Central", "Riestra",
+    "Atlético Tucumán", "Sarmiento", "Gimnasia LP",
   ],
   "Mundial": [
     // Hosts CONCACAF

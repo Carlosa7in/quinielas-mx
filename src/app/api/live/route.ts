@@ -505,8 +505,9 @@ export async function GET() {
           let golesLocal: string | null = p.goles_local !== null ? String(p.goles_local) : null;
           let golesVisita: string | null = p.goles_visita !== null ? String(p.goles_visita) : null;
           // Logos: BD > ESPN teams endpoint > vacío
-          let logoLocal  = p.logo_local  ?? findLogo(logoMapPartido, p.equipo_local);
-          let logoVisita = p.logo_visita ?? findLogo(logoMapPartido, p.equipo_visita);
+          // Usar || en lugar de ?? para que string vacío también haga fallback a ESPN
+          let logoLocal  = p.logo_local  || findLogo(logoMapPartido, p.equipo_local);
+          let logoVisita = p.logo_visita || findLogo(logoMapPartido, p.equipo_visita);
           let eventos: unknown[] = [];
           let alineacion: Alineacion | null = null;
 
