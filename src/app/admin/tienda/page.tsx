@@ -33,8 +33,9 @@ type FormaPicks = Record<string, string[]>;
 const OPCIONES = ["1", "X", "2"] as const;
 const LABELS: Record<string, string> = { "1": "L", X: "E", "2": "V" };
 
+// \b\w no maneja tildes (á, é…) — usar separador de espacios en su lugar
 const toTitleCase = (str: string) =>
-  str.replace(/\b\w/g, (c) => c.toUpperCase());
+  str.replace(/(^|\s)(\S)/g, (_, sep, c) => sep + c.toUpperCase());
 
 const nombreCompleto = (str: string) => str.trim().split(/\s+/).length >= 2;
 

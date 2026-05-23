@@ -383,8 +383,9 @@ function ScannerQR({ onFolioDetectado }: { onFolioDetectado: (folio: string) => 
   );
 }
 
+// \b\w no maneja tildes (á, é…) — usar separador de espacios en su lugar
 const toTitleCase = (str: string) =>
-  str.replace(/\b\w/g, (c) => c.toUpperCase());
+  str.replace(/(^|\s)(\S)/g, (_, sep, c) => sep + c.toUpperCase());
 
 
 /* ─── Página principal ─── */

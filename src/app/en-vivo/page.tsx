@@ -391,10 +391,10 @@ function LineupContent({ alineacion, local, visita, sofaId }: {
     return (
       <div className="px-3 pb-3 pt-2">
         {/* overflow:hidden recorta el banner "Download SofaScore" del fondo del widget */}
-        <div className="relative overflow-hidden rounded-xl" style={{ height: "560px" }}>
+        <div className="relative overflow-hidden rounded-xl" style={{ height: "640px" }}>
           <iframe
             src={`https://widgets.sofascore.com/embed/lineups?id=${sofaId}&widgetTheme=dark`}
-            style={{ width: "100%", height: "700px", border: "none", display: "block" }}
+            style={{ width: "100%", height: "720px", border: "none", display: "block" }}
             scrolling="no"
             title="Alineaciones"
           />
@@ -597,9 +597,11 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
             {eventosBlock}
           </div>
 
-          {/* Cuadro — siempre en DOM para precargar el iframe, oculto cuando tab=vivo */}
+          {/* Cuadro — siempre en DOM para precargar el iframe, oculto cuando tab=vivo.
+               Usamos h-0 overflow-hidden en lugar de hidden (display:none) porque
+               algunos navegadores no cargan iframes con display:none. */}
           {hayLineup && (
-            <div className={tab === "cuadro" ? "" : "hidden"}>
+            <div className={tab === "cuadro" ? "" : "h-0 overflow-hidden"}>
               <LineupContent
                 alineacion={p.alineacion}
                 local={p.local.nombre}
