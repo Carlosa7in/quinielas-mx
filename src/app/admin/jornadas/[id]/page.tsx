@@ -11,6 +11,7 @@ type Partido = {
   id: string; equipoLocal: string; equipoVisita: string;
   resultado: string | null; golesLocal: number | null; golesVisita: number | null;
   orden: number; fechaHora: string | null;
+  sofaId: string | null;
   picks: PickDist;
 };
 
@@ -29,6 +30,52 @@ type JornadaDetalle = {
 };
 
 const fmt = (n: number) => n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function SofaIdInput({ partidoId, inicial }: { partidoId: string; inicial: string | null }) {
+  const [valor, setValor] = useState(inicial ?? "");
+  const [guardando, setGuardando] = useState(false);
+  const [ok, setOk] = useState(!!inicial);
+
+  const guardar = async () => {
+    setGuardando(true);
+    const res = await fetch(`/api/admin/partido/${partidoId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sofaId: valor }),
+    });
+    const data = await res.json() as { sofaId?: string };
+    setOk(!!data.sofaId);
+    if (data.sofaId) setValor(data.sofaId);
+    setGuardando(false);
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-100">
+      <p className="text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wide">
+        🔗 SofaScore widget
+      </p>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={valor}
+          onChange={e => { setValor(e.target.value); setOk(false); }}
+          placeholder='Pega el ID o el embed code completo...'
+          className="flex-1 text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-400 bg-gray-50"
+        />
+        <button
+          onClick={guardar}
+          disabled={guardando || !valor.trim()}
+          className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-500 text-white disabled:opacity-40 hover:bg-amber-600 transition-colors shrink-0"
+        >
+          {guardando ? "..." : ok ? "✓ Guardado" : "Guardar"}
+        </button>
+      </div>
+      {ok && (
+        <p className="text-[10px] text-green-600 mt-1">✅ Widget activo en /en-vivo</p>
+      )}
+    </div>
+  );
+}
 
 function LogoEquipo({ equipo, size = 32 }: { equipo: string; size?: number }) {
   const url = getLogoUrl(equipo) ?? "";
@@ -290,6 +337,11 @@ export default function JornadaDetallePage({ params }: { params: Promise<{ id: s
                         <p className="flex-1 text-center text-[10px] text-blue-600 font-semibold">{p.picks.V}</p>
                       </div>
                     </div>
+                  )}
+
+                  {/* SofaScore widget ID */}
+                  {!tieneResultado && (
+                    <SofaIdInput partidoId={p.id} inicial={p.sofaId} />
                   )}
                 </div>
               );

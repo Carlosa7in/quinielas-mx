@@ -84,6 +84,7 @@ type PartidoVivo = {
   resultadoDB: string | null;
   eventos: Evento[];
   alineacion: Alineacion | null;
+  sofaId: string | null;
   tieneEspn: boolean;
 };
 type JornadaViva = { id: string; nombre: string; liga: string; partidos: PartidoVivo[] };
@@ -460,29 +461,6 @@ function normTeam(s: string) {
 function PartidoRow({ p }: { p: PartidoVivo }) {
   // Auto-expandir solo si hay eventos; pre siempre colapsado
   const [expanded, setExpanded] = useState(p.estado === "in" || (p.estado === "post" && p.eventos.length > 0));
-  const [sofaId, setSofaId] = useState<number | null>(null);
-
-  // Buscar event ID de SofaScore desde el navegador (no desde servidor)
-  useEffect(() => {
-    if (p.estado !== "pre") return;
-    const key = `sofaid-${p.id}`;
-    const cached = sessionStorage.getItem(key);
-    if (cached) { setSofaId(Number(cached)); return; }
-
-    const fecha = p.fechaHora.slice(0, 10);
-    fetch(`https://api.sofascore.com/api/v1/sport/football/scheduled-events/${fecha}`)
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then((d: { events?: { id: number; homeTeam: { name: string }; awayTeam: { name: string } }[] }) => {
-        const nl = normTeam(p.local.nombre), nv = normTeam(p.visita.nombre);
-        const hit = (d.events ?? []).find(ev => {
-          const nh = normTeam(ev.homeTeam.name), na = normTeam(ev.awayTeam.name);
-          return (nh.includes(nl) || nl.includes(nh)) && (na.includes(nv) || nv.includes(na));
-        });
-        if (hit) { setSofaId(hit.id); sessionStorage.setItem(key, String(hit.id)); }
-      })
-      .catch(() => { /* CORS o error → usamos ESPN */ });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p.id, p.estado]);
 
   const hayScore = p.local.goles !== null && p.visita.goles !== null;
   const estadoLabel =
@@ -549,7 +527,7 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
           alineacion={p.alineacion}
           local={p.local.nombre}
           visita={p.visita.nombre}
-          sofaId={sofaId}
+          sofaId={p.sofaId ? Number(p.sofaId) : null}
         />
       )}
 

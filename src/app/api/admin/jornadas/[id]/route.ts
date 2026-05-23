@@ -36,13 +36,15 @@ export async function GET(
 
   if (!jornada) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
 
-  // fechaHora via SQL (NeonDB bug con DateTime en Prisma ORM)
+  // fechaHora y sofaId via SQL (NeonDB bug con DateTime en Prisma ORM)
   let fechaHorasMap: Record<string, string> = {};
+  let sofaIdMap: Record<string, string | null> = {};
   try {
-    const rows = await sql`SELECT id, "fechaHora" FROM "Partido" WHERE "jornadaId" = ${id}`;
+    const rows = await sql`SELECT id, "fechaHora", "sofaId" FROM "Partido" WHERE "jornadaId" = ${id}`;
     for (const r of rows) {
       if (r.fechaHora) fechaHorasMap[r.id] = r.fechaHora instanceof Date
         ? r.fechaHora.toISOString() : String(r.fechaHora);
+      sofaIdMap[r.id] = r.sofaId ?? null;
     }
   } catch { /* ignorar */ }
 
@@ -74,6 +76,7 @@ export async function GET(
       golesVisita: p.golesVisita,
       orden: p.orden,
       fechaHora: fechaHorasMap[p.id] ?? null,
+      sofaId: sofaIdMap[p.id] ?? null,
       picks: { total, L, E, V,
         pctL: total > 0 ? Math.round(L / total * 100) : 0,
         pctE: total > 0 ? Math.round(E / total * 100) : 0,

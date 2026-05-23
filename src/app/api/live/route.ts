@@ -371,6 +371,7 @@ export async function GET() {
     goles_local: number | null; goles_visita: number | null; orden: number;
     logo_local: string | null; logo_visita: string | null;
     espn_id: string | null;
+    sofa_id: string | null;
   };
 
   const rows = (await sql`
@@ -391,6 +392,7 @@ export async function GET() {
       p."golesVisita"   AS goles_visita,
       p.orden,
       p."espnId"        AS espn_id,
+      p."sofaId"        AS sofa_id,
       el."logoUrl"      AS logo_local,
       ev."logoUrl"      AS logo_visita
     FROM "Jornada" j
@@ -731,6 +733,7 @@ export async function GET() {
             resultadoDB: p.resultado ?? null,
             eventos,
             alineacion,
+            sofaId: p.sofa_id ?? null,
             tieneEspn: !!espnEv,
             _debug: {
               ligaDB: p.partido_liga ?? j.liga,

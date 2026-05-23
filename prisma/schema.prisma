@@ -53,6 +53,7 @@ model Partido {
   golesVisita  Int?
   orden        Int      @default(0)
   espnId       String?
+  sofaId       String?
   picks        Pick[]
 }
 
