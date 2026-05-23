@@ -207,7 +207,9 @@ function norm(s: string): string {
   return s
     .toLowerCase()
     .normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .replace(/\b(fc|cf|cd|sd|rc|sc|ac|as|atletico|athletic|deportivo|club|real|sporting|ciudad|city)\b/g, "")
+    // Solo remover abreviaturas genéricas (2-3 letras), NO palabras que son parte del nombre
+    // "athletic" y "atletico" se conservan — "Athletic Club" sin "athletic" queda "" → no matchea
+    .replace(/\b(fc|cf|cd|sd|rc|sc|ac|as|afc|sfc|deportivo|club|real|sporting|ciudad|city)\b/g, "")
     .replace(/[^a-z0-9\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();

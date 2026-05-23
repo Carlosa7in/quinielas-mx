@@ -89,14 +89,22 @@ type PartidoVivo = {
 };
 type JornadaViva = { id: string; nombre: string; liga: string; partidos: PartidoVivo[] };
 
+// Las fechas se guardan en hora local México (datetime-local sin conversión UTC),
+// así que leemos el string directamente sin volver a aplicar offset de zona horaria.
 function fmtHora(iso: string) {
-  return new Date(iso).toLocaleTimeString("es-MX", {
-    hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City",
-  });
+  const m = iso.match(/T(\d{2}):(\d{2})/);
+  if (!m) return "";
+  let h = parseInt(m[1]);
+  const min = m[2];
+  const ampm = h >= 12 ? "p.m." : "a.m.";
+  h = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h}:${min} ${ampm}`;
 }
 function fmtFecha(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", {
-    weekday: "short", day: "numeric", month: "short", timeZone: "America/Mexico_City",
+  // Parsear como fecha local (sin Z) para evitar desfase de día
+  const local = iso.replace("Z", "").replace(".000", "");
+  return new Date(local).toLocaleDateString("es-MX", {
+    weekday: "short", day: "numeric", month: "short",
   });
 }
 
@@ -550,15 +558,21 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
             </div>
           )}
 
-          {/* Contenido de la tab activa */}
-          {(!hayLineup || tab === "vivo") && eventosBlock}
-          {hayLineup && tab === "cuadro" && (
-            <LineupContent
-              alineacion={p.alineacion}
-              local={p.local.nombre}
-              visita={p.visita.nombre}
-              sofaId={sofaIdNum}
-            />
+          {/* Eventos — siempre en DOM, oculto cuando tab=cuadro */}
+          <div className={hayLineup && tab === "cuadro" ? "hidden" : ""}>
+            {eventosBlock}
+          </div>
+
+          {/* Cuadro — siempre en DOM para precargar el iframe, oculto cuando tab=vivo */}
+          {hayLineup && (
+            <div className={tab === "cuadro" ? "" : "hidden"}>
+              <LineupContent
+                alineacion={p.alineacion}
+                local={p.local.nombre}
+                visita={p.visita.nombre}
+                sofaId={sofaIdNum}
+              />
+            </div>
           )}
         </>
       )}
