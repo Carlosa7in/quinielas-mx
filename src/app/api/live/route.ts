@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/prisma";
-import { findSofaEventId, fetchSofaIncidents, checkLineupsAvailable, type SofaIncident } from "@/lib/sofascore";
 
 // Siempre dinamico - nunca cachear en build time
 export const dynamic = "force-dynamic";
@@ -81,6 +80,77 @@ type EspnKeyMoment = {
   athletesInvolved?: { displayName?: string }[];
   team?: { id?: string };
 };
+
+// ── ESPN Lineups ──────────────────────────────────────────────────────────────
+type EspnRosterPlayer = {
+  starter?: boolean;
+  jersey?: string;
+  athlete?: {
+    displayName?: string;
+    shortName?: string;
+    position?: { abbreviation?: string };
+  };
+};
+type EspnRosterTeam = {
+  team?: { id?: string; displayName?: string };
+  roster?: EspnRosterPlayer[];
+};
+export type LineupPlayer = { jersey: string; nombre: string; posicion: string };
+export type Alineacion   = { local: LineupPlayer[]; visita: LineupPlayer[] };
+
+const POS_ORDER: Record<string, number> = {
+  GK:0, G:0,
+  CB:1, LB:1, RB:1, LWB:1, RWB:1, SW:1, D:1, DF:1,
+  CDM:2, DM:2, CM:2, LM:2, RM:2, MF:2, M:2,
+  CAM:3, AM:3,
+  LW:4, RW:4, LF:4, RF:4,
+  CF:5, ST:5, SS:5, F:5, FW:5,
+};
+const posOrd = (p: string) => POS_ORDER[p.toUpperCase()] ?? 9;
+
+const lineupCache = new Map<string, { data: Alineacion | null; ts: number }>();
+const LINEUP_TTL = 10 * 60_000; // 10 min
+
+async function fetchEspnLineups(ligaSlug: string, eventId: string): Promise<Alineacion | null> {
+  const key = `${ligaSlug}/${eventId}`;
+  const cached = lineupCache.get(key);
+  if (cached && Date.now() - cached.ts < LINEUP_TTL) return cached.data;
+
+  try {
+    const res = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/${ligaSlug}/summary?event=${eventId}`,
+    );
+    if (!res.ok) { lineupCache.set(key, { data: null, ts: Date.now() }); return null; }
+    const data = await res.json() as { rosters?: EspnRosterTeam[] };
+    const rosters = data.rosters;
+    if (!rosters || rosters.length < 2) { lineupCache.set(key, { data: null, ts: Date.now() }); return null; }
+
+    const mapPlayers = (team: EspnRosterTeam): LineupPlayer[] =>
+      (team.roster ?? [])
+        .filter(p => p.starter)
+        .map(p => ({
+          jersey:   p.jersey ?? "",
+          nombre:   p.athlete?.shortName ?? p.athlete?.displayName ?? "",
+          posicion: p.athlete?.position?.abbreviation ?? "",
+        }))
+        .sort((a, b) => posOrd(a.posicion) - posOrd(b.posicion));
+
+    const local  = mapPlayers(rosters[0]);
+    const visita = mapPlayers(rosters[1]);
+
+    // Solo guardar si hay al menos un jugador titular
+    if (local.length === 0 && visita.length === 0) {
+      lineupCache.set(key, { data: null, ts: Date.now() });
+      return null;
+    }
+    const result: Alineacion = { local, visita };
+    lineupCache.set(key, { data: result, ts: Date.now() });
+    return result;
+  } catch {
+    lineupCache.set(key, { data: null, ts: Date.now() });
+    return null;
+  }
+}
 
 // ── Notificaciones persistidas en DB ──────────────────────────────────────────
 type CandidatoNotif = {
@@ -421,8 +491,7 @@ export async function GET() {
           let logoLocal  = p.logo_local  ?? findLogo(logoMapPartido, p.equipo_local);
           let logoVisita = p.logo_visita ?? findLogo(logoMapPartido, p.equipo_visita);
           let eventos: unknown[] = [];
-          let _sofaId: number | null | "pre" = "pre";
-          let _sofaIncs = -1;
+          let alineacion: Alineacion | null = null;
 
           if (espnEv) {
             const status = espnEv.status?.type;
@@ -464,36 +533,26 @@ export async function GET() {
             }
           }
 
-          // ── Para partidos pre: buscar sofaId y verificar alineaciones ─────────
+          // ── Para partidos pre: buscar alineaciones vía ESPN summary ──────────
           if (estado === "pre") {
-            // Buscar sofaId para todos los partidos de la jornada activa (sin límite de horas)
-            const horasHasta = (fechaMs - Date.now()) / 3_600_000;
-            if (horasHasta <= 168) { // 7 días
-              try {
-                const ligaPartido = p.partido_liga ?? j.liga;
-                // Pasar fecha para usar estrategia por fecha (más confiable)
-                const fechaStr = fechaMs ? new Date(fechaMs).toISOString().slice(0, 10) : undefined;
-                const sofaEventId = await findSofaEventId(p.equipo_local, p.equipo_visita, ligaPartido, fechaStr);
-                if (sofaEventId) {
-                  _sofaId = sofaEventId;
-                  // Verificar si hay alineaciones disponibles
-                  const lineupsOk = await checkLineupsAvailable(sofaEventId);
-                  if (lineupsOk) {
-                    candidatos.push({
-                      clave: `lineups-${sofaEventId}`,
-                      titulo: `📋 Ya tenemos las alineaciones`,
-                      cuerpo: `${p.equipo_local} vs ${p.equipo_visita} — Vélas aquí`,
-                      tag: `lineups-${sofaEventId}`,
-                    });
-                  }
-                }
-              } catch { /* ignorar errores de SofaScore */ }
+            const espnIdPre = p.espn_id ?? espnEv?.id;
+            const slugPre   = slugPartido ?? slug;
+            if (espnIdPre && slugPre) {
+              alineacion = await fetchEspnLineups(slugPre, espnIdPre);
+              // Push si se confirman alineaciones por primera vez
+              if (alineacion && alineacion.local.length > 0) {
+                candidatos.push({
+                  clave: `lineups-espn-${espnIdPre}`,
+                  titulo: `📋 Alineaciones confirmadas`,
+                  cuerpo: `${p.equipo_local} vs ${p.equipo_visita} — Ya están los onces`,
+                  tag: `lineups-espn-${espnIdPre}`,
+                });
+              }
             }
           }
 
           // ── Eventos: ESPN (details → keyMoments) ─────────────────────────────
           if (estado === "in" || estado === "post") {
-              _sofaId = null; _sofaIncs = 0;
 
               // Para post sin espnEv: intentar con espnId guardado en BD via summary
               const savedEspnId = p.espn_id;
@@ -658,15 +717,13 @@ export async function GET() {
             visita: { nombre: p.equipo_visita, logo: logoVisita, goles: golesVisita },
             resultadoDB: p.resultado ?? null,
             eventos,
+            alineacion,
             tieneEspn: !!espnEv,
-            sofaId: typeof _sofaId === "number" ? _sofaId : null,
             _debug: {
               ligaDB: p.partido_liga ?? j.liga,
               local: p.equipo_local,
               visita: p.equipo_visita,
-              espnId: espnEv?.id ?? null,
-              sofaId: _sofaId,
-              sofaIncs: _sofaIncs,
+              espnId: espnEv?.id ?? p.espn_id ?? null,
               estado,
             },
           };

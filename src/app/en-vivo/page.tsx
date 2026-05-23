@@ -63,6 +63,8 @@ type Evento = {
   esPenal?: boolean;
   esAutogol?: boolean;
 };
+type LineupPlayer = { jersey: string; nombre: string; posicion: string };
+type Alineacion   = { local: LineupPlayer[]; visita: LineupPlayer[] };
 type EquipoVivo = { nombre: string; logo: string; goles: string | null };
 type PartidoVivo = {
   id: string;
@@ -76,8 +78,8 @@ type PartidoVivo = {
   visita: EquipoVivo;
   resultadoDB: string | null;
   eventos: Evento[];
+  alineacion: Alineacion | null;
   tieneEspn: boolean;
-  sofaId: number | null;
 };
 type JornadaViva = { id: string; nombre: string; liga: string; partidos: PartidoVivo[] };
 
@@ -241,6 +243,80 @@ function EventoItem({ ev }: { ev: Evento }) {
   );
 }
 
+const POS_LABEL: Record<string, string> = {
+  GK:"PO", G:"PO",
+  CB:"DEF", LB:"DEF", RB:"DEF", LWB:"DEF", RWB:"DEF", SW:"DEF", D:"DEF", DF:"DEF",
+  CDM:"MED", DM:"MED", CM:"MED", LM:"MED", RM:"MED", MF:"MED", M:"MED",
+  CAM:"MED", AM:"MED",
+  LW:"DEL", RW:"DEL", LF:"DEL", RF:"DEL",
+  CF:"DEL", ST:"DEL", SS:"DEL", F:"DEL", FW:"DEL",
+};
+const POS_COLOR: Record<string, string> = {
+  PO:  "text-yellow-400",
+  DEF: "text-blue-400",
+  MED: "text-green-400",
+  DEL: "text-red-400",
+};
+
+function LineupColumn({ players }: { players: LineupPlayer[] }) {
+  return (
+    <div className="flex-1 space-y-[3px]">
+      {players.map((pl, i) => {
+        const posLabel = POS_LABEL[pl.posicion.toUpperCase()] ?? pl.posicion;
+        const posColor = POS_COLOR[posLabel] ?? "text-gray-500";
+        return (
+          <div key={i} className="flex items-center gap-1.5">
+            <span className="text-gray-600 text-[9px] w-4 shrink-0 text-right tabular-nums">{pl.jersey}</span>
+            <span className={`text-[9px] font-black uppercase w-6 shrink-0 ${posColor}`}>{posLabel}</span>
+            <span className="text-gray-200 text-[10px] truncate leading-tight">{pl.nombre}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function LineupDisplay({ alineacion, local, visita }: { alineacion: Alineacion | null; local: string; visita: string }) {
+  const [open, setOpen] = useState(false);
+  const hayDatos = alineacion && (alineacion.local.length > 0 || alineacion.visita.length > 0);
+
+  if (!hayDatos) {
+    return (
+      <div className="border-t border-white/5 px-4 py-2 flex items-center justify-center gap-1.5">
+        <span className="text-gray-700 text-[10px]">📋 Sin alineaciones confirmadas aún</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-t border-white/5">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-2 text-left hover:bg-white/[0.02] transition-colors"
+      >
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-300">
+          <span>📋</span> Alineaciones confirmadas
+        </span>
+        <span className="text-gray-600 text-[10px]">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="px-3 pb-3">
+          {/* Cabecera de equipos */}
+          <div className="flex gap-2 mb-2">
+            <p className="flex-1 text-[9px] font-black text-gray-400 uppercase tracking-wide truncate">{local}</p>
+            <p className="flex-1 text-[9px] font-black text-gray-400 uppercase tracking-wide truncate text-right">{visita}</p>
+          </div>
+          <div className="flex gap-3">
+            <LineupColumn players={alineacion.local} />
+            <div className="w-px bg-white/5 shrink-0" />
+            <LineupColumn players={alineacion.visita} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PartidoRow({ p }: { p: PartidoVivo }) {
   // Auto-expandir solo si hay eventos; pre siempre colapsado
   const [expanded, setExpanded] = useState(p.estado === "in" || (p.estado === "post" && p.eventos.length > 0));
@@ -304,18 +380,13 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
         )}
       </button>
 
-      {/* Alineaciones — link a SofaScore */}
+      {/* Alineaciones ESPN */}
       {p.estado === "pre" && (
-        <div className="border-t border-white/5 px-4 py-2">
-          <a
-            href={`https://www.sofascore.com/search#q=${encodeURIComponent(p.local.nombre + " " + p.visita.nombre)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 w-full text-[11px] font-semibold text-indigo-400/80 hover:text-indigo-300 transition-colors py-1"
-          >
-            <span>📋</span> Ver alineaciones en SofaScore
-          </a>
-        </div>
+        <LineupDisplay
+          alineacion={p.alineacion}
+          local={p.local.nombre}
+          visita={p.visita.nombre}
+        />
       )}
 
       {/* Eventos */}
