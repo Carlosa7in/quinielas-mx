@@ -241,55 +241,9 @@ function EventoItem({ ev }: { ev: Evento }) {
   );
 }
 
-/** Busca el sofaId desde el browser (SofaScore bloquea requests de servidor) */
-function useSofaIdCliente(
-  local: string,
-  visita: string,
-  fechaISO: string | null,
-  sofaIdServidor: number | null,
-): number | null {
-  const [sofaId, setSofaId] = useState<number | null>(sofaIdServidor);
-
-  useEffect(() => {
-    if (sofaIdServidor) return; // ya lo tenemos del servidor
-    if (!fechaISO) return;
-    const fecha = fechaISO.slice(0, 10);
-
-    const norm = (s: string) =>
-      s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
-    const match = (a: string, b: string) => {
-      const na = norm(a), nb = norm(b);
-      if (na === nb) return true;
-      if (na.includes(nb) || nb.includes(na)) return true;
-      const wa = na.split(" ").filter(w => w.length >= 4);
-      const wb = nb.split(" ").filter(w => w.length >= 4);
-      return wa.some(w => wb.includes(w));
-    };
-
-    fetch(`https://api.sofascore.com/api/v1/sport/football/scheduled-events/${fecha}`, {
-      headers: { "Accept": "application/json" },
-      credentials: "omit",
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then((d: { events?: { id: number; homeTeam: { name: string }; awayTeam: { name: string } }[] } | null) => {
-        if (!d?.events) return;
-        const ev = d.events.find(e =>
-          (match(local, e.homeTeam.name) && match(visita, e.awayTeam.name)) ||
-          (match(local, e.awayTeam.name) && match(visita, e.homeTeam.name))
-        );
-        if (ev) setSofaId(ev.id);
-      })
-      .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fechaISO, sofaIdServidor]);
-
-  return sofaId;
-}
-
 function PartidoRow({ p }: { p: PartidoVivo }) {
   // Auto-expandir solo si hay eventos; pre siempre colapsado
   const [expanded, setExpanded] = useState(p.estado === "in" || (p.estado === "post" && p.eventos.length > 0));
-  const sofaId = useSofaIdCliente(p.local.nombre, p.visita.nombre, p.fechaHora, p.sofaId);
 
   const hayScore = p.local.goles !== null && p.visita.goles !== null;
   const estadoLabel =
@@ -350,23 +304,16 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
         )}
       </button>
 
-      {/* SofaScore — solo pre-partido */}
-      {p.estado === "pre" && sofaId && (
-        <div className="border-t border-white/5 px-4 pt-3 pb-3 space-y-2">
-          <p className="text-gray-500 text-[10px] uppercase tracking-widest text-center">Alineaciones probables</p>
-          <iframe
-            src={`https://widgets.sofascore.com/en/embed/event?eventId=${sofaId}&defaultLocale=es`}
-            style={{ width: "100%", height: "500px", border: "none", borderRadius: "8px", background: "#111" }}
-            scrolling="no"
-            title={`Alineaciones ${p.local.nombre} vs ${p.visita.nombre}`}
-          />
+      {/* Alineaciones — link a SofaScore */}
+      {p.estado === "pre" && (
+        <div className="border-t border-white/5 px-4 py-2">
           <a
-            href={`https://www.sofascore.com/football/match/${sofaId}`}
+            href={`https://www.sofascore.com/search#q=${encodeURIComponent(p.local.nombre + " " + p.visita.nombre)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1 text-gray-600 hover:text-gray-400 text-[10px] transition-colors"
+            className="flex items-center justify-center gap-1.5 w-full text-[11px] font-semibold text-indigo-400/80 hover:text-indigo-300 transition-colors py-1"
           >
-            Ver en SofaScore →
+            <span>📋</span> Ver alineaciones en SofaScore
           </a>
         </div>
       )}
