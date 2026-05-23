@@ -528,7 +528,15 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
             className="w-full flex items-center justify-between px-4 py-2.5 border-t border-white/5 hover:bg-white/[0.03] transition-colors"
           >
             <span className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
-              <span className="text-base">📋</span>
+              {/* Icono cancha/formación */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
+                <rect x="2" y="2" width="20" height="20" rx="2"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <circle cx="12" cy="6" r="1.5" fill="currentColor" stroke="none"/>
+                <circle cx="7"  cy="16" r="1.5" fill="currentColor" stroke="none"/>
+                <circle cx="12" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+                <circle cx="17" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+              </svg>
               Cuadro
               {(sofaIdNum || p.alineacion) && (
                 <span className="text-[9px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded-full font-bold">
@@ -536,7 +544,10 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
                 </span>
               )}
             </span>
-            <span className="text-gray-600 text-xs">{showCuadro ? "▲" : "▼"}</span>
+            {/* Chevron */}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-gray-600 transition-transform ${showCuadro ? "rotate-180" : ""}`}>
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
           </button>
 
           {showCuadro && (
