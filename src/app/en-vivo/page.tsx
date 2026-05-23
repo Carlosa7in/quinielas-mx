@@ -359,197 +359,219 @@ function PitchTeam({ players, formation }: { players: LineupPlayer[]; formation?
   );
 }
 
-function LineupDisplay({ alineacion, local, visita, sofaId }: {
+/** Contenido del cuadro — sin toggle, siempre visible */
+function LineupContent({ alineacion, local, visita, sofaId }: {
   alineacion: Alineacion | null;
   local: string;
   visita: string;
   sofaId: number | null;
 }) {
-  const [tab, setTab]   = useState<"local"|"visita">("local");
-  const [open, setOpen] = useState(false);
+  const [teamTab, setTeamTab] = useState<"local" | "visita">("local");
 
   const hayDatos = sofaId != null
     || (alineacion && (alineacion.local.length > 0 || alineacion.visita.length > 0));
 
   if (!hayDatos) {
     return (
-      <div className="border-t border-white/5 px-4 py-2 flex items-center justify-center">
+      <div className="px-4 py-3 flex items-center justify-center">
         <span className="text-gray-700 text-[10px]">📋 Sin alineaciones confirmadas aún</span>
       </div>
     );
   }
 
+  if (sofaId) {
+    return (
+      <div className="px-3 pb-3 pt-2">
+        <iframe
+          src={`https://widgets.sofascore.com/embed/lineups?id=${sofaId}&widgetTheme=dark`}
+          style={{ width: "100%", height: "700px", border: "none", borderRadius: "12px", display: "block" }}
+          scrolling="no"
+          title="Alineaciones"
+        />
+      </div>
+    );
+  }
+
+  /* ── Cancha ESPN (fallback) ── */
+  const players   = teamTab === "local" ? alineacion!.local   : alineacion!.visita;
+  const formacion = teamTab === "local" ? alineacion!.formacionLocal : alineacion!.formacionVisita;
+
   return (
-    <div className="border-t border-white/5">
-
-      {/* Toggle header */}
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-white/[0.02] transition-colors"
-      >
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-300">
-          <span>📋</span> Alineaciones confirmadas
-        </span>
-        <span className="text-gray-500 text-[10px]">{open ? "▲" : "▼"}</span>
-      </button>
-
-      {open && (
-        sofaId ? (
-          /* ── SofaScore widget embed (fuente primaria) ── */
-          <div className="px-3 pb-3">
-            <iframe
-              src={`https://widgets.sofascore.com/embed/lineups?id=${sofaId}&widgetTheme=dark`}
-              style={{ width: "100%", height: "700px", border: "none", borderRadius: "12px", display: "block" }}
-              scrolling="no"
-              title="Alineaciones"
-            />
-          </div>
-        ) : (
-          /* ── Cancha ESPN (fallback) ── */
-          <div className="pb-3">
-            {/* Team tabs */}
-            <div className="flex border-b border-white/5 mb-3">
-              {(["local","visita"] as const).map(t => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`flex-1 py-1.5 text-[11px] font-black truncate px-2 transition-colors ${
-                    tab === t ? "text-white border-b-2 border-indigo-400 -mb-px" : "text-gray-600"
-                  }`}
-                >
-                  {t === "local" ? local : visita}
-                </button>
-              ))}
-            </div>
-
-            {(() => {
-              const players   = tab === "local" ? alineacion!.local   : alineacion!.visita;
-              const formacion = tab === "local" ? alineacion!.formacionLocal : alineacion!.formacionVisita;
-              return (
-                <>
-                  {formacion && (
-                    <p className="text-center text-[10px] font-black text-gray-500 mb-2 tracking-widest">{formacion}</p>
-                  )}
-                  <div className="px-4">
-                    <PitchTeam players={players} formation={formacion} />
-                  </div>
-                  <div className="flex items-center justify-center gap-3 mt-2 px-4">
-                    {(["GK","DEF","MID","FWD"] as const).map(cat => (
-                      <div key={cat} className="flex items-center gap-1">
-                        <div className={`w-2.5 h-2.5 rounded-full ${CAT_DOT[cat === "MID" ? "MID" : cat].split(" ")[0]}`} />
-                        <span className="text-[9px] text-gray-600 font-bold">{cat === "MID" ? "MED" : cat === "FWD" ? "DEL" : cat}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        )
+    <div className="pb-3">
+      <div className="flex border-b border-white/5 mb-3">
+        {(["local", "visita"] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTeamTab(t)}
+            className={`flex-1 py-1.5 text-[11px] font-black truncate px-2 transition-colors ${
+              teamTab === t ? "text-white border-b-2 border-indigo-400 -mb-px" : "text-gray-600"
+            }`}
+          >
+            {t === "local" ? local : visita}
+          </button>
+        ))}
+      </div>
+      {formacion && (
+        <p className="text-center text-[10px] font-black text-gray-500 mb-2 tracking-widest">{formacion}</p>
       )}
+      <div className="px-4">
+        <PitchTeam players={players} formation={formacion} />
+      </div>
+      <div className="flex items-center justify-center gap-3 mt-2 px-4">
+        {(["GK", "DEF", "MID", "FWD"] as const).map(cat => (
+          <div key={cat} className="flex items-center gap-1">
+            <div className={`w-2.5 h-2.5 rounded-full ${CAT_DOT[cat].split(" ")[0]}`} />
+            <span className="text-[9px] text-gray-600 font-bold">
+              {cat === "MID" ? "MED" : cat === "FWD" ? "DEL" : cat}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-// Normalización ligera para comparar nombres de equipos
-function normTeam(s: string) {
-  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .replace(/\b(fc|cf|cd|afc|sc|rc|ac)\b/g, "").replace(/[^a-z0-9 ]/g, "")
-    .replace(/\s+/g, " ").trim();
-}
 
 function PartidoRow({ p }: { p: PartidoVivo }) {
-  // Auto-expandir solo si hay eventos; pre siempre colapsado
-  const [expanded, setExpanded] = useState(p.estado === "in" || (p.estado === "post" && p.eventos.length > 0));
+  // Tab activa para partidos en vivo: "vivo" | "cuadro"
+  const [tab, setTab] = useState<"vivo" | "cuadro">("vivo");
+  // Expandir eventos para partidos terminados
+  const [expandedPost, setExpandedPost] = useState(p.estado === "post" && p.eventos.length > 0);
 
-  const hayScore = p.local.goles !== null && p.visita.goles !== null;
+  const hayScore  = p.local.goles !== null && p.visita.goles !== null;
+  const sofaIdNum = p.sofaId ? Number(p.sofaId) : null;
+  const hayLineup = sofaIdNum != null
+    || (p.alineacion && (p.alineacion.local.length > 0 || p.alineacion.visita.length > 0));
+
   const estadoLabel =
     p.estado === "in"   ? (p.reloj || "EN VIVO") :
     p.estado === "post" ? "Final" :
     fmtHora(p.fechaHora);
 
+  /* ── Header del marcador ── */
+  const scoreHeader = (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
+        ESTADO_BADGE[p.estado] ?? ESTADO_BADGE.pre
+      } ${p.estado === "in" ? "animate-pulse" : ""}`}>
+        {estadoLabel}
+      </span>
+
+      <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+        <span className={`text-sm font-bold truncate text-right ${p.estado === "post" ? "text-gray-400" : "text-white"}`}>
+          {p.local.nombre}
+        </span>
+        <TeamLogo logo={p.local.logo} nombre={p.local.nombre} />
+      </div>
+
+      <div className="flex items-center gap-1 shrink-0 min-w-[52px] justify-center">
+        {hayScore ? (
+          <>
+            <span className="text-xl font-black text-white tabular-nums">{p.local.goles}</span>
+            <span className="text-gray-600">-</span>
+            <span className="text-xl font-black text-white tabular-nums">{p.visita.goles}</span>
+          </>
+        ) : (
+          <span className="text-gray-600 text-sm font-bold">vs</span>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+        <TeamLogo logo={p.visita.logo} nombre={p.visita.nombre} />
+        <span className={`text-sm font-bold truncate ${p.estado === "post" ? "text-gray-400" : "text-white"}`}>
+          {p.visita.nombre}
+        </span>
+      </div>
+    </div>
+  );
+
+  /* ── Bloque de eventos (compartido entre "in·vivo" y "post") ── */
+  const eventosBlock = (
+    <div className="border-t border-white/5 px-4 py-2 space-y-0.5">
+      {p.eventos.length > 0
+        ? [...p.eventos].reverse().map((ev, i) => <EventoItem key={ev.id ?? i} ev={ev} />)
+        : <p className="text-gray-600 text-xs text-center py-2">Sin incidentes disponibles</p>
+      }
+    </div>
+  );
+
   return (
     <div className={`rounded-xl overflow-hidden ${
-      p.estado === "in" ? "ring-1 ring-red-500/40 bg-gray-900" :
+      p.estado === "in"   ? "ring-1 ring-red-500/40 bg-gray-900" :
       p.estado === "post" ? "bg-gray-900/40" : "bg-gray-900"
     }`}>
-      <button className="w-full text-left" onClick={() => setExpanded(e => !e)}>
-        <div className="flex items-center gap-3 px-4 py-3">
 
-          {/* Estado / reloj */}
-          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
-            ESTADO_BADGE[p.estado] ?? ESTADO_BADGE.pre
-          } ${p.estado === "in" ? "animate-pulse" : ""}`}>
-            {estadoLabel}
-          </span>
-
-          {/* Local */}
-          <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
-            <span className={`text-sm font-bold truncate text-right ${p.estado === "post" ? "text-gray-400" : "text-white"}`}>
-              {p.local.nombre}
-            </span>
-            <TeamLogo logo={p.local.logo} nombre={p.local.nombre} />
-          </div>
-
-          {/* Marcador */}
-          <div className="flex items-center gap-1 shrink-0 min-w-[52px] justify-center">
-            {hayScore ? (
-              <>
-                <span className="text-xl font-black text-white tabular-nums">{p.local.goles}</span>
-                <span className="text-gray-600">-</span>
-                <span className="text-xl font-black text-white tabular-nums">{p.visita.goles}</span>
-              </>
-            ) : (
-              <span className="text-gray-600 text-sm font-bold">vs</span>
-            )}
-          </div>
-
-          {/* Visita */}
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            <TeamLogo logo={p.visita.logo} nombre={p.visita.nombre} />
-            <span className={`text-sm font-bold truncate ${p.estado === "post" ? "text-gray-400" : "text-white"}`}>
-              {p.visita.nombre}
-            </span>
-          </div>
-        </div>
-
-        {/* Fecha */}
-        {p.estado === "pre" && (
+      {/* ── PRE: header estático + cuadro directo ── */}
+      {p.estado === "pre" && (
+        <>
+          <div>{scoreHeader}</div>
           <p className="text-gray-600 text-[10px] text-center pb-2 -mt-1">
             {fmtFecha(p.fechaHora)}
           </p>
-        )}
-      </button>
-
-      {/* Alineaciones */}
-      {p.estado === "pre" && (
-        <LineupDisplay
-          alineacion={p.alineacion}
-          local={p.local.nombre}
-          visita={p.visita.nombre}
-          sofaId={p.sofaId ? Number(p.sofaId) : null}
-        />
+          <div className="border-t border-white/5">
+            <LineupContent
+              alineacion={p.alineacion}
+              local={p.local.nombre}
+              visita={p.visita.nombre}
+              sofaId={sofaIdNum}
+            />
+          </div>
+        </>
       )}
 
-      {/* Eventos */}
-      {expanded && (
-        <div className="border-t border-white/5 px-4 py-2 space-y-0.5">
-          {p.eventos.length > 0
-            ? [...p.eventos].reverse().map((ev, i) => <EventoItem key={ev.id ?? i} ev={ev} />)
-            : <p className="text-gray-600 text-xs text-center py-2">Sin incidentes disponibles</p>
-          }
-        </div>
+      {/* ── IN: header + tabs (En vivo / Cuadro) ── */}
+      {p.estado === "in" && (
+        <>
+          <div>{scoreHeader}</div>
+
+          {/* Tabs solo si hay cuadro disponible */}
+          {hayLineup && (
+            <div className="flex border-b border-white/5">
+              <button
+                onClick={() => setTab("vivo")}
+                className={`flex-1 py-2 text-[11px] font-black transition-colors ${
+                  tab === "vivo"
+                    ? "text-white border-b-2 border-red-400 -mb-px"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                🔴 En vivo
+              </button>
+              <button
+                onClick={() => setTab("cuadro")}
+                className={`flex-1 py-2 text-[11px] font-black transition-colors ${
+                  tab === "cuadro"
+                    ? "text-white border-b-2 border-indigo-400 -mb-px"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                📋 Cuadro
+              </button>
+            </div>
+          )}
+
+          {/* Contenido de la tab activa */}
+          {(!hayLineup || tab === "vivo") && eventosBlock}
+          {hayLineup && tab === "cuadro" && (
+            <LineupContent
+              alineacion={p.alineacion}
+              local={p.local.nombre}
+              visita={p.visita.nombre}
+              sofaId={sofaIdNum}
+            />
+          )}
+        </>
       )}
 
-      {/* Comparar con mi quiniela */}
-      <div className="border-t border-white/5 px-4 py-2">
-        <Link
-          href="/consultar"
-          className="flex items-center justify-center gap-1.5 w-full text-[11px] font-semibold text-amber-400/80 hover:text-amber-300 transition-colors py-1"
-        >
-          <span>📋</span> Comparar con mi quiniela
-        </Link>
-      </div>
+      {/* ── POST: header colapsable + eventos ── */}
+      {p.estado === "post" && (
+        <>
+          <button className="w-full text-left" onClick={() => setExpandedPost(e => !e)}>
+            {scoreHeader}
+          </button>
+          {expandedPost && eventosBlock}
+        </>
+      )}
     </div>
   );
 }
