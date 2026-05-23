@@ -466,9 +466,9 @@ export async function GET() {
 
           // ── Para partidos pre: buscar sofaId y verificar alineaciones ─────────
           if (estado === "pre") {
-            // Solo partidos en las próximas 48 horas (no vale la pena buscar más lejanos)
+            // Buscar sofaId para todos los partidos de la jornada activa (sin límite de horas)
             const horasHasta = (fechaMs - Date.now()) / 3_600_000;
-            if (horasHasta <= 48) {
+            if (horasHasta <= 168) { // 7 días
               try {
                 const ligaPartido = p.partido_liga ?? j.liga;
                 const sofaEventId = await findSofaEventId(p.equipo_local, p.equipo_visita, ligaPartido);

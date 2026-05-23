@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { LIGAS, LIGA_ICON } from "@/lib/equipos";
 
@@ -146,13 +146,20 @@ export default function NuevaJornadaPage() {
   const [espnSeleccion, setEspnSeleccion] = useState<Set<number>>(new Set());
   const [espnNombreSugerido, setEspnNombreSugerido] = useState<string | null>(null);
 
-  // Cuando se cambia la liga a "Mundial", usar el rango del torneo; si no, hoy+10
+  // Al cambiar de liga: Mundial → fechas del torneo; desde Mundial → resetear a hoy+10
+  // useRef guarda la liga previa para no correr lógica en el primer mount
+  const ligaAnterior = useRef(espnLiga);
   useEffect(() => {
+    const prev = ligaAnterior.current;
+    if (prev === espnLiga) return; // primer mount
+    ligaAnterior.current = espnLiga;
+
     if (espnLiga === "Mundial") {
       setEspnDesde("2026-06-11");
-      setEspnHasta("2026-06-21"); // primera jornada de grupos
+      setEspnHasta("2026-06-21");
       setTemporada("Mundial 2026");
-    } else {
+    } else if (prev === "Mundial") {
+      // Veníamos del Mundial, resetear fechas a hoy+10
       setEspnDesde(toInputDate(hoy));
       setEspnHasta(toInputDate(masdiez));
     }
@@ -439,8 +446,8 @@ export default function NuevaJornadaPage() {
                   : `Slots disponibles: ${slotsLibres} de ${MAX_PARTIDOS}`}
               </div>
 
-              {/* Atajos de tipo de quiniela */}
-              <div>
+              {/* Atajos de tipo de quiniela — ocultos para Mundial */}
+              <div className={espnLiga === "Mundial" ? "hidden" : ""}>
                 <label className="text-xs text-gray-500 mb-1 block">Tipo de quiniela (atajo de fechas)</label>
                 <div className="flex gap-1.5">
                   <button type="button" onClick={() => aplicarAtajo("media")}
