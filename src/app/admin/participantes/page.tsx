@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { PhoneInput, telCompleto, parsearTelefono, formatearTelefono } from "@/components/PhoneInput";
 
 type Cliente = {
   id: string;
@@ -70,7 +71,7 @@ function ClienteCard({
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-gray-800 truncate">{c.nombre}</p>
-          <p className="text-sm text-gray-500">+52 {c.telefono}</p>
+          <p className="text-sm text-gray-500">{formatearTelefono(c.telefono)}</p>
           <div className="flex gap-3 mt-1 flex-wrap">
             <span className="text-xs text-gray-400">
               🎯 {c.totalQuinielas} confirmada{c.totalQuinielas !== 1 ? "s" : ""}
@@ -155,7 +156,9 @@ function ModalEditar({
   onCerrar: () => void;
 }) {
   const [nombre, setNombre] = useState(cliente.nombre);
-  const [telefono, setTelefono] = useState(cliente.telefono);
+  const { codigo: initCodigo, numero: initNumero } = parsearTelefono(cliente.telefono);
+  const [codigoPais, setCodigoPais] = useState(initCodigo);
+  const [telefono, setTelefono] = useState(initNumero);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
 
@@ -165,7 +168,7 @@ function ModalEditar({
     setGuardando(true);
     setError("");
     try {
-      await onGuardar(cliente.id, nombre.trim(), telefono.trim());
+      await onGuardar(cliente.id, nombre.trim(), telCompleto(codigoPais, telefono));
       onCerrar();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error al guardar");
@@ -194,17 +197,14 @@ function ModalEditar({
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Teléfono (10 dígitos)</label>
-            <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-amber-500">
-              <span className="px-3 py-2.5 bg-gray-50 text-gray-500 text-sm border-r border-gray-200">+52</span>
-              <input
-                type="tel"
-                value={telefono}
-                onChange={(e) => setTelefono(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                className="flex-1 px-3 py-2.5 text-sm focus:outline-none"
-                placeholder="5512345678"
-              />
-            </div>
+            <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Teléfono</label>
+            <PhoneInput
+              variant="fused"
+              codigo={codigoPais}
+              numero={telefono}
+              onCodigo={setCodigoPais}
+              onNumero={setTelefono}
+            />
           </div>
           {error && <p className="text-red-500 text-xs">{error}</p>}
         </div>
@@ -439,7 +439,7 @@ export default function ParticipantesPage() {
                 </div>
                 <div>
                   <p className="font-semibold text-gray-800">{clienteActual?.nombre}</p>
-                  <p className="text-sm text-gray-500">+52 {clienteActual?.telefono}</p>
+                  <p className="text-sm text-gray-500">{formatearTelefono(clienteActual?.telefono ?? "")}</p>
                 </div>
                 <span className="ml-auto text-xs text-gray-400">
                   {clienteActual?.totalQuinielas} quiniela{clienteActual?.totalQuinielas !== 1 ? "s" : ""}

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { PhoneInput, telCompleto } from "@/components/PhoneInput";
 
 type Partido = {
   id: string;
@@ -138,6 +139,7 @@ function EscanearInner() {
   const [picksDetectados, setPicksDetectados] = useState<PicksDetectados>({});
   const [confianza, setConfianza] = useState<Record<string, boolean>>({});
   const [nombre, setNombre] = useState("");
+  const [codigoPais, setCodigoPais] = useState("52");
   const [telefono, setTelefono] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
@@ -288,7 +290,7 @@ function EscanearInner() {
           predicciones,
         })),
         nombre,
-        telefono,
+        telefono: telefono ? telCompleto(codigoPais, telefono) : "",
         canal: "tienda",
       }),
     });
@@ -557,12 +559,13 @@ function EscanearInner() {
             required
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
-          <input
-            type="tel"
+          <PhoneInput
+            variant="fused"
+            codigo={codigoPais}
+            numero={telefono}
+            onCodigo={setCodigoPais}
+            onNumero={setTelefono}
             placeholder="Teléfono (opcional)"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
         </div>
 
