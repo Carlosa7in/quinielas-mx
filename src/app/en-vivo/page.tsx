@@ -358,11 +358,17 @@ function PitchTeam({ players, formation }: { players: LineupPlayer[]; formation?
   );
 }
 
-function LineupDisplay({ alineacion, local, visita }: { alineacion: Alineacion | null; local: string; visita: string }) {
+function LineupDisplay({ alineacion, local, visita, sofaId }: {
+  alineacion: Alineacion | null;
+  local: string;
+  visita: string;
+  sofaId: number | null;
+}) {
   const [tab, setTab]   = useState<"local"|"visita">("local");
   const [open, setOpen] = useState(false);
 
-  const hayDatos = alineacion && (alineacion.local.length > 0 || alineacion.visita.length > 0);
+  const hayDatos = sofaId != null
+    || (alineacion && (alineacion.local.length > 0 || alineacion.visita.length > 0));
 
   if (!hayDatos) {
     return (
@@ -371,9 +377,6 @@ function LineupDisplay({ alineacion, local, visita }: { alineacion: Alineacion |
       </div>
     );
   }
-
-  const players   = tab === "local" ? alineacion.local   : alineacion.visita;
-  const formacion = tab === "local" ? alineacion.formacionLocal : alineacion.formacionVisita;
 
   return (
     <div className="border-t border-white/5">
@@ -390,52 +393,96 @@ function LineupDisplay({ alineacion, local, visita }: { alineacion: Alineacion |
       </button>
 
       {open && (
-        <div className="pb-3">
-          {/* Team tabs */}
-          <div className="flex border-b border-white/5 mb-3">
-            {(["local","visita"] as const).map(t => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`flex-1 py-1.5 text-[11px] font-black truncate px-2 transition-colors ${
-                  tab === t
-                    ? "text-white border-b-2 border-indigo-400 -mb-px"
-                    : "text-gray-600"
-                }`}
-              >
-                {t === "local" ? local : visita}
-              </button>
-            ))}
+        sofaId ? (
+          /* ── SofaScore widget embed (fuente primaria) ── */
+          <div className="px-3 pb-3">
+            <iframe
+              src={`https://widgets.sofascore.com/embed/lineups?id=${sofaId}&widgetTheme=dark`}
+              style={{ width: "100%", height: "700px", border: "none", borderRadius: "12px", display: "block" }}
+              scrolling="no"
+              title="Alineaciones"
+            />
           </div>
+        ) : (
+          /* ── Cancha ESPN (fallback) ── */
+          <div className="pb-3">
+            {/* Team tabs */}
+            <div className="flex border-b border-white/5 mb-3">
+              {(["local","visita"] as const).map(t => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={`flex-1 py-1.5 text-[11px] font-black truncate px-2 transition-colors ${
+                    tab === t ? "text-white border-b-2 border-indigo-400 -mb-px" : "text-gray-600"
+                  }`}
+                >
+                  {t === "local" ? local : visita}
+                </button>
+              ))}
+            </div>
 
-          {/* Formation label */}
-          {formacion && (
-            <p className="text-center text-[10px] font-black text-gray-500 mb-2 tracking-widest">{formacion}</p>
-          )}
-
-          {/* Pitch */}
-          <div className="px-4">
-            <PitchTeam players={players} formation={formacion} />
+            {(() => {
+              const players   = tab === "local" ? alineacion!.local   : alineacion!.visita;
+              const formacion = tab === "local" ? alineacion!.formacionLocal : alineacion!.formacionVisita;
+              return (
+                <>
+                  {formacion && (
+                    <p className="text-center text-[10px] font-black text-gray-500 mb-2 tracking-widest">{formacion}</p>
+                  )}
+                  <div className="px-4">
+                    <PitchTeam players={players} formation={formacion} />
+                  </div>
+                  <div className="flex items-center justify-center gap-3 mt-2 px-4">
+                    {(["GK","DEF","MID","FWD"] as const).map(cat => (
+                      <div key={cat} className="flex items-center gap-1">
+                        <div className={`w-2.5 h-2.5 rounded-full ${CAT_DOT[cat === "MID" ? "MID" : cat].split(" ")[0]}`} />
+                        <span className="text-[9px] text-gray-600 font-bold">{cat === "MID" ? "MED" : cat === "FWD" ? "DEL" : cat}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
           </div>
-
-          {/* Leyenda */}
-          <div className="flex items-center justify-center gap-3 mt-2 px-4">
-            {(["GK","DEF","MID","FWD"] as const).map(cat => (
-              <div key={cat} className="flex items-center gap-1">
-                <div className={`w-2.5 h-2.5 rounded-full ${CAT_DOT[cat === "MID" ? "MID" : cat].split(" ")[0]}`} />
-                <span className="text-[9px] text-gray-600 font-bold">{cat === "MID" ? "MED" : cat === "FWD" ? "DEL" : cat}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        )
       )}
     </div>
   );
 }
 
+// Normalización ligera para comparar nombres de equipos
+function normTeam(s: string) {
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/\b(fc|cf|cd|afc|sc|rc|ac)\b/g, "").replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, " ").trim();
+}
+
 function PartidoRow({ p }: { p: PartidoVivo }) {
   // Auto-expandir solo si hay eventos; pre siempre colapsado
   const [expanded, setExpanded] = useState(p.estado === "in" || (p.estado === "post" && p.eventos.length > 0));
+  const [sofaId, setSofaId] = useState<number | null>(null);
+
+  // Buscar event ID de SofaScore desde el navegador (no desde servidor)
+  useEffect(() => {
+    if (p.estado !== "pre") return;
+    const key = `sofaid-${p.id}`;
+    const cached = sessionStorage.getItem(key);
+    if (cached) { setSofaId(Number(cached)); return; }
+
+    const fecha = p.fechaHora.slice(0, 10);
+    fetch(`https://api.sofascore.com/api/v1/sport/football/scheduled-events/${fecha}`)
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then((d: { events?: { id: number; homeTeam: { name: string }; awayTeam: { name: string } }[] }) => {
+        const nl = normTeam(p.local.nombre), nv = normTeam(p.visita.nombre);
+        const hit = (d.events ?? []).find(ev => {
+          const nh = normTeam(ev.homeTeam.name), na = normTeam(ev.awayTeam.name);
+          return (nh.includes(nl) || nl.includes(nh)) && (na.includes(nv) || nv.includes(na));
+        });
+        if (hit) { setSofaId(hit.id); sessionStorage.setItem(key, String(hit.id)); }
+      })
+      .catch(() => { /* CORS o error → usamos ESPN */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.id, p.estado]);
 
   const hayScore = p.local.goles !== null && p.visita.goles !== null;
   const estadoLabel =
@@ -496,12 +543,13 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
         )}
       </button>
 
-      {/* Alineaciones ESPN */}
+      {/* Alineaciones */}
       {p.estado === "pre" && (
         <LineupDisplay
           alineacion={p.alineacion}
           local={p.local.nombre}
           visita={p.visita.nombre}
+          sofaId={sofaId}
         />
       )}
 
