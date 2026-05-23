@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 // Intentar varias estrategias para sortear el bloqueo de SofaScore
-const HEADERS_LIST = [
-  // Chrome en Mac
+const HEADERS_LIST: Record<string, string>[] = [
   {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "application/json, text/plain, */*",
@@ -16,14 +15,12 @@ const HEADERS_LIST = [
     "sec-fetch-site": "same-site",
     "Cache-Control": "no-cache",
   },
-  // iPhone Safari
   {
     "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
     "Accept": "application/json",
     "Accept-Language": "es-MX,es;q=0.9",
     "Referer": "https://www.sofascore.com/",
   },
-  // App móvil de SofaScore
   {
     "User-Agent": "SofaScore/5.0 (iPhone; iOS 17.4; Scale/3.00)",
     "Accept": "application/json",
