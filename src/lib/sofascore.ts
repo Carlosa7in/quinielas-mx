@@ -61,7 +61,8 @@ function norm(s: string): string {
   return s
     .toLowerCase()
     .normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .replace(/\b(fc|cf|cd|sd|rc|sc|ac|as|se|cr|atletico|athletic|deportivo|club|real|sporting|ciudad|city)\b/g, "")
+    // Solo quitar abreviaciones organizativas, no nombres propios
+    .replace(/\b(fc|cf|cd|sd|rc|sc|ac|as|se|cr|afc|cfc)\b/g, "")
     .replace(/[^a-z0-9\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
