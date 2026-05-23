@@ -304,24 +304,36 @@ function PartidoRow({ p }: { p: PartidoVivo }) {
         )}
       </button>
 
-      {/* Alineaciones SofaScore — solo pre-partido */}
-      {p.estado === "pre" && p.sofaId && (
-        <div className="border-t border-white/5 px-4 pt-3 pb-3">
-          <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-2 text-center">Alineaciones probables</p>
-          <iframe
-            src={`https://widgets.sofascore.com/en/embed/event?eventId=${p.sofaId}&defaultLocale=es`}
-            style={{ width: "100%", height: "500px", border: "none", borderRadius: "8px", background: "#111" }}
-            scrolling="no"
-            title={`Alineaciones ${p.local.nombre} vs ${p.visita.nombre}`}
-          />
-          <a
-            href={`https://www.sofascore.com/match/${p.sofaId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1 mt-2 text-gray-600 hover:text-gray-400 text-[10px] transition-colors"
-          >
-            Ver en SofaScore →
-          </a>
+      {/* SofaScore — solo pre-partido */}
+      {p.estado === "pre" && (
+        <div className="border-t border-white/5 px-4 pt-3 pb-3 space-y-2">
+          {/* DEBUG temporal — muestra sofaId para diagnóstico */}
+          <p className="text-[9px] text-gray-700 text-center font-mono">
+            sofaId: {p.sofaId ?? "null"} · {p.local.nombre} vs {p.visita.nombre}
+          </p>
+
+          {p.sofaId ? (
+            <>
+              <iframe
+                src={`https://widgets.sofascore.com/en/embed/event?eventId=${p.sofaId}&defaultLocale=es`}
+                style={{ width: "100%", height: "500px", border: "none", borderRadius: "8px", background: "#111" }}
+                scrolling="no"
+                title={`Alineaciones ${p.local.nombre} vs ${p.visita.nombre}`}
+              />
+              <a
+                href={`https://www.sofascore.com/football/match/${p.sofaId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1 text-amber-400/70 hover:text-amber-400 text-xs font-semibold transition-colors py-1"
+              >
+                📋 Ver alineaciones en SofaScore →
+              </a>
+            </>
+          ) : (
+            <p className="text-gray-700 text-[10px] text-center">
+              Alineaciones no disponibles aún
+            </p>
+          )}
         </div>
       )}
 
