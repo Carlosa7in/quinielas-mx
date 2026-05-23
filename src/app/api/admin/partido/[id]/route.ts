@@ -17,10 +17,12 @@ export async function PATCH(
     const { id } = await params;
     const body = await req.json() as { sofaId?: string };
 
-    // Extraer el número del embed code si pegaron el código completo
-    // Acepta: "14083731"  o  "...?id=14083731&..."  o el embed completo
+    // Extraer el número del embed code, URL o ID directo
+    // Acepta: "14083731"
+    //         "...?id=14083731&..."   (embed code)
+    //         "https://...#id:14083731"  (URL compartida desde app)
     const raw = (body.sofaId ?? "").trim();
-    const match = raw.match(/\bid=(\d+)/i) ?? raw.match(/^(\d+)$/);
+    const match = raw.match(/\bid[=:](\d+)/i) ?? raw.match(/^(\d+)$/);
     const sofaId = match ? match[1] : null;
 
     await ensureSofaIdColumn();
