@@ -104,9 +104,11 @@ export function PhoneInput({
     onNumero(v.replace(/\D/g, "").slice(0, pais.digitos));
 
   if (variant === "fused") {
+    // If className contains a border-color override, skip the default border-gray-200
+    const hasBorderColor = /border-(?!gray-200)[a-z]/.test(className);
     return (
       <div
-        className={`flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-amber-500 ${className}`}
+        className={`flex items-center border ${hasBorderColor ? "" : "border-gray-200"} rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-amber-500 ${className}`}
       >
         <select
           value={codigo}

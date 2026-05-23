@@ -8,6 +8,7 @@ import { JornadaSelector, type JornadaResumen } from "@/components/JornadaSelect
 import { RegistroCerrado } from "@/components/RegistroCerrado";
 import { calcularFechaCierre } from "@/lib/fechas";
 import { telefonoFalso } from "@/lib/telefono";
+import { PhoneInput, telCompleto, paisPorCodigo, parsearTelefono } from "@/components/PhoneInput";
 
 type Partido = {
   id: string;
@@ -103,6 +104,7 @@ function TiendaInner() {
   const [formaActiva, setFormaActiva] = useState(0);
 
   const [nombre, setNombre] = useState("");
+  const [codigoPais, setCodigoPais] = useState("52");
   const [telefono, setTelefono] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
@@ -168,7 +170,9 @@ function TiendaInner() {
     // 3. Rellenar estado y navegar al modo manual
     setJornada(jornadaData);
     setNombre(pr.nombre);
-    setTelefono(pr.telefono);
+    const { codigo: cPais, numero: numTel } = parsearTelefono(pr.telefono);
+    setCodigoPais(cPais);
+    setTelefono(numTel);
     setFormas([formaPicks]);
     setFormaActiva(0);
     setPreRegistroId(pr.id);
@@ -185,13 +189,15 @@ function TiendaInner() {
 
   /* ── Búsqueda de cliente por teléfono (debounced 500ms) ─────── */
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pais = paisPorCodigo(codigoPais);
   useEffect(() => {
-    const tel = telefono.replace(/\D/g, "");
-    if (tel.length < 10) { setClienteEncontrado(null); return; }
+    const limpio = telefono.replace(/\D/g, "");
+    if (limpio.length < pais.digitos) { setClienteEncontrado(null); return; }
+    const telCompleto_ = telCompleto(codigoPais, limpio);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setBuscandoCliente(true);
     debounceRef.current = setTimeout(() => {
-      fetch(`/api/admin/cliente?telefono=${tel}`)
+      fetch(`/api/admin/cliente?telefono=${telCompleto_}`)
         .then((r) => r.json())
         .then((data) => {
           setClienteEncontrado(data.cliente ?? null);
@@ -203,7 +209,7 @@ function TiendaInner() {
     }, 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [telefono]);
+  }, [telefono, codigoPais]);
 
   // Buscar sugerencias de clientes mientras escribe el nombre (solo staff)
   useEffect(() => {
@@ -686,7 +692,7 @@ function TiendaInner() {
           jornadaId: jornada!.id,
           picks: picksArr,
           nombre,
-          telefono,
+          telefono: telefono ? telCompleto(codigoPais, telefono) : "",
           canal: "tienda",
           usuarioId,
         }),
@@ -968,7 +974,9 @@ function TiendaInner() {
                     type="button"
                     onMouseDown={() => {
                       setNombre(s.nombre);
-                      setTelefono(s.telefono);
+                      const { codigo: cPais, numero: numTel } = parsearTelefono(s.telefono);
+                      setCodigoPais(cPais);
+                      setTelefono(numTel);
                       setSugerencias([]);
                       setMostrarSugerencias(false);
                     }}
@@ -985,30 +993,30 @@ function TiendaInner() {
             )}
           </div>
           <div>
-            <input
-              type="tel"
-              placeholder="Teléfono (10 dígitos, opcional)"
-              value={telefono}
-              onChange={(e) => { setTelefono(e.target.value); setClienteEncontrado(null); }}
-              maxLength={10}
-              inputMode="numeric"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                telefono.replace(/\D/g, "").length > 0 && telefono.replace(/\D/g, "").length < 10
+            <PhoneInput
+              variant="fused"
+              codigo={codigoPais}
+              numero={telefono}
+              onCodigo={(c) => { setCodigoPais(c); setTelefono(""); setClienteEncontrado(null); }}
+              onNumero={(n) => { setTelefono(n); setClienteEncontrado(null); }}
+              placeholder={`Teléfono (${pais.digitos} dígitos, opcional)`}
+              className={
+                telefono.length > 0 && telefono.length < pais.digitos
                   ? "border-red-300"
                   : clienteEncontrado && clienteEncontrado.nombre.toLowerCase() !== nombre.trim().toLowerCase()
                   ? "border-yellow-400"
                   : clienteEncontrado
                   ? "border-green-400"
-                  : "border-gray-200"
-              }`}
+                  : ""
+              }
             />
-            {telefono.replace(/\D/g, "").length > 0 && telefono.replace(/\D/g, "").length < 10 && (
-              <p className="text-xs text-red-500 mt-1.5 px-1">El teléfono debe tener 10 dígitos</p>
+            {telefono.length > 0 && telefono.length < pais.digitos && (
+              <p className="text-xs text-red-500 mt-1.5 px-1">El teléfono debe tener {pais.digitos} dígitos</p>
             )}
-            {telefono.replace(/\D/g, "").length === 10 && telefonoFalso(telefono) && (
-              <p className="text-xs text-orange-500 mt-1.5 px-1">⚠️ Ese número parece inválido</p>
+            {codigoPais === "52" && telefono.length === pais.digitos && telefonoFalso(telefono) && (
+              <p className="text-xs text-orange-500 mt-1.5 px-1">Ese número parece inválido</p>
             )}
-            {buscandoCliente && telefono.replace(/\D/g, "").length === 10 && (
+            {buscandoCliente && telefono.length === pais.digitos && (
               <p className="text-xs text-gray-400 mt-1.5 px-1">Buscando...</p>
             )}
             {!buscandoCliente && clienteEncontrado && (

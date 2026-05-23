@@ -3,6 +3,7 @@ import { useState, useEffect, use } from "react";
 import { useSession } from "next-auth/react";
 import { getLogoUrl } from "@/lib/equipos";
 import { telefonoFalso } from "@/lib/telefono";
+import { PhoneInput, telCompleto, paisPorCodigo } from "@/components/PhoneInput";
 import LoadingScreen from "@/components/LoadingScreen";
 
 const PRECIO_BASE = 20;
@@ -188,7 +189,8 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   }, [nombre, esStaff]);
 
   const nombreValido = nombreCompleto(nombre);
-  const telValido = telefono.length === 10 && !telefonoFalso(telefono);
+  const pais = paisPorCodigo(codigoPais);
+  const telValido = telefono.length === pais.digitos && !(codigoPais === "52" && telefonoFalso(telefono));
   const puedeEnviar = todasFormasCompletas && nombreValido && telValido;
 
   const faltanPicks = picks.filter((s) => s.length === 0).length;
@@ -211,7 +213,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
               vendedorId,
               jornadaId: jornada.id,
               nombre: nombre.trim(),
-              telefono: codigoPais + telefono,
+              telefono: telCompleto(codigoPais, telefono),
               picks: picksForma,
             }),
           })
@@ -558,23 +560,15 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
             )}
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Teléfono (10 dígitos)</label>
-            <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-amber-500">
-              <select
-                value={codigoPais}
-                onChange={(e) => { setCodigoPais(e.target.value); setTelefono(""); }}
-                className="px-2 py-2.5 bg-gray-50 text-gray-600 text-sm border-r border-gray-200 shrink-0 focus:outline-none"
-              >
-                <option value="52">🇲🇽 +52</option>
-                <option value="1">🇺🇸🇨🇦 +1</option>
-              </select>
-              <input type="tel" value={telefono}
-                onChange={(e) => setTelefono(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                placeholder="5512345678"
-                className="flex-1 px-3 py-2.5 text-sm focus:outline-none"
-              />
-            </div>
-            {telefono.length === 10 && telefonoFalso(telefono) && (
+            <label className="text-xs text-gray-500 block mb-1">Teléfono ({pais.digitos} dígitos)</label>
+            <PhoneInput
+              variant="fused"
+              codigo={codigoPais}
+              numero={telefono}
+              onCodigo={setCodigoPais}
+              onNumero={setTelefono}
+            />
+            {codigoPais === "52" && telefono.length === pais.digitos && telefonoFalso(telefono) && (
               <p className="text-xs text-red-500 mt-1">Ingresa un número de teléfono real</p>
             )}
           </div>
