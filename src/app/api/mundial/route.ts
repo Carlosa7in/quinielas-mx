@@ -4,9 +4,10 @@ import { prisma } from "@/lib/prisma";
 const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world";
 const ESPN_V2   = "https://site.api.espn.com/apis/v2/sports/soccer/fifa.world";
 
-// Cache simple en memoria (1 hora)
+// Cache en memoria: 2 min para partidos en vivo, 10 min en reposo
 let cache: { data: unknown; ts: number } | null = null;
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL_VIVO  = 2  * 60 * 1000; //  2 min — durante partido
+const CACHE_TTL_REPOSO = 10 * 60 * 1000; // 10 min — sin partidos activos
 
 type EspnTeamEntry = {
   team: { id: string; name: string; abbreviation: string; logo: string; flag?: string; logos?: { href: string }[] };
@@ -83,7 +84,7 @@ async function fetchProximosPartidos() {
       `${ESPN_BASE}/scoreboard?dates=${desde}&limit=50`,
       `${ESPN_BASE}/scoreboard`,
     ]) {
-      const r = await fetch(url, { next: { revalidate: 300 } });
+      const r = await fetch(url, { next: { revalidate: 120 } });
       if (!r.ok) continue;
       const data = await r.json() as Record<string, unknown>;
       events = (data.events as Record<string, unknown>[]) ?? [];
@@ -123,15 +124,23 @@ async function fetchProximosPartidos() {
 }
 
 export async function GET() {
-  // Serve cache if fresh
-  if (cache && Date.now() - cache.ts < CACHE_TTL) {
+  // TTL dinámico: más corto si hay partidos en vivo
+  const hayVivo = cache
+    ? (cache.data as { partidos?: { estado?: string }[] })
+        .partidos?.some(p => {
+          const e = (p.estado ?? "").toLowerCase();
+          return e.includes("'") || e.includes("ht") || e.includes("half") || e.includes("live");
+        }) ?? false
+    : false;
+  const ttl = hayVivo ? CACHE_TTL_VIVO : CACHE_TTL_REPOSO;
+  if (cache && Date.now() - cache.ts < ttl) {
     return NextResponse.json(cache.data);
   }
 
   try {
     // Fetch standings (grupos) and scoreboard in parallel
     const [standRes, partRes] = await Promise.allSettled([
-      fetch(`${ESPN_V2}/standings`, { next: { revalidate: 3600 } }),
+      fetch(`${ESPN_V2}/standings`, { next: { revalidate: 600 } }),
       fetchProximosPartidos(),
     ]);
 

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { LayoutGrid, CalendarDays, Shield, MapPin, Newspaper, ExternalLink, Clock } from "lucide-react";
 import { SEDES, EQUIPOS_DESTACADOS, MUNDIAL_FECHAS, FORMATO, type EquipoDestacado } from "@/lib/mundial2026";
@@ -151,19 +151,31 @@ export default function MundialPage() {
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [cargandoNoticias, setCargandoNoticias] = useState(false);
   const [cargando, setCargando] = useState(true);
+  const [ultimaActualizacion, setUltimaActualizacion] = useState<Date | null>(null);
   const [tab, setTab] = useState<"grupos" | "sedes" | "equipos" | "partidos" | "noticias">("grupos");
 
-  useEffect(() => {
+  const cargarDatos = useCallback((esRefresh = false) => {
+    if (!esRefresh) setCargando(true);
     fetch("/api/mundial")
       .then(r => r.json())
       .then(d => {
         if (Array.isArray(d.grupos)) setGrupos(d.grupos);
         if (Array.isArray(d.partidos)) setPartidos(d.partidos);
         if (typeof d.quinielasActivas === "number") setQuinielasActivas(d.quinielasActivas);
+        setUltimaActualizacion(new Date());
       })
       .catch(() => {})
       .finally(() => setCargando(false));
   }, []);
+
+  // Carga inicial
+  useEffect(() => { cargarDatos(); }, [cargarDatos]);
+
+  // Auto-refresh cada 2 minutos (durante el Mundial habrá partidos en vivo)
+  useEffect(() => {
+    const id = setInterval(() => cargarDatos(true), 2 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [cargarDatos]);
 
   useEffect(() => {
     if (tab !== "noticias" || noticias.length > 0) return;
@@ -255,6 +267,15 @@ export default function MundialPage() {
 
       {/* -- TABS -- grid 3+2, sin scroll horizontal */}
       <div className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur border-b border-white/5">
+        <div className="max-w-xl mx-auto px-2 pt-1.5 pb-0 flex justify-end">
+          {ultimaActualizacion && (
+            <p className="text-[10px] text-gray-600">
+              Actualizado {ultimaActualizacion.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+              {" · "}
+              <button onClick={() => cargarDatos(true)} className="text-amber-600 hover:text-amber-400 transition-colors">↻ actualizar</button>
+            </p>
+          )}
+        </div>
         <div className="max-w-xl mx-auto px-2 py-2 space-y-1">
           {/* Fila 1: 3 tabs */}
           <div className="flex gap-1">
