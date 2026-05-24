@@ -546,7 +546,7 @@ export default function MundialPage() {
                       </div>
                       {/* Info */}
                       <div className="px-3 py-2.5 flex flex-col gap-0.5 flex-1">
-                        <p className="text-white font-black text-sm leading-tight">{eq.pais}</p>
+                        <p className="text-white font-black text-sm leading-tight truncate">{eq.pais}</p>
                         <p className="text-gray-500 text-[10px]">{eq.confederation}</p>
                         <p className="text-gray-500 text-[10px] truncate">DT: {eq.dt}</p>
                       </div>
