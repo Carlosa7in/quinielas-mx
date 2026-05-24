@@ -146,16 +146,30 @@ export function LiveBadge() {
   // --- Estado 2: HAY PARTIDO PRÓXIMO ---
   if (proximo) {
     const jornada = jornadas.find(j => j.partidos.some(p => p.id === proximo.id));
-    const esHoy = new Date(proximo.fechaHora).toDateString() === new Date().toDateString();
-    const hora = new Date(proximo.fechaHora).toLocaleTimeString("es-MX", {
-      hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City",
-    });
+
+    // fechaHora se guarda como hora local CDMX (sin conversión UTC),
+    // leer el tiempo directamente del string para evitar doble offset.
+    const mHora = proximo.fechaHora.match(/T(\d{2}):(\d{2})/);
+    const hora = (() => {
+      if (!mHora) return "";
+      let h = parseInt(mHora[1]);
+      const min = mHora[2];
+      const ampm = h >= 12 ? "p.m." : "a.m.";
+      h = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      return `${h}:${min} ${ampm}`;
+    })();
+    // Comparar fecha local del ISO string (YYYY-MM-DD) con hoy en CDMX
+    const fechaISOStr = proximo.fechaHora.slice(0, 10); // "YYYY-MM-DD"
+    const hoyISOStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }); // "YYYY-MM-DD"
+    const esHoy = fechaISOStr === hoyISOStr;
     const fechaLabel = esHoy
       ? `Hoy a las ${hora}`
-      : new Date(proximo.fechaHora).toLocaleDateString("es-MX", {
-          weekday: "short", day: "numeric", month: "short",
-          hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City",
-        });
+      : (() => {
+          const local = proximo.fechaHora.replace("Z", "").replace(".000", "");
+          return new Date(local).toLocaleDateString("es-MX", {
+            weekday: "short", day: "numeric", month: "short",
+          }) + ` · ${hora}`;
+        })();
 
     return (
       <Link

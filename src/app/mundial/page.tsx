@@ -468,49 +468,47 @@ export default function MundialPage() {
               </div>
 
               {hayEspn ? (
-                /* Grid con todos los 48 desde ESPN */
-                <div className="grid grid-cols-2 gap-2">
+                /* Grid con todos los 48 desde ESPN — bandera arriba */
+                <div className="grid grid-cols-3 gap-2">
                   {equiposEspn.map(eq => {
                     const slug = slugMap.get(eq.nombre.toLowerCase());
-                    const card = (
-                      <div className={`bg-gray-900 rounded-xl p-3 flex items-center gap-2.5 ${slug ? "hover:bg-gray-800 transition-colors" : ""}`}>
-                        <FlagImg src={eq.logo} alt={eq.abrev} size={28} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-semibold text-xs truncate leading-tight">{eq.nombre}</p>
-                          <p className="text-gray-500 text-[10px]">{eq.grupo}</p>
-                        </div>
-                        {slug && <Shield size={11} className="text-amber-400 shrink-0" />}
+                    const inner = (
+                      <div className={`bg-gray-900 rounded-xl p-3 flex flex-col items-center gap-1.5 text-center ${slug ? "hover:bg-gray-800 transition-colors" : ""}`}>
+                        <FlagImg src={eq.logo} alt={eq.abrev} size={36} />
+                        <p className="text-white font-semibold text-[11px] leading-tight line-clamp-2">{eq.nombre}</p>
+                        <p className="text-gray-600 text-[10px]">{eq.grupo}</p>
+                        {slug && (
+                          <span className="text-amber-400 text-[10px] font-bold mt-0.5">Ver más →</span>
+                        )}
                       </div>
                     );
                     return slug
-                      ? <Link key={eq.id} href={`/mundial/equipo/${slug}`}>{card}</Link>
-                      : <div key={eq.id}>{card}</div>;
+                      ? <Link key={eq.id} href={`/mundial/equipo/${slug}`}>{inner}</Link>
+                      : <div key={eq.id}>{inner}</div>;
                   })}
                 </div>
               ) : (
-                /* Grid con los 10 equipos destacados */
+                /* Grid con los 10 equipos destacados — bandera arriba */
                 <div className="grid grid-cols-2 gap-2">
                   {EQUIPOS_DESTACADOS.map(eq => (
                     <Link
                       key={eq.slug}
                       href={`/mundial/equipo/${eq.slug}`}
-                      className="bg-gray-900 rounded-xl overflow-hidden hover:bg-gray-800 transition-colors group"
+                      className="bg-gray-900 rounded-xl overflow-hidden hover:bg-gray-800 transition-colors group flex flex-col"
                     >
-                      {/* Franja de color del equipo */}
-                      <div className={`${eq.color} px-3 py-2 flex items-center gap-2`}>
-                        <span className="text-2xl leading-none">{eq.bandera}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-black text-sm truncate leading-tight">{eq.pais}</p>
-                          <p className="text-white/50 text-[10px]">{eq.confederation}</p>
-                        </div>
+                      {/* Bandera grande centrada en franja de color */}
+                      <div className={`${eq.color} flex flex-col items-center justify-center py-4 gap-1`}>
+                        <span className="text-4xl leading-none">{eq.bandera}</span>
                         {eq.mundiales > 0 && (
-                          <span className="text-amber-300 text-[10px] font-black shrink-0">🏆{eq.mundiales}</span>
+                          <span className="text-amber-200/80 text-[10px] font-black">🏆 {eq.mundiales}× campeón</span>
                         )}
                       </div>
-                      {/* DT + botón */}
-                      <div className="px-3 py-2 flex items-center justify-between">
-                        <p className="text-gray-400 text-[10px] truncate">DT: {eq.dt}</p>
-                        <span className="text-amber-400 text-[10px] font-bold group-hover:translate-x-0.5 transition-transform shrink-0 ml-1">Ver →</span>
+                      {/* Info + Ver más */}
+                      <div className="px-3 py-2.5 flex flex-col gap-0.5 flex-1">
+                        <p className="text-white font-black text-sm leading-tight">{eq.pais}</p>
+                        <p className="text-gray-500 text-[10px]">{eq.confederation}</p>
+                        <p className="text-gray-500 text-[10px] truncate">DT: {eq.dt}</p>
+                        <span className="text-amber-400 text-[10px] font-bold mt-1 group-hover:translate-x-0.5 transition-transform inline-block">Ver más →</span>
                       </div>
                     </Link>
                   ))}
