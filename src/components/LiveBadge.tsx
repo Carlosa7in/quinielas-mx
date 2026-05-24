@@ -17,7 +17,11 @@ function pad(n: number) { return String(n).padStart(2, "0"); }
 
 function Countdown({ fechaISO }: { fechaISO: string }) {
   const calc = () => {
-    const diff = new Date(fechaISO).getTime() - Date.now();
+    // fechaHora está guardado como hora local CDMX (e.g. "T19:00") pero con Z suffix,
+    // por lo que new Date(Z) lo trataría como UTC → 6h de diferencia.
+    // Quitamos Z para que el browser lo parsee como hora LOCAL (= CDMX para el usuario).
+    const localISO = fechaISO.replace("Z", "").replace(/\.000$/, "");
+    const diff = new Date(localISO).getTime() - Date.now();
     if (diff <= 0) return { h: 0, m: 0, s: 0 };
     return {
       h: Math.floor(diff / 3_600_000),

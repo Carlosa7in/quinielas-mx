@@ -443,8 +443,47 @@ export default function MundialPage() {
 
         {/* -- EQUIPOS -- */}
         {tab === "equipos" && (() => {
-          // Equipos con página de detalle, por slug
-          const slugMap = new Map(EQUIPOS_DESTACADOS.map(e => [e.pais.toLowerCase(), e.slug]));
+          // slugMap: español (de EQUIPOS_DESTACADOS) + aliases en inglés para ESPN
+          const EN_ALIASES: Record<string, string> = {
+            "mexico": "mexico", "brazil": "brasil",
+            "united states": "usa", "usa": "usa",
+            "france": "francia", "spain": "espana",
+            "germany": "alemania", "england": "inglaterra",
+            "morocco": "marruecos", "japan": "japon",
+            "canada": "canada", "costa rica": "costa-rica",
+            "honduras": "honduras", "jamaica": "jamaica",
+            "panama": "panama", "el salvador": "el-salvador",
+            "guatemala": "guatemala", "colombia": "colombia",
+            "uruguay": "uruguay", "ecuador": "ecuador",
+            "venezuela": "venezuela", "bolivia": "bolivia",
+            "paraguay": "paraguay", "chile": "chile",
+            "peru": "peru",
+            "portugal": "portugal", "netherlands": "paises-bajos",
+            "italy": "italia", "belgium": "belgica",
+            "croatia": "croacia", "switzerland": "suiza",
+            "austria": "austria", "turkey": "turquia",
+            "poland": "polonia", "serbia": "serbia",
+            "scotland": "escocia", "romania": "rumania",
+            "denmark": "dinamarca", "norway": "noruega",
+            "ukraine": "ucrania", "slovenia": "eslovenia",
+            "hungary": "hungria", "greece": "grecia",
+            "senegal": "senegal", "nigeria": "nigeria",
+            "egypt": "egipto", "cameroon": "camerun",
+            "ghana": "ghana", "ivory coast": "costa-de-marfil",
+            "côte d'ivoire": "costa-de-marfil",
+            "south africa": "sudafrica", "algeria": "argelia",
+            "tunisia": "tunez", "mali": "mali",
+            "dr congo": "drc-congo", "democratic republic of congo": "drc-congo",
+            "south korea": "corea-del-sur", "korea republic": "corea-del-sur",
+            "saudi arabia": "arabia-saudita", "australia": "australia",
+            "iran": "iran", "iraq": "irak", "qatar": "qatar",
+            "jordan": "jordania", "uzbekistan": "uzbekistan",
+            "new zealand": "nueva-zelanda",
+          };
+          const slugMap = new Map([
+            ...EQUIPOS_DESTACADOS.map(e => [e.pais.toLowerCase(), e.slug] as [string, string]),
+            ...Object.entries(EN_ALIASES),
+          ]);
 
           // Si ESPN ya devolvió los 48 equipos de los grupos, mostrarlos todos
           const equiposEspn = grupos.flatMap(g =>
@@ -473,13 +512,13 @@ export default function MundialPage() {
                   {equiposEspn.map(eq => {
                     const slug = slugMap.get(eq.nombre.toLowerCase());
                     const inner = (
-                      <div className={`bg-gray-900 rounded-xl p-3 flex flex-col items-center gap-1.5 text-center ${slug ? "hover:bg-gray-800 transition-colors" : ""}`}>
+                      <div className={`relative bg-gray-900 rounded-xl p-3 flex flex-col items-center gap-1.5 text-center group ${slug ? "hover:bg-gray-800 transition-colors" : ""}`}>
+                        {slug && (
+                          <span className="absolute top-2 right-2 text-gray-500 opacity-25 group-hover:opacity-70 transition-opacity text-sm leading-none">›</span>
+                        )}
                         <FlagImg src={eq.logo} alt={eq.abrev} size={36} />
                         <p className="text-white font-semibold text-[11px] leading-tight line-clamp-2">{eq.nombre}</p>
                         <p className="text-gray-600 text-[10px]">{eq.grupo}</p>
-                        {slug && (
-                          <span className="text-amber-400 text-[10px] font-bold mt-0.5">Ver más →</span>
-                        )}
                       </div>
                     );
                     return slug
@@ -488,14 +527,16 @@ export default function MundialPage() {
                   })}
                 </div>
               ) : (
-                /* Grid con los 10 equipos destacados — bandera arriba */
+                /* Pre-torneo: grid con todos los equipos destacados */
                 <div className="grid grid-cols-2 gap-2">
                   {EQUIPOS_DESTACADOS.map(eq => (
                     <Link
                       key={eq.slug}
                       href={`/mundial/equipo/${eq.slug}`}
-                      className="bg-gray-900 rounded-xl overflow-hidden hover:bg-gray-800 transition-colors group flex flex-col"
+                      className="relative bg-gray-900 rounded-xl overflow-hidden hover:bg-gray-800 transition-colors group flex flex-col"
                     >
+                      {/* Flecha sutil esquina superior derecha */}
+                      <span className="absolute top-2 right-2 z-10 text-white/20 group-hover:text-white/60 transition-colors text-sm leading-none">›</span>
                       {/* Bandera grande centrada en franja de color */}
                       <div className={`${eq.color} flex flex-col items-center justify-center py-4 gap-1`}>
                         <span className="text-4xl leading-none">{eq.bandera}</span>
@@ -503,12 +544,11 @@ export default function MundialPage() {
                           <span className="text-amber-200/80 text-[10px] font-black">🏆 {eq.mundiales}× campeón</span>
                         )}
                       </div>
-                      {/* Info + Ver más */}
+                      {/* Info */}
                       <div className="px-3 py-2.5 flex flex-col gap-0.5 flex-1">
                         <p className="text-white font-black text-sm leading-tight">{eq.pais}</p>
                         <p className="text-gray-500 text-[10px]">{eq.confederation}</p>
                         <p className="text-gray-500 text-[10px] truncate">DT: {eq.dt}</p>
-                        <span className="text-amber-400 text-[10px] font-bold mt-1 group-hover:translate-x-0.5 transition-transform inline-block">Ver más →</span>
                       </div>
                     </Link>
                   ))}
