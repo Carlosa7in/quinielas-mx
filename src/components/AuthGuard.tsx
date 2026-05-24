@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 
-const PUBLIC_PATHS = ["/", "/login", "/quiniela", "/ticket", "/consultar", "/kiosko", "/resultados", "/reglamento", "/en-vivo", "/mundial"];
+const PUBLIC_PATHS = ["/", "/login", "/quiniela", "/ticket", "/consultar", "/kiosko", "/resultados", "/reglamento", "/en-vivo", "/mundial", "/clasificacion"];
 
 /**
  * Detecta cuando el navegador restaura una página protegida desde bfcache

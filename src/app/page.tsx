@@ -304,7 +304,7 @@ function MundialBanner() {
 
   return (
     <Link
-      href="/en-vivo"
+      href="/mundial"
       className="block w-full rounded-2xl overflow-hidden relative group"
       style={{ background: "linear-gradient(160deg, #0c1445 0%, #1a306b 45%, #6b1f0a 100%)" }}
     >
@@ -349,7 +349,7 @@ function MundialBanner() {
         )}
         {/* CTA link */}
         <div className="inline-flex items-center gap-1.5 text-amber-400 text-xs font-bold group-hover:gap-2.5 transition-all">
-          <span>Ver partidos en vivo</span>
+          <span>Ver quiniela Mundial</span>
           <span className="group-hover:translate-x-1 transition-transform">→</span>
         </div>
       </div>
