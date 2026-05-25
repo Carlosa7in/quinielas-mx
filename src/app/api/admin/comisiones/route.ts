@@ -31,10 +31,11 @@ export async function GET(req: NextRequest) {
     where: { rol: { in: ["admin", "superadmin"] } },
   });
 
-  // Quinielas del reporte (ventas por usuario)
+  // Quinielas del reporte (ventas por usuario) — excluir no_realizado (nunca pagadas)
   const quinielas = await prisma.quiniela.findMany({
     where: {
       usuarioId: esSuperadmin ? { not: null } : userId,
+      estadoPago: { not: "no_realizado" },
       ...(jornadaId ? { jornadaId } : {}),
     },
     select: {
@@ -444,7 +445,7 @@ export async function GET(req: NextRequest) {
     : [];
 
   const recaudadoGlobal = Array.from(recaudadoGlobalPorJornada.values()).reduce((s, j) => s + j.recaudado, 0);
-  const totalGlobal = await prisma.quiniela.count({ where: jornadaId ? { jornadaId } : {} });
+  const totalGlobal = await prisma.quiniela.count({ where: { estadoPago: { not: "no_realizado" }, ...(jornadaId ? { jornadaId } : {}) } });
 
   // Flujo de caja: efectivo (tienda) vs transferencias (online, todo cae en cuenta del superadmin)
   const efectivoTotal = todasLasQ.filter(q => {

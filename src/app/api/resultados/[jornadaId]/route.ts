@@ -73,9 +73,9 @@ export async function GET(
     const partidosConLogos = partidos.map((p) => ({
       ...p,
       fechaHora: fechaMap[p.id] ?? null,
-      // DB logo → fallback a getLogoUrl (equipos.ts hardcoded ESPN IDs)
-      logoLocal:  logoMap[p.equipoLocal]  || getLogoUrl(p.equipoLocal)  || "",
-      logoVisita: logoMap[p.equipoVisita] || getLogoUrl(p.equipoVisita) || "",
+      // equipos.ts curated ESPN URLs have priority; DB logo as fallback
+      logoLocal:  getLogoUrl(p.equipoLocal)  || logoMap[p.equipoLocal]  || "",
+      logoVisita: getLogoUrl(p.equipoVisita) || logoMap[p.equipoVisita] || "",
     }));
 
     // Ordenar partidos: si ambos tienen fechaHora → por hora; si uno o ambos no tienen → por orden del admin

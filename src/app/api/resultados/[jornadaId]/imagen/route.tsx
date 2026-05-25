@@ -82,8 +82,8 @@ export async function GET(
     );
     const ps = partidos.map(p => ({
       ...p,
-      logoLocal:  logoMap[p.equipoLocal]  || getLogoUrl(p.equipoLocal)  || "",
-      logoVisita: logoMap[p.equipoVisita] || getLogoUrl(p.equipoVisita) || "",
+      logoLocal:  getLogoUrl(p.equipoLocal)  || logoMap[p.equipoLocal]  || "",
+      logoVisita: getLogoUrl(p.equipoVisita) || logoMap[p.equipoVisita] || "",
     }));
 
     // fechaHora via SQL (NeonDB bug con DateTime en Prisma ORM)
