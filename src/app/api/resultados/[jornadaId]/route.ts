@@ -78,12 +78,11 @@ export async function GET(
       logoVisita: logoMap[p.equipoVisita] || getLogoUrl(p.equipoVisita) || "",
     }));
 
-    // Ordenar partidos por fechaHora (nulls al final), fallback a orden
+    // Ordenar partidos: si ambos tienen fechaHora → por hora; si uno o ambos no tienen → por orden del admin
     partidosConLogos.sort((a, b) => {
-      if (!a.fechaHora && !b.fechaHora) return a.orden - b.orden;
-      if (!a.fechaHora) return 1;
-      if (!b.fechaHora) return -1;
-      return new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime();
+      if (a.fechaHora && b.fechaHora)
+        return new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime();
+      return a.orden - b.orden;
     });
 
     // Prize pool: tienda (cash) + online confirmed
@@ -158,10 +157,8 @@ export async function GET(
         .sort((a, b) => {
           const fa = fechaMap[a.partidoId] ?? null;
           const fb = fechaMap[b.partidoId] ?? null;
-          if (!fa && !fb) return a.partido.orden - b.partido.orden;
-          if (!fa) return 1;
-          if (!fb) return -1;
-          return new Date(fa).getTime() - new Date(fb).getTime();
+          if (fa && fb) return new Date(fa).getTime() - new Date(fb).getTime();
+          return a.partido.orden - b.partido.orden;
         })
         .map((p) => ({
           prediccion: p.prediccion,

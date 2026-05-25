@@ -216,6 +216,19 @@ export default function AdminPage() {
 
             {rol === "superadmin" && (
               <Link
+                href="/admin/gastos"
+                className="bg-rose-800 hover:bg-rose-700 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-2xl">💸</span>
+                <div>
+                  <p className="font-bold">Gastos & Costos</p>
+                  <p className="text-rose-300 text-sm">Dominio, APIs, marketing · ROI del negocio</p>
+                </div>
+              </Link>
+            )}
+
+            {rol === "superadmin" && (
+              <Link
                 href="/admin/usuarios"
                 className="bg-purple-900 hover:bg-purple-800 text-white rounded-xl p-4 flex items-center gap-3 transition-colors"
               >

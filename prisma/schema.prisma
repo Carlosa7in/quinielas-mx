@@ -164,3 +164,17 @@ model PushSubscription {
   auth      String
   createdAt DateTime @default(now())
 }
+
+model Gasto {
+  id          String    @id @default(cuid())
+  concepto    String                        // "Dominio tablitasquinielas.mx"
+  categoria   String    @default("otro")   // "infraestructura" | "marketing" | "api" | "comunicacion" | "otro"
+  monto       Float                        // importe en la moneda indicada
+  moneda      String    @default("USD")    // "MXN" | "USD"
+  recurrencia String    @default("mensual")// "unico" | "mensual" | "anual"
+  fechaPago   DateTime  @default(now())    // último pago realizado
+  fechaVence  DateTime?                    // próximo vencimiento (para alertas)
+  notas       String?
+  activo      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+}

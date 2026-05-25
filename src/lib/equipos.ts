@@ -158,7 +158,7 @@ const LOGOS: Record<string, string> = {
   "Internacional":            "https://a.espncdn.com/i/teamlogos/soccer/500/1936.png",
   "Grêmio":                   "https://a.espncdn.com/i/teamlogos/soccer/500/6273.png",
   "Santos FC":                "https://a.espncdn.com/i/teamlogos/soccer/500/2674.png",
-  "Santos":                   "https://a.espncdn.com/i/teamlogos/soccer/500/2674.png",
+  "Santos":                   "https://a.espncdn.com/i/teamlogos/soccer/500/225.png",  // → Santos Laguna (en contexto mexicano)
   "Athletico Paranaense":     "https://a.espncdn.com/i/teamlogos/soccer/500/3458.png",
   "Atlético Paranaense":      "https://a.espncdn.com/i/teamlogos/soccer/500/3458.png",
   "Cruzeiro":                 "https://a.espncdn.com/i/teamlogos/soccer/500/2022.png",

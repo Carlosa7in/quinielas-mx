@@ -90,7 +90,14 @@ export default function ComisionesPage() {
   useEffect(() => {
     fetch("/api/jornadas/todas")
       .then((r) => r.json())
-      .then((data) => Array.isArray(data) && setJornadas(data));
+      .then((data) => {
+        if (!Array.isArray(data)) return;
+        // Ordenar desc por número para mostrar la más reciente primero
+        const sorted = [...data].sort((a: JornadaOpcion, b: JornadaOpcion) => b.numero - a.numero);
+        setJornadas(sorted);
+        // Auto-seleccionar la jornada más reciente
+        if (sorted.length > 0) setJornadaId(sorted[0].id);
+      });
   }, []);
 
   const cargar = useCallback(() => {
@@ -288,6 +295,74 @@ export default function ComisionesPage() {
           </div>
         )}
 
+        {/* ── Resumen rápido ── */}
+        {!cargando && reporteConVentas.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+              <p className="text-sm font-bold text-gray-700">⚡ Resumen rápido</p>
+              {totalPendiente > 0 && (
+                <span className="text-xs font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded-full">
+                  ⏳ ${fmt(totalPendiente)} pendiente total
+                </span>
+              )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left px-3 py-2 text-gray-500 font-medium text-xs">Vendedor</th>
+                    <th className="text-center px-2 py-2 text-gray-500 font-medium text-xs">Vendidas</th>
+                    <th className="text-right px-3 py-2 text-gray-500 font-medium text-xs">Recaudado</th>
+                    <th className="text-right px-3 py-2 text-gray-500 font-medium text-xs">A pagar</th>
+                    <th className="text-right px-2 py-2 text-gray-500 font-medium text-xs">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {reporteConVentas.map((v) => (
+                    <tr key={v.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => toggleExpandir(v.id)}>
+                      <td className="px-3 py-2.5">
+                        <p className="font-semibold text-gray-800 leading-tight">{v.nombre}</p>
+                        {v.puntoVenta && <p className="text-xs text-gray-400">{v.puntoVenta}</p>}
+                      </td>
+                      <td className="px-2 py-2.5 text-center font-bold text-gray-700">{v.total}</td>
+                      <td className="px-3 py-2.5 text-right font-bold text-green-700">${fmt(v.recaudado)}</td>
+                      <td className="px-3 py-2.5 text-right font-bold">
+                        {v.pendientePago > 0
+                          ? <span className="text-orange-600">${fmt(v.pendientePago)}</span>
+                          : <span className="text-gray-300">—</span>
+                        }
+                      </td>
+                      <td className="px-2 py-2.5 text-right">
+                        {v.pendientePago > 0
+                          ? <span className="text-xs text-orange-500 font-bold">⏳</span>
+                          : <span className="text-xs text-green-600 font-bold">✅</span>
+                        }
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                {reporteConVentas.length > 1 && (
+                  <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+                    <tr>
+                      <td className="px-3 py-2.5 font-bold text-gray-700 text-xs uppercase tracking-wide">Total</td>
+                      <td className="px-2 py-2.5 text-center font-black text-gray-800">
+                        {reporteConVentas.reduce((s, v) => s + v.total, 0)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-black text-green-700">
+                        ${fmt(reporteConVentas.reduce((s, v) => s + v.recaudado, 0))}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-black text-orange-600">
+                        {totalPendiente > 0 ? `$${fmt(totalPendiente)}` : "✅ Todo pagado"}
+                      </td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Lista de vendedores */}
         {cargando ? (
           <div className="text-center py-8 text-gray-400">Cargando...</div>
@@ -453,43 +528,48 @@ export default function ComisionesPage() {
                             </div>
 
                             {/* Lista de quinielas individuales */}
-                            <div className="rounded-lg border border-gray-100 overflow-hidden">
-                              <table className="w-full text-xs">
+                            <div className="rounded-lg border border-gray-100 overflow-hidden overflow-x-auto">
+                              <table className="w-full text-xs min-w-[360px]">
                                 <thead className="bg-gray-50">
                                   <tr>
                                     <th className="text-left px-3 py-2 text-gray-500 font-medium">Folio</th>
                                     <th className="text-left px-3 py-2 text-gray-500 font-medium">Cliente</th>
-                                    <th className="text-center px-2 py-2 text-gray-500 font-medium">Canal</th>
+                                    <th className="text-center px-2 py-2 text-gray-500 font-medium hidden sm:table-cell">Canal</th>
                                     <th className="text-right px-3 py-2 text-gray-500 font-medium">Monto</th>
-                                    <th className="text-right px-3 py-2 text-gray-500 font-medium">Estado</th>
+                                    <th className="text-right px-2 py-2 text-gray-500 font-medium">Estado</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
-                                  {j.quinielas.map((q) => (
-                                    <tr key={q.id} className="hover:bg-gray-50">
-                                      <td className="px-3 py-2 font-mono text-gray-600">{q.folio}</td>
-                                      <td className="px-3 py-2 text-gray-500 truncate max-w-[80px]">
-                                        {q.nombreCliente ?? "—"}
-                                      </td>
-                                      <td className="px-2 py-2 text-center">
-                                        {(() => {
-                                          const { origen, pago, origenColor } = getOrigenPago(q);
-                                          return (
-                                            <div className="flex flex-col items-center gap-0.5">
-                                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${origenColor}`}>{origen}</span>
-                                              <span className="text-[9px] text-gray-400">{pago}</span>
-                                            </div>
-                                          );
-                                        })()}
-                                      </td>
-                                      <td className="px-3 py-2 text-right font-semibold text-gray-700">
-                                        ${fmt(q.monto)}
-                                      </td>
-                                      <td className={`px-3 py-2 text-right capitalize ${ESTADO_COLOR[q.estado] ?? "text-gray-500"}`}>
-                                        {q.estado}
-                                      </td>
-                                    </tr>
-                                  ))}
+                                  {j.quinielas.map((q) => {
+                                    const { origen, origenColor } = getOrigenPago(q);
+                                    return (
+                                      <tr key={q.id} className="hover:bg-gray-50">
+                                        <td className="px-3 py-2 font-mono text-gray-600 whitespace-nowrap">{q.folio}</td>
+                                        <td className="px-3 py-2 text-gray-500 max-w-[90px] truncate">
+                                          {q.nombreCliente ?? "—"}
+                                          {/* Canal visible solo en mobile como badge inline */}
+                                          <span className={`sm:hidden ml-1 text-[9px] px-1 py-0.5 rounded-full font-medium ${origenColor}`}>{origen}</span>
+                                        </td>
+                                        <td className="px-2 py-2 text-center hidden sm:table-cell">
+                                          {(() => {
+                                            const { pago, origenColor: oc } = getOrigenPago(q);
+                                            return (
+                                              <div className="flex flex-col items-center gap-0.5">
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${oc}`}>{origen}</span>
+                                                <span className="text-[9px] text-gray-400">{pago}</span>
+                                              </div>
+                                            );
+                                          })()}
+                                        </td>
+                                        <td className="px-3 py-2 text-right font-semibold text-gray-700 whitespace-nowrap">
+                                          ${fmt(q.monto)}
+                                        </td>
+                                        <td className={`px-2 py-2 text-right capitalize whitespace-nowrap ${ESTADO_COLOR[q.estado] ?? "text-gray-500"}`}>
+                                          {q.estado}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
                                 </tbody>
                               </table>
                             </div>

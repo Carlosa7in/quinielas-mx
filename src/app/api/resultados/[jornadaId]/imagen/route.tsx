@@ -98,14 +98,12 @@ export async function GET(
       }
     } catch { /* ignorar */ }
 
-    // Sort partidos by fechaHora, fallback to orden
+    // Ordenar partidos: si ambos tienen fechaHora → por hora; si uno o ambos no tienen → por orden del admin
     ps.sort((a, b) => {
       const fa = fechaMapImg[a.id] ?? null;
       const fb = fechaMapImg[b.id] ?? null;
-      if (!fa && !fb) return a.orden - b.orden;
-      if (!fa) return 1;
-      if (!fb) return -1;
-      return new Date(fa).getTime() - new Date(fb).getTime();
+      if (fa && fb) return new Date(fa).getTime() - new Date(fb).getTime();
+      return a.orden - b.orden;
     });
 
     // Quinielas en juego
