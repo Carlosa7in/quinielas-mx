@@ -157,7 +157,6 @@ const LOGOS: Record<string, string> = {
   "Vasco":                    "https://a.espncdn.com/i/teamlogos/soccer/500/3454.png",
   "Internacional":            "https://a.espncdn.com/i/teamlogos/soccer/500/1936.png",
   "Grêmio":                   "https://a.espncdn.com/i/teamlogos/soccer/500/6273.png",
-  "Belgrano":                 "https://a.espncdn.com/i/teamlogos/soccer/500/4.png",
   "Belgrano (Córdoba)":      "https://a.espncdn.com/i/teamlogos/soccer/500/4.png",
   "CA Belgrano":             "https://a.espncdn.com/i/teamlogos/soccer/500/4.png",
   "Santos FC":                "https://a.espncdn.com/i/teamlogos/soccer/500/2674.png",

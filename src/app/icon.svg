@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 310" width="500" height="310">
+
+  <!-- ══════════════════════════════════════════
+       TABLITAS QUINIELAS — Logo SVG
+       Editable en Figma: cada grupo tiene id
+  ══════════════════════════════════════════ -->
+
+  <!-- ── TABLONES (fan de 5, rotan desde el centro-bajo) ── -->
+  <g id="tablones">
+
+    <!-- Tablón 1 — extremo izquierdo (-32°) -->
+    <g id="tablon-1" transform="rotate(-32, 250, 295)">
+      <rect x="224" y="52" width="52" height="238" rx="8" ry="6"
+            fill="#6E3018" stroke="#12060" stroke-width="3"/>
+      <line x1="237" y1="56" x2="235" y2="288" stroke="#12060" stroke-width="1" opacity="0.28"/>
+      <line x1="254" y1="56" x2="256" y2="288" stroke="#A05020" stroke-width="0.7" opacity="0.18"/>
+    </g>
+
+    <!-- Tablón 2 — izquierdo (-16°) -->
+    <g id="tablon-2" transform="rotate(-16, 250, 295)">
+      <rect x="224" y="46" width="52" height="244" rx="8" ry="6"
+            fill="#743418" stroke="#12060" stroke-width="3"/>
+      <line x1="237" y1="50" x2="235" y2="288" stroke="#12060" stroke-width="1" opacity="0.28"/>
+      <line x1="254" y1="50" x2="256" y2="288" stroke="#A05020" stroke-width="0.7" opacity="0.18"/>
+    </g>
+
+    <!-- Tablón 3 — centro (0°, más alto) -->
+    <g id="tablon-3" transform="rotate(0, 250, 295)">
+      <rect x="224" y="38" width="52" height="252" rx="8" ry="6"
+            fill="#6E3018" stroke="#12060" stroke-width="3"/>
+      <line x1="237" y1="42" x2="235" y2="288" stroke="#12060" stroke-width="1" opacity="0.28"/>
+      <line x1="254" y1="42" x2="256" y2="288" stroke="#A05020" stroke-width="0.7" opacity="0.18"/>
+      <!-- nudo de madera -->
+      <ellipse cx="250" cy="72" rx="6" ry="8" fill="none"
+               stroke="#12060" stroke-width="1.2" opacity="0.4"/>
+    </g>
+
+    <!-- Tablón 4 — derecho (+16°) -->
+    <g id="tablon-4" transform="rotate(16, 250, 295)">
+      <rect x="224" y="46" width="52" height="244" rx="8" ry="6"
+            fill="#743418" stroke="#12060" stroke-width="3"/>
+      <line x1="237" y1="50" x2="235" y2="288" stroke="#12060" stroke-width="1" opacity="0.28"/>
+      <line x1="254" y1="50" x2="256" y2="288" stroke="#A05020" stroke-width="0.7" opacity="0.18"/>
+    </g>
+
+    <!-- Tablón 5 — extremo derecho (+32°) -->
+    <g id="tablon-5" transform="rotate(32, 250, 295)">
+      <rect x="224" y="52" width="52" height="238" rx="8" ry="6"
+            fill="#6E3018" stroke="#12060" stroke-width="3"/>
+      <line x1="237" y1="56" x2="235" y2="288" stroke="#12060" stroke-width="1" opacity="0.28"/>
+      <line x1="254" y1="56" x2="256" y2="288" stroke="#A05020" stroke-width="0.7" opacity="0.18"/>
+    </g>
+
+  </g>
+
+  <!-- ── LETRERO ── -->
+  <g id="letrero">
+
+    <!-- Marco exterior (borde oscuro) -->
+    <rect id="letrero-fondo" x="52" y="128" width="396" height="162" rx="16" ry="14"
+          fill="#A06030" stroke="#12060" stroke-width="4"/>
+
+    <!-- Superficie interior más clara -->
+    <rect id="letrero-superficie" x="64" y="140" width="372" height="138" rx="10" ry="10"
+          fill="#C8844A"/>
+
+    <!-- Vetas horizontales del letrero -->
+    <line x1="66"  y1="158" x2="434" y2="158" stroke="#12060" stroke-width="0.8" opacity="0.2"/>
+    <line x1="66"  y1="185" x2="434" y2="185" stroke="#12060" stroke-width="0.6" opacity="0.14"/>
+    <line x1="66"  y1="220" x2="434" y2="220" stroke="#12060" stroke-width="0.7" opacity="0.16"/>
+    <line x1="66"  y1="258" x2="434" y2="258" stroke="#12060" stroke-width="0.6" opacity="0.14"/>
+
+    <!-- ── TORNILLOS (4 esquinas) ── -->
+    <g id="tornillos">
+      <!-- Superior izquierdo -->
+      <g id="tornillo-si">
+        <circle cx="84"  cy="160" r="10" fill="#9A9A9A" stroke="#12060" stroke-width="2"/>
+        <line x1="77" y1="153" x2="91" y2="167" stroke="#12060" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="91" y1="153" x2="77" y2="167" stroke="#12060" stroke-width="2.2" stroke-linecap="round"/>
+      </g>
+      <!-- Superior derecho -->
+      <g id="tornillo-sd">
+        <circle cx="416" cy="160" r="10" fill="#9A9A9A" stroke="#12060" stroke-width="2"/>
+        <line x1="409" y1="153" x2="423" y2="167" stroke="#12060" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="423" y1="153" x2="409" y2="167" stroke="#12060" stroke-width="2.2" stroke-linecap="round"/>
+      </g>
+      <!-- Inferior izquierdo -->
+      <g id="tornillo-ii">
+        <circle cx="84"  cy="268" r="10" fill="#9A9A9A" stroke="#12060" stroke-width="2"/>
+        <line x1="77" y1="261" x2="91" y2="275" stroke="#12060" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="91" y1="261" x2="77" y2="275" stroke="#12060" stroke-width="2.2" stroke-linecap="round"/>
+      </g>
+      <!-- Inferior derecho -->
+      <g id="tornillo-id">
+        <circle cx="416" cy="268" r="10" fill="#9A9A9A" stroke="#12060" stroke-width="2"/>
+        <line x1="409" y1="261" x2="423" y2="275" stroke="#12060" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="423" y1="261" x2="409" y2="275" stroke="#12060" stroke-width="2.2" stroke-linecap="round"/>
+      </g>
+    </g>
+
+  </g>
+
+  <!-- ── TEXTOS ── -->
+  <g id="textos">
+
+    <!-- "TABLITAS" — grande, crema, contorno oscuro -->
+    <text id="texto-tablitas"
+          x="250" y="210"
+          text-anchor="middle"
+          font-family="'Arial Rounded MT Bold', 'Arial Black', Arial, sans-serif"
+          font-size="68" font-weight="900"
+          fill="#FFF0B8"
+          stroke="#12060" stroke-width="7"
+          paint-order="stroke fill">
+      TABLITAS
+    </text>
+
+    <!-- "QUINIELAS" — mediano, naranja, contorno oscuro -->
+    <text id="texto-quinielas"
+          x="250" y="262"
+          text-anchor="middle"
+          font-family="'Arial Rounded MT Bold', 'Arial Black', Arial, sans-serif"
+          font-size="40" font-weight="900"
+          fill="#E87C14"
+          stroke="#12060" stroke-width="5"
+          paint-order="stroke fill">
+      QUINIELAS
+    </text>
+
+  </g>
+
+</svg>
