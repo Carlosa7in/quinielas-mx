@@ -7,3 +7,10 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# Redirigir el subdominio antiguo de Netlify al dominio personalizado
+[[redirects]]
+  from   = "https://tablitasquinielas.netlify.app/*"
+  to     = "https://tablitasquinielas.com/:splat"
+  status = 301
+  force  = true
