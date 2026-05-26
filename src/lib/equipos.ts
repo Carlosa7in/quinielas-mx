@@ -1,5 +1,5 @@
 // URLs de logos de ESPN CDN (públicos, sin API key)
-const LOGOS: Record<string, string> = {
+export const LOGOS: Record<string, string> = {
   // ── Liga MX ──────────────────────────────────────────────────────
   "América":               "https://a.espncdn.com/i/teamlogos/soccer/500/227.png",
   "Atlas":                 "https://a.espncdn.com/i/teamlogos/soccer/500/216.png",

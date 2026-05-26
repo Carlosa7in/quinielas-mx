@@ -169,7 +169,8 @@ async function dibujarFlyer(
 
   // ── Cargar logos de equipos: DB (primario) + ESPN (respaldo) ─────────
   const ligas = liga === "Mixta"
-    ? ["Liga MX", "Champions League", "Premier League", "La Liga", "Serie A", "Ligue 1", "Brasileirão"]
+    ? ["Liga MX", "Champions League", "Premier League", "La Liga", "Serie A", "Ligue 1",
+       "Brasileirão", "Bundesliga", "Copa Libertadores", "MLS", "Amistosos", "CONCACAF", "Mundial"]
     : [liga];
 
   // ESPN logos (GET)

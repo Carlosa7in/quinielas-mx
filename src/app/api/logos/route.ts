@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/prisma";
+import { LOGOS } from "@/lib/equipos";
 
 export const dynamic = "force-dynamic";
 
@@ -233,6 +234,17 @@ export async function GET(req: NextRequest) {
       }
       for (const key of candidatos) {
         if (key) logoMap[key] = logoUrl;
+      }
+    }
+
+    // Para Amistosos/Mundial: ESPN no devuelve logos de países por la ruta /soccer/
+    // Mezclamos el mapa estático de equipos.ts que usa la ruta /countries/
+    if (slug === "fifa.friendly" || slug === "fifa.world" || slug === "concacaf.champions") {
+      for (const [nombre, url] of Object.entries(LOGOS)) {
+        if (!logoMap[nombre]) {
+          logoMap[nombre] = url;
+          logoMap[slugify(nombre)] = url;
+        }
       }
     }
 
