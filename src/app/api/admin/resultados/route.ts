@@ -159,14 +159,15 @@ export async function POST(req: Request) {
         }
       }
 
-      // Update prizes on winning quinielas
-      for (const q of ganadores1) {
-        await prisma.quiniela.update({ where: { id: q.id }, data: { premio: premio1Cada }, select: { id: true } });
-      }
-      if (segundoDistribuido) {
-        for (const q of ganadores2) {
-          await prisma.quiniela.update({ where: { id: q.id }, data: { premio: premio2Cada }, select: { id: true } });
-        }
+      // Marcar TODAS las quinielas con aciertos: ganadores con su premio, perdedores con 0
+      // Esto limpia la notificación "sin revisar premios" automáticamente
+      const ganadores1Ids = new Set(ganadores1.map(q => q.id));
+      const ganadores2Ids = new Set(ganadores2.map(q => q.id));
+      for (const q of quinielas) {
+        let premio = 0;
+        if (ganadores1Ids.has(q.id)) premio = premio1Cada;
+        else if (segundoDistribuido && ganadores2Ids.has(q.id)) premio = premio2Cada;
+        await prisma.quiniela.update({ where: { id: q.id }, data: { premio }, select: { id: true } });
       }
 
       // Update current jornada acumulaciones counter (sql directo)

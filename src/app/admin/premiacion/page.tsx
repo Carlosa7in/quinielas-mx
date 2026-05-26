@@ -137,7 +137,21 @@ export default function PremiacionPage() {
   const [datos, setDatos] = useState<PremiacionData | null>(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
+  const [marcandoRevisado, setMarcandoRevisado] = useState(false);
+  const [revisadoOk, setRevisadoOk] = useState(false);
   const [locale, setLocale] = useLocale();
+
+  const marcarRevisado = async () => {
+    if (!jornadaSeleccionada) return;
+    setMarcandoRevisado(true);
+    await fetch("/api/admin/premiacion/marcar-revisado", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jornadaId: jornadaSeleccionada.id }),
+    });
+    setMarcandoRevisado(false);
+    setRevisadoOk(true);
+  };
   const isMobile = useIsMobile();
 
   const cargarPremiacion = async (j: JornadaResumen) => {
@@ -388,6 +402,22 @@ export default function PremiacionPage() {
             >
               📊 Ver cuadrícula de resultados
             </a>
+
+            {/* Botón para silenciar la notificación de premios pendientes */}
+            {revisadoOk ? (
+              <div className="flex items-center justify-center gap-2 bg-green-50 border border-green-200 text-green-700 font-semibold py-3 rounded-xl text-sm">
+                ✅ Premios marcados como revisados
+              </div>
+            ) : (
+              <button
+                onClick={marcarRevisado}
+                disabled={marcandoRevisado}
+                className="w-full bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
+              >
+                {marcandoRevisado ? "Marcando..." : "✅ Marcar premios como revisados"}
+              </button>
+            )}
+
             <a
               href="/admin"
               className="block w-full text-center bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-colors"
