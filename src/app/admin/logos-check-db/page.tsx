@@ -67,6 +67,14 @@ const PAGES_CON_LOGOS = [
     ligas: "Jornada activa",
     nota: "Intenta logoUrl de BD primero; si falla usa getLogoUrl de equipos.ts; si ambos fallan muestra iniciales.",
   },
+  {
+    pagina: "/api/resultados/[jornadaId]/imagen",
+    descripcion: "Flyer de resultados (imagen PNG para compartir)",
+    componente: "Satori / OG image",
+    fuente: "both" as const,
+    ligas: "Jornada activa",
+    nota: "getLogoUrl de equipos.ts primero; logoUrl de BD como respaldo. Falla si el equipo no está en LOGOS{} ni en la tabla Equipo.",
+  },
 ];
 
 type Equipo = {

@@ -306,6 +306,83 @@ const LOGOS: Record<string, string> = {
   "Burnley":               "https://a.espncdn.com/i/teamlogos/soccer/500/379.png",
   "Leeds United":          "https://a.espncdn.com/i/teamlogos/soccer/500/357.png",
 
+  // ── Serie A ───────────────────────────────────────────────────────
+  "Inter":                    "https://a.espncdn.com/i/teamlogos/soccer/500/110.png",
+  "AS Roma":                  "https://a.espncdn.com/i/teamlogos/soccer/500/104.png",
+  "SS Lazio":                 "https://a.espncdn.com/i/teamlogos/soccer/500/112.png",
+  "Fiorentina":               "https://a.espncdn.com/i/teamlogos/soccer/500/109.png",
+  "ACF Fiorentina":           "https://a.espncdn.com/i/teamlogos/soccer/500/109.png",
+  "Torino":                   "https://a.espncdn.com/i/teamlogos/soccer/500/116.png",
+  "Bologna":                  "https://a.espncdn.com/i/teamlogos/soccer/500/108.png",
+  "Udinese":                  "https://a.espncdn.com/i/teamlogos/soccer/500/117.png",
+  "Hellas Verona":            "https://a.espncdn.com/i/teamlogos/soccer/500/118.png",
+  "Verona":                   "https://a.espncdn.com/i/teamlogos/soccer/500/118.png",
+  "Genoa":                    "https://a.espncdn.com/i/teamlogos/soccer/500/148.png",
+  "Genoa CFC":                "https://a.espncdn.com/i/teamlogos/soccer/500/148.png",
+  "Parma":                    "https://a.espncdn.com/i/teamlogos/soccer/500/115.png",
+  "Lecce":                    "https://a.espncdn.com/i/teamlogos/soccer/500/149.png",
+  "US Lecce":                 "https://a.espncdn.com/i/teamlogos/soccer/500/149.png",
+  "Cagliari":                 "https://a.espncdn.com/i/teamlogos/soccer/500/1079.png",
+  "Empoli":                   "https://a.espncdn.com/i/teamlogos/soccer/500/3040.png",
+  "FC Empoli":                "https://a.espncdn.com/i/teamlogos/soccer/500/3040.png",
+  "Monza":                    "https://a.espncdn.com/i/teamlogos/soccer/500/7700.png",
+  "AC Monza":                 "https://a.espncdn.com/i/teamlogos/soccer/500/7700.png",
+  "Como":                     "https://a.espncdn.com/i/teamlogos/soccer/500/748.png",
+  "Como 1907":                "https://a.espncdn.com/i/teamlogos/soccer/500/748.png",
+  "Venezia":                  "https://a.espncdn.com/i/teamlogos/soccer/500/150.png",
+  "Venezia FC":               "https://a.espncdn.com/i/teamlogos/soccer/500/150.png",
+  "Salernitana":              "https://a.espncdn.com/i/teamlogos/soccer/500/151.png",
+  "US Salernitana":           "https://a.espncdn.com/i/teamlogos/soccer/500/151.png",
+
+  // ── Bundesliga ────────────────────────────────────────────────────
+  "Eintracht Frankfurt":      "https://a.espncdn.com/i/teamlogos/soccer/500/127.png",
+  "Wolfsburg":                "https://a.espncdn.com/i/teamlogos/soccer/500/130.png",
+  "VfL Wolfsburg":            "https://a.espncdn.com/i/teamlogos/soccer/500/130.png",
+  "Stuttgart":                "https://a.espncdn.com/i/teamlogos/soccer/500/129.png",
+  "VfB Stuttgart":            "https://a.espncdn.com/i/teamlogos/soccer/500/129.png",
+  "Borussia Mönchengladbach": "https://a.espncdn.com/i/teamlogos/soccer/500/125.png",
+  "Gladbach":                 "https://a.espncdn.com/i/teamlogos/soccer/500/125.png",
+  "Mönchengladbach":          "https://a.espncdn.com/i/teamlogos/soccer/500/125.png",
+  "Köln":                     "https://a.espncdn.com/i/teamlogos/soccer/500/126.png",
+  "FC Köln":                  "https://a.espncdn.com/i/teamlogos/soccer/500/126.png",
+  "Werder Bremen":            "https://a.espncdn.com/i/teamlogos/soccer/500/738.png",
+  "SC Freiburg":              "https://a.espncdn.com/i/teamlogos/soccer/500/1884.png",
+  "Freiburg":                 "https://a.espncdn.com/i/teamlogos/soccer/500/1884.png",
+  "Hoffenheim":               "https://a.espncdn.com/i/teamlogos/soccer/500/3880.png",
+  "TSG Hoffenheim":           "https://a.espncdn.com/i/teamlogos/soccer/500/3880.png",
+  "Augsburg":                 "https://a.espncdn.com/i/teamlogos/soccer/500/3882.png",
+  "FC Augsburg":              "https://a.espncdn.com/i/teamlogos/soccer/500/3882.png",
+  "Mainz":                    "https://a.espncdn.com/i/teamlogos/soccer/500/3879.png",
+  "Mainz 05":                 "https://a.espncdn.com/i/teamlogos/soccer/500/3879.png",
+  "Union Berlin":             "https://a.espncdn.com/i/teamlogos/soccer/500/10768.png",
+  "1. FC Union Berlin":       "https://a.espncdn.com/i/teamlogos/soccer/500/10768.png",
+  "St. Pauli":                "https://a.espncdn.com/i/teamlogos/soccer/500/3887.png",
+  "FC St. Pauli":             "https://a.espncdn.com/i/teamlogos/soccer/500/3887.png",
+  "Heidenheim":               "https://a.espncdn.com/i/teamlogos/soccer/500/10773.png",
+  "1. FC Heidenheim":         "https://a.espncdn.com/i/teamlogos/soccer/500/10773.png",
+  "Holstein Kiel":            "https://a.espncdn.com/i/teamlogos/soccer/500/789.png",
+
+  // ── Copa Libertadores — equipos adicionales ───────────────────────
+  "Nacional":                 "https://a.espncdn.com/i/teamlogos/soccer/500/5818.png",
+  "Peñarol":                  "https://a.espncdn.com/i/teamlogos/soccer/500/5819.png",
+  "Colo Colo":                "https://a.espncdn.com/i/teamlogos/soccer/500/5647.png",
+  "Club Colo-Colo":           "https://a.espncdn.com/i/teamlogos/soccer/500/5647.png",
+  "Universidad de Chile":     "https://a.espncdn.com/i/teamlogos/soccer/500/5649.png",
+  "LDU Quito":                "https://a.espncdn.com/i/teamlogos/soccer/500/5735.png",
+  "Liga de Quito":            "https://a.espncdn.com/i/teamlogos/soccer/500/5735.png",
+  "Independiente del Valle":  "https://a.espncdn.com/i/teamlogos/soccer/500/12592.png",
+  "Olimpia":                  "https://a.espncdn.com/i/teamlogos/soccer/500/5752.png",
+  "Cerro Porteño":            "https://a.espncdn.com/i/teamlogos/soccer/500/5751.png",
+  "Libertad":                 "https://a.espncdn.com/i/teamlogos/soccer/500/5753.png",
+  "Bolívar":                  "https://a.espncdn.com/i/teamlogos/soccer/500/5730.png",
+  "The Strongest":            "https://a.espncdn.com/i/teamlogos/soccer/500/5731.png",
+  "Universitario":            "https://a.espncdn.com/i/teamlogos/soccer/500/5765.png",
+  "Atlético Nacional":        "https://a.espncdn.com/i/teamlogos/soccer/500/5609.png",
+  "Millonarios":              "https://a.espncdn.com/i/teamlogos/soccer/500/5607.png",
+  "Junior":                   "https://a.espncdn.com/i/teamlogos/soccer/500/5611.png",
+  "Deportivo Táchira":        "https://a.espncdn.com/i/teamlogos/soccer/500/5791.png",
+  "Caracas FC":               "https://a.espncdn.com/i/teamlogos/soccer/500/5787.png",
+
   // ── UEFA Champions League ─────────────────────────────────────────
   "Bayern Munich":         "https://a.espncdn.com/i/teamlogos/soccer/500/132.png",
   "PSG":                   "https://a.espncdn.com/i/teamlogos/soccer/500/160.png",
@@ -393,6 +470,44 @@ export const EQUIPOS_POR_LIGA: Record<string, string[]> = {
     "Belgrano", "Instituto", "Barracas Central", "Riestra",
     "Atlético Tucumán", "Sarmiento", "Gimnasia LP",
   ],
+  "Serie A": [
+    // Temporada 2025-26
+    "Inter Milan", "AC Milan", "Juventus", "Napoli", "Roma", "Lazio", "Atalanta",
+    "Fiorentina", "Torino", "Bologna", "Udinese", "Hellas Verona", "Genoa",
+    "Parma", "Lecce", "Cagliari", "Empoli", "Monza", "Como", "Venezia",
+  ],
+  "Bundesliga": [
+    // Temporada 2025-26
+    "Bayern Munich", "Borussia Dortmund", "Bayer Leverkusen", "RB Leipzig",
+    "Eintracht Frankfurt", "Wolfsburg", "Stuttgart", "Borussia Mönchengladbach",
+    "Werder Bremen", "SC Freiburg", "Hoffenheim", "Augsburg", "Mainz 05",
+    "Union Berlin", "Köln", "St. Pauli", "Heidenheim", "Holstein Kiel",
+  ],
+  "Copa Libertadores": [
+    // Equipos recurrentes — actualizar según fase
+    // Brasil
+    "Flamengo", "Palmeiras", "Atlético Mineiro", "Fluminense", "Botafogo",
+    "São Paulo", "Grêmio", "Internacional", "Athletico Paranaense",
+    // Argentina
+    "River Plate", "Boca Juniors", "Racing Club", "Estudiantes LP",
+    "San Lorenzo", "Independiente", "Talleres", "Argentinos Juniors", "Newell's Old Boys",
+    // Uruguay
+    "Nacional", "Peñarol",
+    // Chile
+    "Colo Colo", "Universidad de Chile",
+    // Ecuador
+    "LDU Quito", "Independiente del Valle",
+    // Paraguay
+    "Olimpia", "Cerro Porteño", "Libertad",
+    // Bolivia
+    "Bolívar", "The Strongest",
+    // Perú
+    "Universitario",
+    // Colombia
+    "Atlético Nacional", "Millonarios", "Junior",
+    // Venezuela
+    "Caracas FC", "Deportivo Táchira",
+  ],
   "Mundial": [
     // Hosts CONCACAF
     "México", "Estados Unidos", "Canadá",
@@ -429,6 +544,9 @@ export const LIGA_ICON: Record<string, string> = {
   "Ligue 1":          "🇫🇷",
   "Brasileirão":      "🇧🇷",
   "Liga Argentina":   "🇦🇷",
+  "Serie A":           "🇮🇹",
+  "Bundesliga":        "🇩🇪",
+  "Copa Libertadores": "🏆",
   "Mundial":          "🌍",
   "Mixta":            "⚽",
 };
