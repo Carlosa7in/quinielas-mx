@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/prisma";
+import { getLogoUrl } from "@/lib/equipos";
 
 // Siempre dinamico - nunca cachear en build time
 export const dynamic = "force-dynamic";
@@ -399,8 +400,8 @@ export async function GET() {
       ev."logoUrl"      AS logo_visita
     FROM "Jornada" j
     LEFT JOIN "Partido" p ON p."jornadaId" = j.id
-    LEFT JOIN "Equipo" el ON el.nombre = p."equipoLocal"  AND el.liga = j.liga
-    LEFT JOIN "Equipo" ev ON ev.nombre = p."equipoVisita" AND ev.liga = j.liga
+    LEFT JOIN "Equipo" el ON el.nombre = p."equipoLocal"  AND el.liga = p.liga
+    LEFT JOIN "Equipo" ev ON ev.nombre = p."equipoVisita" AND ev.liga = p.liga
     WHERE j.estado IN ('abierta', 'cerrada', 'en_curso')
     ORDER BY j."fechaInicio", p.orden
   `) as RawRow[];
@@ -504,10 +505,10 @@ export async function GET() {
           const esRecienTerminado = minutosDesdeInicio < 120 + 30; // ~30min después del 90'
           let golesLocal: string | null = p.goles_local !== null ? String(p.goles_local) : null;
           let golesVisita: string | null = p.goles_visita !== null ? String(p.goles_visita) : null;
-          // Logos: BD > ESPN teams endpoint > vacío
-          // Usar || en lugar de ?? para que string vacío también haga fallback a ESPN
-          let logoLocal  = p.logo_local  || findLogo(logoMapPartido, p.equipo_local);
-          let logoVisita = p.logo_visita || findLogo(logoMapPartido, p.equipo_visita);
+          // Logos: BD > ESPN teams endpoint > estático equipos.ts > vacío
+          // Usar || en lugar de ?? para que string vacío también haga fallback
+          let logoLocal  = p.logo_local  || findLogo(logoMapPartido, p.equipo_local)  || getLogoUrl(p.equipo_local);
+          let logoVisita = p.logo_visita || findLogo(logoMapPartido, p.equipo_visita) || getLogoUrl(p.equipo_visita);
           let eventos: unknown[] = [];
           let alineacion: Alineacion | null = null;
 

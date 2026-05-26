@@ -8,7 +8,6 @@ const PAGES_CON_LOGOS = [
     descripcion: "Registro en tienda — selección manual de picks",
     componente: "LogoEquipo",
     fuente: "static" as const,
-    ligas: "Jornada activa",
     nota: "Usa mapa estático de equipos.ts. Falla si el equipo no está en LOGOS{}.",
   },
   {
@@ -16,7 +15,6 @@ const PAGES_CON_LOGOS = [
     descripcion: "Escaneo de forma en tienda",
     componente: "LogoEquipo",
     fuente: "static" as const,
-    ligas: "Jornada activa",
     nota: "Usa mapa estático de equipos.ts.",
   },
   {
@@ -24,7 +22,6 @@ const PAGES_CON_LOGOS = [
     descripcion: "Registro de resultados",
     componente: "LogoEquipo",
     fuente: "static" as const,
-    ligas: "Jornada activa",
     nota: "Usa mapa estático de equipos.ts.",
   },
   {
@@ -32,23 +29,34 @@ const PAGES_CON_LOGOS = [
     descripcion: "Pantalla de premiación / ganadores",
     componente: "LogoEquipo",
     fuente: "static" as const,
-    ligas: "Jornada activa",
     nota: "Usa mapa estático de equipos.ts.",
   },
   {
+    pagina: "/admin/jornadas/[id]",
+    descripcion: "Vista de jornada en admin — edición de partidos",
+    componente: "LogoEquipo con onError",
+    fuente: "static" as const,
+    nota: "getLogoUrl de equipos.ts con fallback a iniciales. Usar Sincronizar para que coincida con BD.",
+  },
+  {
     pagina: "/admin/mi-link → FlyerJornada",
-    descripcion: "Generación del flyer (canvas) para compartir",
+    descripcion: "Generación del flyer promocional (canvas) para compartir",
     componente: "FlyerJornada (canvas)",
     fuente: "dynamic" as const,
-    ligas: "Liga MX, Champions, Premier, La Liga, Serie A, Ligue 1, Brasileirão",
-    nota: "Fetch a /api/logos + NOMBRE_MAP. Falla si ESPN cambia el displayName del equipo.",
+    nota: "Fetch a /api/logos (ESPN) + /api/logos POST (BD). Para Mixta: busca en todas las ligas incluyendo Amistosos/CONCACAF/Mundial. Falla si ESPN cambia el displayName.",
+  },
+  {
+    pagina: "/en-vivo",
+    descripcion: "Marcadores y eventos en tiempo real",
+    componente: "TeamLogo (inline)",
+    fuente: "both" as const,
+    nota: "BD logoUrl (liga=partido.liga) → ESPN teams endpoint → getLogoUrl estático. Para selecciones nacionales usa la ruta /countries/ del CDN de ESPN.",
   },
   {
     pagina: "/kiosko/[vendedorId]",
     descripcion: "Página del cliente en tienda (pública)",
     componente: "LogoEquipo inline",
     fuente: "both" as const,
-    ligas: "Jornada activa",
     nota: "Fetch a /api/logos (primero) + getLogoUrl de equipos.ts (respaldo).",
   },
   {
@@ -56,7 +64,6 @@ const PAGES_CON_LOGOS = [
     descripcion: "Registro público de quiniela (cliente)",
     componente: "LogoEquipo",
     fuente: "static" as const,
-    ligas: "Jornada activa",
     nota: "Usa mapa estático de equipos.ts.",
   },
   {
@@ -64,7 +71,6 @@ const PAGES_CON_LOGOS = [
     descripcion: "Tabla pública de resultados por jornada",
     componente: "TeamLogo (inline)",
     fuente: "both" as const,
-    ligas: "Jornada activa",
     nota: "Intenta logoUrl de BD primero; si falla usa getLogoUrl de equipos.ts; si ambos fallan muestra iniciales.",
   },
   {
@@ -72,8 +78,7 @@ const PAGES_CON_LOGOS = [
     descripcion: "Flyer de resultados (imagen PNG para compartir)",
     componente: "Satori / OG image",
     fuente: "both" as const,
-    ligas: "Jornada activa",
-    nota: "getLogoUrl de equipos.ts primero; logoUrl de BD como respaldo. Falla si el equipo no está en LOGOS{} ni en la tabla Equipo.",
+    nota: "getLogoUrl de equipos.ts primero; logoUrl de BD como respaldo. Pre-descarga logos como base64. Falla si no está en LOGOS{} ni en Equipo.",
   },
 ];
 

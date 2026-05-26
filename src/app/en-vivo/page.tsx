@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { RefreshCw, Clock, ArrowLeft, BellOff } from "lucide-react";
+import { LIGA_ICON } from "@/lib/equipos";
 import { PushButton } from "@/components/PushButton";
 
 const ESTADO_BADGE: Record<string, string> = {
@@ -771,7 +772,10 @@ export default function EnVivoPage() {
           <section key={j.id}>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-xs font-black text-amber-400 uppercase tracking-wider">{j.nombre}</h2>
-              <span className="text-[10px] text-gray-600 font-semibold uppercase">{j.liga}</span>
+              <span className="text-[10px] text-gray-500 font-semibold uppercase flex items-center gap-1">
+                {LIGA_ICON[j.liga] && <span className="text-base leading-none">{LIGA_ICON[j.liga]}</span>}
+                {j.liga}
+              </span>
             </div>
 
             {/* En vivo primero */}
