@@ -16,6 +16,8 @@ const LIGA_ESPN: Record<string, string> = {
   "Eredivisie":       "ned.1",
   "Liga Portugal":    "por.1",
   "Copa Libertadores": "conmebol.libertadores",
+  "MLS":        "usa.1",
+  "Amistosos":  "fifa.friendly",
 };
 
 // Quita acentos y pasa a minúsculas para comparación flexible

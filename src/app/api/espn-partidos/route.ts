@@ -12,6 +12,8 @@ const LIGA_ESPN: Record<string, { url: string; nombre: string }> = {
   "Serie A":          { url: "ita.1",           nombre: "Serie A" },
   "Bundesliga":       { url: "ger.1",           nombre: "Bundesliga" },
   "Copa Libertadores":{ url: "conmebol.libertadores", nombre: "Copa Libertadores" },
+  "MLS":        { url: "usa.1",          nombre: "MLS" },
+  "Amistosos":  { url: "fifa.friendly",  nombre: "Amistosos" },
   "Mundial":          { url: "fifa.world",      nombre: "Mundial" },
 };
 
@@ -105,6 +107,19 @@ const NOMBRE_MAP: Record<string, string> = {
   "Talleres de Córdoba":        "Talleres",
   "Atlético Junior":            "Junior",
   "Atlético Nacional":          "Atlético Nacional",
+  // MLS
+  "Atlanta United FC":        "Atlanta United FC",
+  "Inter Miami CF":           "Inter Miami CF",
+  "Los Angeles FC":           "LAFC",
+  "Seattle Sounders FC":      "Seattle Sounders FC",
+  "New York Red Bulls":       "Red Bull New York",
+  "CF Montréal":              "CF Montréal",
+  "CF Montreal":              "CF Montréal",
+  "Houston Dynamo FC":        "Houston Dynamo FC",
+  "Vancouver Whitecaps FC":   "Vancouver Whitecaps",
+  "Minnesota United FC":      "Minnesota United FC",
+  "Chicago Fire FC":          "Chicago Fire FC",
+  "D.C. United":              "D.C. United",
   // Liga MX
   "Chivas":                   "Guadalajara",
   "Tigres":                   "Tigres UANL",
