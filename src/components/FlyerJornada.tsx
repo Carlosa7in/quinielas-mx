@@ -269,10 +269,10 @@ async function dibujarFlyer(
   // "FECHA" centrado en el área del date box (x=124, w=72 → center=160)
   ctx.fillStyle = "#fbbf24";
   ctx.font = "bold 14px Arial, sans-serif";
-  ctx.fillText("FECHA",     124 + 36,          curY + 24);
+  ctx.fillText("FECHA",     PAD + 6 + 36,       curY + 24);  // caja fecha: x=78, w=72 → centro=114
   ctx.fillStyle = "#93c5fd";
   ctx.font = "bold 18px Arial, sans-serif";
-  ctx.fillText("L",          PAD + 26,          curY + 24);
+  ctx.fillText("L",          PAD + 6 + 72 + 6 + 20, curY + 24); // botón L: x=156, w=40 → centro=176
   ctx.fillText(tf.local,     (196 + localNameX) / 2, curY + 24);
   ctx.fillText("E",          W / 2,             curY + 24);
   ctx.fillText(tf.visitante, (awayNameX + W - PAD) / 2, curY + 24);
@@ -297,8 +297,8 @@ async function dibujarFlyer(
       const hora = d.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Mexico_City" })
                     .replace(/\s*a\.m\./i, "am").replace(/\s*p\.m\./i, "pm");
 
-      // Caja de fecha: entre el botón L y el nombre local
-      const dateBoxX = PAD + 6 + btnW + 6;  // 124 — justo después del botón L
+      // Caja de fecha: al inicio de la fila (antes del botón L)
+      const dateBoxX = PAD + 6;  // 78 — primera posición
       const dateBoxW = 72;
       const dateBoxH = ROW_H - 18;
       const dateBoxY = y + 9;
@@ -318,13 +318,13 @@ async function dibujarFlyer(
       ctx.textBaseline = "alphabetic";
     }
 
-    // Botón L
+    // Botón L — después de la caja de fecha (fecha=78+72=150, gap=6 → L empieza en 156)
     ctx.fillStyle = "rgba(29,78,216,0.85)";
-    roundRect(ctx, PAD + 6, midY - btnH / 2, btnW, btnH, 7);
+    roundRect(ctx, PAD + 6 + 72 + 6, midY - btnH / 2, btnW, btnH, 7);
     ctx.fillStyle = "#fff";
     ctx.font = "bold 18px Arial, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("L", PAD + 6 + btnW / 2, cy);
+    ctx.fillText("L", PAD + 6 + 72 + 6 + btnW / 2, cy);
 
     // Botón E
     ctx.fillStyle = "rgba(55,65,81,0.85)";
