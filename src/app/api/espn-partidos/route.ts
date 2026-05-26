@@ -14,6 +14,7 @@ const LIGA_ESPN: Record<string, { url: string; nombre: string }> = {
   "Copa Libertadores":{ url: "conmebol.libertadores", nombre: "Copa Libertadores" },
   "MLS":        { url: "usa.1",          nombre: "MLS" },
   "Amistosos":  { url: "fifa.friendly",  nombre: "Amistosos" },
+  "CONCACAF":   { url: "concacaf.champions", nombre: "CONCACAF" },
   "Mundial":          { url: "fifa.world",      nombre: "Mundial" },
 };
 
@@ -128,6 +129,18 @@ const NOMBRE_MAP: Record<string, string> = {
   "Mazatlán FC":              "Mazatlán",
   "San Luis":                 "Atlético San Luis",
   "Atlético San Luis":        "Atlético San Luis",
+  // CONCACAF — equipos centroamericanos
+  "Deportivo Saprissa":       "Saprissa",
+  "Club Sport Saprissa":      "Saprissa",
+  "L.D. Alajuelense":         "Alajuelense",
+  "LD Alajuelense":           "Alajuelense",
+  "Club Comunicaciones":      "Comunicaciones",
+  "Real España":              "Real España",
+  "Club Deportivo Olimpia":   "Olimpia Honduras",
+  "Club Deportivo Motagua":   "Motagua",
+  "Forge FC":                 "Forge FC",
+  "Pacific FC":               "Pacific FC",
+  "Club de Foot Montréal":    "CF Montréal",
   // ── Mundial 2026 — inglés → español ─────────────────────────────────
   "Mexico":                   "México",
   "United States":            "Estados Unidos",

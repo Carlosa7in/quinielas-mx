@@ -18,6 +18,7 @@ const LIGA_ESPN: Record<string, string> = {
   "Copa Libertadores": "conmebol.libertadores",
   "MLS":        "usa.1",
   "Amistosos":  "fifa.friendly",
+  "CONCACAF":   "concacaf.champions",
 };
 
 // Quita acentos y pasa a minúsculas para comparación flexible
@@ -153,6 +154,16 @@ const NOMBRE_MAP: Record<string, string> = {
   "Universitario de Deportes":   "Universitario",
   "Independiente del Valle":     "Independiente del Valle",
 
+  // CONCACAF — equipos centroamericanos
+  "Deportivo Saprissa":       "Saprissa",
+  "Club Sport Saprissa":      "Saprissa",
+  "L.D. Alajuelense":         "Alajuelense",
+  "LD Alajuelense":           "Alajuelense",
+  "Club Comunicaciones":      "Comunicaciones",
+  "Real España":              "Real España",
+  "Club Deportivo Olimpia":   "Olimpia Honduras",
+  "Club Deportivo Motagua":   "Motagua",
+  "Forge FC":                 "Forge FC",
   // Liga Argentina — nombres ESPN
   "Club Atlético Boca Juniors":  "Boca Juniors",
   "Club Atlético River Plate":   "River Plate",

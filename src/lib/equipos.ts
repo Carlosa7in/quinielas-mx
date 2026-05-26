@@ -424,6 +424,19 @@ const LOGOS: Record<string, string> = {
   "St. Louis CITY SC":        "https://a.espncdn.com/i/teamlogos/soccer/500/21812.png",
   "San Diego FC":             "https://a.espncdn.com/i/teamlogos/soccer/500/22529.png",
 
+  // ── CONCACAF — equipos centroamericanos ─────────────────────────────
+  // IDs verificados desde ESPN API concacaf.champions
+  "Saprissa":              "https://a.espncdn.com/i/teamlogos/soccer/500/1828.png",
+  "Deportivo Saprissa":    "https://a.espncdn.com/i/teamlogos/soccer/500/1828.png",
+  "Alajuelense":           "https://a.espncdn.com/i/teamlogos/soccer/500/5760.png",
+  "LD Alajuelense":        "https://a.espncdn.com/i/teamlogos/soccer/500/5760.png",
+  "Comunicaciones":        "https://a.espncdn.com/i/teamlogos/soccer/500/5750.png",
+  "Real España":           "https://a.espncdn.com/i/teamlogos/soccer/500/5753.png",
+  "Olimpia Honduras":      "https://a.espncdn.com/i/teamlogos/soccer/500/5752.png",
+  "Motagua":               "https://a.espncdn.com/i/teamlogos/soccer/500/5754.png",
+  "Forge FC":              "https://a.espncdn.com/i/teamlogos/soccer/500/20130.png",
+  "Pacific FC":            "https://a.espncdn.com/i/teamlogos/soccer/500/21742.png",
+
   // ── Copa Libertadores — equipos adicionales ── IDs verificados de ESPN API
   "Nacional":                 "https://a.espncdn.com/i/teamlogos/soccer/500/2684.png",
   "Club Nacional de Football": "https://a.espncdn.com/i/teamlogos/soccer/500/2684.png",
@@ -591,6 +604,20 @@ export const EQUIPOS_POR_LIGA: Record<string, string[]> = {
     "Colorado Rapids", "Real Salt Lake", "San Jose Earthquakes", "Vancouver Whitecaps",
     "Minnesota United FC", "St. Louis CITY SC", "San Diego FC",
   ],
+  "CONCACAF": [
+    // Liga MX
+    "Guadalajara", "América", "Tigres UANL", "Monterrey", "Cruz Azul", "Pachuca",
+    "Pumas UNAM", "León", "Toluca", "Atlas", "Atlético San Luis", "Necaxa",
+    // MLS
+    "LAFC", "Inter Miami CF", "LA Galaxy", "Columbus Crew", "Seattle Sounders FC",
+    "Philadelphia Union", "CF Montréal", "FC Cincinnati", "Portland Timbers",
+    "Red Bull New York", "New York City FC", "Nashville SC",
+    // Canadá
+    "Forge FC", "Pacific FC",
+    // Centroamérica
+    "Saprissa", "Alajuelense", "Comunicaciones", "Real España", "Olimpia Honduras",
+    "Motagua", "Atlético Pantoja",
+  ],
   "Amistosos": [
     // Selecciones participantes en amistosos frecuentes
     "México", "Estados Unidos", "Canadá", "Argentina", "Brasil", "Colombia",
@@ -641,6 +668,7 @@ export const LIGA_ICON: Record<string, string> = {
   "Bundesliga":        "🇩🇪",
   "Copa Libertadores": "🏆",
   "MLS":        "🇺🇸",
+  "CONCACAF":   "🌎",
   "Amistosos":  "🌐",
   "Mundial":          "🌍",
   "Mixta":            "⚽",
