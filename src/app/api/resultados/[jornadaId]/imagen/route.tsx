@@ -22,15 +22,18 @@ const H_TITLE       = 36;
 const H_PRIZE       = 34;
 const H_TOTALS      = 26;
 const H_RES_BAR     = 22;
-const H_LOGO_ROW    = 52;
-const H_SCORE_ROW   = 28;
-const H_NUM_ROW     = 26;
+const H_FECHA_ROW   = 24;   // ← Fecha del partido
+const H_NAME_ROW    = 20;   // ← Nombre abreviado L / Visitante
+const H_LOGO_ROW    = 48;   // logo local y logo visitante
+const H_SCORE_ROW   = 28;   // marcador (E)
+const H_NUM_ROW     = 26;   // resultado V
 const H_DATA        = 26;
 const H_MORE_ROW    = 22;
 const H_FOOTER      = 28;
 
+// Fecha / L(nombre) / LOCAL(logo) / E(marcador) / VISITANTE(logo) / V(resultado)
 const FIXED_H = H_HEADER + H_TITLE + H_PRIZE + H_TOTALS + H_RES_BAR +
-                H_LOGO_ROW * 2 + H_SCORE_ROW + H_NUM_ROW + H_FOOTER;
+                H_FECHA_ROW + H_NAME_ROW + H_LOGO_ROW + H_SCORE_ROW + H_LOGO_ROW + H_NUM_ROW + H_FOOTER;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const PRED: Record<string, string> = { "1": "L", "X": "E", "2": "V" };
@@ -40,6 +43,46 @@ function fmt(n: number) {
     style: "currency", currency: "MXN",
     minimumFractionDigits: 0, maximumFractionDigits: 0,
   });
+}
+
+// Descarga un logo y lo convierte a data URL base64 para que Satori lo muestre siempre
+async function safeLogoUrl(url: string): Promise<string> {
+  if (!url) return "";
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 Tablitas/1.0" },
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return "";
+    const buf = await res.arrayBuffer();
+    const b64 = Buffer.from(buf).toString("base64");
+    const ct = res.headers.get("content-type") ?? "image/png";
+    return `data:${ct};base64,${b64}`;
+  } catch {
+    return "";
+  }
+}
+
+// Fecha UTC → "Sáb 31 / 20:00" en hora de México
+function formatFecha(iso: string): { dia: string; hora: string } {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return { dia: "—", hora: "" };
+  // México eliminó el horario de verano en 2023 → siempre UTC-6 (CST)
+  const offsetHours = -6;
+  const local = new Date(d.getTime() + offsetHours * 3_600_000);
+  const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    dia:  `${days[local.getUTCDay()]} ${local.getUTCDate()}`,
+    hora: `${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())}`,
+  };
+}
+
+// Nombre abreviado para la fila L / V
+function abrev(nombre: string): string {
+  // Quitar artículos comunes y tomar primeras 4 letras del primer word significativo
+  const clean = nombre.replace(/^(FC |CF |AC |AS |SS |CD |SC |RC |LD |US |RB |VfB |VfL |SV |FSV |TSG )/i, "");
+  return clean.substring(0, 4).toUpperCase();
 }
 
 // ── Route ─────────────────────────────────────────────────────────────────────
@@ -71,7 +114,7 @@ export async function GET(
       },
     });
 
-    // Logos
+    // Logos (curated primero, DB como fallback)
     const teamNames = [...new Set(partidos.flatMap(p => [p.equipoLocal, p.equipoVisita]))];
     const equipos = await prisma.equipo.findMany({
       where: { nombre: { in: teamNames } },
@@ -105,6 +148,14 @@ export async function GET(
       if (fa && fb) return new Date(fa).getTime() - new Date(fb).getTime();
       return a.orden - b.orden;
     });
+
+    // ── Precargar logos como data URLs (garantiza que siempre aparezcan en Satori) ──
+    const logoDataUrls = await Promise.all(
+      ps.map(async p => ({
+        local:  await safeLogoUrl(p.logoLocal),
+        visita: await safeLogoUrl(p.logoVisita),
+      }))
+    );
 
     // Quinielas en juego
     const quinielas = await prisma.quiniela.findMany({
@@ -196,29 +247,63 @@ export async function GET(
             <span style={{ color: WHITE, fontSize: 11, fontWeight: 800, letterSpacing: 4 }}>RESULTADOS</span>
           </div>
 
-          {/* ── LOCAL logos ── */}
-          <div style={{ height: H_LOGO_ROW, background: "#e8edf2", display: "flex", alignItems: "center" }}>
+          {/* ── FECHA ── */}
+          <div style={{ height: H_FECHA_ROW, background: "#eef2f7", display: "flex", alignItems: "center" }}>
             <div style={{ width: NAME_W, display: "flex", alignItems: "center", paddingLeft: 14 }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: NAVY, letterSpacing: 1 }}>LOCAL</span>
+              <span style={{ fontSize: 9, fontWeight: 800, color: NAVY, letterSpacing: 1 }}>FECHA</span>
+            </div>
+            {ps.map(p => {
+              const iso = fechaMapImg[p.id];
+              const f = iso ? formatFecha(iso) : { dia: "—", hora: "" };
+              return (
+                <div key={`f-${p.id}`} style={{ width: gameW, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 7, fontWeight: 700, color: "#374151" }}>{f.dia}</span>
+                  {f.hora && <span style={{ fontSize: 7, fontWeight: 600, color: "#6b7280" }}>{f.hora}</span>}
+                </div>
+              );
+            })}
+            <div style={{ width: PTS_W }} />
+          </div>
+
+          {/* ── L — nombre abreviado local ── */}
+          <div style={{ height: H_NAME_ROW, background: "#dde4ed", display: "flex", alignItems: "center" }}>
+            <div style={{ width: NAME_W, display: "flex", alignItems: "center", paddingLeft: 14 }}>
+              <span style={{ fontSize: 10, fontWeight: 900, color: NAVY, letterSpacing: 2 }}>L</span>
             </div>
             {ps.map(p => (
-              <div key={`l-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {p.logoLocal && p.logoLocal.trim()
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={p.logoLocal} width={38} height={38} style={{ objectFit: "contain" }} />
-                  : <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ color: WHITE, fontSize: 9, fontWeight: 800 }}>{p.equipoLocal.substring(0, 2).toUpperCase()}</span>
-                    </div>
-                }
+              <div key={`ln-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 8, fontWeight: 700, color: NAVY }}>{abrev(p.equipoLocal)}</span>
               </div>
             ))}
             <div style={{ width: PTS_W }} />
           </div>
 
-          {/* ── MARCADOR ── */}
+          {/* ── LOCAL logos ── */}
+          <div style={{ height: H_LOGO_ROW, background: "#e8edf2", display: "flex", alignItems: "center" }}>
+            <div style={{ width: NAME_W, display: "flex", alignItems: "center", paddingLeft: 14 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: NAVY, letterSpacing: 1 }}>LOCAL</span>
+            </div>
+            {ps.map((p, i) => {
+              const src = logoDataUrls[i].local;
+              return (
+                <div key={`l-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {src
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={src} width={36} height={36} style={{ objectFit: "contain" }} />
+                    : <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ color: WHITE, fontSize: 9, fontWeight: 800 }}>{p.equipoLocal.substring(0, 2).toUpperCase()}</span>
+                      </div>
+                  }
+                </div>
+              );
+            })}
+            <div style={{ width: PTS_W }} />
+          </div>
+
+          {/* ── E — MARCADOR ── */}
           <div style={{ height: H_SCORE_ROW, background: NAVY2, display: "flex", alignItems: "center" }}>
             <div style={{ width: NAME_W, display: "flex", alignItems: "center", paddingLeft: 14 }}>
-              <span style={{ fontSize: 9, fontWeight: 800, color: "#93c5fd", letterSpacing: 1 }}>MARCADOR</span>
+              <span style={{ fontSize: 10, fontWeight: 900, color: "#93c5fd", letterSpacing: 2 }}>E</span>
             </div>
             {ps.map(p => {
               const has = p.golesLocal !== null && p.golesVisita !== null;
@@ -233,29 +318,32 @@ export async function GET(
             <div style={{ width: PTS_W }} />
           </div>
 
-          {/* ── VISITA logos ── */}
+          {/* ── VISITANTE logos ── */}
           <div style={{ height: H_LOGO_ROW, background: "#e8edf2", display: "flex", alignItems: "center" }}>
             <div style={{ width: NAME_W, display: "flex", alignItems: "center", paddingLeft: 14 }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: NAVY, letterSpacing: 1 }}>VISITA</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: NAVY, letterSpacing: 1 }}>VISITANTE</span>
             </div>
-            {ps.map(p => (
-              <div key={`v-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {p.logoVisita && p.logoVisita.trim()
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={p.logoVisita} width={38} height={38} style={{ objectFit: "contain" }} />
-                  : <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ color: WHITE, fontSize: 9, fontWeight: 800 }}>{p.equipoVisita.substring(0, 2).toUpperCase()}</span>
-                    </div>
-                }
-              </div>
-            ))}
+            {ps.map((p, i) => {
+              const src = logoDataUrls[i].visita;
+              return (
+                <div key={`v-${p.id}`} style={{ width: gameW, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {src
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={src} width={36} height={36} style={{ objectFit: "contain" }} />
+                    : <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ color: WHITE, fontSize: 9, fontWeight: 800 }}>{p.equipoVisita.substring(0, 2).toUpperCase()}</span>
+                      </div>
+                  }
+                </div>
+              );
+            })}
             <div style={{ width: PTS_W }} />
           </div>
 
-          {/* ── Resultado por partido (NOMBRE) ── */}
+          {/* ── V — Resultado (L / E / V) ── */}
           <div style={{ height: H_NUM_ROW, background: "#0a1e38", display: "flex", alignItems: "center" }}>
             <div style={{ width: NAME_W, display: "flex", alignItems: "center", paddingLeft: 14 }}>
-              <span style={{ fontSize: 9, fontWeight: 800, color: "#93c5fd", letterSpacing: 1 }}>NOMBRE</span>
+              <span style={{ fontSize: 10, fontWeight: 900, color: "#93c5fd", letterSpacing: 2 }}>V</span>
             </div>
             {ps.map(p => {
               const res = p.resultado ? (PRED[p.resultado] ?? p.resultado) : "·";
@@ -277,16 +365,15 @@ export async function GET(
             const es2 = segundoAciertos !== null && q.aciertos === segundoAciertos;
             const ac = q.aciertos ?? -1;
             const total = ps.length;
-            // Colores por RANGO primero, luego por aciertos
-            const rowBg = es1              ? "#fef08a"   // 🥇 amarillo intenso
-              : es2                        ? "#bfdbfe"   // 🥈 azul cielo
-              : ac === total               ? "#bbf7d0"   // perfecto (si no es 1ro/2do)
-              : ac >= total - 1            ? "#d1fae5"   // casi perfecto
-              : ac >= 5                    ? "#f0fdf4"   // bueno
-              : ac === 4                   ? "#f8fafc"   // regular
+            const rowBg = es1              ? "#fef08a"
+              : es2                        ? "#bfdbfe"
+              : ac === total               ? "#bbf7d0"
+              : ac >= total - 1            ? "#d1fae5"
+              : ac >= 5                    ? "#f0fdf4"
+              : ac === 4                   ? "#f8fafc"
               : ac === 3                   ? "#f1f5f9"
-              : ac === 1                   ? "#fff7ed"   // poco
-              : ac === 0                   ? "#fef2f2"   // sin aciertos
+              : ac === 1                   ? "#fff7ed"
+              : ac === 0                   ? "#fef2f2"
               : idx % 2 === 0              ? WHITE : "#f9fafb";
 
             return (

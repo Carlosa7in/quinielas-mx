@@ -234,9 +234,9 @@ function normalizarNombre(nombre: string): string {
 function toLocalMX(isoDate: string): string {
   const d = new Date(isoDate);
   if (isNaN(d.getTime())) return "";
-  // Detectar DST de México: horario de verano abarca aprox. de marzo a octubre (CDT = UTC-5)
-  const monthUTC = d.getUTCMonth(); // 0=ene … 11=dic
-  const offsetHours = (monthUTC >= 3 && monthUTC <= 9) ? -5 : -6;
+  // México eliminó el horario de verano en 2023 → siempre UTC-6 (CST)
+  // Solo las ciudades fronterizas siguen US DST, pero el sistema usa hora central.
+  const offsetHours = -6;
   const local = new Date(d.getTime() + offsetHours * 3_600_000);
   const pad = (n: number) => String(n).padStart(2, "0");
   return (
