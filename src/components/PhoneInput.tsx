@@ -100,8 +100,20 @@ export function PhoneInput({
     </option>
   ));
 
-  const handleNumero = (v: string) =>
-    onNumero(v.replace(/\D/g, "").slice(0, pais.digitos));
+  const handleNumero = (v: string) => {
+    let limpio = v.replace(/\D/g, "");
+    // El autocompletado del navegador a veces incluye el código de país
+    // (ej: "5231212345677" en lugar de "3121234567").
+    // Si la longitud es exactamente código + dígitos locales y empieza
+    // con el código, lo quitamos.
+    if (
+      limpio.length === pais.codigo.length + pais.digitos &&
+      limpio.startsWith(pais.codigo)
+    ) {
+      limpio = limpio.slice(pais.codigo.length);
+    }
+    onNumero(limpio.slice(0, pais.digitos));
+  };
 
   if (variant === "fused") {
     // If className contains a border-color override, skip the default border-gray-200

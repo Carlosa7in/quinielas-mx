@@ -166,16 +166,18 @@ export const LOGOS: Record<string, string> = {
   "Cruzeiro":                 "https://a.espncdn.com/i/teamlogos/soccer/500/2022.png",
   "Bahia":                    "https://a.espncdn.com/i/teamlogos/soccer/500/9967.png",
   "Fortaleza":                "https://a.espncdn.com/i/teamlogos/soccer/500/6272.png",
-  "Cuiabá":                   "https://a.espncdn.com/i/teamlogos/soccer/500/9169.png",
+  "Cuiabá":                   "https://a.espncdn.com/i/teamlogos/soccer/500/17313.png",
   "Red Bull Bragantino":      "https://a.espncdn.com/i/teamlogos/soccer/500/6079.png",
   "Bragantino":               "https://a.espncdn.com/i/teamlogos/soccer/500/6079.png",
-  "Goiás":                    "https://a.espncdn.com/i/teamlogos/soccer/500/9318.png",
+  "Goiás":                    "https://a.espncdn.com/i/teamlogos/soccer/500/3395.png",
+  "Chapecoense":              "https://a.espncdn.com/i/teamlogos/soccer/500/9318.png",
   "Juventude":                "https://a.espncdn.com/i/teamlogos/soccer/500/6270.png",
-  "Ceará":                    "https://a.espncdn.com/i/teamlogos/soccer/500/4936.png",
+  "Ceará":                    "https://a.espncdn.com/i/teamlogos/soccer/500/9969.png",
   "Sport Recife":             "https://a.espncdn.com/i/teamlogos/soccer/500/7635.png",
+  "Sport":                    "https://a.espncdn.com/i/teamlogos/soccer/500/7635.png",
   "Vitória":                  "https://a.espncdn.com/i/teamlogos/soccer/500/3457.png",
-  "Criciúma":                 "https://a.espncdn.com/i/teamlogos/soccer/500/3456.png",
-  "Mirassol":                 "https://a.espncdn.com/i/teamlogos/soccer/500/6407.png",
+  "Criciúma":                 "https://a.espncdn.com/i/teamlogos/soccer/500/9971.png",
+  "Mirassol":                 "https://a.espncdn.com/i/teamlogos/soccer/500/9169.png",
   "Coritiba":                 "https://a.espncdn.com/i/teamlogos/soccer/500/3456.png",
 
   // ── Liga Argentina ────────────────────────────────────────────────
@@ -541,11 +543,12 @@ export const EQUIPOS_POR_LIGA: Record<string, string[]> = {
     "Saint-Étienne",
   ],
   "Brasileirão": [
+    // Temporada 2025 (Série A)
     "Flamengo", "Palmeiras", "Atlético Mineiro", "Fluminense",
     "Botafogo", "São Paulo", "Corinthians", "Vasco da Gama",
     "Internacional", "Grêmio", "Santos", "Athletico Paranaense",
-    "Cruzeiro", "Bahia", "Fortaleza", "Red Bull Bragantino",
-    "Cuiabá", "Juventude", "Sport Recife", "Vitória",
+    "Cruzeiro", "Bahia", "Red Bull Bragantino", "Mirassol",
+    "Coritiba", "Vitória", "Chapecoense", "Sport Recife",
   ],
   "Liga Argentina": [
     "Boca Juniors", "River Plate", "Racing Club", "San Lorenzo",
