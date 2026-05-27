@@ -53,6 +53,132 @@ function JornadaCard({ jornada, t }: { jornada: JornadaBolsaItem; t: HomeT }) {
       ? " · " + jornada.ligasDetalle.join(" · ")
       : "";
 
+  // ── Tarjeta especial del Mundial ──────────────────────────────────────────
+  if (jornada.liga === "Mundial") {
+    const fechaCierre = jornada.primerPartidoFecha
+      ? new Date(jornada.primerPartidoFecha).toLocaleDateString("es-MX", {
+          weekday: "long", day: "numeric", month: "long", timeZone: "America/Mexico_City",
+        })
+      : null;
+    const horaCierre = jornada.primerPartidoFecha
+      ? new Date(jornada.primerPartidoFecha).toLocaleTimeString("es-MX", {
+          hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City",
+        })
+      : null;
+
+    return (
+      <div
+        className="rounded-2xl overflow-hidden relative"
+        style={{
+          background: "linear-gradient(135deg, #0d1b38 0%, #1a3a6b 55%, #0d2545 100%)",
+          border: "1px solid rgba(234,179,8,0.25)",
+          boxShadow: "0 8px 32px rgba(13,27,56,0.6)",
+        }}
+      >
+        {/* Patrón de fondo sutil */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{
+          backgroundImage: "repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 14px)",
+          backgroundSize: "20px 20px",
+        }} />
+
+        <div className="relative px-4 py-5 text-center space-y-3">
+          {/* Banderas + badge FIFA */}
+          <div>
+            <div className="flex items-center justify-center gap-2 mb-1.5">
+              <span className="text-xl">🇲🇽</span>
+              <span className="text-yellow-500/40 text-sm">·</span>
+              <span className="text-xl">🇺🇸</span>
+              <span className="text-yellow-500/40 text-sm">·</span>
+              <span className="text-xl">🇨🇦</span>
+            </div>
+            <p className="text-[9px] font-black text-yellow-400/70 uppercase tracking-[0.2em]">
+              FIFA World Cup 2026™
+            </p>
+          </div>
+
+          {/* Título */}
+          <div>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <span className="text-2xl">🏆</span>
+              <span className="text-yellow-400 font-black text-base tracking-wider uppercase">Mundial 2026</span>
+              <span className="bg-yellow-400 text-blue-950 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Especial</span>
+            </div>
+            <p className="text-white font-bold text-lg leading-snug">
+              {titulo}
+            </p>
+          </div>
+
+          {/* Mensaje invitación */}
+          <div
+            className="rounded-xl px-4 py-3 text-sm text-blue-100/80 leading-relaxed"
+            style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.12)" }}
+          >
+            ¡Nos estamos preparando para el Mundial! 🌍<br />
+            Ya puedes hacer tus predicciones desde ahora.
+          </div>
+
+          {/* Bolsa */}
+          <div>
+            <p className="text-yellow-400/50 text-[10px] font-bold tracking-widest uppercase mb-0.5">
+              {t.bolsa}
+            </p>
+            <span
+              className="font-black"
+              style={{ fontSize: "clamp(2rem, 10vw, 2.8rem)", color: "#FFD166", letterSpacing: "0.04em" }}
+            >
+              ${fmt(jornada.bolsa)}
+            </span>
+          </div>
+
+          {/* Fecha cierre */}
+          {fechaCierre && (
+            <div
+              className="rounded-xl px-3 py-2.5 text-center"
+              style={{ background: "rgba(255,255,255,0.05)", borderTop: "1px solid rgba(234,179,8,0.15)" }}
+            >
+              {cerrado ? (
+                <p className="text-red-400 font-bold text-sm">🔒 Registro cerrado</p>
+              ) : (
+                <>
+                  <p className="text-yellow-300/60 text-[10px] uppercase tracking-widest font-bold mb-0.5">
+                    Cierre de registro
+                  </p>
+                  <p className="text-yellow-200 font-bold text-sm capitalize">
+                    {fechaCierre} · {horaCierre}
+                  </p>
+                  {cuenta && cuenta.diff > 0 && cuenta.diff < 24 * 3_600_000 && (
+                    <div className="flex items-center justify-center gap-2 mt-1">
+                      <span className="text-yellow-400/50 text-xs">{t.faltan}</span>
+                      <span className="font-black tabular-nums text-yellow-300" style={{ fontSize: "1.1rem", letterSpacing: "0.05em" }}>
+                        {pad(cuenta.h)}:{pad(cuenta.m)}:{pad(cuenta.s)}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Botón */}
+          {!cerrado && (
+            <Link
+              href={`/quiniela?jornada=${jornada.id}`}
+              className="block w-full font-black text-base py-3.5 px-6 rounded-xl transition-all shadow-lg mt-1"
+              style={{
+                background: "linear-gradient(90deg, #eab308, #f59e0b)",
+                color: "#0d1b38",
+                boxShadow: "0 4px 20px rgba(234,179,8,0.35)",
+              }}
+            >
+              🏆 Hacer mis predicciones →
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Tarjeta normal ────────────────────────────────────────────────────────
   return (
     <div
       className="rounded-2xl py-5 px-4 text-center space-y-3"
