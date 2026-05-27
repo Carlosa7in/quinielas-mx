@@ -147,7 +147,7 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
     if (!data.error) cb(data);
   };
 
-  const LIGA_ORDEN: Record<string, number> = { "Liga MX": 0, "Champions League": 1, "Premier League": 2, "La Liga": 3, "Mixta": 4 };
+  const LIGA_ORDEN: Record<string, number> = { "Mundial": -1, "Liga MX": 0, "Champions League": 1, "Premier League": 2, "La Liga": 3, "Mixta": 4 };
   const ligas = [...new Set(jornadas.map((j) => j.liga))]
     .sort((a, b) => (LIGA_ORDEN[a] ?? 9) - (LIGA_ORDEN[b] ?? 9));
   const filtradas = jornadas.filter((j) => j.liga === ligaActiva);
@@ -194,18 +194,29 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
 
       <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
         {ligas.length > 1 && (
-          <div className="flex bg-white rounded-xl shadow-sm overflow-hidden">
-            {ligas.map((liga) => (
-              <button
-                key={liga}
-                onClick={() => setLigaActiva(liga)}
-                className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-                  ligaActiva === liga ? "bg-amber-700 text-white" : "text-gray-500 hover:bg-gray-50"
-                }`}
-              >
-                {LIGA_ICON[liga] ?? "⚽"} {liga}
-              </button>
-            ))}
+          <div className="flex rounded-xl shadow-sm overflow-hidden">
+            {ligas.map((liga) => {
+              const esMundialTab = liga === "Mundial";
+              const activo = ligaActiva === liga;
+              return (
+                <button
+                  key={liga}
+                  onClick={() => setLigaActiva(liga)}
+                  className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+                    esMundialTab
+                      ? activo
+                        ? "text-yellow-300 font-black"
+                        : "text-yellow-700 hover:text-yellow-600 bg-[#0f1e3d] hover:bg-[#162b50]"
+                      : activo
+                        ? "bg-amber-700 text-white"
+                        : "bg-white text-gray-500 hover:bg-gray-50"
+                  }`}
+                  style={esMundialTab && activo ? { background: "linear-gradient(135deg, #0f1e3d, #1a3a6b)" } : undefined}
+                >
+                  {LIGA_ICON[liga] ?? "⚽"} {liga}
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -214,15 +225,72 @@ function SelectorJornada({ onSelect }: { onSelect: (j: Jornada) => void }) {
             const cerrada = j.primerPartidoFecha
               ? new Date() >= new Date(j.primerPartidoFecha)
               : false;
-
-            // Fecha de cierre formateada
             const fechaCierre = j.primerPartidoFecha
               ? new Date(j.primerPartidoFecha).toLocaleDateString("es-MX", {
                   weekday: "short", day: "numeric", month: "short",
                   hour: "2-digit", minute: "2-digit",
                 })
               : null;
+            const esMundial = j.liga === "Mundial";
 
+            // ── Tarjeta especial para el Mundial ──────────────────────────────
+            if (esMundial) return (
+              <button
+                key={j.id}
+                onClick={() => !cerrada && cargarJornada(j, onSelect)}
+                disabled={cerrada}
+                className={`w-full rounded-2xl text-left border-2 overflow-hidden transition-all ${
+                  cerrada
+                    ? "opacity-60 cursor-not-allowed border-yellow-900/30 shadow-none"
+                    : "hover:shadow-2xl hover:scale-[1.01] border-yellow-500/40 shadow-lg"
+                }`}
+                style={{ background: "linear-gradient(135deg, #0d1b38 0%, #1a3a6b 55%, #0d2545 100%)" }}
+              >
+                {/* Header dorado */}
+                <div className="px-4 pt-4 pb-3"
+                  style={{ background: "linear-gradient(90deg, rgba(234,179,8,0.14) 0%, transparent 80%)" }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl leading-none">🏆</span>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-yellow-400 font-black text-base tracking-wider uppercase">
+                            Mundial 2026
+                          </span>
+                          <span className="bg-yellow-400 text-blue-950 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide">
+                            Especial
+                          </span>
+                        </div>
+                        <p className="text-yellow-200/60 text-xs mt-0.5">
+                          {j.nombre ?? `Jornada ${j.numero}`} · {j.temporada}
+                        </p>
+                      </div>
+                    </div>
+                    {cerrada
+                      ? <span className="text-red-400 text-sm font-semibold shrink-0">🔒 Cerrada</span>
+                      : <span className="text-yellow-400 font-bold text-2xl shrink-0">→</span>
+                    }
+                  </div>
+                </div>
+                {/* Stats */}
+                <div className="px-4 py-3 flex items-center justify-between border-t border-yellow-500/10">
+                  <div className="flex flex-col gap-1 text-xs text-blue-200/60">
+                    <div className="flex gap-3">
+                      <span>⚽ {j.totalPartidos ?? "?"} partidos</span>
+                      <span>🎯 {j.totalQuinielas ?? 0} inscritos</span>
+                    </div>
+                    {fechaCierre && (
+                      <span className={cerrada ? "text-red-400" : "text-yellow-300/70"}>
+                        🕐 {cerrada ? "Cerró" : "Cierra"} el {fechaCierre}
+                      </span>
+                    )}
+                  </div>
+                  {!cerrada && <span className="text-yellow-400 font-bold text-sm shrink-0">$20 MXN</span>}
+                </div>
+              </button>
+            );
+
+            // ── Tarjeta normal ────────────────────────────────────────────────
             return (
               <button
                 key={j.id}

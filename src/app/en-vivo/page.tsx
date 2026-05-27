@@ -90,22 +90,25 @@ type PartidoVivo = {
 };
 type JornadaViva = { id: string; nombre: string; liga: string; partidos: PartidoVivo[] };
 
-// Las fechas se guardan en hora local México (datetime-local sin conversión UTC),
-// así que leemos el string directamente sin volver a aplicar offset de zona horaria.
+// Las fechas se guardan en UTC real (el POST de jornadas aplica offset -06:00 al crear).
+// Convertir UTC → hora México (UTC-6 fija, sin horario de verano desde 2023).
+function toMxDate(iso: string): Date {
+  const utcMs = new Date(iso).getTime();
+  return new Date(utcMs - 6 * 3_600_000);
+}
 function fmtHora(iso: string) {
-  const m = iso.match(/T(\d{2}):(\d{2})/);
-  if (!m) return "";
-  let h = parseInt(m[1]);
-  const min = m[2];
+  const mx = toMxDate(iso);
+  let h = mx.getUTCHours();
+  const min = String(mx.getUTCMinutes()).padStart(2, "0");
   const ampm = h >= 12 ? "p.m." : "a.m.";
   h = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return `${h}:${min} ${ampm}`;
 }
 function fmtFecha(iso: string) {
-  // Parsear como fecha local (sin Z) para evitar desfase de día
-  const local = iso.replace("Z", "").replace(".000", "");
-  return new Date(local).toLocaleDateString("es-MX", {
+  const mx = toMxDate(iso);
+  return mx.toLocaleDateString("es-MX", {
     weekday: "short", day: "numeric", month: "short",
+    timeZone: "UTC", // ya restamos 6h manualmente; leer en UTC para no volver a restar
   });
 }
 

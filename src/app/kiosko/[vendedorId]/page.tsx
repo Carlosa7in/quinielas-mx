@@ -293,6 +293,10 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
       "Liga MX": "🇲🇽", "Champions League": "⭐", "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
       "La Liga": "🇪🇸", "Serie A": "🇮🇹", "Ligue 1": "🇫🇷", "Brasileirão": "🇧🇷",
     };
+    // Ordenar: Mundial primero
+    const jornadasOrdenadas = [...datos.jornadas].sort((a, b) =>
+      a.liga === "Mundial" ? -1 : b.liga === "Mundial" ? 1 : 0
+    );
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="bg-brand text-white px-4 pt-5 pb-6">
@@ -307,18 +311,53 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
           </div>
         </div>
         <div className="max-w-lg mx-auto px-4 py-5 space-y-3">
-          {datos.jornadas.map((j) => (
-            <button key={j.id} onClick={() => seleccionarJornada(j)}
-              className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4 text-left hover:bg-amber-50 hover:shadow-md transition-all active:scale-95">
-              <span className="text-3xl shrink-0">{LIGA_EMOJI[j.liga] ?? "⚽"}</span>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-gray-800">{j.liga}</p>
-                <p className="text-sm text-gray-500">{j.nombre} · {j.temporada}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{j.partidos.length} partidos</p>
-              </div>
-              <span className="text-amber-500 text-xl shrink-0">›</span>
-            </button>
-          ))}
+          {jornadasOrdenadas.map((j) => {
+            const esMundial = j.liga === "Mundial";
+
+            // ── Tarjeta especial para el Mundial ──
+            if (esMundial) return (
+              <button key={j.id} onClick={() => seleccionarJornada(j)}
+                className="w-full rounded-2xl text-left border-2 border-yellow-500/40 overflow-hidden shadow-lg hover:shadow-2xl hover:scale-[1.01] transition-all active:scale-[0.99]"
+                style={{ background: "linear-gradient(135deg, #0d1b38 0%, #1a3a6b 55%, #0d2545 100%)" }}
+              >
+                <div className="px-4 pt-4 pb-3"
+                  style={{ background: "linear-gradient(90deg, rgba(234,179,8,0.14) 0%, transparent 80%)" }}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl leading-none shrink-0">🏆</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-yellow-400 font-black text-base tracking-wider uppercase">
+                          Mundial 2026
+                        </span>
+                        <span className="bg-yellow-400 text-blue-950 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
+                          Especial
+                        </span>
+                      </div>
+                      <p className="text-yellow-200/60 text-xs mt-0.5">
+                        {j.nombre} · {j.temporada}
+                      </p>
+                      <p className="text-blue-200/50 text-xs mt-0.5">{j.partidos.length} partidos</p>
+                    </div>
+                    <span className="text-yellow-400 text-2xl shrink-0">›</span>
+                  </div>
+                </div>
+              </button>
+            );
+
+            // ── Tarjeta normal ──
+            return (
+              <button key={j.id} onClick={() => seleccionarJornada(j)}
+                className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4 text-left hover:bg-amber-50 hover:shadow-md transition-all active:scale-95">
+                <span className="text-3xl shrink-0">{LIGA_EMOJI[j.liga] ?? "⚽"}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-gray-800">{j.liga}</p>
+                  <p className="text-sm text-gray-500">{j.nombre} · {j.temporada}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{j.partidos.length} partidos</p>
+                </div>
+                <span className="text-amber-500 text-xl shrink-0">›</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     );

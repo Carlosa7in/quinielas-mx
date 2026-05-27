@@ -87,7 +87,14 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "partidoId y fechaHora requeridos" }, { status: 400 });
   }
 
-  const fecha = new Date(fechaHora);
+  // Normalizar: si llega como datetime-local sin timezone (ej. "2025-05-31T18:00")
+  // agregar offset México (-06:00) para que se guarde como UTC real.
+  let fhStr = String(fechaHora).trim();
+  if (fhStr && !fhStr.endsWith("Z") && !/[+-]\d{2}:\d{2}$/.test(fhStr)) {
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(fhStr))       fhStr += ":00-06:00";
+    else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(fhStr)) fhStr += "-06:00";
+  }
+  const fecha = new Date(fhStr);
   if (isNaN(fecha.getTime())) {
     return NextResponse.json({ error: "Fecha inválida" }, { status: 400 });
   }
