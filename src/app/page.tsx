@@ -85,14 +85,14 @@ function JornadaCard({ jornada, t }: { jornada: JornadaBolsaItem; t: HomeT }) {
           backgroundSize: "22px 22px",
         }} />
 
-        <div className="relative px-5 py-5 text-center space-y-3">
+        <div className="relative px-5 py-5 text-center space-y-4">
           {/* Banderas + badge */}
           <div>
             <div className="flex items-center justify-center gap-2 mb-1.5">
               <span className="text-2xl">🇲🇽</span>
-              <span className="text-amber-400/50 text-lg font-thin">·</span>
+              <span className="text-amber-400/40 text-lg">·</span>
               <span className="text-2xl">🇺🇸</span>
-              <span className="text-amber-400/50 text-lg font-thin">·</span>
+              <span className="text-amber-400/40 text-lg">·</span>
               <span className="text-2xl">🇨🇦</span>
             </div>
             <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.2em]">
@@ -101,31 +101,44 @@ function JornadaCard({ jornada, t }: { jornada: JornadaBolsaItem; t: HomeT }) {
           </div>
 
           {/* Título */}
-          <p className="text-white font-black text-2xl leading-tight">
-            🏆 ¡Nos preparamos<br />para el Mundial!
-          </p>
+          <div>
+            <p className="text-white font-black text-xl leading-snug mb-1">
+              🏆 ¡Ya tenemos lista<br />la primera quiniela<br />del Mundial!
+            </p>
+            <p className="text-amber-200/60 text-sm">
+              Ya puedes registrar tus predicciones.<br />¿No sabes qué equipo elegir?{" "}
+              <Link href="/mundial" className="text-amber-400 underline underline-offset-2 font-semibold hover:text-amber-300 transition-colors">
+                Consulta grupos y selecciones →
+              </Link>
+            </p>
+          </div>
 
           {/* Countdown hacia el inicio del Mundial */}
           {mundialInicio ? (
-            <div className="flex items-stretch justify-center gap-2">
-              {[
-                { n: mundialInicio.d, label: "días" },
-                { n: mundialInicio.h, label: "hrs"  },
-                { n: mundialInicio.m, label: "min"  },
-                { n: mundialInicio.s, label: "seg"  },
-              ].map(({ n, label }) => (
-                <div key={label} className="bg-white/10 rounded-xl px-3 py-2 min-w-[52px]">
-                  <p className="text-white font-black text-xl tabular-nums leading-none">{pad(n)}</p>
-                  <p className="text-amber-300/50 text-[9px] uppercase tracking-widest mt-0.5">{label}</p>
-                </div>
-              ))}
+            <div>
+              <p className="text-amber-300/40 text-[10px] uppercase tracking-widest font-bold mb-2">
+                El Mundial comienza en
+              </p>
+              <div className="flex items-stretch justify-center gap-2">
+                {[
+                  { n: mundialInicio.d, label: "días" },
+                  { n: mundialInicio.h, label: "hrs"  },
+                  { n: mundialInicio.m, label: "min"  },
+                  { n: mundialInicio.s, label: "seg"  },
+                ].map(({ n, label }) => (
+                  <div key={label} className="bg-white/10 rounded-xl px-3 py-2 min-w-[52px]">
+                    <p className="text-white font-black text-xl tabular-nums leading-none">{pad(n)}</p>
+                    <p className="text-amber-300/50 text-[9px] uppercase tracking-widest mt-0.5">{label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
             <p className="text-green-400 font-bold text-sm">¡El Mundial está en curso!</p>
           )}
 
           {/* Bolsa */}
-          <div className="pt-1">
+          <div>
             <p className="text-amber-300/50 text-[10px] font-bold tracking-widest uppercase mb-0.5">
               {t.bolsa}
             </p>
@@ -166,14 +179,22 @@ function JornadaCard({ jornada, t }: { jornada: JornadaBolsaItem; t: HomeT }) {
             </div>
           )}
 
-          {/* Botón */}
+          {/* Botones */}
           {!cerrado && (
-            <Link
-              href={`/quiniela?jornada=${jornada.id}`}
-              className="block w-full bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold text-base py-3 px-6 rounded-xl transition-colors shadow-lg shadow-amber-900/40 mt-1"
-            >
-              {t.registrar}
-            </Link>
+            <div className="space-y-2 pt-1">
+              <Link
+                href={`/quiniela?jornada=${jornada.id}`}
+                className="block w-full bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold text-base py-3 px-6 rounded-xl transition-colors shadow-lg shadow-amber-900/40"
+              >
+                {t.registrar}
+              </Link>
+              <Link
+                href="/mundial"
+                className="block w-full text-center text-amber-400/80 hover:text-amber-300 text-sm font-semibold py-2 transition-colors"
+              >
+                Ver grupos, sedes y selecciones →
+              </Link>
+            </div>
           )}
         </div>
       </div>
