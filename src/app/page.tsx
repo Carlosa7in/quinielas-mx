@@ -23,11 +23,12 @@ function useCuentaRegresiva(fechaISO: string | null) {
   const calcular = () => {
     if (!fechaISO) return null;
     const diff = new Date(fechaISO).getTime() - Date.now();
-    if (diff <= 0) return { h: 0, m: 0, s: 0, diff: 0 };
-    const h = Math.floor(diff / 3_600_000);
+    if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0, diff: 0 };
+    const d = Math.floor(diff / 86_400_000);
+    const h = Math.floor((diff % 86_400_000) / 3_600_000);
     const m = Math.floor((diff % 3_600_000) / 60_000);
     const s = Math.floor((diff % 60_000) / 1_000);
-    return { h, m, s, diff };
+    return { d, h, m, s, diff };
   };
   const [restante, setRestante] = useState(calcular);
   useEffect(() => {
@@ -44,6 +45,8 @@ const fmt = (n: number) =>
 
 function JornadaCard({ jornada, t }: { jornada: JornadaBolsaItem; t: HomeT }) {
   const cuenta = useCuentaRegresiva(jornada.primerPartidoFecha);
+  // Countdown hacia el inicio del Mundial (siempre se llama; solo se usa si es Mundial)
+  const mundialInicio = useCuentaRegresiva(jornada.liga === "Mundial" ? MUNDIAL_INICIO : null);
   const cerrado = cuenta !== null && cuenta.diff === 0;
   const ligaIcon = LIGA_ICON[jornada.liga] ?? "⚽";
   const titulo = jornada.nombre ?? `Jornada ${jornada.numero}`;
@@ -53,7 +56,7 @@ function JornadaCard({ jornada, t }: { jornada: JornadaBolsaItem; t: HomeT }) {
       ? " · " + jornada.ligasDetalle.join(" · ")
       : "";
 
-  // ── Tarjeta especial del Mundial ──────────────────────────────────────────
+  // ── Tarjeta especial del Mundial (con countdown integrado) ───────────────
   if (jornada.liga === "Mundial") {
     const fechaCierre = jornada.primerPartidoFecha
       ? new Date(jornada.primerPartidoFecha).toLocaleDateString("es-MX", {
@@ -70,56 +73,60 @@ function JornadaCard({ jornada, t }: { jornada: JornadaBolsaItem; t: HomeT }) {
       <div
         className="rounded-2xl overflow-hidden relative"
         style={{
-          background: "linear-gradient(135deg, #0d1b38 0%, #1a3a6b 55%, #0d2545 100%)",
+          background: "linear-gradient(160deg, #0c1445 0%, #1a306b 45%, #6b1f0a 100%)",
+
           border: "1px solid rgba(234,179,8,0.25)",
           boxShadow: "0 8px 32px rgba(13,27,56,0.6)",
         }}
       >
-        {/* Patrón de fondo sutil */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{
-          backgroundImage: "repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 14px)",
-          backgroundSize: "20px 20px",
+        {/* Patrón diagonal */}
+        <div className="absolute inset-0 opacity-[0.07]" style={{
+          backgroundImage: "repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 16px)",
+          backgroundSize: "22px 22px",
         }} />
 
-        <div className="relative px-4 py-5 text-center space-y-3">
-          {/* Banderas + badge FIFA */}
+        <div className="relative px-5 py-5 text-center space-y-3">
+          {/* Banderas + badge */}
           <div>
             <div className="flex items-center justify-center gap-2 mb-1.5">
-              <span className="text-xl">🇲🇽</span>
-              <span className="text-yellow-500/40 text-sm">·</span>
-              <span className="text-xl">🇺🇸</span>
-              <span className="text-yellow-500/40 text-sm">·</span>
-              <span className="text-xl">🇨🇦</span>
+              <span className="text-2xl">🇲🇽</span>
+              <span className="text-amber-400/50 text-lg font-thin">·</span>
+              <span className="text-2xl">🇺🇸</span>
+              <span className="text-amber-400/50 text-lg font-thin">·</span>
+              <span className="text-2xl">🇨🇦</span>
             </div>
-            <p className="text-[9px] font-black text-yellow-400/70 uppercase tracking-[0.2em]">
+            <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.2em]">
               FIFA World Cup 2026™
             </p>
           </div>
 
           {/* Título */}
-          <div>
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <span className="text-2xl">🏆</span>
-              <span className="text-yellow-400 font-black text-base tracking-wider uppercase">Mundial 2026</span>
-              <span className="bg-yellow-400 text-blue-950 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Especial</span>
-            </div>
-            <p className="text-white font-bold text-lg leading-snug">
-              {titulo}
-            </p>
-          </div>
+          <p className="text-white font-black text-2xl leading-tight">
+            🏆 ¡Nos preparamos<br />para el Mundial!
+          </p>
 
-          {/* Mensaje invitación */}
-          <div
-            className="rounded-xl px-4 py-3 text-sm text-blue-100/80 leading-relaxed"
-            style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.12)" }}
-          >
-            ¡Nos estamos preparando para el Mundial! 🌍<br />
-            Ya puedes hacer tus predicciones desde ahora.
-          </div>
+          {/* Countdown hacia el inicio del Mundial */}
+          {mundialInicio ? (
+            <div className="flex items-stretch justify-center gap-2">
+              {[
+                { n: mundialInicio.d, label: "días" },
+                { n: mundialInicio.h, label: "hrs"  },
+                { n: mundialInicio.m, label: "min"  },
+                { n: mundialInicio.s, label: "seg"  },
+              ].map(({ n, label }) => (
+                <div key={label} className="bg-white/10 rounded-xl px-3 py-2 min-w-[52px]">
+                  <p className="text-white font-black text-xl tabular-nums leading-none">{pad(n)}</p>
+                  <p className="text-amber-300/50 text-[9px] uppercase tracking-widest mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-green-400 font-bold text-sm">¡El Mundial está en curso!</p>
+          )}
 
           {/* Bolsa */}
-          <div>
-            <p className="text-yellow-400/50 text-[10px] font-bold tracking-widest uppercase mb-0.5">
+          <div className="pt-1">
+            <p className="text-amber-300/50 text-[10px] font-bold tracking-widest uppercase mb-0.5">
               {t.bolsa}
             </p>
             <span
@@ -130,25 +137,25 @@ function JornadaCard({ jornada, t }: { jornada: JornadaBolsaItem; t: HomeT }) {
             </span>
           </div>
 
-          {/* Fecha cierre */}
+          {/* Cierre de registro */}
           {fechaCierre && (
             <div
-              className="rounded-xl px-3 py-2.5 text-center"
-              style={{ background: "rgba(255,255,255,0.05)", borderTop: "1px solid rgba(234,179,8,0.15)" }}
+              className="rounded-xl px-3 py-2.5"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(234,179,8,0.15)" }}
             >
               {cerrado ? (
                 <p className="text-red-400 font-bold text-sm">🔒 Registro cerrado</p>
               ) : (
                 <>
-                  <p className="text-yellow-300/60 text-[10px] uppercase tracking-widest font-bold mb-0.5">
+                  <p className="text-amber-300/60 text-[10px] uppercase tracking-widest font-bold mb-0.5">
                     Cierre de registro
                   </p>
-                  <p className="text-yellow-200 font-bold text-sm capitalize">
+                  <p className="text-amber-200 font-bold text-sm capitalize">
                     {fechaCierre} · {horaCierre}
                   </p>
                   {cuenta && cuenta.diff > 0 && cuenta.diff < 24 * 3_600_000 && (
                     <div className="flex items-center justify-center gap-2 mt-1">
-                      <span className="text-yellow-400/50 text-xs">{t.faltan}</span>
+                      <span className="text-amber-300/60 text-xs">{t.faltan}</span>
                       <span className="font-black tabular-nums text-yellow-300" style={{ fontSize: "1.1rem", letterSpacing: "0.05em" }}>
                         {pad(cuenta.h)}:{pad(cuenta.m)}:{pad(cuenta.s)}
                       </span>
@@ -163,14 +170,9 @@ function JornadaCard({ jornada, t }: { jornada: JornadaBolsaItem; t: HomeT }) {
           {!cerrado && (
             <Link
               href={`/quiniela?jornada=${jornada.id}`}
-              className="block w-full font-black text-base py-3.5 px-6 rounded-xl transition-all shadow-lg mt-1"
-              style={{
-                background: "linear-gradient(90deg, #eab308, #f59e0b)",
-                color: "#0d1b38",
-                boxShadow: "0 4px 20px rgba(234,179,8,0.35)",
-              }}
+              className="block w-full bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold text-base py-3 px-6 rounded-xl transition-colors shadow-lg shadow-amber-900/40 mt-1"
             >
-              🏆 Hacer mis predicciones →
+              {t.registrar}
             </Link>
           )}
         </div>
@@ -501,14 +503,11 @@ export default function Home() {
 
         <BannerPagosPendientes t={t} />
 
-        {/* 1. Bolsa activa */}
-        <BolsaSection t={t} />
-
-        {/* 2. En Vivo (con countdown o en vivo) */}
+        {/* 1. Próximos partidos / En vivo */}
         <LiveBadge />
 
-        {/* 3. Banner Mundial 2026 */}
-        <MundialBanner />
+        {/* 2. Bolsa activa (Mundial tiene card especial con countdown) */}
+        <BolsaSection t={t} />
 
         <ResultadosRecientes t={t} />
 
