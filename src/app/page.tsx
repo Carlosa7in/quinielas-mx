@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { LIGA_ICON } from "@/lib/equipos";
 import { useLocale } from "@/hooks/useLocale";
 import { translations, type HomeT } from "@/lib/i18n";
-import { LocaleToggle } from "@/components/LocaleToggle";
 import { LiveBadge } from "@/components/LiveBadge";
 
 type JornadaBolsaItem = {
@@ -507,14 +506,12 @@ function MundialBanner() {
 }
 
 export default function Home() {
-  const [locale, setLocale] = useLocale();
+  const [locale] = useLocale();
   const t = translations[locale].home;
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-brand text-white px-4">
       <div className="max-w-md w-full text-center space-y-6 pt-14 pb-10">
-        <LocaleToggle locale={locale} onChange={setLocale} dark />
-
         {/* Logo */}
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}

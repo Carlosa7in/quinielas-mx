@@ -4,7 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { AuthGuard } from "@/components/AuthGuard";
 import { SwRegistrar } from "@/components/SwRegistrar";
-import { HamburgerMenu } from "@/components/HamburgerMenu";
+import { GlobalHeader } from "@/components/GlobalHeader";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -25,7 +25,7 @@ export default function RootLayout({
         <Providers>
           <SwRegistrar />
           <AuthGuard />
-          <HamburgerMenu />
+          <GlobalHeader />
           {children}
         </Providers>
       </body>
