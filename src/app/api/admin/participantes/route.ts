@@ -13,6 +13,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
+  // Jornadas abiertas actuales (para sobreventa por jornada)
+  const jornadasAbiertas = await prisma.jornada.findMany({
+    where: { estado: "abierta" },
+    select: { id: true, nombre: true, numero: true, liga: true },
+    orderBy: { numero: "asc" },
+  });
+  const idsAbiertas = new Set(jornadasAbiertas.map((j) => j.id));
+
   const clientes = await prisma.cliente.findMany({
     select: {
       id: true,
@@ -25,16 +33,23 @@ export async function GET(req: NextRequest) {
           estado: true,
           estadoPago: true,
           aciertos: true,
-          jornada: { select: { numero: true, temporada: true, estado: true } },
+          jornadaId: true,
+          jornada: { select: { id: true, numero: true, temporada: true, estado: true } },
         },
       },
     },
   });
 
   const resultado = clientes.map((c) => {
-    const confirmadas       = c.quinielas.filter((q) => q.estadoPago === "confirmado");
+    const confirmadas        = c.quinielas.filter((q) => q.estadoPago === "confirmado");
     const pendientesAbiertos = c.quinielas.filter((q) => q.estadoPago === "pendiente" && q.jornada.estado === "abierta");
     const pendientesCerrados = c.quinielas.filter((q) => q.estadoPago === "pendiente" && q.jornada.estado !== "abierta");
+
+    // IDs de jornadas abiertas donde ya compró (confirmado o pendiente)
+    const jornadasAbiertasCompradas = c.quinielas
+      .filter((q) => idsAbiertas.has(q.jornadaId) && (q.estadoPago === "confirmado" || q.estadoPago === "pendiente"))
+      .map((q) => q.jornadaId);
+
     return {
       id: c.id,
       nombre: c.nombre,
@@ -48,12 +63,15 @@ export async function GET(req: NextRequest) {
         : c.quinielas.length > 0
           ? Math.max(...c.quinielas.map((q) => q.jornada.numero))
           : null,
+      jornadasAbiertasCompradas,
     };
   });
 
-  resultado.sort((a, b) => (b.totalQuinielas + b.pendientes + b.pendientesCerrados) - (a.totalQuinielas + a.pendientes + a.pendientesCerrados));
+  // Solo clientes reales (al menos 1 quiniela confirmada)
+  const soloClientes = resultado.filter((c) => c.totalQuinielas > 0);
+  soloClientes.sort((a, b) => b.totalQuinielas - a.totalQuinielas);
 
-  return NextResponse.json(resultado);
+  return NextResponse.json({ clientes: soloClientes, jornadasAbiertas });
 }
 
 // PATCH /api/admin/participantes — editar nombre y/o teléfono

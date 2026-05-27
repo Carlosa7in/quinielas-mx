@@ -11,6 +11,14 @@ type Cliente = {
   pendientesCerrados: number;
   ganadoras: number;
   ultimaJornada: number | null;
+  jornadasAbiertasCompradas: string[]; // IDs de jornadas abiertas donde ya compró
+};
+
+type JornadaAbierta = {
+  id: string;
+  nombre: string | null;
+  numero: number;
+  liga: string;
 };
 
 // ── Ícono WhatsApp ──────────────────────────────────────────────────────────
@@ -297,9 +305,13 @@ function ModalEliminar({
 // ── Página principal ────────────────────────────────────────────────────────
 export default function ParticipantesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [jornadasAbiertas, setJornadasAbiertas] = useState<JornadaAbierta[]>([]);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState("");
+  const [dropdownAbierto, setDropdownAbierto] = useState(false);
   const [modoBroadcast, setModoBroadcast] = useState(false);
+  const [tipoNotif, setTipoNotif] = useState<"general" | "sobreventa">("general");
+  const [jornadaSobreventa, setJornadaSobreventa] = useState<JornadaAbierta | null>(null);
   const [mensaje, setMensaje] = useState("");
   const [indiceActual, setIndiceActual] = useState(0);
   const [enviados, setEnviados] = useState<Set<string>>(new Set());
@@ -311,7 +323,10 @@ export default function ParticipantesPage() {
     fetch("/api/admin/participantes")
       .then((r) => r.json())
       .then((data) => {
-        if (!data.error) setClientes(data);
+        if (data.clientes) {
+          setClientes(data.clientes);
+          setJornadasAbiertas(data.jornadasAbiertas ?? []);
+        }
         setCargando(false);
       });
   };
@@ -344,15 +359,35 @@ export default function ParticipantesPage() {
     setClientes((prev) => prev.filter((c) => c.id !== id));
   };
 
-  const abrirBroadcast = () => {
-    setMensaje(
-      `⚽ *TABLITAS QUINIELAS — Nueva Jornada disponible!*\n\n` +
-      `¡Ya puedes registrar tus pronósticos para la siguiente jornada de Liga MX!\n\n` +
-      `👉 Regístrate aquí: ${typeof window !== "undefined" ? window.location.origin : ""}/quiniela\n\n` +
-      `💵 Solo $20 MXN por quiniela\n` +
-      `🏆 Adivina todos los resultados y gana el premio\n\n` +
-      `_Tablitas Quinielas_`
-    );
+  const abrirBroadcast = (tipo: "general" | "sobreventa", jornada?: JornadaAbierta) => {
+    const origen = typeof window !== "undefined" ? window.location.origin : "https://tablitasquinielas.com";
+    const nombreJornada = jornada
+      ? (jornada.nombre ?? `Jornada ${jornada.numero}`)
+      : "la siguiente jornada";
+
+    if (tipo === "sobreventa") {
+      setMensaje(
+        `⚽ *¡No te quedes fuera!*\n\n` +
+        `Hola, ya está abierta *${nombreJornada}* y aún no te hemos visto por aquí... 👀\n\n` +
+        `🗓️ Todavía estás a tiempo de registrarte\n` +
+        `💵 Solo $20 MXN por quiniela\n` +
+        `🏆 Adivina todos los resultados y gana el premio\n\n` +
+        `👉 ${origen}/quiniela\n\n` +
+        `¡Ándale, quedan pocas horas! ⏰\n\n` +
+        `_Tablitas Quinielas_`
+      );
+    } else {
+      setMensaje(
+        `⚽ *TABLITAS QUINIELAS — ${nombreJornada}*\n\n` +
+        `¡Ya puedes registrar tus pronósticos!\n\n` +
+        `👉 Regístrate aquí: ${origen}/quiniela\n\n` +
+        `💵 Solo $20 MXN por quiniela\n` +
+        `🏆 Adivina todos los resultados y gana el premio\n\n` +
+        `_Tablitas Quinielas_`
+      );
+    }
+    setTipoNotif(tipo);
+    setJornadaSobreventa(jornada ?? null);
     setIndiceActual(0);
     setEnviados(new Set());
     setModoBroadcast(true);
@@ -364,7 +399,14 @@ export default function ParticipantesPage() {
       c.telefono.includes(busqueda)
   );
 
-  const clientesConTel = clientesFiltrados.filter((c) => c.telefono);
+  const clientesConTel = clientesFiltrados.filter((c) => {
+    if (!c.telefono) return false;
+    if (tipoNotif === "sobreventa" && jornadaSobreventa) {
+      // Solo clientes que NO han comprado en la jornada específica de sobreventa
+      return !c.jornadasAbiertasCompradas.includes(jornadaSobreventa.id);
+    }
+    return true;
+  });
 
   const abrirWhatsApp = (telefono: string, msg?: string) => {
     const numero = telefono.replace(/\D/g, "");
@@ -397,7 +439,11 @@ export default function ParticipantesPage() {
               <button onClick={() => setModoBroadcast(false)} className="text-amber-400 text-sm">
                 ← Participantes
               </button>
-              <h1 className="text-xl font-bold mt-0.5">Notificar por WhatsApp</h1>
+              <h1 className="text-xl font-bold mt-0.5">
+                {tipoNotif === "sobreventa" && jornadaSobreventa
+                  ? `Sobreventa — ${jornadaSobreventa.nombre ?? `J${jornadaSobreventa.numero}`}`
+                  : "Notificar por WhatsApp"}
+              </h1>
             </div>
             <span className="text-amber-300/70 text-sm font-bold">
               {totalEnviados}/{total}
@@ -406,6 +452,24 @@ export default function ParticipantesPage() {
         </div>
 
         <div className="max-w-xl mx-auto px-4 py-4 space-y-4">
+          {/* Banner informativo según tipo */}
+          {tipoNotif === "sobreventa" && jornadaSobreventa ? (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800">
+              <p className="font-bold mb-0.5">
+                📢 Sobreventa — {jornadaSobreventa.nombre ?? `Jornada ${jornadaSobreventa.numero}`}
+              </p>
+              <p className="text-xs text-blue-600">
+                Solo clientes que <strong>aún no han comprado</strong> en esta jornada.
+                Quienes ya compraron no aparecen en esta lista.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+              <p className="font-bold mb-0.5">📣 Notificación general</p>
+              <p className="text-xs text-amber-600">Se enviará a todos los clientes con teléfono registrado.</p>
+            </div>
+          )}
+
           <div className="bg-white rounded-xl p-4">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-gray-600">Progreso</span>
@@ -492,14 +556,6 @@ export default function ParticipantesPage() {
               <a href="/admin" className="text-amber-400 text-sm">← Admin</a>
               <div className="flex items-center gap-3 mt-0.5">
                 <h1 className="text-xl font-bold">Participantes</h1>
-                <button
-                  onClick={abrirBroadcast}
-                  disabled={clientes.length === 0}
-                  className="bg-[#25D366] hover:bg-[#20b858] disabled:bg-gray-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-colors"
-                >
-                  <IconWA className="w-3.5 h-3.5" />
-                  Notificar
-                </button>
               </div>
               <p className="text-amber-400 text-xs mt-0.5">{clientes.length} participantes</p>
             </div>
@@ -509,6 +565,79 @@ export default function ParticipantesPage() {
         </div>
 
         <div className="max-w-xl mx-auto px-4 py-4 space-y-3">
+
+          {/* ── Dropdown de notificaciones ── */}
+          {clientes.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setDropdownAbierto((v) => !v)}
+                className="w-full bg-[#25D366] hover:bg-[#20b858] text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center justify-between transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <IconWA className="w-4 h-4" />
+                  Notificaciones
+                </span>
+                <span className="text-white/70 text-xs">{dropdownAbierto ? "▲" : "▼"}</span>
+              </button>
+
+              {dropdownAbierto && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
+                  {/* Notificar todos */}
+                  <button
+                    onClick={() => { abrirBroadcast("general"); setDropdownAbierto(false); }}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center justify-between border-b border-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">📣</span>
+                      <div>
+                        <p className="font-semibold text-gray-800 text-sm">Notificar todos</p>
+                        <p className="text-xs text-gray-400">Mensaje general a todos los clientes</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-gray-400 shrink-0">{clientes.filter(c => c.telefono).length} clientes</span>
+                  </button>
+
+                  {/* Sobreventa por jornada */}
+                  {jornadasAbiertas.map((j) => {
+                    const elegibles = clientes.filter(
+                      (c) => c.telefono && !c.jornadasAbiertasCompradas.includes(j.id)
+                    );
+                    const yaCompraron = clientes.filter(
+                      (c) => c.telefono && c.jornadasAbiertasCompradas.includes(j.id)
+                    );
+                    return (
+                      <button
+                        key={j.id}
+                        onClick={() => { abrirBroadcast("sobreventa", j); setDropdownAbierto(false); }}
+                        disabled={elegibles.length === 0}
+                        className="w-full px-4 py-3 text-left hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between border-b border-gray-100 last:border-0 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">📢</span>
+                          <div>
+                            <p className="font-semibold text-gray-800 text-sm">
+                              Sobreventa — {j.nombre ?? `Jornada ${j.numero}`}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {elegibles.length === 0
+                                ? "Todos ya compraron ✅"
+                                : `${elegibles.length} sin comprar · ${yaCompraron.length} ya compraron`}
+                            </p>
+                          </div>
+                        </div>
+                        {elegibles.length > 0 && (
+                          <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full shrink-0">
+                            {elegibles.length}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           <input
             type="text"
             placeholder="Buscar por nombre o teléfono..."
