@@ -520,7 +520,18 @@ export default function ParticipantesPage() {
           <div className="bg-white rounded-xl p-4">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-gray-600">Progreso</span>
-              <span className="font-bold text-amber-400">{totalEnviados} de {total} enviados</span>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-amber-400">{totalEnviados} de {total} enviados</span>
+                {totalEnviados > 0 && (
+                  <button
+                    onClick={() => { setEnviados(new Set()); setIndiceActual(0); }}
+                    className="text-[10px] text-red-400 hover:text-red-600 underline"
+                    title="Reiniciar todos los enviados"
+                  >
+                    Reiniciar
+                  </button>
+                )}
+              </div>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
@@ -568,14 +579,33 @@ export default function ParticipantesPage() {
               </button>
 
               <div className="border-t pt-3 space-y-1 max-h-40 overflow-y-auto">
-                {clientesConTel.map((c, i) => (
-                  <div key={c.id} className={`flex items-center gap-2 text-sm py-0.5 ${i === indiceActual ? "font-bold text-amber-700" : ""}`}>
-                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${enviados.has(c.id) ? "bg-green-500 text-white" : i === indiceActual ? "bg-yellow-400 text-white" : "bg-gray-200 text-gray-500"}`}>
-                      {enviados.has(c.id) ? "✓" : i + 1}
-                    </span>
-                    <span className={enviados.has(c.id) ? "line-through text-gray-400" : ""}>{c.nombre}</span>
-                  </div>
-                ))}
+                <p className="text-[10px] text-gray-400 mb-1">Toca ✓ para desmarcar y reenviar</p>
+                {clientesConTel.map((c, i) => {
+                  const yaEnviado = enviados.has(c.id);
+                  return (
+                    <div key={c.id} className={`flex items-center gap-2 text-sm py-0.5 ${i === indiceActual ? "font-bold text-amber-700" : ""}`}>
+                      <button
+                        onClick={() => {
+                          if (yaEnviado) {
+                            setEnviados((prev) => { const s = new Set(prev); s.delete(c.id); return s; });
+                            setIndiceActual(i);
+                          }
+                        }}
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-xs shrink-0 transition-colors ${
+                          yaEnviado
+                            ? "bg-green-500 text-white hover:bg-red-400 cursor-pointer"
+                            : i === indiceActual
+                              ? "bg-yellow-400 text-white cursor-default"
+                              : "bg-gray-200 text-gray-500 cursor-default"
+                        }`}
+                        title={yaEnviado ? "Desmarcar para reenviar" : undefined}
+                      >
+                        {yaEnviado ? "✓" : i + 1}
+                      </button>
+                      <span className={yaEnviado ? "line-through text-gray-400" : ""}>{c.nombre}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : (
