@@ -576,10 +576,10 @@ export default function ParticipantesPage() {
                   {clienteActual?.totalQuinielas} quiniela{clienteActual?.totalQuinielas !== 1 ? "s" : ""}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 text-center -mb-1">
+              <p className="text-xs text-gray-500 text-center">
                 Elige con qué app enviar a <span className="font-semibold text-gray-700">{clienteActual?.nombre}</span>
               </p>
-              <div className="flex gap-2">
+              <div className="flex gap-3 mt-2">
                 <button
                   onClick={() => siguiente(false)}
                   className="flex-1 bg-[#25D366] hover:bg-[#20b858] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-sm"
@@ -595,6 +595,17 @@ export default function ParticipantesPage() {
                   Business
                 </button>
               </div>
+              {/* Marcar como enviado sin abrir WhatsApp */}
+              <button
+                onClick={() => {
+                  if (!clienteActual) return;
+                  setEnviados((prev) => new Set([...prev, clienteActual.id]));
+                  if (indiceActual < clientesConTel.length - 1) setIndiceActual((i) => i + 1);
+                }}
+                className="w-full text-xs text-gray-400 hover:text-gray-600 py-1 underline transition-colors"
+              >
+                Ya lo envié manualmente → marcar y siguiente
+              </button>
 
               <div className="border-t pt-3 space-y-1 max-h-40 overflow-y-auto">
                 <p className="text-[10px] text-gray-400 mb-1">Toca ✓ para desmarcar y reenviar</p>
