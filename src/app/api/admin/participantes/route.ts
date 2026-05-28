@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma, sql } from "@/lib/prisma";
+import { calcularFechaCierre } from "@/lib/fechas";
 
 async function verificarAdmin(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -20,6 +21,48 @@ export async function GET(req: NextRequest) {
     orderBy: { numero: "asc" },
   });
   const idsAbiertas = new Set(jornadasAbiertas.map((j) => j.id));
+  const idsAbiertasArr = jornadasAbiertas.map((j) => j.id);
+
+  // Ligas de los partidos por jornada abierta (para Mixta — sin DateTime, Prisma ok)
+  const partidosLigaRows = idsAbiertasArr.length > 0
+    ? await prisma.partido.findMany({
+        where: { jornadaId: { in: idsAbiertasArr } },
+        select: { jornadaId: true, liga: true },
+      })
+    : [];
+  const ligasDetalleMap = new Map<string, string[]>();
+  for (const p of partidosLigaRows) {
+    if (!ligasDetalleMap.has(p.jornadaId)) ligasDetalleMap.set(p.jornadaId, []);
+    const arr = ligasDetalleMap.get(p.jornadaId)!;
+    if (!arr.includes(p.liga)) arr.push(p.liga);
+  }
+
+  // Fecha de cierre de registro por jornada abierta (raw SQL para DateTime)
+  const fechaCierreMap = new Map<string, string>();
+  for (const jornada of jornadasAbiertas) {
+    try {
+      const rows = await sql`
+        SELECT "fechaHora" FROM "Partido"
+        WHERE "jornadaId" = ${jornada.id} AND "fechaHora" IS NOT NULL
+        ORDER BY "fechaHora" ASC LIMIT 1
+      `;
+      const val = rows[0]?.fechaHora;
+      if (val) {
+        const d = val instanceof Date ? val : new Date(String(val));
+        if (!isNaN(d.getTime())) {
+          const cierre = calcularFechaCierre(d);
+          fechaCierreMap.set(jornada.id, cierre.toISOString());
+        }
+      }
+    } catch { /* silencioso */ }
+  }
+
+  // Enriquecer jornadasAbiertas con ligasDetalle y primerPartidoFecha
+  const jornadasAbiertasEnriquecidas = jornadasAbiertas.map((j) => ({
+    ...j,
+    ligasDetalle: ligasDetalleMap.get(j.id) ?? [],
+    primerPartidoFecha: fechaCierreMap.get(j.id) ?? null,
+  }));
 
   const clientes = await prisma.cliente.findMany({
     select: {
@@ -71,7 +114,7 @@ export async function GET(req: NextRequest) {
   const soloClientes = resultado.filter((c) => c.totalQuinielas > 0);
   soloClientes.sort((a, b) => b.totalQuinielas - a.totalQuinielas);
 
-  return NextResponse.json({ clientes: soloClientes, jornadasAbiertas });
+  return NextResponse.json({ clientes: soloClientes, jornadasAbiertas: jornadasAbiertasEnriquecidas });
 }
 
 // PATCH /api/admin/participantes — editar nombre y/o teléfono

@@ -19,7 +19,44 @@ type JornadaAbierta = {
   nombre: string | null;
   numero: number;
   liga: string;
+  ligasDetalle: string[];
+  primerPartidoFecha: string | null; // ISO — fecha de cierre de registro
 };
+
+// Convierte liga + ligasDetalle en una descripción natural para el mensaje WA
+function descLigas(liga: string, ligasDetalle: string[]): string {
+  const MAP: Record<string, string> = {
+    "Champions":        "Champions League",
+    "Champions League": "Champions League",
+    "Liga MX":          "Liga MX",
+    "Premier":          "Premier League",
+    "Premier League":   "Premier League",
+    "LaLiga":           "LaLiga española",
+    "La Liga":          "LaLiga española",
+    "Bundesliga":       "Bundesliga",
+    "Serie A":          "Serie A italiana",
+    "Ligue 1":          "Ligue 1 francesa",
+    "Brasileirao":      "Brasileirao",
+    "Liga Brasil":      "Brasileirao",
+    "Amistosos":        "amistosos de selecciones",
+    "Mundial":          "partidos del Mundial 2026 🏆",
+  };
+  if (liga !== "Mixta") return MAP[liga] ?? liga;
+  // Mixta: listar las ligas únicas de los partidos
+  const nombres = ligasDetalle.map((l) => MAP[l] ?? l);
+  if (nombres.length === 0) return "varias ligas";
+  if (nombres.length === 1) return nombres[0];
+  return nombres.slice(0, -1).join(", ") + " y " + nombres[nombres.length - 1];
+}
+
+// Formatea la fecha de cierre en español para el mensaje
+function formatFechaCierre(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("es-MX", {
+    weekday: "long", day: "numeric", month: "long",
+    hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City",
+  });
+}
 
 // ── Ícono WhatsApp ──────────────────────────────────────────────────────────
 function IconWA({ className = "w-4 h-4" }: { className?: string }) {
@@ -364,26 +401,31 @@ export default function ParticipantesPage() {
     const nombreJornada = jornada
       ? (jornada.nombre ?? `Jornada ${jornada.numero}`)
       : "la siguiente jornada";
+    const ligas = jornada ? descLigas(jornada.liga, jornada.ligasDetalle ?? []) : "varias ligas";
+    const cierre = jornada?.primerPartidoFecha
+      ? formatFechaCierre(jornada.primerPartidoFecha)
+      : "[fecha de cierre]";
 
     if (tipo === "sobreventa") {
       setMensaje(
         `⚽ *¡No te quedes fuera!*\n\n` +
-        `Hola, ya está abierta *${nombreJornada}* y aún no te hemos visto por aquí... 👀\n\n` +
+        `Hola {nombre}, ya está abierta la quiniela *${nombreJornada}* con partidos de ${ligas} 👀\n\n` +
         `🗓️ Todavía estás a tiempo de registrarte\n` +
         `💵 Solo $20 MXN por quiniela\n` +
         `🏆 Adivina todos los resultados y gana el premio\n\n` +
         `👉 ${origen}/quiniela\n\n` +
-        `¡Ándale, quedan pocas horas! ⏰\n\n` +
-        `_Tablitas Quinielas_`
+        `¡Recuerda que el registro se cierra el ${cierre}! ⏰\n\n` +
+        `¡Cualquier duda contáctanos!`
       );
     } else {
       setMensaje(
-        `⚽ *TABLITAS QUINIELAS — ${nombreJornada}*\n\n` +
-        `¡Ya puedes registrar tus pronósticos!\n\n` +
-        `👉 Regístrate aquí: ${origen}/quiniela\n\n` +
+        `⚽ *¡Ya está abierta!*\n\n` +
+        `Hola {nombre}, ya puedes registrar tu quiniela *${nombreJornada}* con partidos de ${ligas} 👀\n\n` +
+        `🗓️ Fecha límite de registro: ${cierre}\n` +
         `💵 Solo $20 MXN por quiniela\n` +
         `🏆 Adivina todos los resultados y gana el premio\n\n` +
-        `_Tablitas Quinielas_`
+        `👉 ${origen}/quiniela\n\n` +
+        `¡Cualquier duda contáctanos!`
       );
     }
     setTipoNotif(tipo);
@@ -408,16 +450,17 @@ export default function ParticipantesPage() {
     return true;
   });
 
-  const abrirWhatsApp = (telefono: string, msg?: string) => {
+  const abrirWhatsApp = (telefono: string, msg: string) => {
     const numero = telefono.replace(/\D/g, "");
-    const texto = msg ?? `Hola, hay nueva jornada en Tablitas Quinielas 🎯`;
-    window.open(`https://wa.me/52${numero}?text=${encodeURIComponent(texto)}`, "_blank");
+    window.open(`https://wa.me/52${numero}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   const siguiente = () => {
     const cliente = clientesConTel[indiceActual];
     if (!cliente) return;
-    abrirWhatsApp(cliente.telefono, mensaje);
+    const primerNombre = cliente.nombre.split(" ")[0];
+    const msgPersonalizado = mensaje.replace(/\{nombre\}/g, primerNombre);
+    abrirWhatsApp(cliente.telefono, msgPersonalizado);
     setEnviados((prev) => new Set([...prev, cliente.id]));
     if (indiceActual < clientesConTel.length - 1) {
       setIndiceActual((i) => i + 1);
@@ -484,9 +527,12 @@ export default function ParticipantesPage() {
           </div>
 
           <div className="bg-white rounded-xl p-4">
-            <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">
+            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">
               Mensaje (editable)
             </label>
+            <p className="text-[11px] text-gray-400 mb-2">
+              <span className="font-mono bg-gray-100 px-1 rounded">{"{nombre}"}</span> se reemplaza automáticamente con el primer nombre de cada cliente.
+            </p>
             <textarea
               value={mensaje}
               onChange={(e) => setMensaje(e.target.value)}
@@ -661,9 +707,11 @@ export default function ParticipantesPage() {
                 c={c}
                 onEditar={setEditando}
                 onEliminar={setEliminando}
-                onWhatsApp={(tel) =>
-                  abrirWhatsApp(tel, `Hola ${c.nombre}, hay nueva jornada en Tablitas Quinielas 🎯`)
-                }
+                onWhatsApp={(tel) => {
+                  const origen = typeof window !== "undefined" ? window.location.origin : "https://tablitasquinielas.com";
+                  const nombre1 = c.nombre.split(" ")[0];
+                  abrirWhatsApp(tel, `Hola ${nombre1} 👋 Hay una nueva quiniela disponible en Tablitas Quinielas.\n\n👉 ${origen}/quiniela\n\n¡Cualquier duda contáctanos!`);
+                }}
               />
             ))
           )}
