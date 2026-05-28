@@ -2,74 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { sql } from "@/lib/prisma";
 
-// POST /api/admin/migrate — crea tablas nuevas. Solo superadmin. Uso único.
-export async function POST(req: NextRequest) {
+// GET /api/admin/migrate — agrega columnas nuevas a la DB (idempotente)
+export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  if (token?.role !== "superadmin") {
+  if (token?.role !== "superadmin" && token?.role !== "admin") {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  const results: string[] = [];
+  const resultados: string[] = [];
 
   try {
-    await sql`
-      CREATE TABLE IF NOT EXISTS "PagoComision" (
-        "id"         TEXT NOT NULL,
-        "usuarioId"  TEXT NOT NULL,
-        "jornadaId"  TEXT NOT NULL,
-        "monto"      DOUBLE PRECISION NOT NULL DEFAULT 0,
-        "pagadoEn"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "pagadoPor"  TEXT,
-        "createdAt"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "PagoComision_pkey" PRIMARY KEY ("id"),
-        CONSTRAINT "PagoComision_usuarioId_jornadaId_key" UNIQUE ("usuarioId", "jornadaId")
-      )
-    `;
-    results.push("✅ Tabla PagoComision creada (o ya existía)");
-  } catch (e) {
-    results.push("❌ PagoComision: " + String(e));
-  }
+    await sql`ALTER TABLE "Quiniela" ADD COLUMN IF NOT EXISTS "confirmadoPor" TEXT`;
+    resultados.push("✅ confirmadoPor agregado");
+  } catch (e) { resultados.push(`⚠️ confirmadoPor: ${e}`); }
 
   try {
-    await sql`
-      ALTER TABLE "Quiniela"
-      ADD COLUMN IF NOT EXISTS "referenciaPago" TEXT
-    `;
-    results.push("✅ Columna referenciaPago añadida a Quiniela (o ya existía)");
-  } catch (e) {
-    results.push("❌ referenciaPago: " + String(e));
-  }
+    await sql`ALTER TABLE "Quiniela" ADD COLUMN IF NOT EXISTS "confirmadoEn" TIMESTAMPTZ`;
+    resultados.push("✅ confirmadoEn agregado");
+  } catch (e) { resultados.push(`⚠️ confirmadoEn: ${e}`); }
 
-  try {
-    await sql`
-      CREATE TABLE IF NOT EXISTS "Vendedor" (
-        "id"        TEXT NOT NULL,
-        "nombre"    TEXT NOT NULL,
-        "codigo"    TEXT NOT NULL,
-        "activo"    BOOLEAN NOT NULL DEFAULT true,
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "Vendedor_pkey" PRIMARY KEY ("id"),
-        CONSTRAINT "Vendedor_codigo_key" UNIQUE ("codigo")
-      )
-    `;
-    results.push("✅ Tabla Vendedor creada (o ya existía)");
-  } catch (e) {
-    results.push("❌ Vendedor: " + String(e));
-  }
-
-  try {
-    await sql`ALTER TABLE "Quiniela" ADD COLUMN IF NOT EXISTS "vendedorId" TEXT REFERENCES "Vendedor"(id)`;
-    results.push("✅ Columna vendedorId añadida a Quiniela (o ya existía)");
-  } catch (e) {
-    results.push("❌ vendedorId: " + String(e));
-  }
-
-  try {
-    await sql`ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "codigoRef" TEXT UNIQUE`;
-    results.push("✅ Columna codigoRef añadida a Usuario (o ya existía)");
-  } catch (e) {
-    results.push("❌ codigoRef: " + String(e));
-  }
-
-  return NextResponse.json({ ok: true, results });
+  return NextResponse.json({ ok: true, resultados });
 }

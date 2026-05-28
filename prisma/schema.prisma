@@ -18,26 +18,26 @@ model Usuario {
   password         String
   rol              String           @default("user")
   puntoVenta       String?
-  codigoRef        String?          @unique  // link de referido: /quiniela?ref=CODIGO
+  codigoRef        String?          @unique // link de referido: /quiniela?ref=CODIGO
   createdAt        DateTime         @default(now())
   quinielas        Quiniela[]
   cuentasBancarias CuentaBancaria[]
 }
 
 model Jornada {
-  id               String     @id @default(cuid())
-  numero           Int
-  nombre           String?
-  temporada        String
-  liga             String     @default("Liga MX")
-  estado           String     @default("abierta")
-  fechaInicio      DateTime
-  fechaFin         DateTime
-  createdAt        DateTime   @default(now())
-  bolsa2Acumulada  Float      @default(0)
-  acumulaciones2   Int        @default(0)
-  partidos         Partido[]
-  quinielas        Quiniela[]
+  id              String     @id @default(cuid())
+  numero          Int
+  nombre          String?
+  temporada       String
+  liga            String     @default("Liga MX")
+  estado          String     @default("abierta")
+  fechaInicio     DateTime
+  fechaFin        DateTime
+  createdAt       DateTime   @default(now())
+  bolsa2Acumulada Float      @default(0)
+  acumulaciones2  Int        @default(0)
+  partidos        Partido[]
+  quinielas       Quiniela[]
 }
 
 model Partido {
@@ -67,7 +67,7 @@ model Cliente {
 model Vendedor {
   id        String     @id @default(cuid())
   nombre    String
-  codigo    String     @unique   // slug corto, ej. "CARLOS"
+  codigo    String     @unique // slug corto, ej. "CARLOS"
   activo    Boolean    @default(true)
   createdAt DateTime   @default(now())
   quinielas Quiniela[]
@@ -92,6 +92,8 @@ model Quiniela {
   monto           Float           @default(20.0)
   estado          String          @default("pendiente")
   estadoPago      String          @default("pendiente") // "pendiente" | "confirmado" | "no_realizado"
+  confirmadoPor   String?         // nombre o email del admin que confirmó el pago
+  confirmadoEn    DateTime?       // cuándo se confirmó
   referenciaPago  String?
   puntos          Int?
   aciertos        Int?
@@ -104,10 +106,10 @@ model CuentaBancaria {
   id        String     @id @default(cuid())
   usuarioId String
   usuario   Usuario    @relation(fields: [usuarioId], references: [id])
-  banco     String     // "BBVA", "Banorte", "OXXO Pay", etc.
+  banco     String // "BBVA", "Banorte", "OXXO Pay", etc.
   titular   String
-  clabe     String?    // CLABE 18 dígitos
-  numero    String?    // últimos 4 dígitos (opcional, para mostrar)
+  clabe     String? // CLABE 18 dígitos
+  numero    String? // últimos 4 dígitos (opcional, para mostrar)
   tipo      String     @default("transferencia") // "transferencia" | "oxxo"
   activa    Boolean    @default(true)
   orden     Int        @default(0)
@@ -126,33 +128,33 @@ model Pick {
 }
 
 model Equipo {
-  id      String  @id @default(cuid())
+  id      String @id @default(cuid())
   nombre  String
   liga    String
-  logoUrl String  @default("")
+  logoUrl String @default("")
 
   @@unique([nombre, liga])
 }
 
 model PagoComision {
-  id          String   @id @default(cuid())
-  usuarioId   String
-  jornadaId   String
-  monto       Float    @default(0)
-  pagadoEn    DateTime @default(now())
-  pagadoPor   String?  // id del superadmin que registró el pago
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  usuarioId String
+  jornadaId String
+  monto     Float    @default(0)
+  pagadoEn  DateTime @default(now())
+  pagadoPor String? // id del superadmin que registró el pago
+  createdAt DateTime @default(now())
 
   @@unique([usuarioId, jornadaId])
 }
 
 model PreRegistro {
   id         String   @id @default(cuid())
-  vendedorId String   // usuario.id del vendedor de tienda
+  vendedorId String // usuario.id del vendedor de tienda
   jornadaId  String
   nombre     String
   telefono   String
-  picks      String   // JSON array: ["L","E","V",...] uno por partido en orden
+  picks      String // JSON array: ["L","E","V",...] uno por partido en orden
   createdAt  DateTime @default(now())
   usado      Boolean  @default(false)
 }
@@ -167,13 +169,13 @@ model PushSubscription {
 
 model Gasto {
   id          String    @id @default(cuid())
-  concepto    String                        // "Dominio tablitasquinielas.mx"
-  categoria   String    @default("otro")   // "infraestructura" | "marketing" | "api" | "comunicacion" | "otro"
-  monto       Float                        // importe en la moneda indicada
-  moneda      String    @default("USD")    // "MXN" | "USD"
-  recurrencia String    @default("mensual")// "unico" | "mensual" | "anual"
-  fechaPago   DateTime  @default(now())    // último pago realizado
-  fechaVence  DateTime?                    // próximo vencimiento (para alertas)
+  concepto    String // "Dominio tablitasquinielas.mx"
+  categoria   String    @default("otro") // "infraestructura" | "marketing" | "api" | "comunicacion" | "otro"
+  monto       Float // importe en la moneda indicada
+  moneda      String    @default("USD") // "MXN" | "USD"
+  recurrencia String    @default("mensual") // "unico" | "mensual" | "anual"
+  fechaPago   DateTime  @default(now()) // último pago realizado
+  fechaVence  DateTime? // próximo vencimiento (para alertas)
   notas       String?
   activo      Boolean   @default(true)
   createdAt   DateTime  @default(now())
