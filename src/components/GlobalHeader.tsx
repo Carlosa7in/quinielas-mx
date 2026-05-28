@@ -80,6 +80,9 @@ export function GlobalHeader() {
 
   return (
     <>
+      {/* Espaciador en flujo normal — empuja el contenido de la página hacia abajo */}
+      <div className="h-14 shrink-0" />
+
       {/* ── Barra fija superior ─────────────────────────────────────────── */}
       <header
         className="fixed top-0 left-0 right-0 z-40 h-14 flex items-center px-4 gap-3"

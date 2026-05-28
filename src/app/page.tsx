@@ -511,7 +511,7 @@ export default function Home() {
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-brand text-white px-4">
-      <div className="max-w-md w-full text-center space-y-6 pt-14 pb-10">
+      <div className="max-w-md w-full text-center space-y-6 pt-4 pb-10">
         {/* Logo */}
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
