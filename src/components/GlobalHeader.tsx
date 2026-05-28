@@ -84,62 +84,53 @@ export function GlobalHeader() {
 
   return (
     <>
-      {/* Espaciador: solo en páginas públicas (no en admin, que tiene su propio header) */}
-      {!soloBoton && <div className="h-14 shrink-0" />}
+      {/* Espaciador en flujo — empuja el contenido de la página hacia abajo */}
+      <div className="h-14 shrink-0" />
 
-      {/* ── Barra fija superior (solo páginas públicas) ──────────────────── */}
-      {!soloBoton && (
-        <header
-          className="fixed top-0 left-0 right-0 z-40 h-14 flex items-center px-4 gap-3"
-          style={{ background: headerBg, backdropFilter: "blur(14px)", borderBottom: headerBorder }}
-        >
-          {/* Logo */}
+      {/* ── Barra fija superior ──────────────────────────────────────────── */}
+      <header
+        className="fixed top-0 left-0 right-0 z-40 h-14 flex items-center px-4 gap-3"
+        style={{ background: headerBg, backdropFilter: "blur(14px)", borderBottom: headerBorder }}
+      >
+        {soloBoton ? (
+          /* Admin: logo a la izquierda igual que en páginas públicas */
           <Link href="/" className="flex-1 flex items-center" onClick={() => setAbierto(false)}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "28px", objectFit: "contain" }} />
           </Link>
+        ) : (
+          <>
+            {/* Público: logo + saludo */}
+            <Link href="/" className="flex-1 flex items-center" onClick={() => setAbierto(false)}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-tablitas.png" alt="Tablitas Quinielas" style={{ height: "28px", objectFit: "contain" }} />
+            </Link>
+            {logueado && session?.user?.name && (
+              <p className="text-amber-300/60 text-xs font-medium truncate max-w-[130px] flex items-center gap-1 shrink-0">
+                <Hand size={12} strokeWidth={1.75} className="shrink-0" />
+                {session.user.name.split(" ")[0]}
+              </p>
+            )}
+          </>
+        )}
 
-          {/* Saludo compacto (solo sesión activa) */}
-          {logueado && session?.user?.name && (
-            <p className="text-amber-300/60 text-xs font-medium truncate max-w-[130px] flex items-center gap-1 shrink-0">
-              <Hand size={12} strokeWidth={1.75} className="shrink-0" />
-              {session.user.name.split(" ")[0]}
-            </p>
-          )}
-
-          {/* Botón hamburguesa en la barra */}
-          <button
-            onClick={() => setAbierto((v) => !v)}
-            aria-label={abierto ? "Cerrar menú" : "Abrir menú"}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all text-white shrink-0"
-            style={{
-              background: abierto
-                ? "rgba(251,191,36,0.2)"
-                : logueado
-                  ? "rgba(251,191,36,0.12)"
-                  : "rgba(255,255,255,0.1)",
-              border: logueado ? "1px solid rgba(251,191,36,0.2)" : "1px solid rgba(255,255,255,0.08)",
-            }}
-          >
-            {abierto ? <X size={18} strokeWidth={2} /> : <Menu size={18} strokeWidth={2} />}
-          </button>
-        </header>
-      )}
-
-      {/* ── Botón flotante (solo en admin) ──────────────────────────────── */}
-      {soloBoton && (
+        {/* Botón hamburguesa — mismo estilo en todas las rutas */}
         <button
           onClick={() => setAbierto((v) => !v)}
           aria-label={abierto ? "Cerrar menú" : "Abrir menú"}
-          className="fixed top-4 right-4 z-50 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all text-white"
+          className="w-9 h-9 rounded-xl flex items-center justify-center transition-all text-white shrink-0"
           style={{
-            background: abierto ? "rgba(30,30,30,0.95)" : "rgba(251,191,36,0.85)",
-            backdropFilter: "blur(8px)",
+            background: abierto
+              ? "rgba(251,191,36,0.2)"
+              : logueado
+                ? "rgba(251,191,36,0.12)"
+                : "rgba(255,255,255,0.1)",
+            border: logueado ? "1px solid rgba(251,191,36,0.2)" : "1px solid rgba(255,255,255,0.08)",
           }}
         >
           {abierto ? <X size={18} strokeWidth={2} /> : <Menu size={18} strokeWidth={2} />}
         </button>
-      )}
+      </header>
 
       {/* Overlay oscuro */}
       {abierto && (

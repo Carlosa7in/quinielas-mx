@@ -454,17 +454,23 @@ export default function ParticipantesPage() {
     return true;
   });
 
-  const abrirWhatsApp = (telefono: string, msg: string) => {
+  const abrirWhatsApp = (telefono: string, msg: string, business = false) => {
     const numero = telefono.replace(/\D/g, "");
-    window.open(`https://wa.me/52${numero}?text=${encodeURIComponent(msg)}`, "_blank");
+    const tel    = numero.length === 10 ? `52${numero}` : numero;
+    const texto  = encodeURIComponent(msg);
+    // business=true usa whatsapp:// scheme que en muchos teléfonos abre WA Business
+    const url = business
+      ? `whatsapp://send?phone=${tel}&text=${texto}`
+      : `https://wa.me/${tel}?text=${texto}`;
+    window.open(url, "_blank");
   };
 
-  const siguiente = () => {
+  const siguiente = (business = false) => {
     const cliente = clientesConTel[indiceActual];
     if (!cliente) return;
     const primerNombre = cliente.nombre.split(" ")[0];
     const msgPersonalizado = mensaje.replace(/\{nombre\}/g, primerNombre);
-    abrirWhatsApp(cliente.telefono, msgPersonalizado);
+    abrirWhatsApp(cliente.telefono, msgPersonalizado, business);
     setEnviados((prev) => new Set([...prev, cliente.id]));
     if (indiceActual < clientesConTel.length - 1) {
       setIndiceActual((i) => i + 1);
@@ -570,13 +576,25 @@ export default function ParticipantesPage() {
                   {clienteActual?.totalQuinielas} quiniela{clienteActual?.totalQuinielas !== 1 ? "s" : ""}
                 </span>
               </div>
-              <button
-                onClick={siguiente}
-                className="w-full bg-[#25D366] hover:bg-[#20b858] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
-              >
-                <IconWA className="w-5 h-5" />
-                Enviar a {clienteActual?.nombre} y siguiente →
-              </button>
+              <p className="text-xs text-gray-500 text-center -mb-1">
+                Elige con qué app enviar a <span className="font-semibold text-gray-700">{clienteActual?.nombre}</span>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => siguiente(false)}
+                  className="flex-1 bg-[#25D366] hover:bg-[#20b858] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-sm"
+                >
+                  <IconWA className="w-4 h-4" />
+                  WhatsApp
+                </button>
+                <button
+                  onClick={() => siguiente(true)}
+                  className="flex-1 bg-[#075E54] hover:bg-[#054d44] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-sm"
+                >
+                  <IconWA className="w-4 h-4" />
+                  Business
+                </button>
+              </div>
 
               <div className="border-t pt-3 space-y-1 max-h-40 overflow-y-auto">
                 <p className="text-[10px] text-gray-400 mb-1">Toca ✓ para desmarcar y reenviar</p>
