@@ -405,6 +405,10 @@ export default function ParticipantesPage() {
     const cierre = jornada?.primerPartidoFecha
       ? formatFechaCierre(jornada.primerPartidoFecha)
       : "[fecha de cierre]";
+    // Link directo a la jornada si se conoce; genérico si es notificación general
+    const linkQuiniela = jornada
+      ? `${origen}/quiniela?jornada=${jornada.id}`
+      : `${origen}/quiniela`;
 
     if (tipo === "sobreventa") {
       setMensaje(
@@ -413,7 +417,7 @@ export default function ParticipantesPage() {
         `🗓️ Todavía estás a tiempo de registrarte\n` +
         `💵 Solo $20 MXN por quiniela\n` +
         `🏆 Adivina todos los resultados y gana el premio\n\n` +
-        `👉 ${origen}/quiniela\n\n` +
+        `👉 ${linkQuiniela}\n\n` +
         `¡Recuerda que el registro se cierra el ${cierre}! ⏰\n\n` +
         `¡Cualquier duda contáctanos!`
       );
@@ -424,7 +428,7 @@ export default function ParticipantesPage() {
         `🗓️ Fecha límite de registro: ${cierre}\n` +
         `💵 Solo $20 MXN por quiniela\n` +
         `🏆 Adivina todos los resultados y gana el premio\n\n` +
-        `👉 ${origen}/quiniela\n\n` +
+        `👉 ${linkQuiniela}\n\n` +
         `¡Cualquier duda contáctanos!`
       );
     }
