@@ -35,6 +35,8 @@ type Quiniela = {
   aciertos: number | null;
   referenciaPago: string | null;
   createdAt: string | null;
+  confirmadoPor: string | null;
+  confirmadoEn: string | null;
   usuario: { nombre: string } | null;
   vendedor: { nombre: string; codigo: string } | null;
   picks: Pick[];
@@ -74,6 +76,53 @@ const CANAL_ICON: Record<string, string> = {
   oxxo: "🏪",
   online: "💻",
 };
+
+// Formatea un ISO UTC (con Z) en zona horaria de México
+function fmtMx(iso: string) {
+  return new Date(iso).toLocaleString("es-MX", {
+    timeZone: "America/Mexico_City",
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
+// Detalle colapsable: fecha de registro + audit trail de confirmación
+function DetalleQuiniela({ q }: { q: Quiniela }) {
+  const [abierto, setAbierto] = useState(false);
+  const tieneInfo = !!(q.createdAt || q.confirmadoPor);
+  if (!tieneInfo) return null;
+  return (
+    <div className="mt-0.5">
+      <button
+        onClick={() => setAbierto((v) => !v)}
+        className="text-[10px] text-gray-300 hover:text-gray-500 transition-colors leading-none"
+        title="Ver detalle"
+      >
+        {abierto ? "▲ ocultar" : "ℹ ver detalle"}
+      </button>
+      {abierto && (
+        <div className="mt-1.5 space-y-0.5 pl-2 border-l-2 border-gray-100">
+          {q.createdAt && (
+            <p className="text-[11px] text-gray-400">
+              📅 Registro: <span className="font-medium">{fmtMx(q.createdAt)}</span>
+            </p>
+          )}
+          {q.confirmadoPor ? (
+            <p className="text-[11px] text-gray-400">
+              ✅ Confirmado por{" "}
+              <span className="font-semibold text-green-700">{q.confirmadoPor}</span>
+              {q.confirmadoEn && (
+                <span className="text-gray-400"> · {fmtMx(q.confirmadoEn)}</span>
+              )}
+            </p>
+          ) : q.estadoPago === "confirmado" ? (
+            <p className="text-[11px] text-gray-400 italic">✅ Confirmado (sin registro de quién)</p>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const PAGO_LABEL: Record<string, { label: string; cls: string }> = {
   confirmado:   { label: "✓ Pagado",    cls: "bg-green-100 text-green-700" },
@@ -626,11 +675,7 @@ function JornadaCard({ jornada, busqueda, usuarios }: { jornada: Jornada; busque
                           </p>
                         )}
                         <p className="font-mono text-xs text-gray-400 mt-0.5">{q.folio}</p>
-                        {q.createdAt && (
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            🕐 {new Date(q.createdAt).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })}
-                          </p>
-                        )}
+                        <DetalleQuiniela q={q} />
                         {q.referenciaPago && (
                           <p className="text-xs text-blue-600 font-semibold mt-0.5">
                             🔑 Ref: {q.referenciaPago}

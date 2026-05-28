@@ -41,16 +41,36 @@ export async function GET() {
     });
 
     // createdAt vía neon() directo — Prisma/NeonDB devuelve {} para DateTime
+    // Retornamos UTC con sufijo Z para que el browser siempre lo interprete como UTC
     const createdAtMap = new Map<string, string>();
     try {
       const rows = await sql`
-        SELECT id, to_char("createdAt" AT TIME ZONE 'America/Mexico_City', 'YYYY-MM-DD"T"HH24:MI:SS') AS created
+        SELECT id, to_char("createdAt", 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created
         FROM "Quiniela"
       `;
       for (const r of rows) {
         if (r.id && r.created) createdAtMap.set(r.id as string, r.created as string);
       }
     } catch { /* si falla, createdAt queda null */ }
+
+    // Audit trail — confirmadoPor / confirmadoEn (columnas opcionales, silent fail si no migradas)
+    const auditMap = new Map<string, { confirmadoPor: string; confirmadoEn: string | null }>();
+    try {
+      const rows = await sql`
+        SELECT id, "confirmadoPor",
+          to_char("confirmadoEn", 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "confirmadoEn"
+        FROM "Quiniela"
+        WHERE "confirmadoPor" IS NOT NULL
+      `;
+      for (const r of rows) {
+        if (r.id && r.confirmadoPor) {
+          auditMap.set(r.id as string, {
+            confirmadoPor: r.confirmadoPor as string,
+            confirmadoEn: (r.confirmadoEn as string) ?? null,
+          });
+        }
+      }
+    } catch { /* columnas aún no migradas — silencioso */ }
 
     // Fecha del primer partido por jornada (para calcular cierre)
     const fechaCierreMap = new Map<string, string>();
@@ -77,7 +97,12 @@ export async function GET() {
       ...j,
       fechaCierre: fechaCierreMap.get(j.id) ?? null,
       quinielas: j.quinielas
-        .map((q) => ({ ...q, createdAt: createdAtMap.get(q.id) ?? null }))
+        .map((q) => ({
+            ...q,
+            createdAt: createdAtMap.get(q.id) ?? null,
+            confirmadoPor: auditMap.get(q.id)?.confirmadoPor ?? null,
+            confirmadoEn: auditMap.get(q.id)?.confirmadoEn ?? null,
+          }))
         .sort((a, b) => {
           if (!a.createdAt && !b.createdAt) return 0;
           if (!a.createdAt) return 1;
