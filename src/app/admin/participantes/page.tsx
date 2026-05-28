@@ -356,6 +356,41 @@ export default function ParticipantesPage() {
   const [editando, setEditando] = useState<Cliente | null>(null);
   const [eliminando, setEliminando] = useState<Cliente | null>(null);
 
+  // ── Persistir estado broadcast en localStorage ───────────────────────────
+  const STORAGE_KEY = "tq_broadcast_state";
+
+  // Guardar cada vez que cambia algo relevante del broadcast
+  useEffect(() => {
+    if (!modoBroadcast) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        enviados:          [...enviados],
+        indiceActual,
+        mensaje,
+        tipoNotif,
+        jornadaSobreventa,
+        ts:                Date.now(),
+      }));
+    } catch { /* sin localStorage */ }
+  }, [enviados, indiceActual, mensaje, modoBroadcast, tipoNotif, jornadaSobreventa]);
+
+  // Restaurar al montar (si hay estado guardado reciente — menos de 12 horas)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const state = JSON.parse(raw);
+      if (Date.now() - state.ts > 12 * 3_600_000) { localStorage.removeItem(STORAGE_KEY); return; }
+      setEnviados(new Set(state.enviados ?? []));
+      setIndiceActual(state.indiceActual ?? 0);
+      setMensaje(state.mensaje ?? "");
+      setTipoNotif(state.tipoNotif ?? "general");
+      setJornadaSobreventa(state.jornadaSobreventa ?? null);
+      setModoBroadcast(true);
+    } catch { localStorage.removeItem(STORAGE_KEY); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const cargar = () => {
     fetch("/api/admin/participantes")
       .then((r) => r.json())
@@ -489,7 +524,7 @@ export default function ParticipantesPage() {
         <div className="bg-brand text-white py-4 px-4">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             <div>
-              <button onClick={() => setModoBroadcast(false)} className="text-amber-400 text-sm">
+              <button onClick={() => { localStorage.removeItem(STORAGE_KEY); setModoBroadcast(false); }} className="text-amber-400 text-sm">
                 ← Participantes
               </button>
               <h1 className="text-xl font-bold mt-0.5">
@@ -643,7 +678,7 @@ export default function ParticipantesPage() {
               <h2 className="text-amber-900 font-bold text-lg">¡Todos notificados!</h2>
               <p className="text-amber-700 text-sm">{total} mensajes enviados</p>
               <button
-                onClick={() => setModoBroadcast(false)}
+                onClick={() => { localStorage.removeItem(STORAGE_KEY); setModoBroadcast(false); }}
                 className="mt-4 bg-amber-700 text-white font-bold px-6 py-2 rounded-xl"
               >
                 Volver a participantes

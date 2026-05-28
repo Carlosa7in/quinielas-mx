@@ -112,9 +112,34 @@ export async function GET(req: NextRequest) {
 
   // Solo clientes reales (al menos 1 quiniela confirmada)
   const soloClientes = resultado.filter((c) => c.totalQuinielas > 0);
-  soloClientes.sort((a, b) => b.totalQuinielas - a.totalQuinielas);
 
-  return NextResponse.json({ clientes: soloClientes, jornadasAbiertas: jornadasAbiertasEnriquecidas });
+  // Deduplicar por número de teléfono — mismo número = misma persona
+  // Se fusionan stats y jornadasAbiertasCompradas; se usa el nombre/id del registro con más quinielas
+  const porTelefono = new Map<string, typeof soloClientes>();
+  for (const c of soloClientes) {
+    const tel = c.telefono.replace(/\D/g, "").slice(-10); // últimos 10 dígitos
+    if (!porTelefono.has(tel)) porTelefono.set(tel, []);
+    porTelefono.get(tel)!.push(c);
+  }
+
+  const fusionados = Array.from(porTelefono.values()).map((grupo) => {
+    if (grupo.length === 1) return grupo[0];
+    // Principal: el registro con más quinielas confirmadas
+    const principal = [...grupo].sort((a, b) => b.totalQuinielas - a.totalQuinielas)[0];
+    return {
+      ...principal,
+      totalQuinielas:          grupo.reduce((s, c) => s + c.totalQuinielas, 0),
+      pendientes:              grupo.reduce((s, c) => s + c.pendientes, 0),
+      pendientesCerrados:      grupo.reduce((s, c) => s + c.pendientesCerrados, 0),
+      ganadoras:               grupo.reduce((s, c) => s + c.ganadoras, 0),
+      ultimaJornada:           Math.max(...grupo.map((c) => c.ultimaJornada ?? 0)) || null,
+      jornadasAbiertasCompradas: [...new Set(grupo.flatMap((c) => c.jornadasAbiertasCompradas))],
+    };
+  });
+
+  fusionados.sort((a, b) => b.totalQuinielas - a.totalQuinielas);
+
+  return NextResponse.json({ clientes: fusionados, jornadasAbiertas: jornadasAbiertasEnriquecidas });
 }
 
 // PATCH /api/admin/participantes — editar nombre y/o teléfono
