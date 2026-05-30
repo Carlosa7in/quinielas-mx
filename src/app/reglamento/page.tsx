@@ -16,6 +16,7 @@ const secciones = [
       "El ganador o ganadores serán quienes obtengan el mayor número de aciertos al finalizar todos los partidos.",
       "Premio de 1.° lugar: el premio siempre se reparte en partes iguales entre todos los que empaten en primer lugar, sin importar cuántos sean.",
       "Premio de 2.° lugar: máximo 20 ganadores para repartir el premio. Si hay más de 20, la bolsa se acumula para la siguiente semana. A la tercera semana acumulada, el premio se repartirá sin importar el número de ganadores.",
+      "Bolsa mínima: cuando la bolsa neta de la jornada sea menor a $1,000 MXN, únicamente se premia el 1.° lugar. En ese caso, cualquier monto acumulado del 2.° lugar se suma al premio del 1.° lugar.",
     ],
   },
   {
@@ -70,7 +71,7 @@ const premios = [
     color: "bg-gray-50 border-gray-200",
     titleColor: "text-gray-600",
     descripcion:
-      "Quienes tengan la segunda mayor cantidad de aciertos. Máximo 20 ganadores; si hay más, la bolsa se acumula hasta la semana siguiente. A la tercera semana acumulada se reparte sin importar el número de ganadores.",
+      "Quienes tengan la segunda mayor cantidad de aciertos. Máximo 20 ganadores; si hay más, la bolsa se acumula hasta la semana siguiente. A la tercera semana acumulada se reparte sin importar el número de ganadores. Solo aplica cuando la bolsa neta de la jornada supere los $1,000 MXN.",
   },
 ];
 

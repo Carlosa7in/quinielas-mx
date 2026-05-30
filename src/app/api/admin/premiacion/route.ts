@@ -5,6 +5,7 @@ const COMISION_PCT = 0.10; // 10% del monto por venta
 const PORC_ADMIN = 0.15;
 const PORC_PRIMERO = 0.60;
 const PORC_SEGUNDO = 0.25;
+const UMBRAL_BOLSA_COMPLETA = 1000; // bolsa neta mínima para premiar 2° lugar
 
 // GET /api/admin/premiacion?jornadaId=xxx
 export async function GET(req: Request) {
@@ -68,16 +69,31 @@ export async function GET(req: Request) {
     // Bolsa neta: lo que queda después de sacar la casa Y las comisiones
     const bolsaNeta   = totalRecaudado - fondoAdmin - totalComisiones; // $435
 
-    // Premios: reparto proporcional 60:25 de la bolsa neta
-    const bolsa1      = bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO));
-    const bolsa2Base  = bolsaNeta * (PORC_SEGUNDO  / (PORC_PRIMERO + PORC_SEGUNDO));
-    const bolsa2Total = bolsa2Base + (jornada.bolsa2Acumulada ?? 0);
+    // ¿Bolsa suficiente para premiar 2° lugar?
+    const bolsaReducida = bolsaNeta < UMBRAL_BOLSA_COMPLETA;
+
+    // Premios: si bolsa neta < $1,000 → todo al 1er lugar (incluyendo acumulado de 2°)
+    //          si bolsa neta ≥ $1,000 → reparto proporcional 60:25
+    let bolsa1: number;
+    let bolsa2Base: number;
+    let bolsa2Total: number;
+
+    if (bolsaReducida) {
+      // Todo va al 1er lugar, incluyendo lo que hubiera acumulado el 2°
+      bolsa2Base  = 0;
+      bolsa2Total = 0;
+      bolsa1      = bolsaNeta + (jornada.bolsa2Acumulada ?? 0);
+    } else {
+      bolsa1      = bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO));
+      bolsa2Base  = bolsaNeta * (PORC_SEGUNDO  / (PORC_PRIMERO + PORC_SEGUNDO));
+      bolsa2Total = bolsa2Base + (jornada.bolsa2Acumulada ?? 0);
+    }
 
     // Ganadores (por aciertos) — recalcular premios correctos (Math.floor, no DB)
     const aciertosUnicos = [
       ...new Set(todasQuinielas.map((q) => q.aciertos ?? 0)),
     ].sort((a, b) => b - a);
-    const maxAciertos    = aciertosUnicos[0] ?? 0;
+    const maxAciertos     = aciertosUnicos[0] ?? 0;
     const segundoAciertos = aciertosUnicos.length > 1 ? aciertosUnicos[1] : null;
 
     const ganadores1Raw = todasQuinielas.filter((q) => (q.aciertos ?? 0) === maxAciertos);
@@ -89,6 +105,7 @@ export async function GET(req: Request) {
     const MAX_GANADORES_2 = 20;
     const MAX_ACUMULACIONES = 2;
     const segundoDistribuidoCalc =
+      !bolsaReducida &&
       ganadores2Raw.length > 0 &&
       (ganadores2Raw.length <= MAX_GANADORES_2 || (jornada.acumulaciones2 ?? 0) >= MAX_ACUMULACIONES);
 
@@ -120,6 +137,7 @@ export async function GET(req: Request) {
         totalComisiones,
         bolsaNeta,
       },
+      bolsaReducida,
       bolsa1,
       bolsa2Total,
       ganadores1: g1,
