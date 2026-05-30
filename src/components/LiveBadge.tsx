@@ -17,11 +17,8 @@ function pad(n: number) { return String(n).padStart(2, "0"); }
 
 function Countdown({ fechaISO }: { fechaISO: string }) {
   const calc = () => {
-    // fechaHora está guardado como hora local CDMX (e.g. "T19:00") pero con Z suffix,
-    // por lo que new Date(Z) lo trataría como UTC → 6h de diferencia.
-    // Quitamos Z para que el browser lo parsee como hora LOCAL (= CDMX para el usuario).
-    const localISO = fechaISO.replace("Z", "").replace(/\.000$/, "");
-    const diff = new Date(localISO).getTime() - Date.now();
+    // fechaHora es UTC real (con Z) — comparar directamente contra Date.now()
+    const diff = new Date(fechaISO).getTime() - Date.now();
     if (diff <= 0) return { h: 0, m: 0, s: 0 };
     return {
       h: Math.floor(diff / 3_600_000),
@@ -151,29 +148,21 @@ export function LiveBadge() {
   if (proximo) {
     const jornada = jornadas.find(j => j.partidos.some(p => p.id === proximo.id));
 
-    // fechaHora se guarda como hora local CDMX (sin conversión UTC),
-    // leer el tiempo directamente del string para evitar doble offset.
-    const mHora = proximo.fechaHora.match(/T(\d{2}):(\d{2})/);
-    const hora = (() => {
-      if (!mHora) return "";
-      let h = parseInt(mHora[1]);
-      const min = mHora[2];
-      const ampm = h >= 12 ? "p.m." : "a.m.";
-      h = h === 0 ? 12 : h > 12 ? h - 12 : h;
-      return `${h}:${min} ${ampm}`;
-    })();
-    // Comparar fecha local del ISO string (YYYY-MM-DD) con hoy en CDMX
-    const fechaISOStr = proximo.fechaHora.slice(0, 10); // "YYYY-MM-DD"
-    const hoyISOStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }); // "YYYY-MM-DD"
+    // fechaHora es UTC real (con Z) — convertir siempre a hora México
+    const TZ = "America/Mexico_City";
+    const fechaD = new Date(proximo.fechaHora);
+    const hora = fechaD.toLocaleTimeString("es-MX", {
+      hour: "numeric", minute: "2-digit", hour12: true, timeZone: TZ,
+    });
+    // Comparar fecha en CDMX con hoy en CDMX
+    const fechaISOStr = fechaD.toLocaleDateString("en-CA", { timeZone: TZ }); // "YYYY-MM-DD"
+    const hoyISOStr   = new Date().toLocaleDateString("en-CA", { timeZone: TZ });
     const esHoy = fechaISOStr === hoyISOStr;
     const fechaLabel = esHoy
       ? `Hoy a las ${hora}`
-      : (() => {
-          const local = proximo.fechaHora.replace("Z", "").replace(".000", "");
-          return new Date(local).toLocaleDateString("es-MX", {
-            weekday: "short", day: "numeric", month: "short",
-          }) + ` · ${hora}`;
-        })();
+      : fechaD.toLocaleDateString("es-MX", {
+          weekday: "short", day: "numeric", month: "short", timeZone: TZ,
+        }) + ` · ${hora}`;
 
     return (
       <Link
