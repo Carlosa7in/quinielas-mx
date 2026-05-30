@@ -11,6 +11,7 @@ const PORC_SEGUNDO = 0.25;
 const PORC_ADMIN   = 0.15;
 const COMISION_PCT = 0.10;
 const MAX_ROWS     = 15;
+const UMBRAL_BOLSA_COMPLETA = 1000;
 
 // ── Dimensiones ───────────────────────────────────────────────────────────────
 const W       = 900;
@@ -67,15 +68,10 @@ async function safeLogoUrl(url: string): Promise<string> {
 function formatFecha(iso: string): { dia: string; hora: string } {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return { dia: "—", hora: "" };
-  // México eliminó el horario de verano en 2023 → siempre UTC-6 (CST)
-  const offsetHours = -6;
-  const local = new Date(d.getTime() + offsetHours * 3_600_000);
-  const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return {
-    dia:  `${days[local.getUTCDay()]} ${local.getUTCDate()}`,
-    hora: `${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())}`,
-  };
+  const TZ = "America/Mexico_City";
+  const dia = d.toLocaleDateString("es-MX", { weekday: "short", day: "numeric", timeZone: TZ });
+  const hora = d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: TZ });
+  return { dia, hora };
 }
 
 // Nombre abreviado para la fila L / V
@@ -182,14 +178,25 @@ export async function GET(
     const fondoAdmin      = totalRecaudado * PORC_ADMIN;
     const totalComisiones = totalRecaudado * COMISION_PCT;
     const bolsaNeta       = totalRecaudado - fondoAdmin - totalComisiones;
-    const bolsa1 = Math.floor(bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO)));
-    const bolsa2 = Math.floor(bolsaNeta * (PORC_SEGUNDO  / (PORC_PRIMERO + PORC_SEGUNDO))) + (Number(jornada.bolsa2Acumulada) ?? 0);
+
+    // Regla bolsa mínima: si bolsaNeta < $1,000 solo se premia el 1er lugar
+    const bolsaReducida = bolsaNeta < UMBRAL_BOLSA_COMPLETA;
+    let bolsa1: number;
+    let bolsa2: number;
+    if (bolsaReducida) {
+      bolsa1 = Math.floor(bolsaNeta + (Number(jornada.bolsa2Acumulada) ?? 0));
+      bolsa2 = 0;
+    } else {
+      bolsa1 = Math.floor(bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO)));
+      bolsa2 = Math.floor(bolsaNeta * (PORC_SEGUNDO / (PORC_PRIMERO + PORC_SEGUNDO))) + (Number(jornada.bolsa2Acumulada) ?? 0);
+    }
 
     const aciertosUnicos = [
       ...new Set(quinielas.map(q => q.aciertos).filter((a): a is number => a !== null)),
     ].sort((a, b) => b - a);
     const maxAciertos     = aciertosUnicos[0] ?? null;
-    const segundoAciertos = aciertosUnicos[1] ?? null;
+    // Si bolsaReducida no hay 2° lugar
+    const segundoAciertos = bolsaReducida ? null : (aciertosUnicos[1] ?? null);
     const primeroCount = maxAciertos     !== null ? quinielas.filter(q => q.aciertos === maxAciertos).length     : 0;
     const segundoCount = segundoAciertos !== null ? quinielas.filter(q => q.aciertos === segundoAciertos).length : 0;
 
@@ -230,16 +237,27 @@ export async function GET(
           <div style={{ height: H_PRIZE, background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>1° LUGAR</span>
             <span style={{ fontSize: 16, fontWeight: 900, color: RED, marginLeft: 6 }}>{fmt(primeroCount > 0 ? Math.floor(bolsa1 / primeroCount) : bolsa1)}{primeroCount > 1 ? " c/u" : ""}</span>
-            <span style={{ fontSize: 16, color: "#94a3b8", marginLeft: 18, marginRight: 18 }}>/</span>
-            <span style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>2° LUGAR</span>
-            <span style={{ fontSize: 16, fontWeight: 900, color: RED, marginLeft: 6 }}>{fmt(segundoCount > 0 ? Math.floor(bolsa2 / segundoCount) : bolsa2)}{segundoCount > 1 ? " c/u" : ""}</span>
+            {!bolsaReducida && (
+              <>
+                <span style={{ fontSize: 16, color: "#94a3b8", marginLeft: 18, marginRight: 18 }}>/</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>2° LUGAR</span>
+                <span style={{ fontSize: 16, fontWeight: 900, color: RED, marginLeft: 6 }}>{fmt(segundoCount > 0 ? Math.floor(bolsa2 / segundoCount) : bolsa2)}{segundoCount > 1 ? " c/u" : ""}</span>
+              </>
+            )}
+            {bolsaReducida && (
+              <span style={{ fontSize: 11, color: "#f59e0b", marginLeft: 10 }}>· bolsa mínima</span>
+            )}
           </div>
 
           {/* ── Totales ── */}
           <div style={{ height: H_TOTALS, background: WHITE, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid #e5e7eb" }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#111827" }}>Primeros lugares: {primeroCount}</span>
-            <span style={{ width: 32 }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#111827" }}>Segundos lugares: {segundoCount}</span>
+            {!bolsaReducida && (
+              <>
+                <span style={{ width: 32 }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#111827" }}>Segundos lugares: {segundoCount}</span>
+              </>
+            )}
           </div>
 
           {/* ── RESULTADOS bar ── */}
