@@ -23,17 +23,20 @@ type Jornada = {
   partidos: Partido[];
 };
 
-// ISO → "YYYY-MM-DDTHH:mm" en hora local del navegador (México)
+// ISO UTC → "YYYY-MM-DDTHH:mm" en hora de México (para input datetime-local)
 function toDatetimeLocal(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  // Usar offset local del navegador (asumimos que el usuario está en CDMX)
-  return (
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-    `T${pad(d.getHours())}:${pad(d.getMinutes())}`
-  );
+  // Usar siempre America/Mexico_City — no depender del timezone del navegador
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Mexico_City",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(d);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  const hh = get("hour") === "24" ? "00" : get("hour"); // medianoche edge case
+  return `${get("year")}-${get("month")}-${get("day")}T${hh}:${get("minute")}`;
 }
 
 function formatFecha(iso: string | null): string {
