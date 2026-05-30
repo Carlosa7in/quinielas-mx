@@ -39,6 +39,7 @@ type Premios = {
   segundoCount: number;
   maxAciertos: number | null;
   segundoAciertos: number | null;
+  bolsaReducida?: boolean;
 };
 
 type Jornada = {
@@ -352,6 +353,12 @@ export default function ResultadosPage() {
         {!hayResultados && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-800 text-center">
             Los picks se revelan una vez que inicien los partidos.
+          </div>
+        )}
+
+        {premios.bolsaReducida && (
+          <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 text-sm text-amber-800 text-center">
+            ℹ️ <strong>Bolsa mínima:</strong> La bolsa neta fue menor a $1,000 MXN, por lo que <strong>solo se premia el 1.° lugar</strong>. El acumulado del 2.° lugar se sumó al 1.° lugar.
           </div>
         )}
 

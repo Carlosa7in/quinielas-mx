@@ -7,6 +7,7 @@ const PORC_PRIMERO = 0.60;
 const PORC_SEGUNDO = 0.25;
 const PORC_ADMIN   = 0.15;
 const COMISION_PCT = 0.10;
+const UMBRAL_BOLSA_COMPLETA = 1000;
 
 // GET /api/resultados/[jornadaId] — public, no auth required
 export async function GET(
@@ -128,9 +129,20 @@ export async function GET(
     const fondoAdmin      = totalRecaudado * PORC_ADMIN;
     const totalComisiones = totalRecaudado * COMISION_PCT;
     const bolsaNeta       = totalRecaudado - fondoAdmin - totalComisiones;
-    const bolsa1     = Math.floor(bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO)));
-    const bolsa2Base = Math.floor(bolsaNeta * (PORC_SEGUNDO  / (PORC_PRIMERO + PORC_SEGUNDO)));
-    const bolsa2 = bolsa2Base + (jornada.bolsa2Acumulada ?? 0);
+
+    // Regla bolsa mínima: si bolsaNeta < $1,000 solo se premia el 1er lugar
+    const bolsaReducida = bolsaNeta < UMBRAL_BOLSA_COMPLETA;
+    let bolsa1: number;
+    let bolsa2: number;
+    if (bolsaReducida) {
+      // Todo va al 1er lugar, incluyendo acumulado del 2°
+      bolsa1 = Math.floor(bolsaNeta + (jornada.bolsa2Acumulada ?? 0));
+      bolsa2 = 0;
+    } else {
+      bolsa1 = Math.floor(bolsaNeta * (PORC_PRIMERO / (PORC_PRIMERO + PORC_SEGUNDO)));
+      const bolsa2Base = Math.floor(bolsaNeta * (PORC_SEGUNDO / (PORC_PRIMERO + PORC_SEGUNDO)));
+      bolsa2 = bolsa2Base + (jornada.bolsa2Acumulada ?? 0);
+    }
 
     // Determine rank thresholds
     const aciertosUnicos = [
@@ -138,7 +150,8 @@ export async function GET(
     ].sort((a, b) => b - a);
 
     const maxAciertos = aciertosUnicos[0] ?? null;
-    const segundoAciertos = aciertosUnicos[1] ?? null;
+    // Si bolsaReducida no hay 2° lugar
+    const segundoAciertos = bolsaReducida ? null : (aciertosUnicos[1] ?? null);
 
     const primeroCount = maxAciertos !== null
       ? quinielas.filter((q) => q.aciertos === maxAciertos).length
@@ -188,6 +201,7 @@ export async function GET(
         segundoCount,
         maxAciertos,
         segundoAciertos,
+        bolsaReducida,
       },
       constants: {
         PORC_PRIMERO,
