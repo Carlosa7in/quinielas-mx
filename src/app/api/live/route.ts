@@ -477,8 +477,11 @@ export async function GET() {
             ? new Map([...(logoMapPorLiga[slugPartido] ?? new Map()), ...logoMap])
             : logoMap;
 
-          // Buscar evento ESPN que coincida con los equipos
+          // Buscar evento ESPN: primero por espnId guardado (más fiable), luego por nombre
           const espnEv = espnEventsPartido.find(ev => {
+            // Match directo por ID — funciona aunque el nombre esté abreviado (PSG, UNAM, etc.)
+            if (p.espn_id && ev.id === p.espn_id) return true;
+            // Fallback: comparar nombres de equipos
             const comps = ev.competitions?.[0]?.competitors ?? [];
             const home = comps.find(c => c.homeAway === "home");
             const away = comps.find(c => c.homeAway === "away");
