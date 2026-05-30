@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
                             AND '2026-05-31T23:59:59Z'::timestamptz
         AND ("espnId" IS NULL OR "espnId" != '401862897')
     `;
-    resultados.push(`✅ PSG vs Arsenal corregido (${r.count ?? 0} fila(s))`);
+    resultados.push(`✅ PSG vs Arsenal corregido (${Array.isArray(r) ? r.length : "?"} fila(s))`);
   } catch (e) { resultados.push(`⚠️ PSG vs Arsenal: ${e}`); }
 
   // ── Corrección automática de horas via ESPN para partidos con espnId ─────
