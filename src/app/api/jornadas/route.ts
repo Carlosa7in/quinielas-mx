@@ -120,6 +120,7 @@ export async function POST(req: Request) {
           equipoVisita: p.equipoVisita,
           fechaHora,
           orden: p.orden ?? i + 1,
+          ...(p.espnId ? { espnId: String(p.espnId) } : {}),
         },
         select: { id: true, equipoLocal: true, equipoVisita: true, orden: true },
       });

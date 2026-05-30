@@ -317,6 +317,7 @@ export async function GET(req: NextRequest) {
           equipoLocal:  normalizarNombre(homeTeam.displayName as string),
           equipoVisita: normalizarNombre(awayTeam.displayName as string),
           fechaHora:    toLocalMX(e.date as string),
+          espnId:       String(e.id ?? ""),
           liga,
         };
       });
