@@ -12,6 +12,7 @@ type Partido = {
   resultado: string | null; golesLocal: number | null; golesVisita: number | null;
   orden: number; fechaHora: string | null;
   sofaId: string | null;
+  espnId: string | null;
   picks: PickDist;
 };
 
@@ -35,6 +36,55 @@ function normSofa(s: string) {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
     .replace(/\b(fc|cf|cd|afc|sc|rc|ac)\b/g, "").replace(/[^a-z0-9 ]/g, "")
     .replace(/\s+/g, " ").trim();
+}
+
+function EspnIdInput({ partidoId, inicial }: { partidoId: string; inicial: string | null }) {
+  const [valor, setValor]       = useState(inicial ?? "");
+  const [guardando, setGuardando] = useState(false);
+  const [ok, setOk]             = useState(!!inicial);
+  const [error, setError]       = useState<string | null>(null);
+
+  const guardar = async () => {
+    if (!valor.trim()) return;
+    setGuardando(true); setError(null);
+    try {
+      const res = await fetch(`/api/admin/partido/${partidoId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ espnId: valor.trim() }),
+      });
+      const data = await res.json() as { espnId?: string; error?: string };
+      if (data.espnId !== undefined) { setOk(true); }
+      else { setError(data.error ?? "Error"); }
+    } catch { setError("Error de red"); }
+    setGuardando(false);
+  };
+
+  return (
+    <div className="mt-2 pt-2 border-t border-gray-100">
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">
+        📡 ESPN ID
+      </p>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={valor}
+          onChange={e => { setValor(e.target.value); setOk(false); setError(null); }}
+          placeholder="ej. 401840836"
+          className="flex-1 text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-blue-400 bg-gray-50"
+        />
+        <button
+          onClick={guardar}
+          disabled={guardando || !valor.trim()}
+          className="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white disabled:opacity-40 hover:bg-blue-700 transition-colors shrink-0"
+        >
+          {guardando ? "..." : "Guardar"}
+        </button>
+      </div>
+      {ok  && <p className="text-[10px] text-green-600 mt-1">✅ ESPN ID guardado: {valor}</p>}
+      {error && <p className="text-[10px] text-red-500 mt-1">⚠️ {error}</p>}
+    </div>
+  );
 }
 
 function SofaIdInput({ partidoId, inicial, local, visita, fechaHora }: {
@@ -414,6 +464,9 @@ export default function JornadaDetallePage({ params }: { params: Promise<{ id: s
                       fechaHora={p.fechaHora}
                     />
                   )}
+
+                  {/* ESPN ID */}
+                  <EspnIdInput partidoId={p.id} inicial={p.espnId} />
                 </div>
               );
             })}

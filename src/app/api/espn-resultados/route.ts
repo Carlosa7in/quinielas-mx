@@ -88,6 +88,7 @@ export type EspnResultado = {
 async function fetchResultadoPorEspnId(
   espnId: string,
   ligaSlug: string,
+  equipoLocal: string,  // nombre en nuestra DB (para detectar si ESPN tiene el orden inverso)
 ): Promise<{ golesLocal: number; golesVisita: number; resultado: "1" | "X" | "2"; completado: boolean } | null> {
   try {
     const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${ligaSlug}/summary?event=${espnId}`;
@@ -107,10 +108,32 @@ async function fetchResultadoPorEspnId(
     const home = competitors?.find((c: Record<string, unknown>) => c.homeAway === "home") ?? competitors?.[0];
     const away = competitors?.find((c: Record<string, unknown>) => c.homeAway === "away") ?? competitors?.[1];
 
-    const gl = parseInt(String(home?.score ?? "0")) || 0;
-    const gv = parseInt(String(away?.score ?? "0")) || 0;
-    const resultado: "1" | "X" | "2" = gl > gv ? "1" : gl < gv ? "2" : "X";
+    const homeTeam = (home?.team as Record<string, unknown>)?.displayName as string ?? "";
+    const awayTeam = (away?.team as Record<string, unknown>)?.displayName as string ?? "";
+    const homeScore = parseInt(String(home?.score ?? "0")) || 0;
+    const awayScore = parseInt(String(away?.score ?? "0")) || 0;
 
+    // Detectar si ESPN tiene el orden invertido respecto a nuestra DB.
+    // Si el nombre del equipo "home" de ESPN se parece más al "visita" de nuestra DB → swap.
+    const nlDB = norm(equipoLocal);
+    const nlESPN = norm(homeTeam);
+    const naESPN = norm(awayTeam);
+    const localEsHome = nlESPN.includes(nlDB) || nlDB.includes(nlESPN) || nlDB === nlESPN;
+    const localEsAway = naESPN.includes(nlDB) || nlDB.includes(naESPN) || nlDB === naESPN;
+
+    let gl: number;
+    let gv: number;
+    if (!localEsHome && localEsAway) {
+      // ESPN home = nuestro visita → invertir
+      gl = awayScore;
+      gv = homeScore;
+    } else {
+      // ESPN home = nuestro local (normal)
+      gl = homeScore;
+      gv = awayScore;
+    }
+
+    const resultado: "1" | "X" | "2" = gl > gv ? "1" : gl < gv ? "2" : "X";
     return { golesLocal: gl, golesVisita: gv, resultado, completado };
   } catch {
     return null;
@@ -137,7 +160,7 @@ export async function GET(req: NextRequest) {
 
     await Promise.all(rows.map(async (p) => {
       const slug = LIGA_ESPN[p.liga] ?? "mex.1";
-      const r = await fetchResultadoPorEspnId(p.espnId, slug);
+      const r = await fetchResultadoPorEspnId(p.espnId, slug, p.equipoLocal);
       if (!r) return;
       todos.push({
         partidoId:   p.id,

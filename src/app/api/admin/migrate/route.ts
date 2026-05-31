@@ -36,6 +36,37 @@ export async function GET(req: NextRequest) {
     resultados.push(`✅ PSG vs Arsenal corregido (${Array.isArray(r) ? r.length : "?"} fila(s))`);
   } catch (e) { resultados.push(`⚠️ PSG vs Arsenal: ${e}`); }
 
+  // ── Guardar espnId para Tigres vs Toluca (18 ene 2026, 0-0) ─────────────
+  try {
+    const r = await sql`
+      UPDATE "Partido"
+      SET "espnId" = '401840836'
+      WHERE "espnId" IS NULL
+        AND (
+          ("equipoLocal" ILIKE '%tigres%' AND "equipoVisita" ILIKE '%toluca%')
+          OR
+          ("equipoLocal" ILIKE '%toluca%' AND "equipoVisita" ILIKE '%tigres%')
+        )
+        AND "fechaHora" BETWEEN '2026-01-01T00:00:00Z'::timestamptz
+                            AND '2026-02-28T23:59:59Z'::timestamptz
+    `;
+    resultados.push(`✅ espnId Tigres vs Toluca (${Array.isArray(r) ? r.length : "?"} fila(s))`);
+  } catch (e) { resultados.push(`⚠️ espnId Tigres vs Toluca: ${e}`); }
+
+  // ── Guardar espnId para México vs Australia (31 may 2026, 1-0) ───────────
+  try {
+    const r = await sql`
+      UPDATE "Partido"
+      SET "espnId" = '401861775'
+      WHERE "espnId" IS NULL
+        AND (
+          ("equipoLocal" ILIKE '%m_xico%' OR "equipoLocal" ILIKE '%mexico%' OR "equipoLocal" ILIKE '%méxico%')
+          AND ("equipoVisita" ILIKE '%australia%')
+        )
+    `;
+    resultados.push(`✅ espnId México vs Australia (${Array.isArray(r) ? r.length : "?"} fila(s))`);
+  } catch (e) { resultados.push(`⚠️ espnId México vs Australia: ${e}`); }
+
   // ── Corrección automática de horas via ESPN para partidos con espnId ─────
   // Llama internamente al endpoint fix-horas-espn con dry=false
   try {
