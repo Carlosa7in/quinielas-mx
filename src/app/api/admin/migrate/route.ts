@@ -36,22 +36,21 @@ export async function GET(req: NextRequest) {
     resultados.push(`✅ PSG vs Arsenal corregido (${Array.isArray(r) ? r.length : "?"} fila(s))`);
   } catch (e) { resultados.push(`⚠️ PSG vs Arsenal: ${e}`); }
 
-  // ── Guardar espnId para Tigres vs Toluca (18 ene 2026, 0-0) ─────────────
+  // ── Guardar espnId para Toluca vs Tigres (Final CONCACAF Champions Cup, 31 may 2026) ──
   try {
     const r = await sql`
       UPDATE "Partido"
-      SET "espnId" = '401840836'
+      SET "espnId" = '401871783'
       WHERE "espnId" IS NULL
         AND (
           ("equipoLocal" ILIKE '%tigres%' AND "equipoVisita" ILIKE '%toluca%')
           OR
           ("equipoLocal" ILIKE '%toluca%' AND "equipoVisita" ILIKE '%tigres%')
         )
-        AND "fechaHora" BETWEEN '2026-01-01T00:00:00Z'::timestamptz
-                            AND '2026-02-28T23:59:59Z'::timestamptz
+        AND liga ILIKE '%concacaf%'
     `;
-    resultados.push(`✅ espnId Tigres vs Toluca (${Array.isArray(r) ? r.length : "?"} fila(s))`);
-  } catch (e) { resultados.push(`⚠️ espnId Tigres vs Toluca: ${e}`); }
+    resultados.push(`✅ espnId Toluca vs Tigres CONCACAF Final (${Array.isArray(r) ? r.length : "?"} fila(s))`);
+  } catch (e) { resultados.push(`⚠️ espnId Toluca vs Tigres CONCACAF: ${e}`); }
 
   // ── Guardar espnId para México vs Australia (31 may 2026, 1-0) ───────────
   try {
