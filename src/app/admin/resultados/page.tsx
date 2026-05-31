@@ -25,6 +25,7 @@ type Jornada = {
 };
 
 type EspnResultado = {
+  partidoId?: string;
   equipoLocal: string;
   equipoVisita: string;
   golesLocal: number;
