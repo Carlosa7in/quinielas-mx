@@ -25,6 +25,15 @@ const LIGA_ESPN: Record<string, string> = {
   "Apertura":                 "mex.1",
   "Clausura":                 "mex.1",
   "Mixta":                    "mex.1",
+  "Amistoso":                 "int.friendly",
+  "Amistosos":                "int.friendly",
+  "Amistoso Internacional":   "int.friendly",
+  "Amistosos Internacional":  "int.friendly",
+  "Amistoso Mundial":         "int.friendly",
+  "Amistosos Mundial":        "int.friendly",
+  "Internacional":            "int.friendly",
+  "Friendly":                 "int.friendly",
+  "FIFA Friendly":            "int.friendly",
 };
 
 // GET /api/admin/fix-horas-espn?jornadaId=xxx&dry=true

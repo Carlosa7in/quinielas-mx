@@ -27,6 +27,15 @@ const LIGA_ESPN: Record<string, string> = {
   "Mundial":                  "fifa.world",
   "FIFA World Cup":           "fifa.world",
   "World Cup 2026":           "fifa.world",
+  "Amistoso":                 "int.friendly",
+  "Amistosos":                "int.friendly",
+  "Amistoso Internacional":   "int.friendly",
+  "Amistosos Internacional":  "int.friendly",
+  "Amistoso Mundial":         "int.friendly",
+  "Amistosos Mundial":        "int.friendly",
+  "Internacional":            "int.friendly",
+  "Friendly":                 "int.friendly",
+  "FIFA Friendly":            "int.friendly",
 };
 
 const NOMBRE_MAP: Record<string, string> = {
