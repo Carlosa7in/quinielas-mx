@@ -223,13 +223,14 @@ export default function ResultadosPage() {
         .filter((t): t is number => t !== null);
 
       const pad = (n: number) => String(n).padStart(2, "0");
-      const fmtDate = (d: Date) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+      // Usar UTC para que las fechas coincidan con el scoreboard de ESPN (que opera en UTC)
+      const fmtDateUTC = (d: Date) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
 
       let desdeStr = "";
       if (fechas.length > 0) {
-        const minT = new Date(Math.min(...fechas)); minT.setDate(minT.getDate() - 1);
-        const maxT = new Date(Math.max(...fechas)); maxT.setDate(maxT.getDate() + 2);
-        desdeStr = `&desde=${fmtDate(minT)}&hasta=${fmtDate(maxT)}`;
+        const minT = new Date(Math.min(...fechas) - 24 * 3_600_000); // -1 día
+        const maxT = new Date(Math.max(...fechas) + 2 * 24 * 3_600_000); // +2 días
+        desdeStr = `&desde=${fmtDateUTC(minT)}&hasta=${fmtDateUTC(maxT)}`;
       }
 
       const res = await fetch(`/api/espn-resultados?ligas=${encodeURIComponent(ligasParam)}${desdeStr}`);
