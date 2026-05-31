@@ -215,56 +215,42 @@ export default function ResultadosPage() {
     setImportando(true);
     setImportMsg(null);
     try {
-      const ligasUnicas = [...new Set(jornada.partidos.map((p) => p.liga).filter(Boolean))];
-      const ligasParam = ligasUnicas.join(",");
-
-      const fechas = jornada.partidos
-        .map((p) => p.fechaHora ? new Date(p.fechaHora).getTime() : null)
-        .filter((t): t is number => t !== null);
-
-      const pad = (n: number) => String(n).padStart(2, "0");
-      // Usar UTC para que las fechas coincidan con el scoreboard de ESPN (que opera en UTC)
-      const fmtDateUTC = (d: Date) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
-
-      let desdeStr = "";
-      if (fechas.length > 0) {
-        const minT = new Date(Math.min(...fechas) - 24 * 3_600_000); // -1 día
-        const maxT = new Date(Math.max(...fechas) + 2 * 24 * 3_600_000); // +2 días
-        desdeStr = `&desde=${fmtDateUTC(minT)}&hasta=${fmtDateUTC(maxT)}`;
-      }
-
-      const res = await fetch(`/api/espn-resultados?ligas=${encodeURIComponent(ligasParam)}${desdeStr}`);
+      // Usar jornadaId para que el servidor haga lookup directo por espnId guardado en DB
+      // (el scoreboard de ESPN con ?dates= no funciona para juegos históricos)
+      const res = await fetch(`/api/espn-resultados?jornadaId=${jornada.id}`);
       const data = await res.json();
       const espnLista: EspnResultado[] = data.resultados ?? [];
 
       if (espnLista.length === 0) {
-        setImportMsg({ texto: "ESPN no devolvió resultados para este rango de fechas.", tipo: "info" });
+        setImportMsg({ texto: "ESPN no devolvió resultados. Los partidos pueden no tener espnId guardado o aún no haber terminado.", tipo: "info" });
         return;
       }
 
       let matched = 0;
       setEstados((prev) => {
         const next = { ...prev };
-        for (const partido of jornada.partidos) {
-          const r = matchPartido(partido.equipoLocal, partido.equipoVisita, espnLista);
-          if (r) {
-            matched++;
-            next[partido.id] = {
-              ...next[partido.id],
-              resultado: r.resultado,
-              golesLocal: String(r.golesLocal),
-              golesVisita: String(r.golesVisita),
-              guardado: false,
-              error: "",
-            };
-          }
+        for (const r of espnLista) {
+          // Si viene con partidoId directo, aplicar sin match por nombre
+          const targetId = r.partidoId ?? jornada.partidos.find(p =>
+            matchPartido(p.equipoLocal, p.equipoVisita, [r])
+          )?.id;
+          if (!targetId || !next[targetId]) continue;
+          matched++;
+          next[targetId] = {
+            ...next[targetId],
+            resultado: r.resultado,
+            golesLocal: String(r.golesLocal),
+            golesVisita: String(r.golesVisita),
+            guardado: false,
+            error: "",
+          };
         }
         return next;
       });
 
       const noMatch = jornada.partidos.length - matched;
       setImportMsg({
-        texto: `✅ ${matched} partido${matched !== 1 ? "s" : ""} importado${matched !== 1 ? "s" : ""}${noMatch > 0 ? ` · ${noMatch} sin match` : ""}. Revisa y usa "Guardar todos".`,
+        texto: `✅ ${matched} partido${matched !== 1 ? "s" : ""} importado${matched !== 1 ? "s" : ""}${noMatch > 0 ? ` · ${noMatch} sin resultado en ESPN aún` : ""}. Revisa y usa "Guardar todos".`,
         tipo: matched > 0 ? "ok" : "error",
       });
     } catch (err) {
