@@ -96,7 +96,7 @@ export function PhoneInput({
 
   const selectOpts = PAISES_TEL.map((p, i) => (
     <option key={`${p.codigo}-${i}`} value={p.codigo}>
-      {p.bandera} +{p.codigo} {p.nombre}
+      {p.bandera} +{p.codigo}
     </option>
   ));
 

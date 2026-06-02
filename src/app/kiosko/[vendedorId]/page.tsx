@@ -104,6 +104,7 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
   const [precioEnviado, setPrecioEnviado] = useState(0);
   const [logoMap, setLogoMap] = useState<Record<string, string>>({});
   const [aviso, setAviso] = useState<string | null>(null);
+  const [instruccionesOpen, setInstruccionesOpen] = useState(false);
 
   useEffect(() => {
     if (!aviso) return;
@@ -482,30 +483,36 @@ export default function KioskoPage({ params }: { params: Promise<{ vendedorId: s
           </div>
         )}
 
-        {/* Instrucciones */}
+        {/* Instrucciones — acordeón */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="bg-amber-50 px-4 py-3 border-b border-amber-100">
+          <button
+            onClick={() => setInstruccionesOpen((v) => !v)}
+            className="w-full bg-amber-50 px-4 py-3 border-b border-amber-100 flex items-center justify-between"
+          >
             <p className="text-sm font-bold text-amber-800">📋 ¿Cómo funciona?</p>
-          </div>
-          <div className="px-4 py-3 space-y-2.5">
-            {[
-              { n: "1", icon: "⚽", text: "Elige el resultado de cada partido: **L** (gana local), **E** (empate) o **V** (gana visitante)." },
-              { n: "2", icon: "2️⃣", text: "¿No estás seguro? Toca **2 opciones** en un partido para jugar un **doble** (+$20)." },
-              { n: "3", icon: "3️⃣", text: "Toca las **3 opciones** para cubrir todos los resultados con un **triple** (+$40)." },
-              { n: "4", icon: "👤", text: "Escribe tu **nombre completo** y **teléfono** para recibir tu ticket." },
-              { n: "5", icon: "✅", text: "Toca **Enviar picks** y muéstrale la confirmación al vendedor para pagar." },
-            ].map(({ n, icon, text }) => (
-              <div key={n} className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-black flex items-center justify-center shrink-0 mt-0.5">{n}</span>
-                <p className="text-sm text-gray-600 leading-snug">
-                  {icon}{" "}
-                  {text.split("**").map((part, i) =>
-                    i % 2 === 1 ? <strong key={i} className="text-gray-800">{part}</strong> : part
-                  )}
-                </p>
-              </div>
-            ))}
-          </div>
+            <span className={`text-amber-600 transition-transform duration-200 ${instruccionesOpen ? "rotate-180" : ""}`}>▾</span>
+          </button>
+          {instruccionesOpen && (
+            <div className="px-4 py-3 space-y-2.5">
+              {[
+                { n: "1", icon: "⚽", text: "Elige el resultado de cada partido: **L** (gana local), **E** (empate) o **V** (gana visitante)." },
+                { n: "2", icon: "2️⃣", text: "¿No estás seguro? Toca **2 opciones** en un partido para jugar un **doble** (+$20)." },
+                { n: "3", icon: "3️⃣", text: "Toca las **3 opciones** para cubrir todos los resultados con un **triple** (+$40)." },
+                { n: "4", icon: "👤", text: "Escribe tu **nombre completo** y **teléfono** para recibir tu ticket." },
+                { n: "5", icon: "✅", text: "Toca **Enviar picks** y muéstrale la confirmación al vendedor para pagar." },
+              ].map(({ n, icon, text }) => (
+                <div key={n} className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-black flex items-center justify-center shrink-0 mt-0.5">{n}</span>
+                  <p className="text-sm text-gray-600 leading-snug">
+                    {icon}{" "}
+                    {text.split("**").map((part, i) =>
+                      i % 2 === 1 ? <strong key={i} className="text-gray-800">{part}</strong> : part
+                    )}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Botón rellenar al azar */}
