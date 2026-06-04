@@ -218,6 +218,71 @@ function FormaTicket({ jornada, picks }: { jornada: Jornada; picks: Record<strin
   );
 }
 
+/* ─── Forma mini (para cuadrícula) ─── */
+function FormaMini({ jornada, idx }: { jornada: Jornada; idx: number }) {
+  const partidos = [...jornada.partidos].sort((a, b) => a.orden - b.orden);
+  return (
+    <div style={{
+      border: "1px dashed #999", padding: "3mm", boxSizing: "border-box",
+      fontFamily: "Arial, sans-serif", background: "#fff", pageBreakInside: "avoid",
+      display: "flex", flexDirection: "column",
+    }}>
+      {/* Header */}
+      <div style={{ textAlign: "center", borderBottom: "1.5px solid #000", paddingBottom: "2px", marginBottom: "2px" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-tablitas.png" alt="" style={{ height: "18px", objectFit: "contain", display: "block", margin: "0 auto 1px" }} />
+        <p style={{ fontSize: "5.5pt", fontWeight: "900", margin: 0, letterSpacing: "0.3px" }}>
+          {norm(jornada.nombre ?? `Jornada ${jornada.numero}`)} · {norm(jornada.temporada)}
+        </p>
+        <p style={{ fontSize: "5pt", margin: 0, color: "#444" }}>
+          L = Local &nbsp;E = Empate &nbsp;V = Visita &nbsp;·&nbsp; <strong>$20 MXN</strong>
+        </p>
+      </div>
+
+      {/* Partidos */}
+      <div style={{ flex: 1 }}>
+        {/* Cabecera columnas */}
+        <div style={{ display: "flex", fontSize: "5pt", fontWeight: "900", borderBottom: "1.5px solid #000", paddingBottom: "1px", marginBottom: "1px" }}>
+          <span style={{ flex: 1 }}>PARTIDO</span>
+          <span style={{ width: "7mm", textAlign: "center" }}>L</span>
+          <span style={{ width: "7mm", textAlign: "center" }}>E</span>
+          <span style={{ width: "7mm", textAlign: "center" }}>V</span>
+        </div>
+        {partidos.map((p, i) => (
+          <div key={p.id} style={{ display: "flex", alignItems: "center", borderBottom: "1px dotted #ccc", padding: "0.5px 0" }}>
+            <span style={{ fontSize: "4.5pt", color: "#777", width: "4mm", flexShrink: 0 }}>{i + 1}.</span>
+            <span style={{ flex: 1, fontSize: "5pt", fontWeight: "bold", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+              {norm(p.equipoLocal)} <span style={{ fontWeight: "normal", color: "#666" }}>vs</span> {norm(p.equipoVisita)}
+            </span>
+            {["L", "E", "V"].map((op) => (
+              <div key={op} style={{ width: "7mm", display: "flex", justifyContent: "center" }}>
+                <div style={{ width: "5.5mm", height: "4.5mm", border: "1px solid #555", borderRadius: "1px", fontSize: "4.5pt", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa" }}>
+                  {op}
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Datos */}
+      <div style={{ marginTop: "2px", fontSize: "5pt" }}>
+        <div style={{ marginBottom: "2px" }}>
+          Nom: <div style={{ borderBottom: "1px solid #000", marginTop: "1px", height: "5mm" }} />
+        </div>
+        <div>
+          Tel: <div style={{ borderBottom: "1px solid #000", marginTop: "1px", height: "5mm" }} />
+        </div>
+      </div>
+
+      {/* Número de forma */}
+      <div style={{ textAlign: "right", marginTop: "1px", fontSize: "4pt", color: "#bbb" }}>
+        #{String(idx + 1).padStart(3, "0")}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Página principal ─── */
 export default function FormaPage() {
   const params = useParams();
@@ -225,7 +290,7 @@ export default function FormaPage() {
   const [jornada, setJornada] = useState<Jornada | null>(null);
   const [cargando, setCargando] = useState(true);
   const [cantidad, setCantidad] = useState(1);
-  const [modo, setModo] = useState<"carta" | "ticket">("ticket");
+  const [modo, setModo] = useState<"carta" | "ticket" | "cuadricula">("ticket");
   const [formasPicks, setFormasPicks] = useState<Record<string, string>[]>([]);
 
   useEffect(() => {
@@ -265,6 +330,15 @@ export default function FormaPage() {
       setTimeout(() => {
         window.print();
         document.getElementById("__page-size-ticket")?.remove();
+      }, 80);
+    } else if (modo === "cuadricula") {
+      const s = document.createElement("style");
+      s.id = "__page-size-carta";
+      s.textContent = "@page { size: letter portrait; margin: 8mm; }";
+      document.head.appendChild(s);
+      setTimeout(() => {
+        window.print();
+        document.getElementById("__page-size-carta")?.remove();
       }, 80);
     } else {
       window.print();
@@ -319,6 +393,12 @@ export default function FormaPage() {
               >
                 📄 Hoja carta
               </button>
+              <button
+                onClick={() => setModo("cuadricula")}
+                className={`px-3 py-1.5 font-semibold transition-colors ${modo === "cuadricula" ? "bg-yellow-400 text-amber-950" : "text-amber-400 hover:bg-amber-700"}`}
+              >
+                🗂️ Cuadrícula
+              </button>
             </div>
 
             {/* Cantidad */}
@@ -340,37 +420,57 @@ export default function FormaPage() {
         </div>
       </div>
 
-      {/* Formas */}
-      <div className={modo === "ticket" ? "py-2" : ""}>
-        {Array.from({ length: cantidad }, (_, idx) => {
-          const picks = formasPicks[idx] ?? {};
-          const tienepicks = Object.keys(picks).length > 0;
-
-          return (
-            <div key={idx}>
-              {/* Controles individuales */}
-              <div className={`print:hidden mx-auto mt-3 mb-1 flex items-center justify-between px-1 ${modo === "ticket" ? "max-w-[72mm]" : "w-full max-w-[148mm]"}`}>
-                <span className="text-xs text-gray-400 font-medium">Forma #{idx + 1}</span>
-                <div className="flex gap-2">
-                  <button onClick={() => rellenarAleatorio(idx)} className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-1 rounded-lg">
-                    🎲 Aleatorio
-                  </button>
-                  {tienepicks && (
-                    <button onClick={() => limpiar(idx)} className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1 rounded-lg">
-                      Limpiar
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {modo === "ticket"
-                ? <FormaTicket jornada={jornada} picks={picks} />
-                : <FormaCarta jornada={jornada} picks={picks} />
-              }
+      {/* Formas — modo cuadrícula */}
+      {modo === "cuadricula" && (
+        <div className="py-4">
+          <div className="print:hidden text-center text-sm text-gray-500 mb-3">
+            <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-semibold">
+              {cantidad} formas · {Math.ceil(cantidad / 12)} hoja(s) · 4×3 por hoja
+            </span>
+          </div>
+          <div className="forma-cuadricula mx-auto" style={{ maxWidth: "210mm" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "2mm" }}>
+              {Array.from({ length: cantidad }, (_, idx) => (
+                <FormaMini key={idx} jornada={jornada} idx={idx} />
+              ))}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        </div>
+      )}
+
+      {/* Formas — modos ticket y carta */}
+      {modo !== "cuadricula" && (
+        <div className={modo === "ticket" ? "py-2" : ""}>
+          {Array.from({ length: cantidad }, (_, idx) => {
+            const picks = formasPicks[idx] ?? {};
+            const tienepicks = Object.keys(picks).length > 0;
+
+            return (
+              <div key={idx}>
+                {/* Controles individuales */}
+                <div className={`print:hidden mx-auto mt-3 mb-1 flex items-center justify-between px-1 ${modo === "ticket" ? "max-w-[72mm]" : "w-full max-w-[148mm]"}`}>
+                  <span className="text-xs text-gray-400 font-medium">Forma #{idx + 1}</span>
+                  <div className="flex gap-2">
+                    <button onClick={() => rellenarAleatorio(idx)} className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-1 rounded-lg">
+                      🎲 Aleatorio
+                    </button>
+                    {tienepicks && (
+                      <button onClick={() => limpiar(idx)} className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1 rounded-lg">
+                        Limpiar
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {modo === "ticket"
+                  ? <FormaTicket jornada={jornada} picks={picks} />
+                  : <FormaCarta jornada={jornada} picks={picks} />
+                }
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <style>{`
         html, body { overflow-x: hidden; }
@@ -388,6 +488,10 @@ export default function FormaPage() {
             max-width: 72mm !important;
             border: none !important;
             padding: 4mm !important;
+          }
+          .forma-cuadricula {
+            width: 195mm !important;
+            max-width: 195mm !important;
           }
           /* Quitar logos en cualquier modo de impresión */
           img { display: none !important; }
