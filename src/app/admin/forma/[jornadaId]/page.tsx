@@ -218,49 +218,48 @@ function FormaTicket({ jornada, picks }: { jornada: Jornada; picks: Record<strin
   );
 }
 
-/* ─── Forma mini (para cuadrícula) ─── */
+/* ─── Forma mini (para cuadrícula 3×3 en hoja carta) ─── */
 function FormaMini({ jornada, idx }: { jornada: Jornada; idx: number }) {
   const partidos = [...jornada.partidos].sort((a, b) => a.orden - b.orden);
   return (
     <div style={{
-      border: "1px dashed #999", padding: "3mm", boxSizing: "border-box",
+      border: "1px dashed #aaa", padding: "2mm 2mm 1.5mm", boxSizing: "border-box",
       fontFamily: "Arial, sans-serif", background: "#fff", pageBreakInside: "avoid",
       display: "flex", flexDirection: "column",
     }}>
       {/* Header */}
-      <div style={{ textAlign: "center", borderBottom: "1.5px solid #000", paddingBottom: "2px", marginBottom: "2px" }}>
+      <div style={{ textAlign: "center", borderBottom: "1.5px solid #000", paddingBottom: "1px", marginBottom: "1.5px" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-tablitas.png" alt="" style={{ height: "18px", objectFit: "contain", display: "block", margin: "0 auto 1px" }} />
-        <p style={{ fontSize: "5.5pt", fontWeight: "900", margin: 0, letterSpacing: "0.3px" }}>
-          {norm(jornada.nombre ?? `Jornada ${jornada.numero}`)} · {norm(jornada.temporada)}
+        <img src="/logo-tablitas.png" alt="" style={{ height: "13px", objectFit: "contain", display: "block", margin: "0 auto 1px" }} />
+        <p style={{ fontSize: "4.5pt", fontWeight: "900", margin: 0 }}>
+          {norm(jornada.nombre ?? `J${jornada.numero}`)} · {norm(jornada.temporada)} · <strong>$20</strong>
         </p>
-        <p style={{ fontSize: "5pt", margin: 0, color: "#444" }}>
-          L = Local &nbsp;E = Empate &nbsp;V = Visita &nbsp;·&nbsp; <strong>$20 MXN</strong>
-        </p>
+      </div>
+
+      {/* Cabecera columnas */}
+      <div style={{ display: "flex", fontSize: "4pt", fontWeight: "900", borderBottom: "1px solid #000", padding: "0.5px 0", marginBottom: "0.5px" }}>
+        <span style={{ width: "3mm" }} />
+        <span style={{ flex: 1 }}>LOCAL &nbsp;vs&nbsp; VISITA</span>
+        <span style={{ width: "5.5mm", textAlign: "center" }}>L</span>
+        <span style={{ width: "5.5mm", textAlign: "center" }}>E</span>
+        <span style={{ width: "5.5mm", textAlign: "center" }}>V</span>
       </div>
 
       {/* Partidos */}
       <div style={{ flex: 1 }}>
-        {/* Cabecera columnas */}
-        <div style={{ display: "flex", fontSize: "5pt", fontWeight: "900", borderBottom: "1.5px solid #000", paddingBottom: "1px", marginBottom: "1px" }}>
-          <span style={{ flex: 1 }}>PARTIDO</span>
-          <span style={{ width: "7mm", textAlign: "center" }}>L</span>
-          <span style={{ width: "7mm", textAlign: "center" }}>E</span>
-          <span style={{ width: "7mm", textAlign: "center" }}>V</span>
-        </div>
         {partidos.map((p, i) => (
-          <div key={p.id} style={{ display: "flex", alignItems: "center", borderBottom: "1px dotted #ccc", padding: "1px 0", gap: "2px" }}>
-            <span style={{ fontSize: "4.5pt", color: "#777", width: "3.5mm", flexShrink: 0 }}>{i + 1}.</span>
-            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "2px", overflow: "hidden", minWidth: 0 }}>
-              <LogoEquipo equipo={p.equipoLocal} size={10} />
-              <span style={{ fontSize: "5pt", fontWeight: "bold", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", maxWidth: "22mm" }}>{norm(p.equipoLocal)}</span>
-              <span style={{ fontSize: "4pt", color: "#888", flexShrink: 0 }}>vs</span>
-              <LogoEquipo equipo={p.equipoVisita} size={10} />
-              <span style={{ fontSize: "5pt", fontWeight: "bold", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", maxWidth: "22mm" }}>{norm(p.equipoVisita)}</span>
+          <div key={p.id} style={{ display: "flex", alignItems: "center", borderBottom: "0.5px dotted #ccc", padding: "0.5px 0", gap: "1px" }}>
+            <span style={{ fontSize: "4pt", color: "#888", width: "3mm", flexShrink: 0 }}>{i + 1}</span>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "1.5px", overflow: "hidden", minWidth: 0 }}>
+              <LogoEquipo equipo={p.equipoLocal} size={8} />
+              <span style={{ fontSize: "4.5pt", fontWeight: "bold", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoLocal)}</span>
+              <span style={{ fontSize: "3.5pt", color: "#999", flexShrink: 0 }}>vs</span>
+              <LogoEquipo equipo={p.equipoVisita} size={8} />
+              <span style={{ fontSize: "4.5pt", fontWeight: "bold", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoVisita)}</span>
             </div>
             {["L", "E", "V"].map((op) => (
-              <div key={op} style={{ width: "6mm", display: "flex", justifyContent: "center", flexShrink: 0 }}>
-                <div style={{ width: "5mm", height: "4.5mm", border: "1px solid #555", borderRadius: "1px", fontSize: "4.5pt", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa" }}>
+              <div key={op} style={{ width: "5.5mm", display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                <div style={{ width: "4.5mm", height: "3.5mm", border: "0.75px solid #666", borderRadius: "1px", fontSize: "3.5pt", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb" }}>
                   {op}
                 </div>
               </div>
@@ -269,19 +268,16 @@ function FormaMini({ jornada, idx }: { jornada: Jornada; idx: number }) {
         ))}
       </div>
 
-      {/* Datos */}
-      <div style={{ marginTop: "2px", fontSize: "5pt" }}>
-        <div style={{ marginBottom: "2px" }}>
-          Nom: <div style={{ borderBottom: "1px solid #000", marginTop: "1px", height: "5mm" }} />
+      {/* Nombre / Tel en una línea cada uno */}
+      <div style={{ marginTop: "1.5px", fontSize: "4.5pt", borderTop: "0.75px solid #ccc", paddingTop: "1px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "2px", marginBottom: "1px" }}>
+          <span style={{ flexShrink: 0 }}>Nom:</span>
+          <div style={{ flex: 1, borderBottom: "0.75px solid #000" }} />
         </div>
-        <div>
-          Tel: <div style={{ borderBottom: "1px solid #000", marginTop: "1px", height: "5mm" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+          <span style={{ flexShrink: 0 }}>Tel:</span>
+          <div style={{ flex: 1, borderBottom: "0.75px solid #000" }} />
         </div>
-      </div>
-
-      {/* Número de forma */}
-      <div style={{ textAlign: "right", marginTop: "1px", fontSize: "4pt", color: "#bbb" }}>
-        #{String(idx + 1).padStart(3, "0")}
       </div>
     </div>
   );
@@ -426,13 +422,13 @@ export default function FormaPage() {
 
       {/* Formas — modo cuadrícula */}
       {modo === "cuadricula" && (() => {
-        const POR_PAGINA = 3; // 3 columnas × 1 fila por hoja
+        const POR_PAGINA = 9; // 3 columnas × 3 filas por hoja
         const paginas = Math.ceil(cantidad / POR_PAGINA);
         return (
           <div className="py-4">
             <div className="print:hidden text-center text-sm text-gray-500 mb-3">
               <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-semibold">
-                {cantidad} formas · {paginas} hoja(s) · 3 por hoja
+                {cantidad} formas · {paginas} hoja(s) · 9 por hoja
               </span>
             </div>
             {Array.from({ length: paginas }, (_, pIdx) => {
@@ -444,7 +440,7 @@ export default function FormaPage() {
               return (
                 <div key={pIdx} className="forma-cuadricula mx-auto"
                   style={{ maxWidth: "195mm", pageBreakAfter: "always", breakAfter: "page", marginBottom: "8mm" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "3mm" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5mm" }}>
                     {formasEnPagina.map((idx) => (
                       <FormaMini key={idx} jornada={jornada} idx={idx} />
                     ))}
