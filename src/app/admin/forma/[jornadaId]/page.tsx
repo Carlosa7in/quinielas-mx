@@ -426,13 +426,13 @@ export default function FormaPage() {
 
       {/* Formas — modo cuadrícula */}
       {modo === "cuadricula" && (() => {
-        const POR_PAGINA = 6; // 3 columnas × 2 filas
+        const POR_PAGINA = 3; // 3 columnas × 1 fila por hoja
         const paginas = Math.ceil(cantidad / POR_PAGINA);
         return (
           <div className="py-4">
             <div className="print:hidden text-center text-sm text-gray-500 mb-3">
               <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-semibold">
-                {cantidad} formas · {paginas} hoja(s) · 3×2 por hoja
+                {cantidad} formas · {paginas} hoja(s) · 3 por hoja
               </span>
             </div>
             {Array.from({ length: paginas }, (_, pIdx) => {
@@ -496,6 +496,9 @@ export default function FormaPage() {
           body { margin: 0; padding: 0; }
           .print\\:hidden { display: none !important; }
           header, nav, [data-global-header] { display: none !important; }
+          /* Ocultar cualquier elemento fixed (campana, botones flotantes, etc.) */
+          *[style*="position: fixed"], *[style*="position:fixed"] { display: none !important; }
+          .fixed, [class*="fixed"] { display: none !important; }
           .forma-hoja {
             width: 148mm !important;
             max-width: 148mm !important;
