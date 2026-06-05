@@ -12,7 +12,7 @@ import { useLocale } from "@/hooks/useLocale";
 import type { Locale } from "@/lib/i18n";
 
 // Rutas donde el header desaparece por completo
-const OCULTAR_PREFIJOS = ["/login", "/kiosko"];
+const OCULTAR_PREFIJOS = ["/login", "/kiosko", "/admin/forma"];
 // Rutas donde solo aparece el botón flotante (sin barra ni espaciador)
 const SOLO_BOTON_PREFIJOS = ["/admin"];
 

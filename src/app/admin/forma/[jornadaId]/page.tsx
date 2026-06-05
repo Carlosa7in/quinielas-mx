@@ -425,22 +425,36 @@ export default function FormaPage() {
       </div>
 
       {/* Formas — modo cuadrícula */}
-      {modo === "cuadricula" && (
-        <div className="py-4">
-          <div className="print:hidden text-center text-sm text-gray-500 mb-3">
-            <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-semibold">
-              {cantidad} formas · {Math.ceil(cantidad / 9)} hoja(s) · 3×3 por hoja
-            </span>
-          </div>
-          <div className="forma-cuadricula mx-auto" style={{ maxWidth: "210mm" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "3mm" }}>
-              {Array.from({ length: cantidad }, (_, idx) => (
-                <FormaMini key={idx} jornada={jornada} idx={idx} />
-              ))}
+      {modo === "cuadricula" && (() => {
+        const POR_PAGINA = 6; // 3 columnas × 2 filas
+        const paginas = Math.ceil(cantidad / POR_PAGINA);
+        return (
+          <div className="py-4">
+            <div className="print:hidden text-center text-sm text-gray-500 mb-3">
+              <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-semibold">
+                {cantidad} formas · {paginas} hoja(s) · 3×2 por hoja
+              </span>
             </div>
+            {Array.from({ length: paginas }, (_, pIdx) => {
+              const desde = pIdx * POR_PAGINA;
+              const formasEnPagina = Array.from(
+                { length: Math.min(POR_PAGINA, cantidad - desde) },
+                (_, i) => desde + i
+              );
+              return (
+                <div key={pIdx} className="forma-cuadricula mx-auto"
+                  style={{ maxWidth: "195mm", pageBreakAfter: "always", breakAfter: "page", marginBottom: "8mm" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "3mm" }}>
+                    {formasEnPagina.map((idx) => (
+                      <FormaMini key={idx} jornada={jornada} idx={idx} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Formas — modos ticket y carta */}
       {modo !== "cuadricula" && (
@@ -481,6 +495,7 @@ export default function FormaPage() {
         @media print {
           body { margin: 0; padding: 0; }
           .print\\:hidden { display: none !important; }
+          header, nav, [data-global-header] { display: none !important; }
           .forma-hoja {
             width: 148mm !important;
             max-width: 148mm !important;
