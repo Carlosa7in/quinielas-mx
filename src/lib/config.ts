@@ -2,7 +2,7 @@
 // Actualiza estos valores cuando cambien los datos del negocio
 
 /** Número WhatsApp del administrador (formato internacional sin +) */
-export const ADMIN_WHATSAPP = "527551317837"; // WhatsApp Business Tablitas Quinielas
+export const ADMIN_WHATSAPP = "527551018496"; // WhatsApp personal Tablitas Quinielas
 
 /** Datos bancarios para recibir pagos */
 export const CLABE        = "012180015525085351";

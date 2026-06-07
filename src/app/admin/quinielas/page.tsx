@@ -5,17 +5,8 @@ import { useSession } from "next-auth/react";
 import { LIGA_ICON } from "@/lib/equipos";
 import DesgloseCobrado from "@/components/DesgloseCobrado";
 
-// Detecta si estamos en móvil Android (para usar intent de WA Business)
-function useIsMobile() {
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => { setMobile(/Android|iPhone|iPad/i.test(navigator.userAgent)); }, []);
-  return mobile;
-}
-
-// Genera el link/intent de WA Business según plataforma
-function waBizLink(tel: string, msg: string, isMobile: boolean) {
-  if (isMobile) return `intent://send?phone=${tel}&text=${encodeURIComponent(msg)}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
-  // En desktop: WA web estándar (no hay forma de forzar WA Business desde browser)
+// Genera link wa.me — abre cualquier WhatsApp instalado
+function waBizLink(tel: string, msg: string) {
   return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
 }
 
@@ -167,25 +158,22 @@ function PagoBadgeCompact({ quiniela }: { quiniela: Quiniela }) {
   return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cls}`}>{label}</span>;
 }
 
-// Botón WA Business: intent en móvil, wa.me + copiar mensaje en desktop
+// Botón WhatsApp
 function WaBizBoton({ tel, msg, label, onSent }: { tel: string; msg: string; label: string; onSent?: () => void }) {
-  const isMobile = useIsMobile();
   const [copiado, setCopiado] = useState(false);
-  const link = waBizLink(tel, msg, isMobile);
+  const link = waBizLink(tel, msg);
   return (
     <div className="flex gap-1.5 flex-1">
       <a href={link} target="_blank" rel="noopener noreferrer" onClick={onSent}
         className="flex-1 text-center text-xs bg-[#25D366] hover:bg-[#20b858] text-white font-semibold px-2 py-1.5 rounded-lg transition-colors">
         {label}
       </a>
-      {!isMobile && (
-        <button
-          onClick={() => { navigator.clipboard.writeText(msg); setCopiado(true); setTimeout(() => setCopiado(false), 2000); }}
-          title="Copiar mensaje para enviarlo desde tu teléfono"
-          className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1.5 rounded-lg transition-colors shrink-0">
-          {copiado ? "✓" : "📋"}
-        </button>
-      )}
+      <button
+        onClick={() => { navigator.clipboard.writeText(msg); setCopiado(true); setTimeout(() => setCopiado(false), 2000); }}
+        title="Copiar mensaje"
+        className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1.5 rounded-lg transition-colors shrink-0">
+        {copiado ? "✓" : "📋"}
+      </button>
     </div>
   );
 }

@@ -18,17 +18,9 @@ type JornadaActiva = {
 } | null;
 
 // ── Helpers WA ───────────────────────────────────────────────────────────────
-function useIsMobile() {
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => { setMobile(/Android|iPhone|iPad/i.test(navigator.userAgent)); }, []);
-  return mobile;
-}
-
-function waLink(tel: string, msg: string, isMobile: boolean) {
+function waLink(tel: string, msg: string) {
   const limpio = tel.replace(/\D/g, "");
   const telWA  = limpio.length === 10 ? `52${limpio}` : limpio;
-  if (isMobile)
-    return `intent://send?phone=${telWA}&text=${encodeURIComponent(msg)}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
   return `https://wa.me/${telWA}?text=${encodeURIComponent(msg)}`;
 }
 
@@ -134,7 +126,6 @@ function WaDropdown({
 }) {
   const [abierto, setAbierto] = useState(false);
   const [copiado, setCopiado] = useState<string | null>(null);
-  const isMobile = useIsMobile();
   const ref = useRef<HTMLDivElement>(null);
 
   // Cierra al hacer click fuera
@@ -211,7 +202,7 @@ function WaDropdown({
           <div className="py-1">
             {disponibles.map((t) => {
               const msg = t.generar(ctx);
-              const link = waLink(apostador.telefono!, msg, isMobile);
+              const link = waLink(apostador.telefono!, msg);
               return (
                 <div key={t.id} className="flex items-center gap-1 px-2 py-1 hover:bg-gray-50">
                   {/* Abrir WA */}
@@ -228,15 +219,13 @@ function WaDropdown({
                     </span>
                   </a>
                   {/* Copiar mensaje */}
-                  {!isMobile && (
-                    <button
-                      onClick={() => copiar(msg, t.id)}
-                      title="Copiar mensaje"
-                      className="shrink-0 w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 text-xs flex items-center justify-center transition-colors"
-                    >
-                      {copiado === t.id ? "✓" : "📋"}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => copiar(msg, t.id)}
+                    title="Copiar mensaje"
+                    className="shrink-0 w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 text-xs flex items-center justify-center transition-colors"
+                  >
+                    {copiado === t.id ? "✓" : "📋"}
+                  </button>
                 </div>
               );
             })}

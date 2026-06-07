@@ -5,21 +5,12 @@ import { useLocale } from "@/hooks/useLocale";
 import { translations } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
 
-// Detecta móvil Android/iOS para usar intent de WA Business
-function useIsMobile() {
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => { setMobile(/Android|iPhone|iPad/i.test(navigator.userAgent)); }, []);
-  return mobile;
-}
-
-// En móvil: intent que abre WA Business (com.whatsapp.w4b) directamente
-// En desktop: api.whatsapp.com abre el navegador donde puede estar WA Business Web
-function waBizUrl(telefono: string | null, msg: string, isMobile: boolean): string {
+// Genera link wa.me — abre cualquier WhatsApp instalado
+function waBizUrl(telefono: string | null, msg: string): string {
   if (!telefono) return "#";
   const clean = telefono.replace(/\D/g, "");
   const num = clean.startsWith("52") ? clean : `52${clean}`;
-  if (isMobile) return `intent://send?phone=${num}&text=${encodeURIComponent(msg)}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
-  return `https://api.whatsapp.com/send?phone=${num}&text=${encodeURIComponent(msg)}`;
+  return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 }
 
 type Ganador = {
@@ -104,9 +95,8 @@ function buildMassMsgText(nombre: string | null, jornadaNombre: string, jornadaI
 
 
 function GanadorCard({ ganador, lugar, jornadaNombre, jornadaId, locale = "es" }: { ganador: Ganador; lugar: "1.°" | "2.°"; jornadaNombre: string; jornadaId?: string; locale?: "es" | "en" }) {
-  const isMobile = useIsMobile();
   const msg = buildWhatsAppMsg(ganador.nombre, ganador.aciertos, jornadaNombre, lugar, ganador.premio, locale, jornadaId);
-  const urlBusiness = waBizUrl(ganador.telefono, msg, isMobile);
+  const urlBusiness = waBizUrl(ganador.telefono, msg);
 
   return (
     <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col gap-2">
@@ -152,8 +142,6 @@ export default function PremiacionPage() {
     setMarcandoRevisado(false);
     setRevisadoOk(true);
   };
-  const isMobile = useIsMobile();
-
   const cargarPremiacion = async (j: JornadaResumen) => {
     // Only allow finalized jornadas
     if (j.estado !== "finalizada") {
@@ -375,7 +363,7 @@ export default function PremiacionPage() {
                   <div className="divide-y divide-gray-50 max-h-80 overflow-y-auto">
                     {datos.participantes.map((p) => {
                       const msg = buildMassMsgText(p.nombre, jornadaNombre, datos.jornada.id);
-                      const url = waBizUrl(p.telefono, msg, isMobile);
+                      const url = waBizUrl(p.telefono, msg);
                       return (
                         <div key={p.folio} className="flex items-center justify-between gap-2 px-4 py-2.5">
                           <div className="min-w-0">
