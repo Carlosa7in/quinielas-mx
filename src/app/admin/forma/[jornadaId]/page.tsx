@@ -223,46 +223,47 @@ function FormaMini({ jornada, idx }: { jornada: Jornada; idx: number }) {
   const partidos = [...jornada.partidos].sort((a, b) => a.orden - b.orden);
   return (
     <div style={{
-      border: "1px dashed #aaa", padding: "2.5mm", boxSizing: "border-box",
+      border: "1.5px solid #555", padding: "1.5mm", boxSizing: "border-box",
       fontFamily: "Arial, sans-serif", background: "#fff", pageBreakInside: "avoid",
       display: "flex", flexDirection: "column",
     }}>
-      {/* Header */}
-      <div style={{ textAlign: "center", borderBottom: "1.5px solid #000", paddingBottom: "2px", marginBottom: "2px" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-tablitas.png" alt="" style={{ height: "16px", objectFit: "contain", display: "block", margin: "0 auto 1px" }} />
-        <p style={{ fontSize: "5pt", fontWeight: "900", margin: 0 }}>
-          {norm(jornada.nombre ?? `J${jornada.numero}`)} · {norm(jornada.temporada)}
+      {/* Header — sin logo para ahorrar espacio */}
+      <div style={{ textAlign: "center", borderBottom: "2px solid #000", paddingBottom: "1.5px", marginBottom: "2px" }}>
+        <p style={{ fontSize: "6.5pt", fontWeight: "900", margin: 0, letterSpacing: "0.2px" }}>
+          TABLITAS QUINIELAS
         </p>
-        <p style={{ fontSize: "5pt", margin: 0, color: "#555" }}>
-          L = Local &nbsp;E = Empate &nbsp;V = Visita &nbsp;·&nbsp; <strong>$20</strong>
+        <p style={{ fontSize: "5.5pt", fontWeight: "bold", margin: 0 }}>
+          {norm(jornada.nombre ?? `J${jornada.numero}`)} · <strong>$20 MXN</strong>
+        </p>
+        <p style={{ fontSize: "5pt", margin: 0, color: "#333" }}>
+          <strong>L</strong> = Local &nbsp;<strong>E</strong> = Empate &nbsp;<strong>V</strong> = Visita
         </p>
       </div>
 
       {/* Cabecera columnas */}
-      <div style={{ display: "flex", fontSize: "5pt", fontWeight: "900", borderBottom: "1.5px solid #000", padding: "1px 0", marginBottom: "1px" }}>
-        <span style={{ width: "4mm" }} />
+      <div style={{ display: "flex", fontSize: "5.5pt", fontWeight: "900", borderBottom: "1.5px solid #000", padding: "1px 0", marginBottom: "1px" }}>
+        <span style={{ width: "4.5mm" }} />
         <span style={{ flex: 1 }}>PARTIDO</span>
-        <span style={{ width: "7mm", textAlign: "center" }}>L</span>
-        <span style={{ width: "7mm", textAlign: "center" }}>E</span>
-        <span style={{ width: "7mm", textAlign: "center" }}>V</span>
+        <span style={{ width: "7.5mm", textAlign: "center" }}>L</span>
+        <span style={{ width: "7.5mm", textAlign: "center" }}>E</span>
+        <span style={{ width: "7.5mm", textAlign: "center" }}>V</span>
       </div>
 
       {/* Partidos */}
       <div style={{ flex: 1 }}>
         {partidos.map((p, i) => (
-          <div key={p.id} style={{ display: "flex", alignItems: "center", borderBottom: "0.75px dotted #ccc", padding: "1px 0", gap: "2px" }}>
-            <span style={{ fontSize: "4.5pt", color: "#888", width: "4mm", flexShrink: 0 }}>{i + 1}.</span>
+          <div key={p.id} style={{ display: "flex", alignItems: "center", borderBottom: "0.75px solid #ccc", padding: "1px 0", gap: "1.5px" }}>
+            <span style={{ fontSize: "5pt", fontWeight: "bold", color: "#555", width: "4.5mm", flexShrink: 0 }}>{i + 1}.</span>
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "2px", overflow: "hidden", minWidth: 0 }}>
               <LogoEquipo equipo={p.equipoLocal} size={10} />
-              <span style={{ fontSize: "5pt", fontWeight: "bold", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoLocal)}</span>
-              <span style={{ fontSize: "4pt", color: "#999", flexShrink: 0 }}>vs</span>
+              <span style={{ fontSize: "5.5pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoLocal)}</span>
+              <span style={{ fontSize: "4.5pt", color: "#777", flexShrink: 0 }}>-</span>
               <LogoEquipo equipo={p.equipoVisita} size={10} />
-              <span style={{ fontSize: "5pt", fontWeight: "bold", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoVisita)}</span>
+              <span style={{ fontSize: "5.5pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoVisita)}</span>
             </div>
             {["L", "E", "V"].map((op) => (
-              <div key={op} style={{ width: "7mm", display: "flex", justifyContent: "center", flexShrink: 0 }}>
-                <div style={{ width: "5.5mm", height: "5mm", border: "1px solid #666", borderRadius: "1px", fontSize: "4.5pt", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb" }}>
+              <div key={op} style={{ width: "7.5mm", display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                <div style={{ width: "6mm", height: "5.5mm", border: "1.5px solid #333", borderRadius: "1px", fontSize: "5pt", fontWeight: "900", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>
                   {op}
                 </div>
               </div>
@@ -272,14 +273,14 @@ function FormaMini({ jornada, idx }: { jornada: Jornada; idx: number }) {
       </div>
 
       {/* Nombre / Tel */}
-      <div style={{ marginTop: "2px", fontSize: "5pt", borderTop: "1px solid #ddd", paddingTop: "2px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "2px", marginBottom: "3px" }}>
-          <span style={{ flexShrink: 0 }}>Nom:</span>
-          <div style={{ flex: 1, borderBottom: "1px solid #000", height: "4mm" }} />
+      <div style={{ marginTop: "2px", fontSize: "5.5pt", fontWeight: "bold", borderTop: "1.5px solid #000", paddingTop: "2px" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "2px", marginBottom: "2px" }}>
+          <span style={{ flexShrink: 0 }}>Nombre:</span>
+          <div style={{ flex: 1, borderBottom: "1.5px solid #000", minHeight: "5mm" }} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "2px" }}>
           <span style={{ flexShrink: 0 }}>Tel:</span>
-          <div style={{ flex: 1, borderBottom: "1px solid #000", height: "4mm" }} />
+          <div style={{ flex: 1, borderBottom: "1.5px solid #000", minHeight: "5mm" }} />
         </div>
       </div>
     </div>
