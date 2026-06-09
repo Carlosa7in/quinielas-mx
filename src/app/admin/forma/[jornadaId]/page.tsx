@@ -228,38 +228,26 @@ function FormaMini({ jornada, idx }: { jornada: Jornada; idx: number }) {
       display: "flex", flexDirection: "column",
     }}>
       {/* Header — sin logo para ahorrar espacio */}
-      <div style={{ textAlign: "center", borderBottom: "2px solid #000", paddingBottom: "1.5px", marginBottom: "2px" }}>
+      <div style={{ textAlign: "center", marginBottom: "2px" }}>
         <p style={{ fontSize: "6.5pt", fontWeight: "900", margin: 0, letterSpacing: "0.2px" }}>
           TABLITAS QUINIELAS
         </p>
         <p style={{ fontSize: "5.5pt", fontWeight: "bold", margin: 0 }}>
           {norm(jornada.nombre ?? `J${jornada.numero}`)} · <strong>$20 MXN</strong>
         </p>
-        <p style={{ fontSize: "5pt", margin: 0, color: "#333" }}>
-          <strong>L</strong> = Local &nbsp;<strong>E</strong> = Empate &nbsp;<strong>V</strong> = Visita
-        </p>
-      </div>
-
-      {/* Cabecera columnas */}
-      <div style={{ display: "flex", fontSize: "5.5pt", fontWeight: "900", borderBottom: "1.5px solid #000", padding: "1px 0", marginBottom: "1px" }}>
-        <span style={{ width: "4.5mm" }} />
-        <span style={{ flex: 1 }}>PARTIDO</span>
-        <span style={{ width: "7.5mm", textAlign: "center" }}>L</span>
-        <span style={{ width: "7.5mm", textAlign: "center" }}>E</span>
-        <span style={{ width: "7.5mm", textAlign: "center" }}>V</span>
       </div>
 
       {/* Partidos */}
       <div style={{ flex: 1 }}>
         {partidos.map((p, i) => (
-          <div key={p.id} style={{ display: "flex", alignItems: "center", borderBottom: "0.75px solid #ccc", padding: "1px 0", gap: "1.5px" }}>
-            <span style={{ fontSize: "5pt", fontWeight: "bold", color: "#555", width: "4.5mm", flexShrink: 0 }}>{i + 1}.</span>
+          <div key={p.id} style={{ display: "flex", alignItems: "center", borderBottom: i < partidos.length - 1 ? "0.75px solid #ccc" : "none", padding: "1px 0", gap: "1.5px" }}>
+            <span style={{ fontSize: "6.5pt", fontWeight: "900", color: "#000", width: "4.5mm", flexShrink: 0 }}>{i + 1}.</span>
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "2px", overflow: "hidden", minWidth: 0 }}>
               <LogoEquipo equipo={p.equipoLocal} size={10} />
-              <span style={{ fontSize: "5.5pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoLocal)}</span>
-              <span style={{ fontSize: "4.5pt", color: "#777", flexShrink: 0 }}>-</span>
+              <span style={{ fontSize: "6.5pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoLocal)}</span>
+              <span style={{ fontSize: "5pt", color: "#555", flexShrink: 0 }}>-</span>
               <LogoEquipo equipo={p.equipoVisita} size={10} />
-              <span style={{ fontSize: "5.5pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoVisita)}</span>
+              <span style={{ fontSize: "6.5pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoVisita)}</span>
             </div>
             {["L", "E", "V"].map((op) => (
               <div key={op} style={{ width: "7.5mm", display: "flex", justifyContent: "center", flexShrink: 0 }}>
