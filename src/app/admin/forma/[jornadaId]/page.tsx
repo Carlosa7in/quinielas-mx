@@ -241,13 +241,13 @@ function FormaMini({ jornada, idx }: { jornada: Jornada; idx: number }) {
       <div style={{ flex: 1 }}>
         {partidos.map((p, i) => (
           <div key={p.id} style={{ display: "flex", alignItems: "center", borderBottom: i < partidos.length - 1 ? "0.75px solid #ccc" : "none", padding: "1px 0", gap: "1.5px" }}>
-            <span style={{ fontSize: "6.5pt", fontWeight: "900", color: "#000", width: "4.5mm", flexShrink: 0 }}>{i + 1}.</span>
+            <span style={{ fontSize: "7pt", fontWeight: "900", color: "#000", width: "4.5mm", flexShrink: 0 }}>{i + 1}.</span>
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "2px", overflow: "hidden", minWidth: 0 }}>
-              <LogoEquipo equipo={p.equipoLocal} size={10} />
-              <span style={{ fontSize: "6.5pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoLocal)}</span>
+              <LogoEquipo equipo={p.equipoLocal} size={11} />
+              <span style={{ fontSize: "7pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoLocal)}</span>
               <span style={{ fontSize: "5pt", color: "#555", flexShrink: 0 }}>-</span>
-              <LogoEquipo equipo={p.equipoVisita} size={10} />
-              <span style={{ fontSize: "6.5pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoVisita)}</span>
+              <LogoEquipo equipo={p.equipoVisita} size={11} />
+              <span style={{ fontSize: "7pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoVisita)}</span>
             </div>
             {["L", "E", "V"].map((op) => (
               <div key={op} style={{ width: "7.5mm", display: "flex", justifyContent: "center", flexShrink: 0 }}>
@@ -262,14 +262,8 @@ function FormaMini({ jornada, idx }: { jornada: Jornada; idx: number }) {
 
       {/* Nombre / Tel */}
       <div style={{ marginTop: "2px", fontSize: "5.5pt", fontWeight: "bold", borderTop: "1.5px solid #000", paddingTop: "2px" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: "2px", marginBottom: "2px" }}>
-          <span style={{ flexShrink: 0 }}>Nombre:</span>
-          <div style={{ flex: 1, borderBottom: "1.5px solid #000", minHeight: "5mm" }} />
-        </div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: "2px" }}>
-          <span style={{ flexShrink: 0 }}>Tel:</span>
-          <div style={{ flex: 1, borderBottom: "1.5px solid #000", minHeight: "5mm" }} />
-        </div>
+        <div style={{ borderBottom: "1.5px solid #000", minHeight: "5mm", marginBottom: "2px" }} />
+        <div style={{ borderBottom: "1.5px solid #000", minHeight: "5mm" }} />
       </div>
     </div>
   );
