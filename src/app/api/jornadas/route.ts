@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Jornada no encontrada" }, { status: 404 });
   }
 
-  // Leer fechaHora via neon() directo — PrismaNeonHTTP devuelve {} para DateTime
+  // Leer fechaHora y fechaFin via neon() directo — PrismaNeonHTTP devuelve {} para DateTime
   let fechaHorasMap: Record<string, string> = {};
   try {
     const rows = await sql`

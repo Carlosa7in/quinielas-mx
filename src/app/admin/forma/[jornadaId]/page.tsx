@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { LogoEquipo } from "@/components/LogoEquipo";
+import { calcularFechaCierre } from "@/lib/fechas";
 
 type Partido = {
   id: string;
@@ -23,6 +24,20 @@ type Jornada = {
 // Normalizar caracteres para impresoras térmicas sin soporte UTF-8 completo
 function norm(s: string): string {
   return (s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+function calcularCierre(partidos: Partido[]): string {
+  const conFecha = partidos
+    .filter((p) => p.fechaHora)
+    .sort((a, b) => new Date(a.fechaHora!).getTime() - new Date(b.fechaHora!).getTime());
+  if (!conFecha.length) return "";
+  const cierre = calcularFechaCierre(new Date(conFecha[0].fechaHora!));
+  const TZ = "America/Mexico_City";
+  const dia = new Intl.DateTimeFormat("es-MX", { timeZone: TZ, weekday: "short" }).format(cierre)
+    .replace(".", "").replace(/^\w/, (c) => c.toUpperCase());
+  const h = new Intl.DateTimeFormat("en-US", { timeZone: TZ, hour: "numeric", hour12: true }).format(cierre)
+    .replace(" AM", "am").replace(" PM", "pm");
+  return `⏰ ${dia} ${h}`;
 }
 
 function CornerMarker({ position }: { position: string }) {
@@ -223,47 +238,62 @@ function FormaMini({ jornada, idx }: { jornada: Jornada; idx: number }) {
   const partidos = [...jornada.partidos].sort((a, b) => a.orden - b.orden);
   return (
     <div style={{
-      border: "1.5px solid #555", padding: "1.5mm", boxSizing: "border-box",
+      border: "1.5px solid #555", padding: "2mm", boxSizing: "border-box",
       fontFamily: "Arial, sans-serif", background: "#fff", pageBreakInside: "avoid",
       display: "flex", flexDirection: "column",
     }}>
       {/* Header — sin logo para ahorrar espacio */}
       <div style={{ textAlign: "center", marginBottom: "2px" }}>
-        <p style={{ fontSize: "6.5pt", fontWeight: "900", margin: 0, letterSpacing: "0.2px" }}>
+        <p style={{ fontSize: "8.5pt", fontWeight: "900", margin: 0, letterSpacing: "0.2px" }}>
           TABLITAS QUINIELAS
         </p>
-        <p style={{ fontSize: "5.5pt", fontWeight: "bold", margin: 0 }}>
-          {norm(jornada.nombre ?? `J${jornada.numero}`)} · <strong>$20 MXN</strong>
+        <p style={{ fontSize: "8.5pt", fontWeight: "bold", margin: 0, marginBottom: "4px" }}>
+          {norm(jornada.nombre ?? `J${jornada.numero}`)}
         </p>
       </div>
 
       {/* Partidos */}
       <div style={{ flex: 1 }}>
         {partidos.map((p, i) => (
-          <div key={p.id} style={{ display: "flex", alignItems: "center", borderBottom: i < partidos.length - 1 ? "0.75px solid #ccc" : "none", padding: "1px 0", gap: "1.5px" }}>
-            <span style={{ fontSize: "7pt", fontWeight: "900", color: "#000", width: "4.5mm", flexShrink: 0 }}>{i + 1}.</span>
-            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "2px", overflow: "hidden", minWidth: 0 }}>
-              <LogoEquipo equipo={p.equipoLocal} size={11} />
-              <span style={{ fontSize: "7pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoLocal)}</span>
-              <span style={{ fontSize: "5pt", color: "#555", flexShrink: 0 }}>-</span>
-              <LogoEquipo equipo={p.equipoVisita} size={11} />
-              <span style={{ fontSize: "7pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{norm(p.equipoVisita)}</span>
+          <div key={p.id} style={{ display: "flex", alignItems: "center", borderBottom: "none", padding: "1px 0", gap: "2px", marginBottom: "1px" }}>
+            {/* Número */}
+            <span style={{ fontSize: "8pt", fontWeight: "900", color: "#000", flexShrink: 0 }}>{i + 1}</span>
+            {/* Equipo local */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "2px", overflow: "hidden", minWidth: 0, justifyContent: "flex-end" }}>
+              <span style={{ fontSize: "9pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", textAlign: "right", minWidth: 0 }}>{norm(p.equipoLocal).slice(0, 8)}</span>
+              <LogoEquipo equipo={p.equipoLocal} size={20} />
             </div>
-            {["L", "E", "V"].map((op) => (
-              <div key={op} style={{ width: "7.5mm", display: "flex", justifyContent: "center", flexShrink: 0 }}>
-                <div style={{ width: "6mm", height: "5.5mm", border: "1.5px solid #333", borderRadius: "1px", fontSize: "5pt", fontWeight: "900", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>
+            {/* L / E / V */}
+            <div style={{ display: "flex", gap: "1px", flexShrink: 0, padding: "0 1px" }}>
+              {["L", "E", "V"].map((op) => (
+                <div key={op} style={{ width: "4.5mm", height: "4.5mm", border: "1.5px solid #333", borderRadius: "1px", fontSize: "7pt", fontWeight: "900", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>
                   {op}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            {/* Equipo visita */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "2px", overflow: "hidden", minWidth: 0 }}>
+              <LogoEquipo equipo={p.equipoVisita} size={20} />
+              <span style={{ fontSize: "9pt", fontWeight: "900", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", minWidth: 0 }}>{norm(p.equipoVisita).slice(0, 8)}</span>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Nombre / Tel */}
-      <div style={{ marginTop: "2px", fontSize: "5.5pt", fontWeight: "bold", borderTop: "1.5px solid #000", paddingTop: "2px" }}>
-        <div style={{ borderBottom: "1.5px solid #000", minHeight: "5mm", marginBottom: "2px" }} />
-        <div style={{ borderBottom: "1.5px solid #000", minHeight: "5mm" }} />
+      {/* Nombre / Tel / Precio */}
+      <div style={{ marginTop: "5px", borderTop: "1.5px solid #000", paddingTop: "8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontSize: "9.5pt", fontWeight: "bold" }}>
+          <div style={{ marginBottom: "5px" }}>Nom:</div>
+          <div>Tel:</div>
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "14pt", fontWeight: "900", lineHeight: 1 }}>$20</div>
+          {calcularCierre(partidos) && (
+            <div style={{ fontSize: "7.5pt", fontWeight: "bold", marginTop: "2px", color: "#333" }}>
+              {calcularCierre(partidos)}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -411,7 +441,7 @@ export default function FormaPage() {
         const POR_PAGINA = 9; // 3 columnas × 3 filas por hoja
         const paginas = Math.ceil(cantidad / POR_PAGINA);
         return (
-          <div className="py-4">
+          <div className="py-4 print:py-0">
             <div className="print:hidden text-center text-sm text-gray-500 mb-3">
               <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-semibold">
                 {cantidad} formas · {paginas} hoja(s) · 9 por hoja
@@ -425,7 +455,7 @@ export default function FormaPage() {
               );
               return (
                 <div key={pIdx} className="forma-cuadricula mx-auto"
-                  style={{ maxWidth: "195mm", pageBreakAfter: "always", breakAfter: "page", marginBottom: "8mm" }}>
+                  style={{ maxWidth: "195mm", pageBreakAfter: pIdx < paginas - 1 ? "always" : "avoid", breakAfter: pIdx < paginas - 1 ? "page" : "avoid", marginBottom: pIdx < paginas - 1 ? "8mm" : "0" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5mm" }}>
                     {formasEnPagina.map((idx) => (
                       <FormaMini key={idx} jornada={jornada} idx={idx} />

@@ -227,6 +227,9 @@ export const LOGOS: Record<string, string> = {
   "El Salvador":              "https://a.espncdn.com/i/teamlogos/countries/500/slv.png",
   "Cuba":                     "https://a.espncdn.com/i/teamlogos/countries/500/cub.png",
   "Costa Rica":               "https://a.espncdn.com/i/teamlogos/countries/500/crc.png",
+  "Curazao":                  "https://a.espncdn.com/i/teamlogos/countries/500/cuw.png",
+  "Curaçao":                  "https://a.espncdn.com/i/teamlogos/countries/500/cuw.png",
+  "Curacao":                  "https://a.espncdn.com/i/teamlogos/countries/500/cuw.png",
   // CONMEBOL
   "Argentina":                "https://a.espncdn.com/i/teamlogos/countries/500/arg.png",
   "Brasil":                   "https://a.espncdn.com/i/teamlogos/countries/500/bra.png",
