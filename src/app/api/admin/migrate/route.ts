@@ -66,6 +66,32 @@ export async function GET(req: NextRequest) {
     resultados.push(`✅ espnId México vs Australia (${Array.isArray(r) ? r.length : "?"} fila(s))`);
   } catch (e) { resultados.push(`⚠️ espnId México vs Australia: ${e}`); }
 
+  // ── espnIds Mundial 2026 (jornada inicio mundial, jun 11-14) ─────────────
+  const mundialIds: { local: string; visita: string; espnId: string }[] = [
+    { local: "México",         visita: "Sudáfrica",          espnId: "760415" },
+    { local: "Corea del Sur",  visita: "Rep. Checa",         espnId: "760414" },
+    { local: "Canadá",         visita: "Bosnia-Herzegovina", espnId: "760416" },
+    { local: "Estados Unidos", visita: "Paraguay",           espnId: "760417" },
+    { local: "Qatar",          visita: "Suiza",              espnId: "760420" },
+    { local: "Brasil",         visita: "Marruecos",          espnId: "760419" },
+    { local: "Australia",      visita: "Türkiye",            espnId: "760421" },
+    { local: "Alemania",       visita: "Curacao",            espnId: "760422" },
+    { local: "Alemania",       visita: "Curazao",            espnId: "760422" },
+    { local: "Alemania",       visita: "Curaçao",            espnId: "760422" },
+    { local: "Países Bajos",   visita: "Japón",              espnId: "760425" },
+  ];
+  for (const m of mundialIds) {
+    try {
+      await sql`
+        UPDATE "Partido" SET "espnId" = ${m.espnId}
+        WHERE "espnId" IS NULL
+          AND "equipoLocal"  ILIKE ${m.local}
+          AND "equipoVisita" ILIKE ${m.visita}
+      `;
+    } catch (e) { resultados.push(`⚠️ Mundial espnId ${m.espnId}: ${e}`); }
+  }
+  resultados.push("✅ espnIds Mundial 2026 aplicados");
+
   // ── Corrección automática de horas via ESPN para partidos con espnId ─────
   // Llama internamente al endpoint fix-horas-espn con dry=false
   try {
